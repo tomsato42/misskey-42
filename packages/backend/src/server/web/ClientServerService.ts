@@ -41,7 +41,7 @@ import { bindThis } from '@/decorators.js';
 import { FlashEntityService } from '@/core/entities/FlashEntityService.js';
 import { ReversiGameEntityService } from '@/core/entities/ReversiGameEntityService.js';
 import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntityService.js';
-import { isIntraMode } from '@/core/intra/intra-visitor.js';
+import { INTRA_ROBOTS_TXT, isIntraMode } from '@/core/intra/intra-visitor.js';
 import { FeedService } from './FeedService.js';
 import { UrlPreviewService } from './UrlPreviewService.js';
 import { ClientLoggerService } from './ClientLoggerService.js';
@@ -392,6 +392,12 @@ export class ClientServerService {
 		});
 
 		fastify.get('/robots.txt', async (request, reply) => {
+			// 学内SNSモードでは、すべてのクロールを禁止する
+			if (intraMode) {
+				reply.header('Content-Type', 'text/plain; charset=utf-8');
+				return await reply.send(INTRA_ROBOTS_TXT);
+			}
+
 			const disallowedPaths = [
 				'/settings',
 				'/admin',
@@ -448,6 +454,8 @@ export class ClientServerService {
 				desc: this.meta.description ?? undefined,
 				...(await this.htmlTemplateService.getCommonData()),
 				...data,
+				// 学内SNSモードでは、すべてのページを検索エンジンにインデックスさせない
+				noindex: intraMode || data.noindex,
 			}));
 		};
 

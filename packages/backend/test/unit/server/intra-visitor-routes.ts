@@ -175,6 +175,23 @@ describe('ClientServerService 学内SNSモード', () => {
 		expect(res.headers['x-frame-options']).toBe('DENY');
 	});
 
+	test('robots.txt はすべてのクロールを禁止する', async () => {
+		const { app } = await createClientServer(true);
+
+		const res = await app.inject({ method: 'GET', url: '/robots.txt' });
+
+		expect(res.statusCode).toBe(200);
+		expect(res.body).toBe('User-agent: *\nDisallow: /\n');
+	});
+
+	test('HTML に noindex のメタタグを入れる', async () => {
+		const { app } = await createClientServer(true);
+
+		const res = await app.inject({ method: 'GET', url: '/', headers: { accept: 'text/html' } });
+
+		expect(res.body).toContain('<meta name="robots" content="noindex"');
+	});
+
 	test('manifest.json はインスタンス名だけを返す', async () => {
 		const { app, repositories } = await createClientServer(true);
 

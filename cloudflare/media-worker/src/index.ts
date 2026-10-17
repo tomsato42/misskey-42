@@ -101,6 +101,8 @@ export function parsePublicKeys(value: string | undefined): Set<string> {
 function securityHeaders(headers: Headers): Headers {
 	headers.set('Content-Security-Policy', CONTENT_SECURITY_POLICY);
 	headers.set('X-Content-Type-Options', 'nosniff');
+	// 学内SNSの画像なので、検索エンジンにインデックスさせない (Misskey 本体の学内SNSモードと同じ値)
+	headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
 	return headers;
 }
 

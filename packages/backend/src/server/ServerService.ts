@@ -35,6 +35,7 @@ import { OpenApiServerService } from './api/openapi/OpenApiServerService.js';
 import { OAuth2ProviderService } from './oauth/OAuth2ProviderService.js';
 import { registerHttpAccessLog } from './http-access-log.js';
 import { createMediaGateUserChecker, mediaGateRouteOptions } from './media-gate-hooks.js';
+import { INTRA_X_ROBOTS_TAG, isIntraMode } from '@/core/intra/intra-visitor.js';
 
 const _dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -91,6 +92,14 @@ export class ServerService implements OnApplicationShutdown {
 		if (this.config.url.startsWith('https') && !this.config.disableHsts) {
 			fastify.addHook('onRequest', (request, reply, done) => {
 				reply.header('strict-transport-security', 'max-age=15552000; preload');
+				done();
+			});
+		}
+
+		// 学内SNSモードでは、すべての応答 (HTML・API・メディア) を検索エンジンにインデックスさせない
+		if (isIntraMode(this.config)) {
+			fastify.addHook('onRequest', (request, reply, done) => {
+				reply.header('X-Robots-Tag', INTRA_X_ROBOTS_TAG);
 				done();
 			});
 		}

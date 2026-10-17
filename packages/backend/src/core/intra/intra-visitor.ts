@@ -30,6 +30,16 @@ export function isIntraMode(config: Pick<Config, 'intra'>): boolean {
 }
 
 /**
+ * 学内SNSモードで、すべての応答に付ける X-Robots-Tag の値 (検索エンジンにインデックスさせない)
+ */
+export const INTRA_X_ROBOTS_TAG = 'noindex, nofollow, noarchive';
+
+/**
+ * 学内SNSモードの robots.txt (すべてのクロールを禁止する)
+ */
+export const INTRA_ROBOTS_TXT = 'User-agent: *\nDisallow: /\n';
+
+/**
  * トークンなしのリクエストでこのエンドポイントを呼び出してよいか
  */
 export function isEndpointAllowedForIntraVisitor(endpointName: string): boolean {
