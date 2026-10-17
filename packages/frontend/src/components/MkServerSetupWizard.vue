@@ -150,46 +150,48 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div>{{ serverSettings.clientOptions?.entrancePageStyle }}</div>
 			</div>
 
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.rateLimitFactor }}:</b></div>
-				<div>{{ defaultPolicies.rateLimitFactor }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.driveCapacity }}:</b></div>
-				<div>{{ defaultPolicies.driveCapacityMb }} MB</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.userListMax }}:</b></div>
-				<div>{{ defaultPolicies.userListLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.antennaMax }}:</b></div>
-				<div>{{ defaultPolicies.antennaLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.webhookMax }}:</b></div>
-				<div>{{ defaultPolicies.webhookLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportFollowing }}:</b></div>
-				<div>{{ defaultPolicies.canImportFollowing ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportMuting }}:</b></div>
-				<div>{{ defaultPolicies.canImportMuting ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportBlocking }}:</b></div>
-				<div>{{ defaultPolicies.canImportBlocking ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportUserLists }}:</b></div>
-				<div>{{ defaultPolicies.canImportUserLists ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportAntennas }}:</b></div>
-				<div>{{ defaultPolicies.canImportAntennas ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
+			<template v-if="!instance.intraLoginEnabled">
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.rateLimitFactor }}:</b></div>
+					<div>{{ defaultPolicies.rateLimitFactor }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.driveCapacity }}:</b></div>
+					<div>{{ defaultPolicies.driveCapacityMb }} MB</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.userListMax }}:</b></div>
+					<div>{{ defaultPolicies.userListLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.antennaMax }}:</b></div>
+					<div>{{ defaultPolicies.antennaLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.webhookMax }}:</b></div>
+					<div>{{ defaultPolicies.webhookLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportFollowing }}:</b></div>
+					<div>{{ defaultPolicies.canImportFollowing ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportMuting }}:</b></div>
+					<div>{{ defaultPolicies.canImportMuting ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportBlocking }}:</b></div>
+					<div>{{ defaultPolicies.canImportBlocking ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportUserLists }}:</b></div>
+					<div>{{ defaultPolicies.canImportUserLists ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportAntennas }}:</b></div>
+					<div>{{ defaultPolicies.canImportAntennas ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+			</template>
 		</div>
 
 		<template #footer>
@@ -368,10 +370,12 @@ function applySettings() {
 			maintainerName: q_adminName.value === '' ? undefined : q_adminName.value,
 			maintainerEmail: q_adminEmail.value === '' ? undefined : q_adminEmail.value,
 		}, props.token),
-		misskeyApi('admin/roles/update-default-policies', {
+		// update-default-policies は基本ポリシーを丸ごと置き換えるので、42 intra 連携が有効なとき (学内SNS) は送らない。
+		// 学内SNSの基本ポリシーは migration で投入済み
+		...(instance.intraLoginEnabled ? [] : [misskeyApi('admin/roles/update-default-policies', {
 			// @ts-expect-error バックエンド側の型
 			policies: defaultPolicies.value,
-		}, props.token),
+		}, props.token)]),
 	]).then(() => {
 		emit('finished');
 	}).catch((err) => {

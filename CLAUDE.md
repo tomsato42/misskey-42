@@ -13,6 +13,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 ### 機能の場所とスイッチ
 - `config.intra` (`packages/backend/src/config.ts`) があると「学内SNSモード」。無ければ upstream と同じ挙動 (upstream の e2e を壊さないため、制限はすべてこの条件の内側に置く)。フロントは meta の `intraLoginEnabled` で判定する
 - 42 API・ログイン・同期は `packages/backend/src/core/intra/`。`intra-*.ts` は DI 不要の純粋関数、`Intra*Service.ts` はサービス。ルートは `/api/intra/authorize`・`callback`・`exchange`
+- 自動ロール (`intra_role.kind`) は level / campus / pool (Piscine YY/MM) / cohort (Cursus YY/MM、本科開始月を 4 月期・10 月期に丸める) の 4 種類。`IntraSyncService` が `isExplorable: true` で作り、ログイン時と毎時のジョブで付け替える
 - 学内SNSモードでは `federation` と `ugcVisibilityForVisitor` を `'none'` に固定 (`intra-visitor.ts` の `INTRA_FIXED_META`、update-meta でも拒否)。未ログインの API は許可リスト (`INTRA_VISITOR_ALLOWED_ENDPOINTS`) 以外 401
 - 画像の保護は `config.mediaGate` (署名付き Cookie)。backend は `src/core/media-gate/` と `src/server/media-gate-hooks.ts`、R2 からの配信は `cloudflare/media-worker/` (ルートとは別の pnpm workspace。トークン形式を変えるときは backend・Worker・`test/token-vectors.json` を同時に更新)
 - `/api/intra/exchange` と `/api/media-session` は Cookie を使うので、フロントは misskeyApi (credentials: 'omit') ではなく `fetch(..., { credentials: 'same-origin' })` で呼ぶ
@@ -26,6 +27,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
 
 ### 変更時の注意
+- `admin/roles/update-default-policies` は基本ポリシーを丸ごと置き換える。基本ポリシーの初期値は migration で入れているので、それを上書きする処理 (初期設定ウィザードなど) を足さない
 - `locales/ja-JP.yml` を変えたら `packages/i18n/src/autogen/locale.ts` (git 管理) も再生成してコミットする
 - UserDetailed に項目を足すときは `WebhookTestService.ts` のダミー、`test/e2e/users.ts` の `userDetailedNotMe`、`packages/frontend/.storybook/fakes.ts` も更新する
 - モデレーションログ種別の追加は `backend/src/types.ts`・`misskey-js/src/consts.ts`・`ja-JP.yml` の `_moderationLogTypes`・`frontend/src/pages/admin/modlog.ModLog.vue` の 4 か所
