@@ -138,6 +138,16 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
+			intraId: {
+				type: 'number',
+				optional: false, nullable: true,
+				description: '42 intra のユーザー ID。intra と連携していないユーザーは null',
+			},
+			intraPasswordLoginAllowed: {
+				type: 'boolean',
+				optional: false, nullable: false,
+				description: '42 intra 連携が有効なときに、パスワード・パスキーでのログインを例外的に許可しているか',
+			},
 			signins: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -251,6 +261,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				isHibernated: user.isHibernated,
 				lastActiveDate: user.lastActiveDate ? user.lastActiveDate.toISOString() : null,
 				moderationNote: profile.moderationNote ?? '',
+				intraId: profile.intraId,
+				intraPasswordLoginAllowed: profile.intraPasswordLoginAllowed,
 				signins,
 				policies: await this.roleService.getUserPolicies(user.id),
 				roles: await this.roleEntityService.packMany(roles, me),

@@ -86,6 +86,8 @@ describe('IntraAuthService', () => {
 	let intraApiFails: boolean;
 	let moderators: Set<string>;
 	let beforeSignup: (() => void) | null;
+	let syncCalls: { userId: string; intraId: number }[];
+	let syncFails: boolean;
 	let meta: { rootUserId: string | null };
 	let config: Partial<Config>;
 	let service: IntraAuthService;
@@ -124,6 +126,8 @@ describe('IntraAuthService', () => {
 		intraApiFails = false;
 		moderators = new Set();
 		beforeSignup = null;
+		syncCalls = [];
+		syncFails = false;
 		meta = { rootUserId: 'root' };
 		config = {
 			url: BASE_URL,
@@ -137,6 +141,12 @@ describe('IntraAuthService', () => {
 				return `token-for-${code}`;
 			},
 			getMe: async () => structuredClone(intraUser),
+		};
+		const fakeIntraSyncService = {
+			syncUser: async (userId: string, intraUserArg: IntraUser) => {
+				syncCalls.push({ userId, intraId: intraUserArg.id });
+				if (syncFails) throw new Error('sync failed');
+			},
 		};
 		const fakeRoleService = {
 			isModerator: async (user: { id: string }) => moderators.has(user.id),
@@ -153,6 +163,7 @@ describe('IntraAuthService', () => {
 			users as any,
 			profiles as any,
 			fakeIntraApiService as any,
+			fakeIntraSyncService as any,
 			fakeSignupService as any,
 			fakeRoleService as any,
 			fakeLoggerService as any,
@@ -334,6 +345,35 @@ describe('IntraAuthService', () => {
 
 		const failed = await service.handleCallback('authcode', state, state);
 		expect(failed.loginCode).toBeNull();
+	});
+
+	test('ログインに成功したら、取得済みの intra ユーザー情報で同期する', async () => {
+		addUser('existing', 'tomoki_2307', { intraId: 1000 });
+		const state = await authorizeAndGetState();
+		loginCodeOf(await callbackUrl('authcode', state, state));
+		expect(syncCalls).toEqual([{ userId: 'existing', intraId: 1000 }]);
+
+		// 新規作成のときも同期する
+		intraUser = createIntraUser({ id: 2000, login: 'newcomer' });
+		const state2 = await authorizeAndGetState();
+		loginCodeOf(await callbackUrl('authcode', state2, state2));
+		expect(syncCalls).toHaveLength(2);
+		expect(syncCalls[1].intraId).toBe(2000);
+	});
+
+	test('同期に失敗してもログインは成功する', async () => {
+		syncFails = true;
+		const state = await authorizeAndGetState();
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
+		expect(syncCalls).toHaveLength(1);
+		expect((await service.consumeLoginCode(code, code))?.id).toBe(users.rows[0].id);
+	});
+
+	test('ログインに失敗したら同期しない', async () => {
+		intraUser = createIntraUser({ cursus_users: [] });
+		const state = await authorizeAndGetState();
+		await callbackUrl('authcode', state, state);
+		expect(syncCalls).toHaveLength(0);
 	});
 
 	describe('isPasswordLoginRestricted', () => {

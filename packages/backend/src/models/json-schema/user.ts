@@ -272,6 +272,34 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: true, optional: false,
 			example: '2018-03-12',
 		},
+		intra: {
+			type: 'object',
+			nullable: true, optional: false,
+			description: '42 intra の情報。intra と連携していないユーザーは null',
+			properties: {
+				login: {
+					type: 'string',
+					nullable: false, optional: false,
+					example: 'tomoki',
+				},
+				poolYearMonth: {
+					type: 'string',
+					nullable: true, optional: false,
+					description: 'ピシンの年月 (YYMM)',
+					example: '2307',
+				},
+				blackholedAt: {
+					type: 'string',
+					format: 'date-time',
+					nullable: true, optional: false,
+				},
+				paceDeadlineAt: {
+					type: 'string',
+					format: 'date-time',
+					nullable: true, optional: false,
+				},
+			},
+		},
 		lang: {
 			type: 'string',
 			nullable: true, optional: false,

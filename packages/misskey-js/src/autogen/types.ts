@@ -4100,6 +4100,20 @@ export type components = {
             location: string | null;
             /** @example 2018-03-12 */
             birthday: string | null;
+            /** @description 42 intra の情報。intra と連携していないユーザーは null */
+            intra: {
+                /** @example tomoki */
+                login: string;
+                /**
+                 * @description ピシンの年月 (YYMM)
+                 * @example 2307
+                 */
+                poolYearMonth: string | null;
+                /** Format: date-time */
+                blackholedAt: string | null;
+                /** Format: date-time */
+                paceDeadlineAt: string | null;
+            } | null;
             /** @example ja-JP */
             lang: string | null;
             fields: {
@@ -5572,6 +5586,8 @@ export type components = {
             maxFileSize: number;
             /** @enum {string} */
             federation: 'all' | 'specified' | 'none';
+            /** @description 42 intra でのログインが有効か */
+            intraLoginEnabled: boolean;
         };
         MetaDetailedOnly: {
             features?: {
@@ -12080,6 +12096,10 @@ export interface operations {
                         isHibernated: boolean;
                         lastActiveDate: string | null;
                         moderationNote: string;
+                        /** @description 42 intra のユーザー ID。intra と連携していないユーザーは null */
+                        intraId: number | null;
+                        /** @description 42 intra 連携が有効なときに、パスワード・パスキーでのログインを例外的に許可しているか */
+                        intraPasswordLoginAllowed: boolean;
                         signins: components['schemas']['Signin'][];
                         policies: components['schemas']['RolePolicies'];
                         roles: components['schemas']['Role'][];

@@ -449,6 +449,7 @@ export class WebhookTestService {
 			description: null,
 			location: null,
 			birthday: null,
+			intra: null,
 			lang: null,
 			fields: [],
 			verifiedLinks: [],

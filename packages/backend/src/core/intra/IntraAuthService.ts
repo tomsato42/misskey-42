@@ -17,6 +17,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
+import { IntraSyncService } from './IntraSyncService.js';
 import { buildIntraUsername, extractIntraProfile, isEligible } from './intra-user.js';
 import {
 	INTRA_LOGIN_CODE_TTL_SEC,
@@ -76,6 +77,7 @@ export class IntraAuthService {
 		private userProfilesRepository: UserProfilesRepository,
 
 		private intraApiService: IntraApiService,
+		private intraSyncService: IntraSyncService,
 		private signupService: SignupService,
 		private roleService: RoleService,
 		private loggerService: LoggerService,
@@ -315,10 +317,14 @@ export class IntraAuthService {
 
 	/**
 	 * intra でのログイン (新規作成・既存ユーザー) が成功した直後に呼ばれる。
-	 * ロールとプロフィールの同期はここから呼び出す想定 (未実装)
+	 * ロールとプロフィールを同期する。同期に失敗してもログインは続ける
 	 */
 	@bindThis
-	private async onLoggedIn(_context: IntraLoginContext): Promise<void> {
-		// 現時点では何もしない
+	private async onLoggedIn(context: IntraLoginContext): Promise<void> {
+		try {
+			await this.intraSyncService.syncUser(context.user.id, context.intraUser);
+		} catch (err) {
+			this.logger.error(`Failed to sync user ${context.user.id} with intra user ${context.profile.intraId}: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 }

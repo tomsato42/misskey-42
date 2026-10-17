@@ -71,6 +71,7 @@ describe('ユーザー', () => {
 			description: user.description,
 			location: user.location,
 			birthday: user.birthday,
+			intra: user.intra,
 			lang: user.lang,
 			fields: user.fields,
 			verifiedLinks: user.verifiedLinks,
@@ -334,6 +335,7 @@ describe('ユーザー', () => {
 		assert.strictEqual(response.description, null);
 		assert.strictEqual(response.location, null);
 		assert.strictEqual(response.birthday, null);
+		assert.strictEqual(response.intra, null);
 		assert.strictEqual(response.lang, null);
 		assert.deepStrictEqual(response.fields, []);
 		assert.deepStrictEqual(response.verifiedLinks, []);

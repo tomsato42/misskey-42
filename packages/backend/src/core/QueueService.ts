@@ -85,6 +85,15 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 	pattern: '0 4 * * *',
 }];
 
+/**
+ * 42 intra 連携が有効なときだけ登録する repeatable ジョブ
+ */
+const INTRA_REPEATABLE_SYSTEM_JOB_DEF = [{
+	name: 'syncIntraUsers',
+	// 毎時15分に起動
+	pattern: '15 * * * *',
+}];
+
 function parseRedisInfo(infoText: string): Record<string, string> {
 	const fields = infoText
 		.split('\n')
@@ -115,7 +124,11 @@ export class QueueService {
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 	) {
-		for (const def of REPEATABLE_SYSTEM_JOB_DEF) {
+		const repeatableJobDefs = this.config.intra != null
+			? [...REPEATABLE_SYSTEM_JOB_DEF, ...INTRA_REPEATABLE_SYSTEM_JOB_DEF]
+			: REPEATABLE_SYSTEM_JOB_DEF;
+
+		for (const def of repeatableJobDefs) {
 			this.systemQueue.upsertJobScheduler(def.name, {
 				pattern: def.pattern,
 				immediately: false,
@@ -134,9 +147,10 @@ export class QueueService {
 		}
 
 		// 古いバージョンで作成され現在使われなくなったrepeatableジョブをクリーンアップ
+		// (42 intra 連携を無効にした場合の syncIntraUsers もここで消える)
 		this.systemQueue.getJobSchedulers().then(schedulers => {
 			for (const scheduler of schedulers) {
-				if (!REPEATABLE_SYSTEM_JOB_DEF.some(def => def.name === scheduler.key)) {
+				if (!repeatableJobDefs.some(def => def.name === scheduler.key)) {
 					this.systemQueue.removeJobScheduler(scheduler.key);
 				}
 			}
