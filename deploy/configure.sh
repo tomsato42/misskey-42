@@ -141,6 +141,30 @@ if should_ask "db.pass (PostgreSQL の misskey42 ロールのパスワード)" "
 	echo "  db.pass を書き込みました。"
 fi
 
+# 2b. redis.pass (既存の Misskey と同じ Redis を使うので、既存の設定からコピーできる)
+EXISTING_CONFIG="$HOME/misskey/.config/default.yml"
+if should_ask "redis.pass (Redis のパスワード)" "$(get_value redis pass)"; then
+	copied=0
+	if [[ -r "$EXISTING_CONFIG" ]]; then
+		read -r -p "既存の Misskey の設定 ($EXISTING_CONFIG) から Redis のパスワードをコピーしますか? [Y/n] " answer
+		if [[ "$answer" != "n" && "$answer" != "N" ]]; then
+			if existing_redis_pass="$(EXISTING_CONFIG="$EXISTING_CONFIG" python3 -c 'import os, yaml; print((yaml.safe_load(open(os.environ["EXISTING_CONFIG"])).get("redis") or {}).get("pass") or "", end="")')" && [[ -n "$existing_redis_pass" ]]; then
+				NEW_VALUE="$existing_redis_pass" set_value redis pass
+				unset existing_redis_pass
+				copied=1
+				echo "  redis.pass を既存の設定からコピーしました。"
+			else
+				echo "  既存の設定に redis.pass が見つかりませんでした。"
+			fi
+		fi
+	fi
+	if (( ! copied )); then
+		read_secret_twice "redis.pass (Redis のパスワード)" 1
+		NEW_VALUE="$REPLY_VALUE" set_value redis pass
+		echo "  redis.pass を書き込みました。"
+	fi
+fi
+
 # 3. intra.clientId (秘密ではないので表示する)
 if should_ask "intra.clientId (42 intra のアプリの UID)" "$(get_value intra clientId)"; then
 	read_visible "intra.clientId (42 intra のアプリの UID)"

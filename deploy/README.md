@@ -202,6 +202,7 @@ VPS で `~/42times/configure.sh` を実行すると、下の表の値を対話�
 | --- | --- |
 | `setupPassword` | 最初の管理者を作るときのパスワード (新しく決める) |
 | `db.pass` | 手順 2 のパスワード |
+| `redis.pass` | VPS の Redis のパスワード (既存の Misskey の `~/misskey/.config/default.yml` の `redis.pass` と同じ。`configure.sh` はそこからコピーできる) |
 | `intra.clientId` / `intra.clientSecret` | 手順 8 の UID と SECRET |
 | `mediaGate.secret` | 手順 9 で作った値 |
 
