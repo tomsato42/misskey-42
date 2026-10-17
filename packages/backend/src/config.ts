@@ -129,6 +129,13 @@ type Source = {
 			enableQueryParamLogging?: boolean,
 		}
 	}
+
+	intra?: {
+		clientId: string;
+		clientSecret: string;
+		cursusId?: number;
+		apiBaseUrl?: string;
+	};
 };
 
 export type Config = {
@@ -230,6 +237,15 @@ export type Config = {
 	perUserNotificationsMaxCount: number;
 	deactivateAntennaThreshold: number;
 	pidFile: string;
+	/**
+	 * 42 intra 連携の設定。未設定のときは連携機能全体を無効にする
+	 */
+	intra: {
+		clientId: string;
+		clientSecret: string;
+		cursusId: number;
+		apiBaseUrl: string;
+	} | undefined;
 };
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
@@ -358,6 +374,13 @@ export function loadConfig(): Config {
 		deactivateAntennaThreshold: config.deactivateAntennaThreshold ?? (1000 * 60 * 60 * 24 * 7),
 		pidFile: config.pidFile,
 		logging: config.logging,
+		intra: config.intra ? {
+			clientId: config.intra.clientId,
+			clientSecret: config.intra.clientSecret,
+			// 21 = 42cursus
+			cursusId: config.intra.cursusId ?? 21,
+			apiBaseUrl: (config.intra.apiBaseUrl ?? 'https://api.intra.42.fr').replace(/\/+$/, ''),
+		} : undefined,
 	};
 }
 

@@ -278,6 +278,47 @@ export class MiUserProfile {
 		unlockedAt: number;
 	}[];
 
+	//#region 42 intra
+	// intra の数値ユーザー ID。login は再利用されることがあるため、本人の同一性はこの値で判定する
+	@Index({ unique: true })
+	@Column('integer', {
+		nullable: true,
+	})
+	public intraId: number | null;
+
+	@Column('varchar', {
+		length: 32, nullable: true,
+	})
+	public intraLogin: string | null;
+
+	// ピシン(入学選考)の年月 (YYMM)
+	@Column('varchar', {
+		length: 4, nullable: true,
+	})
+	public intraPoolYearMonth: string | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraBlackholedAt: Date | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraPaceDeadlineAt: Date | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraSyncedAt: Date | null;
+
+	// 管理者・モデレーター以外でもパスワードログインを例外的に許可するか
+	@Column('boolean', {
+		default: false,
+	})
+	public intraPasswordLoginAllowed: boolean;
+	//#endregion
+
 	//#region Denormalized fields
 	@Index()
 	@Column('varchar', {

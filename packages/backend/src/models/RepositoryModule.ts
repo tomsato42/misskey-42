@@ -36,6 +36,7 @@ import {
 	MiGalleryPost,
 	MiHashtag,
 	MiInstance,
+	MiIntraRole,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -544,6 +545,12 @@ const $reversiGamesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraRolesRepository: Provider = {
+	provide: DI.intraRolesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraRole).extend(miRepository as MiRepository<MiIntraRole>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -623,6 +630,7 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$intraRolesRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -701,6 +709,7 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$intraRolesRepository,
 	],
 })
 export class RepositoryModule {
