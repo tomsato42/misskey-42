@@ -29,6 +29,7 @@ import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { unisonReload } from '@/utility/unison-reload.js';
 import { isBirthday } from '@/utility/is-birthday.js';
+import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
 
 export async function mainBoot() {
 	const { isClientUpdated, lastVersion } = await common(async () => {
@@ -42,6 +43,9 @@ export async function mainBoot() {
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
 
+		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインならどの URL でもログイン画面だけを出す (?ui= などでも変えられない)
+		if (isIntraSigninOnly()) uiStyle = 'intraSignin';
+
 		let rootComponent: Component;
 		switch (uiStyle) {
 			case 'zen':
@@ -52,6 +56,9 @@ export async function mainBoot() {
 				break;
 			case 'visitor':
 				rootComponent = await import('@/ui/visitor.vue').then(x => x.default);
+				break;
+			case 'intraSignin':
+				rootComponent = await import('@/ui/intra-signin.vue').then(x => x.default);
 				break;
 			default:
 				rootComponent = await import('@/ui/universal.vue').then(x => x.default);

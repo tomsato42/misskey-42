@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.wrapper" data-testid="signin-page-password">
 	<div class="_gaps" :class="$style.root">
-		<div :class="$style.avatar" :style="{ backgroundImage: user ? `url('${user.avatarUrl}')` : undefined }"></div>
+		<div :class="$style.avatar" :style="{ backgroundImage: user.avatarUrl ? `url('${user.avatarUrl}')` : undefined }"></div>
 		<div :class="$style.welcomeBackMessage">
 			<I18n :src="i18n.ts.welcomeBackWithName" tag="span">
 				<template #name><Mfm :text="user.name ?? user.username" :plain="true"/></template>
@@ -20,7 +20,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<MkInput v-model="password" :placeholder="i18n.ts.password" type="password" autocomplete="current-password webauthn" :withPasswordToggle="true" required autofocus data-testid="signin-password">
 				<template #prefix><i class="ti ti-lock"></i></template>
-				<template #caption><button class="_textButton" type="button" @click="resetPassword">{{ i18n.ts.forgotPassword }}</button></template>
+				<!-- 42 intra 連携が有効なときは、未ログインではパスワードのリセットを申し込めない (backend が拒否する) -->
+				<template v-if="canRequestPasswordReset" #caption><button class="_textButton" type="button" @click="resetPassword">{{ i18n.ts.forgotPassword }}</button></template>
 			</MkInput>
 
 			<div v-if="needCaptcha">
@@ -38,6 +39,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts">
+import type * as Misskey from 'misskey-js';
+
 export type PwResponse = {
 	password: string;
 	captcha: {
@@ -48,22 +51,28 @@ export type PwResponse = {
 		testcaptchaResponse: string | null;
 	};
 };
+
+/**
+ * パスワード入力画面に表示するユーザー。
+ * 42 intra 連携が有効なときは未ログインでユーザー情報を取得できないので、ユーザー名だけのこともある
+ */
+export type SigninUser = Pick<Misskey.entities.UserDetailed, 'username'> & Partial<Pick<Misskey.entities.UserDetailed, 'name' | 'avatarUrl'>>;
 </script>
 
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, defineAsyncComponent } from 'vue';
-import * as Misskey from 'misskey-js';
 
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
+import { isIntraVisitor } from '@/utility/intra-visitor.js';
 
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkCaptcha from '@/components/MkCaptcha.vue';
 
 const props = defineProps<{
-	user: Misskey.entities.UserDetailed;
+	user: SigninUser;
 	needCaptcha: boolean;
 }>();
 
@@ -72,6 +81,8 @@ const emit = defineEmits<{
 }>();
 
 const password = ref('');
+
+const canRequestPasswordReset = !isIntraVisitor();
 
 const hCaptcha = useTemplateRef('hcaptcha');
 const mCaptcha = useTemplateRef('mcaptcha');

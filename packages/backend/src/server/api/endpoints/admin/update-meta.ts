@@ -10,6 +10,7 @@ import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
+import { INTRA_FIXED_META } from '@/core/intra/intra-visitor.js';
 import type { Config } from '@/config.js';
 
 export const meta = {
@@ -24,6 +25,12 @@ export const meta = {
 			message: 'Federation cannot be enabled while 42 intra integration is enabled.',
 			code: 'FEDERATION_LOCKED',
 			id: '7f052cc0-525d-4bcf-ae79-e799bc7eb525',
+		},
+
+		ugcVisibilityLocked: {
+			message: 'Contents cannot be shown to visitors while 42 intra integration is enabled.',
+			code: 'UGC_VISIBILITY_LOCKED',
+			id: 'db4053ee-d176-4688-9bd6-67606c57cc73',
 		},
 	},
 } as const;
@@ -258,6 +265,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 42 intra 連携が有効なときは学内限定のため、連合は無効で固定する
 			if (this.config.intra != null && ps.federation !== undefined && ps.federation !== 'none') {
 				throw new ApiError(meta.errors.federationLocked);
+			}
+
+			// 同じく、未ログインの訪問者にはユーザーが作成したコンテンツを見せない設定で固定する
+			if (this.config.intra != null && ps.ugcVisibilityForVisitor !== undefined && ps.ugcVisibilityForVisitor !== INTRA_FIXED_META.ugcVisibilityForVisitor) {
+				throw new ApiError(meta.errors.ugcVisibilityLocked);
 			}
 
 			const set = {} as Partial<MiMeta>;

@@ -158,16 +158,19 @@ export class ApiServerService {
 			}>('/intra/exchange', (request, reply) => this.intraAuthApiService.exchange(request, reply));
 		}
 
-		fastify.get('/v1/instance/peers', async (request, reply) => {
-			const instances = await this.instancesRepository.find({
-				select: { host: true },
-				where: {
-					suspensionState: 'none',
-				},
-			});
+		// 42 intra 連携が有効なときは連合しないので、既知のサーバーの一覧も出さない (下の /* で 404 になる)
+		if (this.config.intra == null) {
+			fastify.get('/v1/instance/peers', async (request, reply) => {
+				const instances = await this.instancesRepository.find({
+					select: { host: true },
+					where: {
+						suspensionState: 'none',
+					},
+				});
 
-			return instances.map(instance => instance.host);
-		});
+				return instances.map(instance => instance.host);
+			});
+		}
 
 		fastify.post<{ Params: { session: string; } }>('/miauth/:session/check', async (request, reply) => {
 			const token = await this.accessTokensRepository.findOneBy({

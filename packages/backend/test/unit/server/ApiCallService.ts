@@ -22,9 +22,9 @@ function createReply() {
 }
 
 /** APIサービスの依存関係を最小限の仮実装へ差し替えます。 */
-function createService() {
+function createService(config: object = {}, authenticated: [unknown, unknown] = [null, null]) {
 	const authenticateService = {
-		authenticate: vi.fn().mockResolvedValue([null, null]),
+		authenticate: vi.fn().mockResolvedValue(authenticated),
 	};
 	const telemetryService = {
 		startSpan: vi.fn((_name: string, callback: () => unknown) => callback()),
@@ -34,7 +34,7 @@ function createService() {
 
 	const service = new ApiCallService(
 		{} as never,
-		{} as never,
+		config as never,
 		{} as never,
 		authenticateService as never,
 		{} as never,
@@ -94,5 +94,79 @@ describe('ApiCallService structured error logging', () => {
 			envOption.quiet = previousQuiet;
 			logManager.setBackend(new PrettyConsoleBackend({ output: () => undefined }));
 		}
+	});
+});
+
+describe('ApiCallService 学内SNSモードの未ログイン制限', () => {
+	const intraConfig = {
+		intra: {
+			clientId: 'id',
+			clientSecret: 'secret',
+			cursusId: 21,
+			apiBaseUrl: 'https://api.intra.42.fr',
+		},
+	};
+
+	/** 指定した名前のエンドポイントへ POST リクエストを送ります。 */
+	async function callEndpoint(config: object, name: string, authenticated: [unknown, unknown] = [null, null]) {
+		const { service } = createService(config, authenticated);
+		try {
+			const reply = createReply();
+			const endpoint = {
+				name,
+				meta: {},
+				params: {},
+				exec: vi.fn().mockResolvedValue({ ok: true }),
+			};
+			const request = {
+				method: 'POST',
+				body: {},
+				query: {},
+				headers: {},
+				ip: '127.0.0.1',
+			};
+
+			await service.handleRequest(endpoint as never, request as never, reply as never);
+			return { reply, endpoint };
+		} finally {
+			service.dispose();
+		}
+	}
+
+	test('許可リストに無いエンドポイントは、requireCredential と同じ 401 で拒否する', async () => {
+		const { reply, endpoint } = await callEndpoint(intraConfig, 'notes/local-timeline');
+
+		expect(endpoint.exec).not.toHaveBeenCalled();
+		expect(reply.code).toHaveBeenCalledWith(401);
+		expect(reply.header).toHaveBeenCalledWith('WWW-Authenticate', 'Bearer realm="Misskey"');
+		expect(reply.send).toHaveBeenCalledWith({
+			error: expect.objectContaining({
+				code: 'CREDENTIAL_REQUIRED',
+				id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+			}),
+		});
+	});
+
+	test('許可リストにあるエンドポイント (meta) は、トークンなしでも呼び出せる', async () => {
+		const { reply, endpoint } = await callEndpoint(intraConfig, 'meta');
+
+		expect(endpoint.exec).toHaveBeenCalled();
+		expect(reply.code).not.toHaveBeenCalledWith(401);
+		expect(reply.send).toHaveBeenCalledWith({ ok: true });
+	});
+
+	test('ログインしていれば、許可リストに無いエンドポイントも呼び出せる', async () => {
+		const user = { id: 'user1', isSuspended: false };
+		const { reply, endpoint } = await callEndpoint(intraConfig, 'notes/local-timeline', [user, null]);
+
+		expect(endpoint.exec).toHaveBeenCalled();
+		expect(reply.send).toHaveBeenCalledWith({ ok: true });
+	});
+
+	test('intra 連携が無効なら、upstream と同じくトークンなしでも呼び出せる', async () => {
+		const { reply, endpoint } = await callEndpoint({}, 'notes/local-timeline');
+
+		expect(endpoint.exec).toHaveBeenCalled();
+		expect(reply.send).toHaveBeenCalledWith({ ok: true });
 	});
 });

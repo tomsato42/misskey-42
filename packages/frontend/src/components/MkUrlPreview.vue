@@ -95,6 +95,7 @@ import { transformPlayerUrl } from '@/utility/url-preview.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { maybeMakeRelative } from '@@/js/url.js';
+import { getUrlPreviewRequestInit } from '@/utility/intra-visitor.js';
 
 const props = withDefaults(defineProps<{
 	url: string;
@@ -148,7 +149,7 @@ if (requestUrl.hostname === 'music.youtube.com' && requestUrl.pathname.match('^/
 
 requestUrl.hash = '';
 
-window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`)
+window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`, getUrlPreviewRequestInit())
 	.then(res => {
 		if (!res.ok) {
 			if (_DEV_) {

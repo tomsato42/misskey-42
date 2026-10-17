@@ -31,6 +31,7 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
+import { isIntraVisitor } from '@/utility/intra-visitor.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
@@ -242,9 +243,12 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	}
 	//#endregion
 
-	try {
-		await fetchCustomEmojis();
-	} catch (err) { /* empty */ }
+	// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインでは絵文字の一覧を取得できない (backend が拒否する)
+	if (!isIntraVisitor()) {
+		try {
+			await fetchCustomEmojis();
+		} catch (err) { /* empty */ }
+	}
 
 	// analytics
 	fetchInstanceMetaPromise.then(async () => {

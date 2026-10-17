@@ -41,6 +41,7 @@ import { bindThis } from '@/decorators.js';
 import { FlashEntityService } from '@/core/entities/FlashEntityService.js';
 import { ReversiGameEntityService } from '@/core/entities/ReversiGameEntityService.js';
 import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntityService.js';
+import { isIntraMode } from '@/core/intra/intra-visitor.js';
 import { FeedService } from './FeedService.js';
 import { UrlPreviewService } from './UrlPreviewService.js';
 import { ClientLoggerService } from './ClientLoggerService.js';
@@ -205,6 +206,10 @@ export class ClientServerService {
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
 		const configUrl = new URL(this.config.url);
+
+		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインの訪問者にユーザーやコンテンツの情報を見せない。
+		// ここでは誰が見ているかを判別できないので、HTML へのメタ情報の埋め込み、フィード、埋め込みページなどを常に止める
+		const intraMode = isIntraMode(this.config);
 
 		fastify.addHook('onRequest', (request, reply, done) => {
 			// クリックジャッキング防止のためiFrameの中に入れられないようにする
@@ -450,6 +455,9 @@ export class ClientServerService {
 		fastify.get<{ Querystring: { url: string; lang: string; } }>('/url', (request, reply) => this.urlPreviewService.handle(request, reply));
 
 		const getFeed = async (acct: string) => {
+			// 学内SNSモードではフィードを出さない (404 にする)
+			if (intraMode) return null;
+
 			const { username, host } = Acct.parse(acct);
 			const user = await this.usersRepository.findOneBy({
 				usernameLower: username.toLowerCase(),
@@ -515,6 +523,8 @@ export class ClientServerService {
 		//#region SSR
 		// User
 		fastify.get<{ Params: { user: string; sub?: string; } }>('/@:user/:sub?', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const { username, host } = Acct.parse(request.params.user);
 			const user = await this.usersRepository.findOneBy({
 				usernameLower: username.toLowerCase(),
@@ -560,6 +570,12 @@ export class ClientServerService {
 		});
 
 		fastify.get<{ Params: { user: string; } }>('/users/:user', async (request, reply) => {
+			// リダイレクト先からユーザー ID に対応するユーザー名がわかってしまうので、学内SNSモードではリダイレクトしない
+			if (intraMode) {
+				reply.code(404);
+				return;
+			}
+
 			const user = await this.usersRepository.findOneBy({
 				id: request.params.user,
 				host: IsNull(),
@@ -579,6 +595,8 @@ export class ClientServerService {
 		// Note
 		fastify.get<{ Params: { note: string; } }>('/notes/:note', async (request, reply) => {
 			vary(reply.raw, 'Accept');
+
+			if (intraMode) return await renderBase(reply);
 
 			const note = await this.notesRepository.findOne({
 				where: {
@@ -621,6 +639,8 @@ export class ClientServerService {
 
 		// Page
 		fastify.get<{ Params: { user: string; page: string; } }>('/@:user/pages/:page', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const { username, host } = Acct.parse(request.params.user);
 			const user = await this.usersRepository.findOneBy({
 				usernameLower: username.toLowerCase(),
@@ -658,6 +678,8 @@ export class ClientServerService {
 
 		// Flash
 		fastify.get<{ Params: { id: string; } }>('/play/:id', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const flash = await this.flashsRepository.findOneBy({
 				id: request.params.id,
 			});
@@ -682,6 +704,8 @@ export class ClientServerService {
 
 		// Clip
 		fastify.get<{ Params: { clip: string; } }>('/clips/:clip', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const clip = await this.clipsRepository.findOneBy({
 				id: request.params.clip,
 			});
@@ -709,6 +733,8 @@ export class ClientServerService {
 
 		// Gallery post
 		fastify.get<{ Params: { post: string; } }>('/gallery/:post', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const post = await this.galleryPostsRepository.findOneBy({ id: request.params.post });
 
 			if (post) {
@@ -731,6 +757,8 @@ export class ClientServerService {
 
 		// Channel
 		fastify.get<{ Params: { channel: string; } }>('/channels/:channel', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const channel = await this.channelsRepository.findOneBy({
 				id: request.params.channel,
 			});
@@ -749,6 +777,8 @@ export class ClientServerService {
 
 		// Reversi game
 		fastify.get<{ Params: { game: string; } }>('/reversi/g/:game', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const game = await this.reversiGamesRepository.findOneBy({
 				id: request.params.game,
 			});
@@ -767,6 +797,8 @@ export class ClientServerService {
 
 		// 個別お知らせページ
 		fastify.get<{ Params: { announcementId: string; } }>('/announcements/:announcementId', async (request, reply) => {
+			if (intraMode) return await renderBase(reply);
+
 			const announcement = await this.announcementsRepository.findOneBy({
 				id: request.params.announcementId,
 				userId: IsNull(),
@@ -798,7 +830,16 @@ export class ClientServerService {
 		//#endregion
 
 		//#region embed pages
+		// 埋め込みページはログインせずに表示するものなので、学内SNSモードではすべて 404 にする
+		const rejectEmbedInIntraMode = (reply: FastifyReply): boolean => {
+			if (!intraMode) return false;
+			reply.code(404);
+			return true;
+		};
+
 		fastify.get<{ Params: { user: string; } }>('/embed/user-timeline/:user', async (request, reply) => {
+			if (rejectEmbedInIntraMode(reply)) return;
+
 			reply.removeHeader('X-Frame-Options');
 
 			const user = await this.usersRepository.findOneBy({
@@ -821,6 +862,8 @@ export class ClientServerService {
 		});
 
 		fastify.get<{ Params: { note: string; } }>('/embed/notes/:note', async (request, reply) => {
+			if (rejectEmbedInIntraMode(reply)) return;
+
 			reply.removeHeader('X-Frame-Options');
 
 			const note = await this.notesRepository.findOne({
@@ -851,6 +894,8 @@ export class ClientServerService {
 		});
 
 		fastify.get<{ Params: { clip: string; } }>('/embed/clips/:clip', async (request, reply) => {
+			if (rejectEmbedInIntraMode(reply)) return;
+
 			reply.removeHeader('X-Frame-Options');
 
 			const clip = await this.clipsRepository.findOneBy({
@@ -872,6 +917,8 @@ export class ClientServerService {
 		});
 
 		fastify.get('/embed/*', async (request, reply) => {
+			if (rejectEmbedInIntraMode(reply)) return;
+
 			reply.removeHeader('X-Frame-Options');
 
 			reply.header('Cache-Control', 'public, max-age=3600');
