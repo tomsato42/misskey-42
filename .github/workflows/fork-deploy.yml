@@ -1,0 +1,229 @@
+# misskey-42 (https://42times.kinachan.com) を VPS にデプロイするワークフロー。
+# upstream のワークフローと名前が衝突しないように fork- を付けている。
+#
+# 流れ:
+#   1. build:  Dockerfile からイメージを作り、GHCR (ghcr.io/tomsato42/misskey-42) に sha-<短いSHA> と main のタグで push する
+#   2. deploy: Tailscale で tailnet に入り、デプロイ専用の SSH 鍵で VPS に接続して deploy/deploy.sh を実行する
+#              (VPS 側の authorized_keys で強制コマンドにしているので、この鍵ではタグを渡すことしかできない)
+#   3. verify: 公開 URL に curl でアクセスし、学内SNSモードと画像の閲覧制限が効いていることを確かめる
+#
+# 必要な secret (environment `production` か、リポジトリの secret に登録する):
+#   - TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET: Tailscale の OAuth クライアント (タグ tag:ci)
+#   - DEPLOY_SSH_KEY: デプロイ専用の SSH 秘密鍵
+# 初回セットアップの手順は deploy/README.md を参照。
+
+name: Fork deploy (42times)
+
+on:
+  push:
+    branches:
+      - main
+    # イメージの中身に関係しない変更だけのときは走らせない。
+    # 後に書いたパターンが優先される (! は除外)。このワークフロー自身の変更では走らせる
+    paths:
+      - '**'
+      - '!deploy/**'
+      - '!cloudflare/**'
+      - '!.claude/**'
+      - '!.agents/**'
+      - '!.github/**'
+      - '.github/workflows/fork-deploy.yml'
+      - '!AGENTS.md'
+      - '!CLAUDE.md'
+  workflow_dispatch:
+
+# デプロイは常に 1 本だけにする。実行中のものはキャンセルせず、後から来たものを待たせる
+concurrency:
+  group: fork-deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/tomsato42/misskey-42
+  INSTANCE_URL: https://42times.kinachan.com
+  DEPLOY_HOST: <VPS の Tailscale IP>
+  DEPLOY_PORT: '<SSH のポート>'
+  DEPLOY_USER: misskey
+
+jobs:
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Decide image tag
+        id: tag
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.IMAGE_NAME }}:main
+          # source ラベルで GHCR のパッケージをこのリポジトリに紐付ける。
+          # deploy.sh は古いイメージを消すときにもこのラベルで絞り込む
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=fork-deploy
+          cache-to: type=gha,mode=max,scope=fork-deploy
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://42times.kinachan.com
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4.2.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Set up SSH key and known_hosts
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          (umask 077 && printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key)
+          # VPS のホスト公開鍵 (公開情報)。VPS の鍵を作り直したら更新する。
+          # 指紋: ED25519 SHA256:<指紋>
+          #       ECDSA   SHA256:<指紋>
+          cat > ~/.ssh/known_hosts <<'EOF'
+          [<VPS の Tailscale IP>]:<SSH のポート> ssh-ed25519 <ホスト公開鍵>
+          [<VPS の Tailscale IP>]:<SSH のポート> ecdsa-sha2-nistp256 <ホスト公開鍵>
+          EOF
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Wait until the VPS is reachable over Tailscale
+        run: |
+          for i in $(seq 1 12); do
+            if timeout 5 bash -c 'exec 3<>"/dev/tcp/${DEPLOY_HOST}/${DEPLOY_PORT}"' 2>/dev/null; then
+              echo "VPS の SSH ポートに接続できました"
+              exit 0
+            fi
+            echo "接続を待っています ($i/12)"
+            sleep 5
+          done
+          echo "::error::Tailscale 経由で VPS (${DEPLOY_HOST}:${DEPLOY_PORT}) に接続できません。Tailscale の ACL を確認してください"
+          exit 1
+
+      - name: Run deploy script on the VPS
+        env:
+          IMAGE_TAG: ${{ needs.build.outputs.tag }}
+        # authorized_keys の command= で deploy.sh が強制的に実行され、
+        # ここで渡した文字列 (イメージのタグ) は SSH_ORIGINAL_COMMAND として deploy.sh に届く
+        run: |
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=6 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "$IMAGE_TAG"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  verify:
+    name: Verify the public site
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check responses with curl
+        run: |
+          set -euo pipefail
+          failed=0
+          ok() { echo "OK: $*"; }
+          ng() { echo "::error::$*"; failed=1; }
+          # HTTP のステータスコードを出力する。接続できなかったときは 000。
+          # 一時的なエラー (接続失敗、502/503/504 など) のときだけ再試行する
+          curl_status() {
+            curl -sS --max-time 30 --retry 5 --retry-delay 10 --retry-connrefused \
+              -o "$1" -w '%{http_code}' "${@:2}" || true
+          }
+
+          # 1. /api/meta が 200 を返し、42 intra ログインが有効になっている
+          status=$(curl_status meta.json -X POST -H 'Content-Type: application/json' -d '{}' "$INSTANCE_URL/api/meta")
+          if [[ "$status" != 200 ]]; then
+            ng "POST /api/meta が $status を返しました (期待値 200)"
+          elif ! jq -e '.intraLoginEnabled == true' meta.json > /dev/null; then
+            ng "/api/meta の intraLoginEnabled が true ではありません"
+          else
+            ok "/api/meta は 200 で intraLoginEnabled: true"
+          fi
+
+          # 2. 未ログインではタイムラインを取得できない
+          status=$(curl_status ltl.json -X POST -H 'Content-Type: application/json' -d '{}' "$INSTANCE_URL/api/notes/local-timeline")
+          if [[ "$status" == 401 ]]; then
+            ok "未ログインの POST /api/notes/local-timeline は 401"
+          else
+            ng "未ログインの POST /api/notes/local-timeline が $status を返しました (期待値 401)"
+          fi
+
+          # 3. ユーザーページの HTML にユーザー情報のメタタグ (OGP など) を埋め込まない
+          status=$(curl_status user.html "$INSTANCE_URL/@admin")
+          if [[ "$status" != 200 ]]; then
+            ng "GET /@admin が $status を返しました (期待値 200)"
+          elif grep -q -E 'misskey:user-(id|username)|og:type" content="blog"' user.html; then
+            ng "/@admin の HTML にユーザー情報のメタタグが含まれています"
+          else
+            ok "/@admin の HTML にユーザー情報のメタタグは含まれない"
+          fi
+
+          # 4. R2 のファイル (Cloudflare Worker) は Cookie が無いと 401
+          status=$(curl_status media.txt "$INSTANCE_URL/media/files/deploy-check-nonexistent.webp")
+          if [[ "$status" == 401 ]]; then
+            ok "Cookie なしの /media/ は 401"
+          else
+            ng "Cookie なしの /media/ が $status を返しました (期待値 401。Worker のルートを確認してください)"
+          fi
+
+          # 5. Misskey 自身が返すファイル (/files/*) も Cookie が無いと 401
+          status=$(curl_status files.txt "$INSTANCE_URL/files/deploy-check-nonexistent")
+          if [[ "$status" == 401 ]]; then
+            ok "Cookie なしの /files/ は 401"
+          else
+            ng "Cookie なしの /files/ が $status を返しました (期待値 401。mediaGate の設定を確認してください)"
+          fi
+
+          exit "$failed"
