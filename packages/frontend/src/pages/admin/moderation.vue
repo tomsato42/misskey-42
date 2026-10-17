@@ -25,7 +25,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</SearchMarker>
 
 				<SearchMarker :keywords="['ugc', 'content', 'visibility', 'visitor', 'guest']">
-					<!-- 42 intra 連携が有効なときは「表示しない」で固定する (backend の update-meta もほかの値への変更を拒否する) -->
 					<MkSelect v-model="ugcVisibilityForVisitor" :items="ugcVisibilityForVisitorDef" :disabled="instance.intraLoginEnabled" @update:modelValue="onChange_ugcVisibilityForVisitor">
 						<template #label><SearchLabel>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor }}</SearchLabel></template>
 						<template #caption>

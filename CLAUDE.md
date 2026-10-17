@@ -30,3 +30,4 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - UserDetailed に項目を足すときは `WebhookTestService.ts` のダミー、`test/e2e/users.ts` の `userDetailedNotMe`、`packages/frontend/.storybook/fakes.ts` も更新する
 - モデレーションログ種別の追加は `backend/src/types.ts`・`misskey-js/src/consts.ts`・`ja-JP.yml` の `_moderationLogTypes`・`frontend/src/pages/admin/modlog.ModLog.vue` の 4 か所
 - `@bindThis` のメソッドはテストでインスタンスに代入できない (`Object.defineProperty` で差し替える)
+- `<SearchMarker>` の直下に HTML コメントを置くと、本番ビルドの create-search-index が `Unexpected EOF in comment` で失敗する (typecheck や dev では検出されない)。設定画面ではコメントを `<script>` 側に書く。本番ビルドの確認は `pnpm --filter icons-subsetter build` の後に `pnpm --filter frontend build`
