@@ -196,7 +196,7 @@ Worker が無いと、手順 15 のワークフローの verify ジョブが `/m
 
 ### 10. default.yml の秘密の値と権限 (ユーザー)
 
-VPS で `/home/misskey/42times/.config/default.yml` を開き、「ここに入れる」と書いた値をすべて書き換えます。
+VPS で `~/42times/configure.sh` を実行すると、下の表の値を対話形式で入力でき、mediaGate の secret の生成と権限の設定までまとめて行えます (`deploy/configure.sh` を手順 3 と同じ方法で置いておきます)。手で編集する場合は、`/home/misskey/42times/.config/default.yml` を開き、「ここに入れる」と書いた値をすべて書き換えます。
 
 | 項目 | 入れる値 |
 | --- | --- |
