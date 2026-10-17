@@ -32,6 +32,7 @@ import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
 import { isIntraVisitor } from '@/utility/intra-visitor.js';
+import { setAttachTokenToGetRequests } from '@/utility/misskey-api.js';
 import { setupMediaSession } from '@/utility/media-session.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
@@ -120,10 +121,14 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	await store.ready;
 	await deckStore.ready;
 
+	// instance は HTML に埋め込まれた meta で初期化済みなので、取得を待たずに設定できる
+	setAttachTokenToGetRequests(instance.intraLoginEnabled === true);
+
 	const fetchInstanceMetaPromise = fetchInstance();
 
 	fetchInstanceMetaPromise.then(() => {
 		miLocalStorage.setItem('v', instance.version);
+		setAttachTokenToGetRequests(instance.intraLoginEnabled === true);
 	});
 
 	//#region loginId
