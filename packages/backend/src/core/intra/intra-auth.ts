@@ -6,7 +6,7 @@
 // 42 intra の OAuth2 ログインで使う純粋関数群。
 // DI に依存しないので、ユニットテストから直接呼び出せる。
 
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { QueryFailedError } from 'typeorm';
 
 /**
@@ -45,6 +45,58 @@ export function generateIntraToken(): string {
  */
 export function isIntraToken(value: unknown): value is string {
 	return typeof value === 'string' && TOKEN_PATTERN.test(value);
+}
+
+/**
+ * 2 つの値が一致するかを定数時間で比較する。どちらかが {@link isIntraToken} の形式でなければ false
+ */
+export function isSameIntraToken(a: unknown, b: unknown): boolean {
+	if (!isIntraToken(a) || !isIntraToken(b)) return false;
+	// どちらも 43 文字の ASCII なので、バイト列の長さは常に等しい
+	return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
+}
+
+/**
+ * state をブラウザにも持たせる Cookie の名前。
+ * callback で Cookie とクエリの state を照合し、他人が始めたログインの callback を踏まされる攻撃 (login CSRF) を防ぐ
+ */
+export const INTRA_STATE_COOKIE_NAME = 'intra_state';
+const INTRA_STATE_COOKIE_PATH = '/api/intra/';
+
+function stateCookieAttributes(secure: boolean, maxAge: number): string {
+	return `Path=${INTRA_STATE_COOKIE_PATH}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
+}
+
+/**
+ * state を保存する Set-Cookie ヘッダーの値
+ */
+export function buildIntraStateCookie(state: string, secure: boolean): string {
+	return `${INTRA_STATE_COOKIE_NAME}=${state}; ${stateCookieAttributes(secure, INTRA_STATE_TTL_SEC)}`;
+}
+
+/**
+ * state の Cookie を消す Set-Cookie ヘッダーの値
+ */
+export function buildIntraStateCookieClear(secure: boolean): string {
+	return `${INTRA_STATE_COOKIE_NAME}=; ${stateCookieAttributes(secure, 0)}`;
+}
+
+/**
+ * Cookie ヘッダーから指定した名前の値を取り出す。無ければ null
+ */
+export function getCookieValue(cookieHeader: string | string[] | undefined, name: string): string | null {
+	if (cookieHeader == null) return null;
+	const headers = Array.isArray(cookieHeader) ? cookieHeader : [cookieHeader];
+	for (const header of headers) {
+		for (const pair of header.split(';')) {
+			const index = pair.indexOf('=');
+			if (index === -1) continue;
+			if (pair.slice(0, index).trim() === name) {
+				return pair.slice(index + 1).trim();
+			}
+		}
+	}
+	return null;
 }
 
 export function buildIntraRedirectUri(baseUrl: string): string {

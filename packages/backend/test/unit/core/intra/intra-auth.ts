@@ -6,12 +6,17 @@
 import { describe, expect, test } from 'vitest';
 import { QueryFailedError } from 'typeorm';
 import {
+	INTRA_STATE_COOKIE_NAME,
 	buildIntraAuthorizeUrl,
 	buildIntraCompleteUrl,
 	buildIntraErrorUrl,
 	buildIntraRedirectUri,
+	buildIntraStateCookie,
+	buildIntraStateCookieClear,
 	generateIntraToken,
+	getCookieValue,
 	isIntraToken,
+	isSameIntraToken,
 	isSignupConflictError,
 } from '@/core/intra/intra-auth.js';
 
@@ -36,6 +41,38 @@ describe('intra-auth', () => {
 			expect(isIntraToken('a'.repeat(44))).toBe(false);
 			expect(isIntraToken(`${'a'.repeat(42)}:`)).toBe(false);
 			expect(isIntraToken(`${'a'.repeat(42)}*`)).toBe(false);
+		});
+	});
+
+	test('isSameIntraToken', () => {
+		const a = generateIntraToken();
+		const b = generateIntraToken();
+		expect(isSameIntraToken(a, a)).toBe(true);
+		expect(isSameIntraToken(a, `${a}`)).toBe(true);
+		expect(isSameIntraToken(a, b)).toBe(false);
+		expect(isSameIntraToken(a, null)).toBe(false);
+		expect(isSameIntraToken(undefined, undefined)).toBe(false);
+		expect(isSameIntraToken('', '')).toBe(false);
+		expect(isSameIntraToken('x', 'x')).toBe(false);
+	});
+
+	describe('state の Cookie', () => {
+		test('保存する Set-Cookie', () => {
+			expect(buildIntraStateCookie('abc', true)).toBe(`${INTRA_STATE_COOKIE_NAME}=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax; Secure`);
+			expect(buildIntraStateCookie('abc', false)).toBe(`${INTRA_STATE_COOKIE_NAME}=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax`);
+		});
+
+		test('消す Set-Cookie', () => {
+			expect(buildIntraStateCookieClear(true)).toBe(`${INTRA_STATE_COOKIE_NAME}=; Path=/api/intra/; Max-Age=0; HttpOnly; SameSite=Lax; Secure`);
+		});
+
+		test('getCookieValue', () => {
+			expect(getCookieValue('a=1; intra_state=xyz; b=2', 'intra_state')).toBe('xyz');
+			expect(getCookieValue('intra_state=xyz', 'intra_state')).toBe('xyz');
+			expect(getCookieValue(['a=1', 'intra_state=xyz'], 'intra_state')).toBe('xyz');
+			expect(getCookieValue('x_intra_state=xyz; intra_state_x=abc', 'intra_state')).toBeNull();
+			expect(getCookieValue('a=1', 'intra_state')).toBeNull();
+			expect(getCookieValue(undefined, 'intra_state')).toBeNull();
 		});
 	});
 

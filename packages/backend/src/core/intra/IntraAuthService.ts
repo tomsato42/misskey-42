@@ -27,6 +27,7 @@ import {
 	buildIntraRedirectUri,
 	generateIntraToken,
 	isIntraToken,
+	isSameIntraToken,
 	isSignupConflictError,
 } from './intra-auth.js';
 import type { IntraAuthFailureReason } from './intra-auth.js';
@@ -110,30 +111,41 @@ export class IntraAuthService {
 	}
 
 	/**
-	 * state を発行し、42 の認可画面の URL を返す
+	 * state の Cookie に Secure 属性を付けるか
 	 */
 	@bindThis
-	public async createAuthorizeUrl(): Promise<string> {
+	public isSecureCookie(): boolean {
+		return this.config.url.startsWith('https://');
+	}
+
+	/**
+	 * state を発行し、42 の認可画面の URL を返す。
+	 * 呼び出し側は state をブラウザの Cookie にも保存すること (callback で照合する)
+	 */
+	@bindThis
+	public async createAuthorizeUrl(): Promise<{ url: string; state: string }> {
 		const intra = this.getIntraConfig();
 
 		const state = generateIntraToken();
 		await this.redisClient.set(`intra:state:${state}`, '1', 'EX', INTRA_STATE_TTL_SEC);
 
-		return buildIntraAuthorizeUrl({
+		const url = buildIntraAuthorizeUrl({
 			apiBaseUrl: intra.apiBaseUrl,
 			clientId: intra.clientId,
 			redirectUri: buildIntraRedirectUri(this.config.url),
 			state,
 		});
+		return { url, state };
 	}
 
 	/**
 	 * 42 からの callback を処理し、ブラウザのリダイレクト先を返す
+	 * @param cookieState authorize のときにブラウザの Cookie に保存した state
 	 */
 	@bindThis
-	public async handleCallback(code: unknown, state: unknown): Promise<string> {
+	public async handleCallback(code: unknown, state: unknown, cookieState: unknown): Promise<string> {
 		try {
-			const user = await this.authenticate(code, state);
+			const user = await this.authenticate(code, state, cookieState);
 
 			const loginCode = generateIntraToken();
 			await this.redisClient.set(`intra:login:${loginCode}`, user.id, 'EX', INTRA_LOGIN_CODE_TTL_SEC);
@@ -168,8 +180,13 @@ export class IntraAuthService {
 	}
 
 	@bindThis
-	private async authenticate(code: unknown, state: unknown): Promise<MiLocalUser> {
+	private async authenticate(code: unknown, state: unknown, cookieState: unknown): Promise<MiLocalUser> {
 		const intra = this.getIntraConfig();
+
+		// ログインを始めたブラウザと callback を開いたブラウザが同じであることを、Cookie の state で確かめる
+		if (!isSameIntraToken(state, cookieState)) {
+			throw new IntraAuthError('invalid_state', 'state does not match the cookie');
+		}
 
 		if (!isIntraToken(state) || await this.redisClient.getdel(`intra:state:${state}`) == null) {
 			throw new IntraAuthError('invalid_state', 'state is missing, expired or already used');

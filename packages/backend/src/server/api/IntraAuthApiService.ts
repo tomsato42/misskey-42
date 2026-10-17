@@ -9,7 +9,13 @@ import type { Config } from '@/config.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
 import { bindThis } from '@/decorators.js';
 import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
-import { buildIntraErrorUrl } from '@/core/intra/intra-auth.js';
+import {
+	INTRA_STATE_COOKIE_NAME,
+	buildIntraErrorUrl,
+	buildIntraStateCookie,
+	buildIntraStateCookieClear,
+	getCookieValue,
+} from '@/core/intra/intra-auth.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { IEndpointMeta } from './endpoints.js';
@@ -60,7 +66,9 @@ export class IntraAuthApiService {
 			return { error: rateLimitExceededError };
 		}
 
-		const url = await this.intraAuthService.createAuthorizeUrl();
+		const { url, state } = await this.intraAuthService.createAuthorizeUrl();
+		// @fastify/cookie は登録されていないため、既存箇所 (ClientServerService) と同様にヘッダーを直接設定する
+		reply.header('Set-Cookie', buildIntraStateCookie(state, this.intraAuthService.isSecureCookie()));
 		return reply.redirect(url, 302);
 	}
 
@@ -74,7 +82,10 @@ export class IntraAuthApiService {
 			return reply.redirect(buildIntraErrorUrl(this.config.url, 'intra_error'), 302);
 		}
 
-		const url = await this.intraAuthService.handleCallback(request.query.code, request.query.state);
+		const cookieState = getCookieValue(request.headers.cookie, INTRA_STATE_COOKIE_NAME);
+		const url = await this.intraAuthService.handleCallback(request.query.code, request.query.state, cookieState);
+		// state は使い捨てなので、成否にかかわらず Cookie を消す
+		reply.header('Set-Cookie', buildIntraStateCookieClear(this.intraAuthService.isSecureCookie()));
 		return reply.redirect(url, 302);
 	}
 
