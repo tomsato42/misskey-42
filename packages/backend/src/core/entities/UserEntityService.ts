@@ -543,8 +543,8 @@ export class UserEntityService implements OnModuleInit {
 				description: profile!.description,
 				location: profile!.location,
 				birthday: profile!.birthday,
-				// 数値の intraId は公開しない
-				intra: profile!.intraId != null && profile!.intraLogin != null ? {
+				// 数値の intraId は公開しない。ブラックホール期日などを学外に見せないため、未ログインの閲覧者には返さない
+				intra: meId != null && profile!.intraId != null && profile!.intraLogin != null ? {
 					login: profile!.intraLogin,
 					poolYearMonth: profile!.intraPoolYearMonth,
 					blackholedAt: profile!.intraBlackholedAt ? profile!.intraBlackholedAt.toISOString() : null,

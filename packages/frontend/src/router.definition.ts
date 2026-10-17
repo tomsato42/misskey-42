@@ -203,6 +203,13 @@ export const ROUTE_DEF = [{
 	path: '/signup-complete/:code',
 	component: page(() => import('@/pages/signup-complete.vue')),
 }, {
+	// 42 intra のログインから戻ってきたときのページ。失敗時は code が error になり、理由が reason に入る
+	path: '/intra-complete/:code',
+	component: page(() => import('@/pages/intra-complete.vue')),
+	query: {
+		reason: 'reason',
+	},
+}, {
 	path: '/verify-email/:code',
 	component: page(() => import('@/pages/verify-email.vue')),
 }, {

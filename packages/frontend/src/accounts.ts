@@ -16,6 +16,8 @@ import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import { $i } from '@/i.js';
 import { signout } from '@/signout.js';
+import { instance } from '@/instance.js';
+import { startIntraLogin } from '@/utility/intra-login.js';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -317,6 +319,12 @@ export async function getAccountMenu(opts: {
 			}, {
 				text: i18n.ts.createAccount,
 				action: () => {
+					// intra 連携が有効なときは通常の登録を受け付けないので、42 のログインへ移る (初回ログインでアカウントが作成される)
+					if (instance.intraLoginEnabled) {
+						startIntraLogin();
+						return;
+					}
+
 					getAccountWithSignupDialog().then(res => {
 						if (res != null) {
 							switchAccount(host, res.id);

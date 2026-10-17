@@ -4100,7 +4100,7 @@ export type components = {
             location: string | null;
             /** @example 2018-03-12 */
             birthday: string | null;
-            /** @description 42 intra の情報。intra と連携していないユーザーは null */
+            /** @description 42 intra の情報。intra と連携していないユーザーと、未ログインでの取得では null */
             intra: {
                 /** @example tomoki */
                 login: string;

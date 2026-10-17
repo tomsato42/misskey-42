@@ -24,6 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'resetPassword',
 					'unsetMfa',
 					'suspendRemoteInstance',
+					'updateIntraPasswordLoginAllowed',
 				].includes(log.type),
 				[$style.logRed]: [
 					'suspend',
@@ -84,6 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'deleteFlash'">: @{{ log.info.flashUserUsername }}</span>
 		<span v-else-if="log.type === 'deleteGalleryPost'">: @{{ log.info.postUserUsername }}</span>
 		<span v-else-if="log.type === 'deleteChatRoom'">: @{{ log.info.room.name }}</span>
+		<span v-else-if="log.type === 'updateIntraPasswordLoginAllowed'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 	</template>
 	<template #icon>
 		<i v-if="log.type === 'updateServerSettings'" class="ti ti-settings"></i>
@@ -129,6 +131,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<i v-else-if="log.type === 'deleteFlash'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'deleteGalleryPost'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'deleteChatRoom'" class="ti ti-trash"></i>
+		<i v-else-if="log.type === 'updateIntraPasswordLoginAllowed'" class="ti ti-password"></i>
 	</template>
 	<template #suffix>
 		<MkTime :time="log.createdAt"/>
@@ -215,6 +218,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.diff">
 				<CodeDiff :context="5" :hideHeader="true" :oldString="log.info.before ?? ''" :newString="log.info.after ?? ''" maxHeight="300px"/>
 			</div>
+		</template>
+		<template v-else-if="log.type === 'updateIntraPasswordLoginAllowed'">
+			<div>{{ i18n.ts.user }}: <MkA :to="`/admin/user/${log.info.userId}`" class="_link">@{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</MkA></div>
+			<div>{{ i18n.ts._intra.passwordLoginAllowed }}: {{ log.info.before ? i18n.ts.yes : i18n.ts.no }} <i class="ti ti-arrow-right"></i> {{ log.info.after ? i18n.ts.yes : i18n.ts.no }}</div>
 		</template>
 		<template v-else-if="log.type === 'updateProxyAccountDescription'">
 			<div :class="$style.diff">

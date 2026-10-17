@@ -13382,4 +13382,96 @@ export interface Locale extends ILocale {
          */
         "mfm": string;
     };
+    "_intra": {
+        /**
+         * 42 でログイン
+         */
+        "loginWithIntra": string;
+        /**
+         * 42 のアカウントで初めてログインすると、このサーバーのアカウントが自動で作成されます。
+         */
+        "autoSignupDescription": string;
+        /**
+         * 管理者ログイン
+         */
+        "passwordLogin": string;
+        /**
+         * 管理者・モデレーターと、パスワードでのログインを許可されたユーザーだけが使えます。
+         */
+        "passwordLoginDescription": string;
+        /**
+         * ログインしています
+         */
+        "loggingIn": string;
+        /**
+         * もう一度 42 でログイン
+         */
+        "loginAgain": string;
+        /**
+         * ログインを完了できませんでした。もう一度お試しください。
+         */
+        "exchangeFailed": string;
+        /**
+         * ログインに失敗しました。もう一度お試しください。
+         */
+        "unknownError": string;
+        "_errors": {
+            /**
+             * 42cursus 在籍者とスタッフだけが登録できます。
+             */
+            "notEligible": string;
+            /**
+             * アカウントが凍結されています。
+             */
+            "suspended": string;
+            /**
+             * ユーザー名が使用済みのため作成できません。管理者に連絡してください。
+             */
+            "usernameTaken": string;
+            /**
+             * ログインの有効期限が切れたか、別のタブで操作されました。もう一度お試しください。
+             */
+            "invalidState": string;
+            /**
+             * 42 との通信に失敗しました。時間をおいてお試しください。
+             */
+            "intraError": string;
+        };
+        /**
+         * 42 intra
+         */
+        "intraAccount": string;
+        /**
+         * 入学時期（ピシン）
+         */
+        "poolYearMonth": string;
+        /**
+         * ブラックホール
+         */
+        "blackholedAt": string;
+        /**
+         * ペース期日
+         */
+        "paceDeadlineAt": string;
+        /**
+         * 42 intra のユーザー ID
+         */
+        "intraId": string;
+        /**
+         * パスワードログインを許可
+         */
+        "passwordLoginAllowed": string;
+        /**
+         * 42 intra 連携が有効なときでも、このユーザーがパスワードやパスキーでログインできるようにします。管理者とモデレーターはこの設定に関係なくログインできます。
+         */
+        "passwordLoginAllowedDescription": string;
+        /**
+         * このユーザーにパスワードでのログインを許可しますか？
+         */
+        "allowPasswordLoginConfirm": string;
+        /**
+         * このユーザーのパスワードでのログインの許可を取り消しますか？
+         */
+        "disallowPasswordLoginConfirm": string;
+    };
 }

@@ -249,6 +249,27 @@ describe('UserEntityService', () => {
 			expect(actual.achievements).toEqual(achievements);
 		});
 
+		test('42 intra の情報はログインしている閲覧者にだけ返す', async () => {
+			const me = await createUser();
+			const who = await createUser({}, {
+				intraId: Math.floor(Math.random() * 1_000_000_000),
+				intraLogin: 'blobcat',
+				intraPoolYearMonth: '2307',
+				intraBlackholedAt: new Date('2030-01-01T00:00:00.000Z'),
+			});
+
+			const asSignedIn = await service.pack(who, me, { schema: 'UserDetailedNotMe' }) as any;
+			expect(asSignedIn.intra).toEqual({
+				login: 'blobcat',
+				poolYearMonth: '2307',
+				blackholedAt: '2030-01-01T00:00:00.000Z',
+				paceDeadlineAt: null,
+			});
+
+			const asAnonymous = await service.pack(who, null, { schema: 'UserDetailedNotMe' }) as any;
+			expect(asAnonymous.intra).toBeNull();
+		});
+
 		test('alsoKnownAs as string does not throw', async () => {
 			const me = await createUser();
 			const who = await createUser();

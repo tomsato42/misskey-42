@@ -275,7 +275,7 @@ export const packedUserDetailedNotMeOnlySchema = {
 		intra: {
 			type: 'object',
 			nullable: true, optional: false,
-			description: '42 intra の情報。intra と連携していないユーザーは null',
+			description: '42 intra の情報。intra と連携していないユーザーと、未ログインでの取得では null',
 			properties: {
 				login: {
 					type: 'string',

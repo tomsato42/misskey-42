@@ -48,6 +48,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #key>{{ i18n.ts.email }}</template>
 						<template #value><span class="_monospace">{{ info.email }}</span></template>
 					</MkKeyValue>
+					<template v-if="instance.intraLoginEnabled && user.host == null">
+						<MkKeyValue :copy="info.intraId != null ? String(info.intraId) : null" oneline>
+							<template #key>{{ i18n.ts._intra.intraId }}</template>
+							<template #value><span class="_monospace">{{ info.intraId ?? i18n.ts.none }}</span></template>
+						</MkKeyValue>
+						<MkKeyValue v-if="user.intra" oneline>
+							<template #key>{{ i18n.ts._intra.intraAccount }}</template>
+							<template #value><a :href="getIntraProfileUrl(user.intra.login)" target="_blank" rel="noopener" class="_link">{{ user.intra.login }} <i class="ti ti-external-link"></i></a></template>
+						</MkKeyValue>
+					</template>
 				</template>
 			</div>
 
@@ -95,6 +105,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<FormSection v-if="!isSystem">
 				<div class="_gaps">
 					<MkSwitch v-model="suspended" @update:modelValue="toggleSuspend">{{ i18n.ts.suspend }}</MkSwitch>
+
+					<MkSwitch v-if="instance.intraLoginEnabled && user.host == null" v-model="intraPasswordLoginAllowed" @update:modelValue="toggleIntraPasswordLoginAllowed">
+						{{ i18n.ts._intra.passwordLoginAllowed }}
+						<template #caption>{{ i18n.ts._intra.passwordLoginAllowedDescription }}</template>
+					</MkSwitch>
 
 					<div>
 						<MkButton v-if="user.host == null" inline style="margin-right: 8px;" @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
@@ -230,6 +245,8 @@ import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { ensureSignin, iAmAdmin, iAmModerator } from '@/i.js';
+import { instance } from '@/instance.js';
+import { getIntraProfileUrl } from '@/utility/intra-login.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import { Paginator } from '@/utility/paginator.js';
@@ -262,6 +279,7 @@ const ap = ref<Misskey.entities.ApGetResponse | null>(null);
 const moderator = ref(info.value.isModerator);
 const silenced = ref(info.value.isSilenced);
 const suspended = ref(info.value.isSuspended);
+const intraPasswordLoginAllowed = ref(info.value.intraPasswordLoginAllowed);
 const isSystem = ref(user.value.host == null && user.value.username.includes('.'));
 const moderationNote = ref(info.value.moderationNote);
 const filesPaginator = markRaw(new Paginator('admin/drive/files', {
@@ -318,6 +336,7 @@ async function refreshUser() {
 	moderator.value = info.value.isModerator;
 	silenced.value = info.value.isSilenced;
 	suspended.value = info.value.isSuspended;
+	intraPasswordLoginAllowed.value = info.value.intraPasswordLoginAllowed;
 	isSystem.value = user.value.host == null && user.value.username.includes('.');
 	moderationNote.value = info.value.moderationNote;
 }
@@ -370,6 +389,26 @@ async function toggleSuspend(v: boolean) {
 		await misskeyApi(v ? 'admin/suspend-user' : 'admin/unsuspend-user', { userId: user.value.id });
 		await refreshUser();
 	}
+}
+
+async function toggleIntraPasswordLoginAllowed(v: boolean) {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: v ? i18n.ts._intra.allowPasswordLoginConfirm : i18n.ts._intra.disallowPasswordLoginConfirm,
+	});
+	if (confirm.canceled) {
+		intraPasswordLoginAllowed.value = !v;
+		return;
+	}
+
+	try {
+		await os.apiWithDialog('admin/intra/set-password-login-allowed', { userId: user.value.id, allowed: v });
+	} catch {
+		// エラーはダイアログで表示済み。スイッチは変更前に戻す
+		intraPasswordLoginAllowed.value = !v;
+		return;
+	}
+	await refreshUser();
 }
 
 async function unsetUserAvatar() {
