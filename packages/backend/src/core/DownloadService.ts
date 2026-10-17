@@ -16,6 +16,12 @@ import { createTemp } from '@/misc/create-temp.js';
 import { StatusError } from '@/misc/status-error.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
+import {
+	MEDIA_GATE_SERVER_SUBJECT,
+	MEDIA_GATE_SERVER_TOKEN_TTL_SEC,
+	issueMediaGateToken,
+	nowUnixSec,
+} from '@/core/media-gate/media-gate.js';
 
 import { bindThis } from '@/decorators.js';
 
@@ -31,6 +37,18 @@ export class DownloadService {
 		private loggerService: LoggerService,
 	) {
 		this.logger = this.loggerService.getLogger('download');
+	}
+
+	/**
+	 * mediaGate が有効なとき、自分のホストのメディア (オブジェクトストレージを前にした Cloudflare Worker など) を
+	 * メディアプロキシなどから取得できるよう、短い期限のメディア用 Cookie を付ける。
+	 * got は別オリジンへのリダイレクトで Cookie ヘッダーを外すので、他のホストには送られない
+	 */
+	@bindThis
+	private getMediaGateHeaders(url: URL): Record<string, string> {
+		if (this.config.mediaGate == null || url.origin !== this.config.url) return {};
+		const { token } = issueMediaGateToken(this.config.mediaGate, MEDIA_GATE_SERVER_SUBJECT, nowUnixSec(), MEDIA_GATE_SERVER_TOKEN_TTL_SEC);
+		return { Cookie: `${this.config.mediaGate.cookieName}=${token}` };
 	}
 
 	@bindThis
@@ -49,6 +67,7 @@ export class DownloadService {
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
+				...this.getMediaGateHeaders(urlObj),
 			},
 			timeout: {
 				lookup: timeout,

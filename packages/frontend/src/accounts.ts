@@ -18,6 +18,7 @@ import { $i } from '@/i.js';
 import { signout } from '@/signout.js';
 import { instance } from '@/instance.js';
 import { startIntraLogin } from '@/utility/intra-login.js';
+import { refreshMediaSession } from '@/utility/media-session.js';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -184,6 +185,9 @@ export async function login(token: AccountWithToken['token'], redirect?: string)
 	}));
 
 	await addAccount(host, me, token);
+
+	// 再読み込みした後の画面で画像が表示されるよう、先に画像・添付ファイル用の Cookie を切り替えておく
+	await refreshMediaSession(token, me.id);
 
 	if (redirect) {
 		// 他のタブは再読み込みするだけ

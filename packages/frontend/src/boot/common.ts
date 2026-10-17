@@ -31,6 +31,7 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
+import { setupMediaSession } from '@/utility/media-session.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
@@ -239,6 +240,9 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		}
 
 		refreshCurrentAccount();
+
+		// 画像・添付ファイル用の Cookie (backend の mediaGate)。切れている可能性が高いときだけ、画像を読み込む前に更新を待つ
+		await setupMediaSession($i);
 	}
 	//#endregion
 

@@ -355,6 +355,24 @@ id: 'aidx'
 #  # 42 API のベース URL (省略時は https://api.intra.42.fr)
 #  #apiBaseUrl: https://api.intra.42.fr
 
+#   ┌──────────────────────────────┐
+#───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────
+
+# 画像・添付ファイルを、ログインしている人にだけ見せるための設定です。
+# このセクションがある場合、ログイン時に署名付きの Cookie を発行し、
+# /files/*・/proxy/*・/avatar/*・/identicon/*・/emoji/* は Cookie が無いと 401 を返します。
+# オブジェクトストレージ (R2 など) のファイルは、Cloudflare Worker (cloudflare/media-worker) が同じ Cookie を検証して返します。
+# このセクションが無い場合、この機能は全体が無効になります。
+# secret は秘密情報です。実際の値をリポジトリにコミットしないでください。
+# 32 文字以上のランダムな値にし、Worker の MEDIA_GATE_SECRET と同じ値にしてください (例: openssl rand -base64 48)。
+
+#mediaGate:
+#  secret: 'change-me-to-a-random-value-of-at-least-32-characters'
+#  # Cookie の名前 (省略時は mi_media_session)。Worker の COOKIE_NAME と同じ値にする
+#  #cookieName: mi_media_session
+#  # Cookie の有効期間 (秒、60〜2592000。省略時は 604800 = 7 日)
+#  #ttlSec: 604800
+
 #   ┌─────────────────────┐
 #───┘ Other configuration └─────────────────────────────────────
 

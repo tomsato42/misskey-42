@@ -136,6 +136,12 @@ type Source = {
 		cursusId?: number;
 		apiBaseUrl?: string;
 	};
+
+	mediaGate?: {
+		secret: string;
+		cookieName?: string;
+		ttlSec?: number;
+	};
 };
 
 export type Config = {
@@ -246,6 +252,19 @@ export type Config = {
 		cursusId: number;
 		apiBaseUrl: string;
 	} | undefined;
+	/**
+	 * 画像・添付ファイルをログインしている人にだけ見せるための署名付き Cookie の設定。
+	 * 未設定のときは機能全体を無効にし、upstream と同じ挙動にする
+	 */
+	mediaGate: MediaGateConfig | undefined;
+};
+
+export type MediaGateConfig = {
+	/** Cookie の署名に使う秘密の値。Cloudflare Worker の MEDIA_GATE_SECRET と同じ値にする */
+	secret: string;
+	cookieName: string;
+	/** Cookie の有効期間 (秒) */
+	ttlSec: number;
 };
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
@@ -381,7 +400,31 @@ export function loadConfig(): Config {
 			cursusId: config.intra.cursusId ?? 21,
 			apiBaseUrl: (config.intra.apiBaseUrl ?? 'https://api.intra.42.fr').replace(/\/+$/, ''),
 		} : undefined,
+		mediaGate: config.mediaGate ? convertMediaGateConfig(config.mediaGate) : undefined,
 	};
+}
+
+const MEDIA_GATE_MIN_SECRET_LENGTH = 32;
+const MEDIA_GATE_DEFAULT_TTL_SEC = 60 * 60 * 24 * 7;
+const MEDIA_GATE_MAX_TTL_SEC = 60 * 60 * 24 * 30;
+
+export function convertMediaGateConfig(source: NonNullable<Source['mediaGate']>): MediaGateConfig {
+	if (typeof source.secret !== 'string' || source.secret.length < MEDIA_GATE_MIN_SECRET_LENGTH) {
+		throw new Error(`mediaGate.secret must be a string of at least ${MEDIA_GATE_MIN_SECRET_LENGTH} characters.`);
+	}
+
+	const cookieName = source.cookieName ?? 'mi_media_session';
+	// Cookie 名に使えるのは RFC 6265 の token のうち、扱いやすい文字だけに限る
+	if (!/^[A-Za-z0-9_-]{1,64}$/.test(cookieName)) {
+		throw new Error('mediaGate.cookieName must consist of 1-64 characters of A-Z, a-z, 0-9, "_" and "-".');
+	}
+
+	const ttlSec = source.ttlSec ?? MEDIA_GATE_DEFAULT_TTL_SEC;
+	if (!Number.isInteger(ttlSec) || ttlSec < 60 || ttlSec > MEDIA_GATE_MAX_TTL_SEC) {
+		throw new Error(`mediaGate.ttlSec must be an integer between 60 and ${MEDIA_GATE_MAX_TTL_SEC}.`);
+	}
+
+	return { secret: source.secret, cookieName, ttlSec };
 }
 
 function tryCreateUrl(url: string) {

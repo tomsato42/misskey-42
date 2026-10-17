@@ -1,0 +1,143 @@
+# media-worker
+
+Misskey のドライブのファイルを非公開の R2 バケットに保存し、Misskey にログインしている人にだけ返す Cloudflare Worker です。
+
+## 動き
+
+1. Misskey は、ログインしたとき (`/api/signin-flow` などを通るとき) と、フロントエンドが `POST /api/media-session` を呼んだときに、署名付きの Cookie を発行します。Cookie はホスト限定 (Domain 属性なし)、`HttpOnly`、`SameSite=Lax`、`Path=/` です。
+2. Misskey は、オブジェクトストレージ (R2) に保存したファイルの URL を `https://42times.kinachan.com/media/{プレフィックス}/{ファイル名}` の形で作ります。
+3. この Worker はルート `42times.kinachan.com/media/*` に割り当てられ、Cookie の署名と期限を確かめてから、`/media/` より後ろを R2 のキーとしてバケットから返します。Cookie が無い、または無効なときは 401 を返します。
+
+Cookie の形式は `v1.{ユーザーID}.{有効期限(unix秒)}.{署名}` です。署名は、Misskey の `mediaGate.secret` と Worker の `MEDIA_GATE_SECRET` に同じ値を設定し、その値で計算した HMAC-SHA256 です。署名と検証の実装は `src/token.ts` と `packages/backend/src/core/media-gate/media-gate.ts` にあり、どちらも `test/token-vectors.json` のテストベクタでテストしています。
+
+Misskey 自身もメディアプロキシ (`/proxy/*`) でアバターや絵文字の画像を取得するときに、この Worker からファイルを取得します。このときは Misskey が有効期限 5 分の Cookie を自分で付けます。そのため、Misskey のサーバーから `https://42times.kinachan.com/media/...` に (Cloudflare 経由で) 接続できる必要があります。
+
+## 必要なもの
+
+- Node.js 22.18 以上 (テストで TypeScript をそのまま実行するため)
+- pnpm
+- Cloudflare のアカウント (kinachan.com のゾーンと、R2 バケット `42times-files` があるもの)
+
+このディレクトリは、リポジトリのルートとは別の pnpm workspace です (`pnpm-workspace.yaml` を置いています)。ルートで `pnpm install` しても、このディレクトリの依存パッケージはインストールされません。
+
+```sh
+cd cloudflare/media-worker
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+```
+
+## デプロイ手順
+
+### 1. 署名用の秘密の値を作る
+
+32 文字以上のランダムな値を作ります。例えば次のコマンドで作れます。
+
+```sh
+openssl rand -base64 48
+```
+
+この値は秘密情報です。リポジトリにはコミットしないでください。同じ値を、次の 2 か所に設定します。
+
+- Misskey の `.config/default.yml` の `mediaGate.secret`
+- この Worker の `MEDIA_GATE_SECRET` (手順 4)
+
+### 2. R2 の API トークンを発行する
+
+Misskey が R2 にファイルをアップロードするための API トークンを発行します。
+
+1. Cloudflare のダッシュボードで R2 を開き、API トークンの管理画面から新しいトークンを作成します。
+2. 権限は「オブジェクトの読み取りと書き込み」(Object Read & Write) にします。
+3. 対象のバケットは `42times-files` だけに限定します。
+4. 作成後に表示される Access Key ID と Secret Access Key を控えます。Secret Access Key は作成時にしか表示されません。
+5. S3 API のエンドポイント `https://{アカウントID}.r2.cloudflarestorage.com` のアカウント ID も控えます。
+
+バケットは公開しないでください。r2.dev の公開 URL とカスタムドメインは、どちらも無効のままにします。ファイルはこの Worker を通してだけ返します。
+
+### 3. Misskey を設定する
+
+`.config/default.yml` に `mediaGate` を追加し、Misskey を再起動します。設定例は `.config/example.yml` にあります。
+
+```yaml
+mediaGate:
+  secret: '手順 1 で作った値'
+  # Worker の COOKIE_NAME と同じ値にする (省略時は mi_media_session)
+  #cookieName: mi_media_session
+  # Cookie の有効期間 (秒。省略時は 604800 = 7 日)
+  #ttlSec: 604800
+```
+
+次に、Misskey のコントロールパネルの「オブジェクトストレージ」を次のように設定します。
+
+| 設定項目 | 値 |
+| --- | --- |
+| オブジェクトストレージを使用 | オン |
+| Base URL | `https://42times.kinachan.com/media` |
+| Bucket | `42times-files` |
+| Prefix | 任意 (例: `files`) |
+| Endpoint | `{アカウントID}.r2.cloudflarestorage.com` |
+| Region | `auto` |
+| Access key | 手順 2 の Access Key ID |
+| Secret key | 手順 2 の Secret Access Key |
+| SSLを使用する | オン |
+| Proxyを利用する | Misskey の設定 (`proxy`) で HTTP プロキシを使っていなければ、どちらでもよい |
+| アップロード時に'public-read'を設定する | オフ |
+| s3ForcePathStyle | オン |
+
+Prefix を `files` にした場合、ファイルの URL は `https://42times.kinachan.com/media/files/{UUID}.webp` になり、Worker は `files/{UUID}.webp` を R2 のキーとして読みます。
+
+「アップロード時に'public-read'を設定する」は、R2 では ACL を使わないので必要ありません。オンにしたときに R2 がこの指定を無視するのかエラーにするのかは確かめていないため、オフにしてください。
+
+### 4. Worker をデプロイする
+
+```sh
+cd cloudflare/media-worker
+pnpm exec wrangler login
+pnpm exec wrangler secret put MEDIA_GATE_SECRET   # 手順 1 の値を入力する
+pnpm exec wrangler deploy
+```
+
+`wrangler.jsonc` には次の内容を設定しています。
+
+- R2 バインディング `MEDIA_BUCKET` (バケット `42times-files`)
+- ルート `42times.kinachan.com/media/*` (ゾーン `kinachan.com`)
+- 変数 `COOKIE_NAME` (Misskey の `mediaGate.cookieName` と同じ値にする) と `PUBLIC_KEYS`
+
+`MEDIA_GATE_SECRET` が未設定、または 32 文字未満のときは、Worker はすべてのリクエストに 500 を返します。
+
+### 5. Cloudflare 側の設定を確かめる
+
+- DNS の `42times` のレコードで、プロキシが有効 (オレンジの雲) になっていること。プロキシが無効だと Worker のルートが動きません。
+- Workers のルート `42times.kinachan.com/media/*` が kinachan.com のゾーンで有効になっていること (ダッシュボードの Workers Routes で確認できます)。このパスへのリクエストは VPS の nginx には届きません。
+- キャッシュのルールで `/media/*` を強制的にキャッシュしていないこと。Worker の応答は `Cache-Control: private` です。
+
+## ログイン画面に出す画像 (PUBLIC_KEYS)
+
+ログインしていない人には、R2 のファイルは 401 になります。インスタンスのアイコンやバナーをドライブにアップロードして設定すると、ログイン画面ではそれらが表示されません。
+
+この場合は、`wrangler.jsonc` の `PUBLIC_KEYS` にそのファイルの R2 のキー (URL の `/media/` より後ろ) をカンマ区切りで指定してデプロイし直します。指定したキーは Cookie なしで返し、`Cache-Control: public, max-age=86400` を付けます。
+
+```jsonc
+"PUBLIC_KEYS": "files/0f3a2b4c-1111-2222-3333-444455556666.png,files/aaaa....webp"
+```
+
+別の方法として、アイコンを `/static-assets/` などの静的なファイルや外部の URL にしても構いません。
+
+## 応答
+
+| 状況 | ステータス |
+| --- | --- |
+| GET・HEAD 以外のメソッド | 405 |
+| `/media/` の後ろが空、`..`・`.`・空のセグメント、制御文字、バックスラッシュを含む | 400 |
+| Cookie が無い・署名が違う・期限切れ (`PUBLIC_KEYS` のキーを除く) | 401 (`Cache-Control: no-store`) |
+| キーが存在しない | 404 |
+| `If-None-Match` が ETag と一致 | 304 |
+| `Range` リクエスト | 206 (満たせない範囲なら 416) |
+
+ファイルを返すときは、Misskey がアップロード時に保存した `Content-Type` と `Content-Disposition` を使います。`Content-Type` がブラウザで安全に表示できる形式 (Misskey の `FILE_TYPE_BROWSERSAFE`) でなければ、`application/octet-stream` にします。Misskey のファイル配信と同じ `Content-Security-Policy` と `X-Content-Type-Options: nosniff` も付けます。
+
+## 運用上の注意
+
+- Cookie は有効期限まで使えます。ログアウトしたり、アカウントが凍結されたりしても、すでに発行した Cookie は期限 (既定で 7 日) まで有効です。すべての Cookie をすぐに無効にしたいときは、Misskey と Worker の両方で秘密の値を新しくします。
+- 秘密の値を変えるときは、Misskey の `mediaGate.secret` と Worker の `MEDIA_GATE_SECRET` を続けて更新してください。片方だけを変えている間は、画像が表示されません。
+- ローカルストレージ (オブジェクトストレージを使わない設定) のファイルは、この Worker ではなく Misskey の `/files/*` が返します。`mediaGate` を設定していれば、こちらも同じ Cookie で制限されます。
