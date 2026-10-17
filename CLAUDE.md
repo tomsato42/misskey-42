@@ -8,7 +8,25 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 
 ## このフォーク (misskey-42) 固有の補足
 
-- 42 intra 連携の設定は `packages/backend/src/config.ts` の `intra` セクション。未設定なら `config.intra` は `undefined` になり、連携機能全体を無効にする (upstream の e2e を壊さないため)
-- 42 API まわりは `packages/backend/src/core/intra/` に置く。`intra-user.ts` は DI 不要の純粋関数、`IntraApiService.ts` は HTTP クライアント (CoreModule 登録済)
-- 新しい worktree で `pnpm --filter backend typecheck` を通すには、先に `pnpm --filter misskey-js --filter misskey-reversi --filter i18n build` が必要
-- DB 不要のユニットテストは `.config/test.yml` 無しでも、`packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>` として単体実行できる
+42 intra ログイン専用の学内SNS (`https://42times.kinachan.com`)。ベースは upstream tag 2026.10.0。リモートは `origin` = tomsato42/misskey-42 (private)、`upstream` = misskey-dev/misskey (push 無効)。`gh` は `-R tomsato42/misskey-42` を付けるか `gh repo set-default` 済みの状態で使う (付けないと upstream を見ることがある)。
+
+### 機能の場所とスイッチ
+- `config.intra` (`packages/backend/src/config.ts`) があると「学内SNSモード」。無ければ upstream と同じ挙動 (upstream の e2e を壊さないため、制限はすべてこの条件の内側に置く)。フロントは meta の `intraLoginEnabled` で判定する
+- 42 API・ログイン・同期は `packages/backend/src/core/intra/`。`intra-*.ts` は DI 不要の純粋関数、`Intra*Service.ts` はサービス。ルートは `/api/intra/authorize`・`callback`・`exchange`
+- 学内SNSモードでは `federation` と `ugcVisibilityForVisitor` を `'none'` に固定 (`intra-visitor.ts` の `INTRA_FIXED_META`、update-meta でも拒否)。未ログインの API は許可リスト (`INTRA_VISITOR_ALLOWED_ENDPOINTS`) 以外 401
+- 画像の保護は `config.mediaGate` (署名付き Cookie)。backend は `src/core/media-gate/` と `src/server/media-gate-hooks.ts`、R2 からの配信は `cloudflare/media-worker/` (ルートとは別の pnpm workspace。トークン形式を変えるときは backend・Worker・`test/token-vectors.json` を同時に更新)
+- `/api/intra/exchange` と `/api/media-session` は Cookie を使うので、フロントは misskeyApi (credentials: 'omit') ではなく `fetch(..., { credentials: 'same-origin' })` で呼ぶ
+- 本番デプロイは `.github/workflows/fork-deploy.yml` と `deploy/` (手順は `deploy/README.md`)
+
+### ローカル環境 (Windows)
+- Node / pnpm は PATH に無い。`export PATH="/c/Users/windows11/AppData/Local/misskey-42-tools/node-v26.4.0-win-x64:/c/Users/windows11/AppData/Local/misskey-42-tools/pnpm:$PATH"`
+- Docker・PostgreSQL・Redis は無い。e2e と check-migrations は検証用 PR (tomsato42/misskey-42#1、main → ci-base、マージしない) の GitHub Actions で確認する
+- 新しい worktree では `pnpm install --frozen-lockfile` の後に `pnpm --filter misskey-js --filter misskey-reversi --filter i18n --filter misskey-bubble-game build` が必要 (無いと typecheck が通らない)
+- `pnpm build-misskey-js-with-types` には `.config/default.yml` が必要。`cp .config/example.yml .config/default.yml` で用意し、コミットしない
+- DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
+
+### 変更時の注意
+- `locales/ja-JP.yml` を変えたら `packages/i18n/src/autogen/locale.ts` (git 管理) も再生成してコミットする
+- UserDetailed に項目を足すときは `WebhookTestService.ts` のダミー、`test/e2e/users.ts` の `userDetailedNotMe`、`packages/frontend/.storybook/fakes.ts` も更新する
+- モデレーションログ種別の追加は `backend/src/types.ts`・`misskey-js/src/consts.ts`・`ja-JP.yml` の `_moderationLogTypes`・`frontend/src/pages/admin/modlog.ModLog.vue` の 4 か所
+- `@bindThis` のメソッドはテストでインスタンスに代入できない (`Object.defineProperty` で差し替える)
