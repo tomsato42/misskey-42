@@ -1,0 +1,302 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import { Inject, Injectable } from '@nestjs/common';
+import * as Redis from 'ioredis';
+import { IsNull } from 'typeorm';
+import { DI } from '@/di-symbols.js';
+import type { Config } from '@/config.js';
+import type { MiMeta, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { MiLocalUser } from '@/models/User.js';
+import type { MiUserProfile } from '@/models/UserProfile.js';
+import { SignupService } from '@/core/SignupService.js';
+import { RoleService } from '@/core/RoleService.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import { bindThis } from '@/decorators.js';
+import type Logger from '@/logger.js';
+import { IntraApiService } from './IntraApiService.js';
+import { buildIntraUsername, extractIntraProfile, isEligible } from './intra-user.js';
+import {
+	INTRA_LOGIN_CODE_TTL_SEC,
+	INTRA_STATE_TTL_SEC,
+	buildIntraAuthorizeUrl,
+	buildIntraCompleteUrl,
+	buildIntraErrorUrl,
+	buildIntraRedirectUri,
+	generateIntraToken,
+	isIntraToken,
+	isSignupConflictError,
+} from './intra-auth.js';
+import type { IntraAuthFailureReason } from './intra-auth.js';
+import type { IntraProfile, IntraUser } from './intra-user.js';
+
+type IntraConfig = NonNullable<Config['intra']>;
+
+/** 42 から受け取る認可コードの長さの上限。実際の値はこれよりずっと短い */
+const MAX_AUTHORIZATION_CODE_LENGTH = 1024;
+
+class IntraAuthError extends Error {
+	constructor(public reason: IntraAuthFailureReason, message: string) {
+		super(message);
+	}
+}
+
+/**
+ * intra でのログインが成功したときの情報。後続の処理 (ロールとプロフィールの同期など) に渡す
+ */
+export type IntraLoginContext = {
+	user: MiLocalUser;
+	intraUser: IntraUser;
+	profile: IntraProfile;
+	/** この callback でユーザーを新規作成したか */
+	created: boolean;
+};
+
+@Injectable()
+export class IntraAuthService {
+	private logger: Logger;
+
+	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
+		@Inject(DI.meta)
+		private meta: MiMeta,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
+		private intraApiService: IntraApiService,
+		private signupService: SignupService,
+		private roleService: RoleService,
+		private loggerService: LoggerService,
+	) {
+		this.logger = this.loggerService.getLogger('intra-auth');
+	}
+
+	/**
+	 * 42 intra 連携が有効か。無効のときは upstream と同じ挙動にする
+	 */
+	@bindThis
+	public isEnabled(): boolean {
+		return this.config.intra != null;
+	}
+
+	@bindThis
+	private getIntraConfig(): IntraConfig {
+		if (this.config.intra == null) {
+			throw new Error('42 intra integration is not configured');
+		}
+		return this.config.intra;
+	}
+
+	/**
+	 * パスワード・パスキーでのログインを制限すべきユーザーか。
+	 * 連携が有効で、モデレーター (管理者を含む) でも例外フラグ付きでもなければ true
+	 */
+	@bindThis
+	public async isPasswordLoginRestricted(user: MiLocalUser, profile: Pick<MiUserProfile, 'intraPasswordLoginAllowed'>): Promise<boolean> {
+		if (!this.isEnabled()) return false;
+		if (profile.intraPasswordLoginAllowed) return false;
+		return !(await this.roleService.isModerator(user));
+	}
+
+	/**
+	 * state を発行し、42 の認可画面の URL を返す
+	 */
+	@bindThis
+	public async createAuthorizeUrl(): Promise<string> {
+		const intra = this.getIntraConfig();
+
+		const state = generateIntraToken();
+		await this.redisClient.set(`intra:state:${state}`, '1', 'EX', INTRA_STATE_TTL_SEC);
+
+		return buildIntraAuthorizeUrl({
+			apiBaseUrl: intra.apiBaseUrl,
+			clientId: intra.clientId,
+			redirectUri: buildIntraRedirectUri(this.config.url),
+			state,
+		});
+	}
+
+	/**
+	 * 42 からの callback を処理し、ブラウザのリダイレクト先を返す
+	 */
+	@bindThis
+	public async handleCallback(code: unknown, state: unknown): Promise<string> {
+		try {
+			const user = await this.authenticate(code, state);
+
+			const loginCode = generateIntraToken();
+			await this.redisClient.set(`intra:login:${loginCode}`, user.id, 'EX', INTRA_LOGIN_CODE_TTL_SEC);
+
+			return buildIntraCompleteUrl(this.config.url, loginCode);
+		} catch (err) {
+			if (err instanceof IntraAuthError) {
+				this.logger.info(`Rejected intra login (${err.reason}): ${err.message}`);
+				return buildIntraErrorUrl(this.config.url, err.reason);
+			}
+
+			this.logger.error(`Unexpected error while handling intra callback: ${err instanceof Error ? err.message : String(err)}`);
+			return buildIntraErrorUrl(this.config.url, 'intra_error');
+		}
+	}
+
+	/**
+	 * ログイン用の使い捨てコードを消費し、ログインさせるユーザーを返す。無効なコードなら null
+	 */
+	@bindThis
+	public async consumeLoginCode(code: unknown): Promise<MiLocalUser | null> {
+		if (!isIntraToken(code)) return null;
+
+		const userId = await this.redisClient.getdel(`intra:login:${code}`);
+		if (userId == null) return null;
+
+		const user = await this.usersRepository.findOneBy({ id: userId, host: IsNull() }) as MiLocalUser | null;
+		// コードの発行からの間に凍結・削除された場合はログインさせない
+		if (user == null || user.isSuspended || user.isDeleted) return null;
+
+		return user;
+	}
+
+	@bindThis
+	private async authenticate(code: unknown, state: unknown): Promise<MiLocalUser> {
+		const intra = this.getIntraConfig();
+
+		if (!isIntraToken(state) || await this.redisClient.getdel(`intra:state:${state}`) == null) {
+			throw new IntraAuthError('invalid_state', 'state is missing, expired or already used');
+		}
+
+		// 42 の認可画面でユーザーが拒否した場合などは code が無い
+		if (typeof code !== 'string' || code === '' || code.length > MAX_AUTHORIZATION_CODE_LENGTH) {
+			throw new IntraAuthError('intra_error', 'authorization code is missing');
+		}
+
+		if (this.meta.rootUserId == null) {
+			// SignupService は最初に作成したユーザーを root (管理者) にするため、初期セットアップ前は intra でのログインを受け付けない
+			throw new IntraAuthError('intra_error', 'initial setup has not been completed');
+		}
+
+		const intraUser = await this.fetchIntraUser(code);
+
+		if (!isEligible(intraUser, intra.cursusId)) {
+			throw new IntraAuthError('not_eligible', `intra user ${intraUser.id} is not eligible`);
+		}
+
+		const profile = extractIntraProfile(intraUser, intra.cursusId);
+
+		const existing = await this.findUserByIntraId(profile.intraId);
+		if (existing != null) {
+			return await this.loginExistingUser(existing, intraUser, profile);
+		}
+
+		return await this.createUser(intraUser, profile);
+	}
+
+	@bindThis
+	private async fetchIntraUser(code: string): Promise<IntraUser> {
+		let intraUser: IntraUser;
+		try {
+			const token = await this.intraApiService.exchangeCode(code, buildIntraRedirectUri(this.config.url));
+			if (typeof token !== 'string' || token === '') {
+				throw new Error('token response does not contain access_token');
+			}
+			intraUser = await this.intraApiService.getMe(token);
+		} catch (err) {
+			// 例外のメッセージにトークンや client secret は含まれない (HttpRequestService のエラーはステータスか接続エラーの内容のみ)
+			throw new IntraAuthError('intra_error', `failed to fetch intra user: ${err instanceof Error ? err.message : String(err)}`);
+		}
+
+		if (intraUser == null || typeof intraUser.id !== 'number' || typeof intraUser.login !== 'string') {
+			throw new IntraAuthError('intra_error', 'unexpected response from /v2/me');
+		}
+
+		return intraUser;
+	}
+
+	@bindThis
+	private async findUserByIntraId(intraId: number): Promise<MiLocalUser | null> {
+		const profile = await this.userProfilesRepository.findOneBy({ intraId });
+		if (profile == null) return null;
+
+		const user = await this.usersRepository.findOneBy({ id: profile.userId, host: IsNull() }) as MiLocalUser | null;
+		if (user == null) {
+			throw new Error(`user profile with intraId ${intraId} has no local user`);
+		}
+		return user;
+	}
+
+	@bindThis
+	private async loginExistingUser(user: MiLocalUser, intraUser: IntraUser, profile: IntraProfile): Promise<MiLocalUser> {
+		if (user.isSuspended) {
+			throw new IntraAuthError('suspended', `user ${user.id} is suspended`);
+		}
+		if (user.isDeleted) {
+			// 削除済みのアカウントには intraId が残るため再登録もできない。管理者の対応が必要
+			throw new IntraAuthError('intra_error', `user ${user.id} has been deleted`);
+		}
+
+		await this.userProfilesRepository.update({ userId: user.id }, {
+			intraLogin: profile.login,
+			intraPoolYearMonth: profile.poolYearMonth,
+			intraBlackholedAt: profile.blackholedAt,
+			intraPaceDeadlineAt: profile.paceDeadlineAt,
+		});
+
+		await this.onLoggedIn({ user, intraUser, profile, created: false });
+		return user;
+	}
+
+	@bindThis
+	private async createUser(intraUser: IntraUser, profile: IntraProfile): Promise<MiLocalUser> {
+		const username = buildIntraUsername(profile.login, profile.poolYearMonth, intraUser.created_at);
+
+		let user: MiLocalUser;
+		try {
+			const { account } = await this.signupService.signup({
+				username,
+				password: null,
+				intraProfile: {
+					intraId: profile.intraId,
+					intraLogin: profile.login,
+					intraPoolYearMonth: profile.poolYearMonth,
+					intraBlackholedAt: profile.blackholedAt,
+					intraPaceDeadlineAt: profile.paceDeadlineAt,
+				},
+			});
+			user = account as MiLocalUser;
+		} catch (err) {
+			if (!isSignupConflictError(err)) throw err;
+
+			// 同じ intra ユーザーの callback が同時に来た場合は、先に作成された方でログインさせる
+			const concurrent = await this.findUserByIntraId(profile.intraId);
+			if (concurrent != null) {
+				return await this.loginExistingUser(concurrent, intraUser, profile);
+			}
+
+			throw new IntraAuthError('username_taken', `username ${username} is already taken (intra user ${profile.intraId})`);
+		}
+
+		this.logger.info(`Created user ${user.id} (@${username}) for intra user ${profile.intraId}`);
+
+		await this.onLoggedIn({ user, intraUser, profile, created: true });
+		return user;
+	}
+
+	/**
+	 * intra でのログイン (新規作成・既存ユーザー) が成功した直後に呼ばれる。
+	 * ロールとプロフィールの同期はここから呼び出す想定 (未実装)
+	 */
+	@bindThis
+	private async onLoggedIn(_context: IntraLoginContext): Promise<void> {
+		// 現時点では何もしない
+	}
+}

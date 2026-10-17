@@ -9,6 +9,8 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { ApiError } from '@/server/api/error.js';
+import type { Config } from '@/config.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -16,6 +18,14 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:meta',
+
+	errors: {
+		federationLocked: {
+			message: 'Federation cannot be enabled while 42 intra integration is enabled.',
+			code: 'FEDERATION_LOCKED',
+			id: '7f052cc0-525d-4bcf-ae79-e799bc7eb525',
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -235,6 +245,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
 
@@ -242,6 +255,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private moderationLogService: ModerationLogService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42 intra 連携が有効なときは学内限定のため、連合は無効で固定する
+			if (this.config.intra != null && ps.federation !== undefined && ps.federation !== 'none') {
+				throw new ApiError(meta.errors.federationLocked);
+			}
+
 			const set = {} as Partial<MiMeta>;
 
 			if (typeof ps.disableRegistration === 'boolean') {

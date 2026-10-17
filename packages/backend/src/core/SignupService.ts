@@ -55,6 +55,11 @@ export class SignupService {
 		passwordHash?: MiUserProfile['password'] | null;
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
+		/**
+		 * 42 intra 連携で作成するユーザーの intra 系の列。
+		 * ユーザーと同じトランザクションで保存し、intraId の一意制約違反ならユーザーの作成ごと取り消す
+		 */
+		intraProfile?: Pick<MiUserProfile, 'intraId' | 'intraLogin' | 'intraPoolYearMonth' | 'intraBlackholedAt' | 'intraPaceDeadlineAt'>;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -143,6 +148,7 @@ export class SignupService {
 			}));
 
 			await transactionalEntityManager.save(new MiUserProfile({
+				...opts.intraProfile,
 				userId: account.id,
 				autoAcceptFollowed: true,
 				password: hash,

@@ -135,6 +135,7 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'updateIntraPasswordLoginAllowed',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -401,6 +402,13 @@ export type ModerationLogPayloads = {
 	updateProxyAccountDescription: {
 		before: string | null;
 		after: string | null;
+	};
+	updateIntraPasswordLoginAllowed: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		before: boolean;
+		after: boolean;
 	};
 };
 

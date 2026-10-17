@@ -152,6 +152,7 @@ import { ApNoteService } from './activitypub/models/ApNoteService.js';
 import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { IntraApiService } from './intra/IntraApiService.js';
+import { IntraAuthService } from './intra/IntraAuthService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -307,6 +308,7 @@ const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNote
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
 const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: IntraApiService };
+const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
 //#endregion
 
 @Module({
@@ -462,6 +464,7 @@ const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: In
 		ApPersonService,
 		ApQuestionService,
 		IntraApiService,
+		IntraAuthService,
 		QueueService,
 		TelemetryService,
 
@@ -613,6 +616,7 @@ const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: In
 		$ApPersonService,
 		$ApQuestionService,
 		$IntraApiService,
+		$IntraAuthService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -765,6 +769,7 @@ const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: In
 		ApPersonService,
 		ApQuestionService,
 		IntraApiService,
+		IntraAuthService,
 		QueueService,
 		TelemetryService,
 
@@ -914,6 +919,7 @@ const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: In
 		$ApPersonService,
 		$ApQuestionService,
 		$IntraApiService,
+		$IntraAuthService,
 		$TelemetryService,
 		//#endregion
 	],

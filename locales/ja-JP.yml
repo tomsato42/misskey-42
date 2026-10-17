@@ -3090,6 +3090,7 @@ _moderationLogTypes:
   deleteGalleryPost: "ギャラリーの投稿を削除"
   deleteChatRoom: "ダイレクトメッセージのグループを削除"
   updateProxyAccountDescription: "プロキシアカウントの説明を更新"
+  updateIntraPasswordLoginAllowed: "パスワードログインの例外許可を変更"
 
 _fileViewer:
   title: "ファイルの詳細"

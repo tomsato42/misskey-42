@@ -18,6 +18,7 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
+import { IntraAuthApiService } from './IntraAuthApiService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -39,6 +40,7 @@ export class ApiServerService {
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
+		private intraAuthApiService: IntraAuthApiService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -142,6 +144,19 @@ export class ApiServerService {
 		}>('/signin-with-passkey', (request, reply) => this.signinWithPasskeyApiService.signin(request, reply));
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
+
+		// 42 intra の OAuth2 ログイン。連携が無効なら登録せず、upstream と同じく 404 にする
+		if (this.config.intra != null) {
+			fastify.get('/intra/authorize', (request, reply) => this.intraAuthApiService.authorize(request, reply));
+
+			fastify.get<{
+				Querystring: { code?: string; state?: string; };
+			}>('/intra/callback', (request, reply) => this.intraAuthApiService.callback(request, reply));
+
+			fastify.post<{
+				Body: { code?: string; } | undefined;
+			}>('/intra/exchange', (request, reply) => this.intraAuthApiService.exchange(request, reply));
+		}
 
 		fastify.get('/v1/instance/peers', async (request, reply) => {
 			const instances = await this.instancesRepository.find({

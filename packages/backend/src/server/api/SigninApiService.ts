@@ -26,6 +26,7 @@ import { UserAuthService } from '@/core/UserAuthService.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
@@ -61,6 +62,7 @@ export class SigninApiService {
 		private userAuthService: UserAuthService,
 		private webAuthnService: WebAuthnService,
 		private captchaService: CaptchaService,
+		private intraAuthService: IntraAuthService,
 	) {
 		this.logger = this.loggerService.getLogger('Signin');
 	}
@@ -142,6 +144,20 @@ export class SigninApiService {
 		}
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+
+		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスワードでログインできない。
+		// 凍結と同様、パスワードの検証前に判定する (intra で作成したユーザーはパスワードを持たない)
+		if (await this.intraAuthService.isPasswordLoginRestricted(user, profile)) {
+			reply.code(403);
+			return {
+				error: {
+					message: 'Password login is disabled for this account. Sign in with 42 intra.',
+					code: 'PASSWORD_LOGIN_DISABLED',
+					id: '50eed4c7-cca1-4bf7-95d0-c5d35c12cd7f',
+				},
+			};
+		}
+
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
 
 		if (password == null) {

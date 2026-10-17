@@ -21,6 +21,7 @@ import { WebAuthnService } from '@/core/WebAuthnService.js';
 import Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type { IdentifiableError } from '@/misc/identifiable-error.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
@@ -47,6 +48,7 @@ export class SigninWithPasskeyApiService {
 		private signinService: SigninService,
 		private webAuthnService: WebAuthnService,
 		private loggerService: LoggerService,
+		private intraAuthService: IntraAuthService,
 	) {
 		this.logger = this.loggerService.getLogger('PasskeyAuth');
 	}
@@ -163,6 +165,18 @@ export class SigninWithPasskeyApiService {
 		}
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+
+		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスキーでログインできない
+		if (await this.intraAuthService.isPasswordLoginRestricted(user, profile)) {
+			reply.code(403);
+			return {
+				error: {
+					message: 'Password login is disabled for this account. Sign in with 42 intra.',
+					code: 'PASSWORD_LOGIN_DISABLED',
+					id: '50eed4c7-cca1-4bf7-95d0-c5d35c12cd7f',
+				},
+			};
+		}
 
 		// Authentication was successful, but passwordless login is not enabled
 		if (!profile.usePasswordLessLogin) {

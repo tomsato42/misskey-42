@@ -72,6 +72,7 @@ export type AdminGetIndexStatsResponse = operations['admin___get-index-stats']['
 export type AdminGetTableStatsResponse = operations['admin___get-table-stats']['responses']['200']['content']['application/json'];
 export type AdminGetUserIpsRequest = operations['admin___get-user-ips']['requestBody']['content']['application/json'];
 export type AdminGetUserIpsResponse = operations['admin___get-user-ips']['responses']['200']['content']['application/json'];
+export type AdminIntraSetPasswordLoginAllowedRequest = operations['admin___intra___set-password-login-allowed']['requestBody']['content']['application/json'];
 export type AdminInviteCreateRequest = operations['admin___invite___create']['requestBody']['content']['application/json'];
 export type AdminInviteCreateResponse = operations['admin___invite___create']['responses']['200']['content']['application/json'];
 export type AdminInviteListRequest = operations['admin___invite___list']['requestBody']['content']['application/json'];

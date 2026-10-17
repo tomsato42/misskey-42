@@ -11660,6 +11660,10 @@ export interface Locale extends ILocale {
          * プロキシアカウントの説明を更新
          */
         "updateProxyAccountDescription": string;
+        /**
+         * パスワードログインの例外許可を変更
+         */
+        "updateIntraPasswordLoginAllowed": string;
     };
     "_fileViewer": {
         /**
