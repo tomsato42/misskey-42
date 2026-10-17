@@ -32,7 +32,15 @@ import { isBirthday } from '@/utility/is-birthday.js';
 import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
 
 export async function mainBoot() {
+	// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインならどの URL でもログイン画面だけを出す
+	const intraSigninOnly = isIntraSigninOnly();
+
 	const { isClientUpdated, lastVersion } = await common(async () => {
+		// ?ui= などでも変えられないように、ほかの UI の選択より前に決める
+		if (intraSigninOnly) {
+			return createApp(await import('@/ui/intra-signin.vue').then(x => x.default));
+		}
+
 		let uiStyle = ui;
 		const searchParams = new URLSearchParams(window.location.search);
 
@@ -42,9 +50,6 @@ export async function mainBoot() {
 		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && window.location.pathname !== '/') uiStyle = 'zen';
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
-
-		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインならどの URL でもログイン画面だけを出す (?ui= などでも変えられない)
-		if (isIntraSigninOnly()) uiStyle = 'intraSignin';
 
 		let rootComponent: Component;
 		switch (uiStyle) {
@@ -56,9 +61,6 @@ export async function mainBoot() {
 				break;
 			case 'visitor':
 				rootComponent = await import('@/ui/visitor.vue').then(x => x.default);
-				break;
-			case 'intraSignin':
-				rootComponent = await import('@/ui/intra-signin.vue').then(x => x.default);
 				break;
 			default:
 				rootComponent = await import('@/ui/universal.vue').then(x => x.default);
@@ -415,7 +417,10 @@ export async function mainBoot() {
 			allowRepeat: true,
 		},
 	} as const satisfies Keymap;
-	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	// ログイン画面だけの状態ではルーターのページを出さないので、ショートカットを登録しない
+	if (!intraSigninOnly) {
+		window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	}
 
 	initializeSw();
 }

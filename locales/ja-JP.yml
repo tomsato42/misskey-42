@@ -3608,3 +3608,5 @@ _intra:
   passwordLoginAllowedDescription: "42 intra 連携が有効なときでも、このユーザーがパスワードやパスキーでログインできるようにします。管理者とモデレーターはこの設定に関係なくログインできます。"
   allowPasswordLoginConfirm: "このユーザーにパスワードでのログインを許可しますか？"
   disallowPasswordLoginConfirm: "このユーザーのパスワードでのログインの許可を取り消しますか？"
+  federationLocked: "42 intra 連携が有効なため、連合は無効に固定されています。"
+  ugcVisibilityLocked: "42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。"

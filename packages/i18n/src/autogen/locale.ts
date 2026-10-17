@@ -13473,5 +13473,13 @@ export interface Locale extends ILocale {
          * このユーザーのパスワードでのログインの許可を取り消しますか？
          */
         "disallowPasswordLoginConfirm": string;
+        /**
+         * 42 intra 連携が有効なため、連合は無効に固定されています。
+         */
+        "federationLocked": string;
+        /**
+         * 42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。
+         */
+        "ugcVisibilityLocked": string;
     };
 }

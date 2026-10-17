@@ -6,7 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.wrapper" data-testid="signin-page-password">
 	<div class="_gaps" :class="$style.root">
-		<div :class="$style.avatar" :style="{ backgroundImage: user.avatarUrl ? `url('${user.avatarUrl}')` : undefined }"></div>
+		<!-- 42 intra 連携が有効で未ログインのときは、ユーザー情報を取得できずアバターが無いので出さない -->
+		<div v-if="user.avatarUrl" :class="$style.avatar" :style="{ backgroundImage: `url('${user.avatarUrl}')` }"></div>
 		<div :class="$style.welcomeBackMessage">
 			<I18n :src="i18n.ts.welcomeBackWithName" tag="span">
 				<template #name><Mfm :text="user.name ?? user.username" :plain="true"/></template>

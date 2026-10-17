@@ -58,7 +58,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_s">
 			<div>{{ i18n.ts._serverSetupWizard.doYouConnectToFediverse_description1 }}<br>{{ i18n.ts._serverSetupWizard.doYouConnectToFediverse_description2 }}<br><MkLink target="_blank" url="https://wikipedia.org/wiki/Fediverse">{{ i18n.ts.learnMore }}</MkLink></div>
 
+			<!-- 42 intra 連携が有効なときは連合を無効で固定する (backend の update-meta も連合の有効化を拒否する) -->
+			<MkInfo v-if="instance.intraLoginEnabled">{{ i18n.ts._intra.federationLocked }}</MkInfo>
 			<MkRadios
+				v-else
 				v-model="q_federation"
 				:options="[
 					{ value: 'yes', label: i18n.ts.yes },
@@ -207,6 +210,7 @@ import MkRadios from '@/components/MkRadios.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkLink from '@/components/MkLink.vue';
+import { instance } from '@/instance.js';
 
 const emit = defineEmits<{
 	(ev: 'finished'): void;
@@ -238,7 +242,7 @@ const serverSettings = computed<Misskey.entities.AdminUpdateMetaRequest>(() => {
 		disableRegistration: q_use.value !== 'open',
 		emailRequiredForSignup: q_use.value === 'open',
 		enableIpLogging: q_use.value === 'open',
-		federation: q_federation.value === 'yes' ? 'all' : 'none',
+		federation: q_federation.value === 'yes' && !instance.intraLoginEnabled ? 'all' : 'none',
 		enableRemoteNotesCleaning: q_remoteContentsCleaning.value,
 		enableFanoutTimeline: true,
 		enableFanoutTimelineDbFallback: q_use.value === 'single',
