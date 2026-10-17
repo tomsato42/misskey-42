@@ -10,7 +10,7 @@ Misskey のドライブのファイルを非公開の R2 バケットに保存�
 
 Cookie の形式は `v1.{ユーザーID}.{有効期限(unix秒)}.{署名}` です。署名は、Misskey の `mediaGate.secret` と Worker の `MEDIA_GATE_SECRET` に同じ値を設定し、その値で計算した HMAC-SHA256 です。署名と検証の実装は `src/token.ts` と `packages/backend/src/core/media-gate/media-gate.ts` にあり、どちらも `test/token-vectors.json` のテストベクタでテストしています。
 
-Misskey 自身もメディアプロキシ (`/proxy/*`) でアバターや絵文字の画像を取得するときに、この Worker からファイルを取得します。このときは Misskey が有効期限 5 分の Cookie を自分で付けます。そのため、Misskey のサーバーから `https://42times.kinachan.com/media/...` に (Cloudflare 経由で) 接続できる必要があります。
+Misskey 自身も、メディアプロキシ (`/proxy/*`) でアバターや絵文字の画像を取得するときと、ドライブに置いたファイルを読むインポート・エクスポート (フォローやミュートの CSV のインポート、カスタム絵文字のインポート・エクスポートなど) のときに、この Worker からファイルを取得します。このときは Misskey が有効期限 5 分の Cookie を自分で付けます。`drive/files/upload-from-url` や ActivityPub 由来の取得には付けません。そのため、Misskey のサーバーから `https://42times.kinachan.com/media/...` に (Cloudflare 経由で) 接続できる必要があります。
 
 ## 必要なもの
 
@@ -63,8 +63,8 @@ mediaGate:
   secret: '手順 1 で作った値'
   # Worker の COOKIE_NAME と同じ値にする (省略時は mi_media_session)
   #cookieName: mi_media_session
-  # Cookie の有効期間 (秒。省略時は 604800 = 7 日)
-  #ttlSec: 604800
+  # Cookie の有効期間 (秒、3600〜86400。省略時は 7200 = 2 時間)
+  #ttlSec: 7200
 ```
 
 次に、Misskey のコントロールパネルの「オブジェクトストレージ」を次のように設定します。
@@ -138,6 +138,7 @@ pnpm exec wrangler deploy
 
 ## 運用上の注意
 
-- Cookie は有効期限まで使えます。ログアウトしたり、アカウントが凍結されたりしても、すでに発行した Cookie は期限 (既定で 7 日) まで有効です。すべての Cookie をすぐに無効にしたいときは、Misskey と Worker の両方で秘密の値を新しくします。
+- Cookie の有効期間は既定で 2 時間です。ログイン中のブラウザは、15 分ごとと、タブを表示し直したときに確認し、期限の半分を過ぎていれば `POST /api/media-session` で Cookie を更新します。
+- Misskey 自身が返すファイル (`/files/*`・`/proxy/*`・`/avatar/*`・`/identicon/*`・`/emoji/*`) では、Cookie のユーザーが凍結・削除されていれば、期限内でも 401 を返します。この Worker はユーザーの状態を持たないため、凍結・削除やログアウトの後も、すでに発行した Cookie は期限 (既定で 2 時間) まで R2 のファイルを読めます。この Worker では有効期間を短くすることで、その時間を限っています。すべての Cookie をすぐに無効にしたいときは、Misskey と Worker の両方で秘密の値を新しくします。
 - 秘密の値を変えるときは、Misskey の `mediaGate.secret` と Worker の `MEDIA_GATE_SECRET` を続けて更新してください。片方だけを変えている間は、画像が表示されません。
 - ローカルストレージ (オブジェクトストレージを使わない設定) のファイルは、この Worker ではなく Misskey の `/files/*` が返します。`mediaGate` を設定していれば、こちらも同じ Cookie で制限されます。

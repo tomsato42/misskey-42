@@ -7,7 +7,7 @@ import * as fs from 'node:fs';
 import { resolve } from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Config } from '@/config.js';
-import type { DriveFilesRepository } from '@/models/_.js';
+import type { DriveFilesRepository, UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { StatusError } from '@/misc/status-error.js';
 import type Logger from '@/logger.js';
@@ -17,9 +17,10 @@ import { FileInfoService } from '@/core/FileInfoService.js';
 import { ImageProcessingService } from '@/core/ImageProcessingService.js';
 import { VideoProcessingService } from '@/core/VideoProcessingService.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { CacheService } from '@/core/CacheService.js';
 import { bindThis } from '@/decorators.js';
 import { handleRequestRedirectToOmitSearch } from '@/misc/fastify-hook-handlers.js';
-import { registerMediaGateHooks } from './media-gate-hooks.js';
+import { createMediaGateUserChecker, registerMediaGateHooks } from './media-gate-hooks.js';
 import { FileServerDriveHandler } from './file/FileServerDriveHandler.js';
 import { FileServerFileResolver } from './file/FileServerFileResolver.js';
 import { FileServerProxyHandler } from './file/FileServerProxyHandler.js';
@@ -47,6 +48,10 @@ export class FileServerService {
 		private videoProcessingService: VideoProcessingService,
 		private internalStorageService: InternalStorageService,
 		private loggerService: LoggerService,
+		private cacheService: CacheService,
+
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
 	) {
 		this.logger = this.loggerService.getLogger('server', 'gray');
 		this.assets = resolve(this.config.rootDir, 'packages/backend/src/server/file/assets');
@@ -76,7 +81,7 @@ export class FileServerService {
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
 		// mediaGate が有効なら、/files/* と /proxy/* はログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
 		if (this.config.mediaGate != null) {
-			registerMediaGateHooks(fastify, this.config.mediaGate);
+			registerMediaGateHooks(fastify, this.config.mediaGate, createMediaGateUserChecker(this.cacheService, this.usersRepository));
 		}
 
 		fastify.addHook('onRequest', (request, reply, done) => {

@@ -95,7 +95,7 @@ describe('media-gate', () => {
 		const secret = 'x'.repeat(32);
 
 		test('既定値', () => {
-			expect(convertMediaGateConfig({ secret })).toEqual({ secret, cookieName: 'mi_media_session', ttlSec: 604800 });
+			expect(convertMediaGateConfig({ secret })).toEqual({ secret, cookieName: 'mi_media_session', ttlSec: 7200 });
 		});
 
 		test('指定した値', () => {
@@ -111,10 +111,16 @@ describe('media-gate', () => {
 			expect(() => convertMediaGateConfig({ secret, cookieName: 'a;b' })).toThrow();
 		});
 
+		test('範囲の両端の ttlSec は受け付ける', () => {
+			expect(convertMediaGateConfig({ secret, ttlSec: 3600 }).ttlSec).toBe(3600);
+			expect(convertMediaGateConfig({ secret, ttlSec: 86400 }).ttlSec).toBe(86400);
+		});
+
 		test('範囲外の ttlSec は拒否する', () => {
-			expect(() => convertMediaGateConfig({ secret, ttlSec: 59 })).toThrow();
-			expect(() => convertMediaGateConfig({ secret, ttlSec: 60 * 60 * 24 * 31 })).toThrow();
-			expect(() => convertMediaGateConfig({ secret, ttlSec: 100.5 })).toThrow();
+			// 1 時間未満は、フロントエンドの 15 分ごとの確認では期限切れ前に更新が間に合わないことがある
+			expect(() => convertMediaGateConfig({ secret, ttlSec: 3599 })).toThrow();
+			expect(() => convertMediaGateConfig({ secret, ttlSec: 86401 })).toThrow();
+			expect(() => convertMediaGateConfig({ secret, ttlSec: 3600.5 })).toThrow();
 		});
 	});
 });

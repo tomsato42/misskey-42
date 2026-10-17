@@ -25,6 +25,15 @@ import {
 
 import { bindThis } from '@/decorators.js';
 
+export type DownloadUrlOptions = {
+	/**
+	 * mediaGate が有効なとき、取得先が自分のホスト (config.url と同じオリジン) なら、サーバー用のメディア用 Cookie を付ける。
+	 * 自分のホストのメディアを読む必要がある取得 (メディアプロキシ、ローカルのドライブのファイルを読むインポート・エクスポート) にだけ指定する。
+	 * ユーザーや他のサーバーが指定した URL を取り込む取得 (drive/files/upload-from-url、ActivityPub 由来の取得など) には指定しない
+	 */
+	attachMediaGateCookie?: boolean;
+};
+
 @Injectable()
 export class DownloadService {
 	private logger: Logger;
@@ -40,19 +49,20 @@ export class DownloadService {
 	}
 
 	/**
-	 * mediaGate が有効なとき、自分のホストのメディア (オブジェクトストレージを前にした Cloudflare Worker など) を
-	 * メディアプロキシなどから取得できるよう、短い期限のメディア用 Cookie を付ける。
+	 * mediaGate が有効で、呼び出し側が attachMediaGateCookie を指定したとき、自分のホストのメディア
+	 * (オブジェクトストレージを前にした Cloudflare Worker や /files/*) を取得できるよう、短い期限のメディア用 Cookie を付ける。
 	 * got は別オリジンへのリダイレクトで Cookie ヘッダーを外すので、他のホストには送られない
 	 */
 	@bindThis
-	private getMediaGateHeaders(url: URL): Record<string, string> {
+	private getMediaGateHeaders(url: URL, options: DownloadUrlOptions): Record<string, string> {
+		if (options.attachMediaGateCookie !== true) return {};
 		if (this.config.mediaGate == null || url.origin !== this.config.url) return {};
 		const { token } = issueMediaGateToken(this.config.mediaGate, MEDIA_GATE_SERVER_SUBJECT, nowUnixSec(), MEDIA_GATE_SERVER_TOKEN_TTL_SEC);
 		return { Cookie: `${this.config.mediaGate.cookieName}=${token}` };
 	}
 
 	@bindThis
-	public async downloadUrl(url: string, path: string): Promise<{
+	public async downloadUrl(url: string, path: string, options: DownloadUrlOptions = {}): Promise<{
 		filename: string;
 	}> {
 		this.logger.info(`Downloading ${chalk.cyan(url)} to ${chalk.cyanBright(path)} ...`);
@@ -67,7 +77,7 @@ export class DownloadService {
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
-				...this.getMediaGateHeaders(urlObj),
+				...this.getMediaGateHeaders(urlObj, options),
 			},
 			timeout: {
 				lookup: timeout,
@@ -147,7 +157,7 @@ export class DownloadService {
 	}
 
 	@bindThis
-	public async downloadTextFile(url: string): Promise<string> {
+	public async downloadTextFile(url: string, options: DownloadUrlOptions = {}): Promise<string> {
 		// Create temp file
 		const [path, cleanup] = await createTemp();
 
@@ -155,7 +165,7 @@ export class DownloadService {
 
 		try {
 			// write content at URL to temp file
-			await this.downloadUrl(url, path);
+			await this.downloadUrl(url, path, options);
 
 			const text = await fs.promises.readFile(path, 'utf8');
 

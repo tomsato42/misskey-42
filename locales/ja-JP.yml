@@ -3609,4 +3609,5 @@ _intra:
   allowPasswordLoginConfirm: "このユーザーにパスワードでのログインを許可しますか？"
   disallowPasswordLoginConfirm: "このユーザーのパスワードでのログインの許可を取り消しますか？"
   federationLocked: "42 intra 連携が有効なため、連合は無効に固定されています。"
+  serverUseLocked: "42 intra 連携が有効なため、利用形態は「グループサーバー」に固定されています。新しいアカウントは、42 のアカウントで初めてログインしたときにだけ作成されます。"
   ugcVisibilityLocked: "42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。"

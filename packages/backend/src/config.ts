@@ -405,8 +405,11 @@ export function loadConfig(): Config {
 }
 
 const MEDIA_GATE_MIN_SECRET_LENGTH = 32;
-const MEDIA_GATE_DEFAULT_TTL_SEC = 60 * 60 * 24 * 7;
-const MEDIA_GATE_MAX_TTL_SEC = 60 * 60 * 24 * 30;
+const MEDIA_GATE_DEFAULT_TTL_SEC = 60 * 60 * 2;
+// フロントエンドは 15 分ごとに確認し、期限の半分を過ぎていれば更新する (packages/frontend/src/utility/media-session.ts)。
+// 更新が最も遅れるのは「半分 + 15 分」の時点なので、期限が切れる前に更新できるよう下限を 1 時間にする
+const MEDIA_GATE_MIN_TTL_SEC = 60 * 60;
+const MEDIA_GATE_MAX_TTL_SEC = 60 * 60 * 24;
 
 export function convertMediaGateConfig(source: NonNullable<Source['mediaGate']>): MediaGateConfig {
 	if (typeof source.secret !== 'string' || source.secret.length < MEDIA_GATE_MIN_SECRET_LENGTH) {
@@ -420,8 +423,8 @@ export function convertMediaGateConfig(source: NonNullable<Source['mediaGate']>)
 	}
 
 	const ttlSec = source.ttlSec ?? MEDIA_GATE_DEFAULT_TTL_SEC;
-	if (!Number.isInteger(ttlSec) || ttlSec < 60 || ttlSec > MEDIA_GATE_MAX_TTL_SEC) {
-		throw new Error(`mediaGate.ttlSec must be an integer between 60 and ${MEDIA_GATE_MAX_TTL_SEC}.`);
+	if (!Number.isInteger(ttlSec) || ttlSec < MEDIA_GATE_MIN_TTL_SEC || ttlSec > MEDIA_GATE_MAX_TTL_SEC) {
+		throw new Error(`mediaGate.ttlSec must be an integer between ${MEDIA_GATE_MIN_TTL_SEC} and ${MEDIA_GATE_MAX_TTL_SEC}.`);
 	}
 
 	return { secret: source.secret, cookieName, ttlSec };

@@ -3,8 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { afterEach, describe, expect, test, vi } from 'vitest';
-import { clearMediaSession, decideMediaSessionRefresh, refreshMediaSession } from '@/utility/media-session.js';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import {
+	MEDIA_SESSION_CHECK_INTERVAL_MS,
+	clearMediaSession,
+	decideMediaSessionRefresh,
+	refreshMediaSession,
+	setupMediaSession,
+	stopMediaSessionWatch,
+} from '@/utility/media-session.js';
 
 const storage = vi.hoisted(() => {
 	const map = new Map<string, string>();
@@ -26,35 +33,142 @@ vi.mock('@/local-storage.js', () => ({
 	},
 }));
 
-const HOUR = 1000 * 60 * 60;
+const MINUTE = 1000 * 60;
+const HOUR = MINUTE * 60;
 const DAY = HOUR * 24;
 const now = 1760000000000;
 
 describe('decideMediaSessionRefresh', () => {
 	test('記録が無い、または別のアカウントの記録なら、画面を出す前に更新する', () => {
 		expect(decideMediaSessionRefresh(null, 'a', now)).toBe('now');
-		expect(decideMediaSessionRefresh({ userId: 'b', refreshedAt: now, expiresAt: now + 7 * DAY }, 'a', now)).toBe('now');
+		expect(decideMediaSessionRefresh({ userId: 'b', refreshedAt: now, expiresAt: now + 2 * HOUR }, 'a', now)).toBe('now');
 	});
 
-	test('期限が近い、または切れているなら、画面を出す前に更新する', () => {
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 7 * DAY, expiresAt: now + 60 * 1000 }, 'a', now)).toBe('now');
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 8 * DAY, expiresAt: now - DAY }, 'a', now)).toBe('now');
+	test('期限まで 10 分を切っている、または切れているなら、画面を出す前に更新する', () => {
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 2 * HOUR + 9 * MINUTE, expiresAt: now + 9 * MINUTE }, 'a', now)).toBe('now');
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 3 * HOUR, expiresAt: now - HOUR }, 'a', now)).toBe('now');
 	});
 
-	test('最後の更新から 1 日たっていれば、裏で更新する', () => {
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - DAY, expiresAt: now + 6 * DAY }, 'a', now)).toBe('background');
-		// mediaGate が無効なインスタンス (expiresAt が null) も、1 日に 1 回だけ確かめ直す
+	test('期限の半分を過ぎたら、裏で更新する (既定の 2 時間なら 1 時間後)', () => {
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - HOUR, expiresAt: now + HOUR }, 'a', now)).toBe('background');
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - HOUR + MINUTE, expiresAt: now + HOUR + MINUTE }, 'a', now)).toBe('none');
+		// 上限の 1 日なら 12 時間後
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 12 * HOUR, expiresAt: now + 12 * HOUR }, 'a', now)).toBe('background');
+	});
+
+	test('Cookie が発行されなかった (expiresAt が null) ときは、1 日に 1 回だけ確かめ直す', () => {
 		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - DAY, expiresAt: null }, 'a', now)).toBe('background');
-	});
-
-	test('期限の半分を過ぎたら、裏で更新する', () => {
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 3 * HOUR, expiresAt: now + 3 * HOUR }, 'a', now)).toBe('background');
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 2 * HOUR, expiresAt: now + 4 * HOUR }, 'a', now)).toBe('none');
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - HOUR, expiresAt: null }, 'a', now)).toBe('none');
 	});
 
 	test('最近更新していれば何もしない', () => {
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - HOUR, expiresAt: now + 7 * DAY - HOUR }, 'a', now)).toBe('none');
-		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - HOUR, expiresAt: null }, 'a', now)).toBe('none');
+		expect(decideMediaSessionRefresh({ userId: 'a', refreshedAt: now - 10 * MINUTE, expiresAt: now + 2 * HOUR - 10 * MINUTE }, 'a', now)).toBe('none');
+	});
+
+	test('ttlSec の下限 (1 時間) でも、15 分ごとの確認で期限切れの前に更新が始まる', () => {
+		const ttl = HOUR;
+		const refreshedAt = now;
+		const state = { userId: 'a', refreshedAt, expiresAt: refreshedAt + ttl };
+		// 確認のタイミングがどこにずれていても、期限より前のどこかの確認で 'none' 以外になる
+		for (let offset = 0; offset < MEDIA_SESSION_CHECK_INTERVAL_MS; offset += MINUTE) {
+			let firstRefreshAt: number | null = null;
+			for (let t = refreshedAt + offset; t < refreshedAt + ttl; t += MEDIA_SESSION_CHECK_INTERVAL_MS) {
+				if (decideMediaSessionRefresh(state, 'a', t) !== 'none') {
+					firstRefreshAt = t;
+					break;
+				}
+			}
+			expect(firstRefreshAt).not.toBeNull();
+			expect(refreshedAt + ttl - firstRefreshAt!).toBeGreaterThanOrEqual(10 * MINUTE);
+		}
+	});
+});
+
+describe('setupMediaSession', () => {
+	let visibilityState: DocumentVisibilityState;
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(now);
+		visibilityState = 'visible';
+		vi.spyOn(window.document, 'visibilityState', 'get').mockImplementation(() => visibilityState);
+	});
+
+	afterEach(() => {
+		stopMediaSessionWatch();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+		storage.removeItem('mediaSession');
+	});
+
+	function mockFetch() {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ expiresAt: Date.now() + 2 * HOUR }), { status: 200 }));
+		vi.spyOn(window, 'fetch').mockImplementation(fetchMock);
+		return fetchMock;
+	}
+
+	test('記録が無ければ、画面を出す前に更新を待つ', async () => {
+		const fetchMock = mockFetch();
+		await setupMediaSession({ id: 'a', token: 'token' });
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+		expect(JSON.parse(storage.getItem('mediaSession')!).userId).toBe('a');
+	});
+
+	test('15 分ごとに確かめ、期限の半分を過ぎたら更新する', async () => {
+		storage.setItem('mediaSession', JSON.stringify({ userId: 'a', refreshedAt: now, expiresAt: now + 2 * HOUR }));
+		const fetchMock = mockFetch();
+		await setupMediaSession({ id: 'a', token: 'token' });
+		expect(fetchMock).not.toHaveBeenCalled();
+
+		// 45 分後の確認ではまだ半分を過ぎていない
+		await vi.advanceTimersByTimeAsync(45 * MINUTE);
+		expect(fetchMock).not.toHaveBeenCalled();
+
+		// 60 分後の確認で更新する
+		await vi.advanceTimersByTimeAsync(15 * MINUTE);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		// 更新した直後の確認では何もしない
+		await vi.advanceTimersByTimeAsync(15 * MINUTE);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	test('タブが表示に戻ったときにも確かめる', async () => {
+		storage.setItem('mediaSession', JSON.stringify({ userId: 'a', refreshedAt: now, expiresAt: now + 2 * HOUR }));
+		const fetchMock = mockFetch();
+		await setupMediaSession({ id: 'a', token: 'token' });
+
+		// タイマーを進めずに時刻だけ進める (非表示のタブでタイマーが止まっていた場合)
+		vi.setSystemTime(now + 70 * MINUTE);
+
+		// 非表示になったときには確かめない
+		visibilityState = 'hidden';
+		window.document.dispatchEvent(new Event('visibilitychange'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(fetchMock).not.toHaveBeenCalled();
+
+		visibilityState = 'visible';
+		window.document.dispatchEvent(new Event('visibilitychange'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	test('更新中にもう一度確かめても、同時に 2 回は送らない', async () => {
+		storage.setItem('mediaSession', JSON.stringify({ userId: 'a', refreshedAt: now, expiresAt: now + 2 * HOUR }));
+		let resolveFetch: (res: Response) => void = () => {};
+		const fetchMock = vi.fn(() => new Promise<Response>(resolve => { resolveFetch = resolve; }));
+		vi.spyOn(window, 'fetch').mockImplementation(fetchMock);
+		await setupMediaSession({ id: 'a', token: 'token' });
+
+		vi.setSystemTime(now + 70 * MINUTE);
+		window.document.dispatchEvent(new Event('visibilitychange'));
+		window.document.dispatchEvent(new Event('visibilitychange'));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		resolveFetch(new Response(JSON.stringify({ expiresAt: Date.now() + 2 * HOUR }), { status: 200 }));
+		await vi.advanceTimersByTimeAsync(0);
+		expect(JSON.parse(storage.getItem('mediaSession')!).refreshedAt).toBe(now + 70 * MINUTE);
 	});
 });
 

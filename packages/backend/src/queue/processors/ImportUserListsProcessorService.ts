@@ -62,7 +62,7 @@ export class ImportUserListsProcessorService {
 			return;
 		}
 
-		const csv = await this.downloadService.downloadTextFile(file.url);
+		const csv = await this.downloadService.downloadTextFile(file.url, { attachMediaGateCookie: true });
 
 		let linenum = 0;
 

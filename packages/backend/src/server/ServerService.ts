@@ -20,6 +20,7 @@ import * as Acct from '@/misc/acct.js';
 import { genIdenticon } from '@/misc/gen-identicon.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { CacheService } from '@/core/CacheService.js';
 import { bindThis } from '@/decorators.js';
 import { envOption } from '@/env.js';
 import { ActivityPubServerService } from './ActivityPubServerService.js';
@@ -33,7 +34,7 @@ import { ClientServerService } from './web/ClientServerService.js';
 import { OpenApiServerService } from './api/openapi/OpenApiServerService.js';
 import { OAuth2ProviderService } from './oauth/OAuth2ProviderService.js';
 import { registerHttpAccessLog } from './http-access-log.js';
-import { mediaGateRouteOptions } from './media-gate-hooks.js';
+import { createMediaGateUserChecker, mediaGateRouteOptions } from './media-gate-hooks.js';
 
 const _dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -71,6 +72,7 @@ export class ServerService implements OnApplicationShutdown {
 		private globalEventService: GlobalEventService,
 		private loggerService: LoggerService,
 		private oauth2ProviderService: OAuth2ProviderService,
+		private cacheService: CacheService,
 	) {
 		this.logger = this.loggerService.getLogger('server', 'gray');
 	}
@@ -164,7 +166,7 @@ export class ServerService implements OnApplicationShutdown {
 		fastify.register(this.healthServerService.createServer, { prefix: '/healthz' });
 
 		// アバター・カスタム絵文字・identicon は、mediaGate が有効ならログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
-		const mediaGateOptions = mediaGateRouteOptions(this.config.mediaGate);
+		const mediaGateOptions = mediaGateRouteOptions(this.config.mediaGate, createMediaGateUserChecker(this.cacheService, this.usersRepository));
 
 		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', mediaGateOptions, async (request, reply) => {
 			const path = request.params.path;

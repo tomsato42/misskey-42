@@ -14,7 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #icon><i class="ti ti-settings-question"></i></template>
 
 		<div class="_gaps_s">
+			<!-- 42 intra 連携が有効なとき (学内SNS) は「グループサーバー」で固定する。
+			     お一人様 (singleUserMode) は複数人で使う学内SNSと合わず、オープン (登録の受付・登録時のメール必須) は intra でのみ登録できる仕組みと合わない -->
+			<MkInfo v-if="instance.intraLoginEnabled">{{ i18n.ts._intra.serverUseLocked }}</MkInfo>
 			<MkRadios
+				v-else
 				v-model="q_use"
 				:options="[
 					{ value: 'single', label: i18n.ts._serverSetupWizard._use.single, icon: 'ti ti-user', caption: i18n.ts._serverSetupWizard._use.single_description },
@@ -222,7 +226,8 @@ const props = withDefaults(defineProps<{
 });
 
 const q_name = ref('');
-const q_use = ref<'single' | 'group' | 'open'>('single');
+// 42 intra 連携が有効なときは選択肢を出さず、グループサーバーで固定する
+const q_use = ref<'single' | 'group' | 'open'>(instance.intraLoginEnabled ? 'group' : 'single');
 const q_scale = ref<'small' | 'medium' | 'large'>('small');
 const q_federation = ref<'yes' | 'no'>('no');
 const q_remoteContentsCleaning = ref(true);

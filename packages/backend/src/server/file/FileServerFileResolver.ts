@@ -6,7 +6,7 @@
 import * as fs from 'node:fs';
 import type { DriveFilesRepository, MiDriveFile } from '@/models/_.js';
 import { createTemp } from '@/misc/create-temp.js';
-import type { DownloadService } from '@/core/DownloadService.js';
+import type { DownloadService, DownloadUrlOptions } from '@/core/DownloadService.js';
 import type { FileInfoService } from '@/core/FileInfoService.js';
 import type { InternalStorageService } from '@/core/InternalStorageService.js';
 
@@ -51,10 +51,10 @@ export class FileServerFileResolver {
 		private internalStorageService: InternalStorageService,
 	) {}
 
-	public async downloadAndDetectTypeFromUrl(url: string): Promise<DownloadedFileResult> {
+	public async downloadAndDetectTypeFromUrl(url: string, options: DownloadUrlOptions = {}): Promise<DownloadedFileResult> {
 		const [path, cleanup] = await createTemp();
 		try {
-			const { filename } = await this.downloadService.downloadUrl(url, path);
+			const { filename } = await this.downloadService.downloadUrl(url, path, options);
 
 			const { mime, ext } = await this.fileInfoService.detectType(path);
 

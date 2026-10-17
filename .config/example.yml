@@ -370,8 +370,9 @@ id: 'aidx'
 #  secret: 'change-me-to-a-random-value-of-at-least-32-characters'
 #  # Cookie の名前 (省略時は mi_media_session)。Worker の COOKIE_NAME と同じ値にする
 #  #cookieName: mi_media_session
-#  # Cookie の有効期間 (秒、60〜2592000。省略時は 604800 = 7 日)
-#  #ttlSec: 604800
+#  # Cookie の有効期間 (秒、3600〜86400。省略時は 7200 = 2 時間)
+#  # ログイン中のブラウザは、期限の半分を過ぎると自動で Cookie を更新します
+#  #ttlSec: 7200
 
 #   ┌─────────────────────┐
 #───┘ Other configuration └─────────────────────────────────────

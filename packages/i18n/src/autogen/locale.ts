@@ -13478,6 +13478,10 @@ export interface Locale extends ILocale {
          */
         "federationLocked": string;
         /**
+         * 42 intra 連携が有効なため、利用形態は「グループサーバー」に固定されています。新しいアカウントは、42 のアカウントで初めてログインしたときにだけ作成されます。
+         */
+        "serverUseLocked": string;
+        /**
          * 42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。
          */
         "ugcVisibilityLocked": string;
