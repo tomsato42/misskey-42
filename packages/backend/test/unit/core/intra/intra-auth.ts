@@ -6,13 +6,16 @@
 import { describe, expect, test } from 'vitest';
 import { QueryFailedError } from 'typeorm';
 import {
+	INTRA_LOGIN_CODE_TTL_SEC,
+	INTRA_LOGIN_COOKIE_NAME,
 	INTRA_STATE_COOKIE_NAME,
+	INTRA_STATE_TTL_SEC,
 	buildIntraAuthorizeUrl,
 	buildIntraCompleteUrl,
+	buildIntraCookie,
+	buildIntraCookieClear,
 	buildIntraErrorUrl,
 	buildIntraRedirectUri,
-	buildIntraStateCookie,
-	buildIntraStateCookieClear,
 	generateIntraToken,
 	getCookieValue,
 	isIntraToken,
@@ -56,14 +59,16 @@ describe('intra-auth', () => {
 		expect(isSameIntraToken('x', 'x')).toBe(false);
 	});
 
-	describe('state の Cookie', () => {
+	describe('Cookie', () => {
 		test('保存する Set-Cookie', () => {
-			expect(buildIntraStateCookie('abc', true)).toBe(`${INTRA_STATE_COOKIE_NAME}=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax; Secure`);
-			expect(buildIntraStateCookie('abc', false)).toBe(`${INTRA_STATE_COOKIE_NAME}=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax`);
+			expect(buildIntraCookie(INTRA_STATE_COOKIE_NAME, 'abc', INTRA_STATE_TTL_SEC, true)).toBe('intra_state=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax; Secure');
+			expect(buildIntraCookie(INTRA_STATE_COOKIE_NAME, 'abc', INTRA_STATE_TTL_SEC, false)).toBe('intra_state=abc; Path=/api/intra/; Max-Age=600; HttpOnly; SameSite=Lax');
+			expect(buildIntraCookie(INTRA_LOGIN_COOKIE_NAME, 'xyz', INTRA_LOGIN_CODE_TTL_SEC, true)).toBe('intra_login=xyz; Path=/api/intra/; Max-Age=60; HttpOnly; SameSite=Lax; Secure');
 		});
 
 		test('消す Set-Cookie', () => {
-			expect(buildIntraStateCookieClear(true)).toBe(`${INTRA_STATE_COOKIE_NAME}=; Path=/api/intra/; Max-Age=0; HttpOnly; SameSite=Lax; Secure`);
+			expect(buildIntraCookieClear(INTRA_STATE_COOKIE_NAME, true)).toBe('intra_state=; Path=/api/intra/; Max-Age=0; HttpOnly; SameSite=Lax; Secure');
+			expect(buildIntraCookieClear(INTRA_LOGIN_COOKIE_NAME, false)).toBe('intra_login=; Path=/api/intra/; Max-Age=0; HttpOnly; SameSite=Lax');
 		});
 
 		test('getCookieValue', () => {

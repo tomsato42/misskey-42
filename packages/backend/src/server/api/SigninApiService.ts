@@ -27,10 +27,22 @@ import { CaptchaService } from '@/core/CaptchaService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
+import { secureRndstr } from '@/misc/secure-rndstr.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+
+let dummyPasswordHashPromise: Promise<string> | null = null;
+
+/**
+ * パスワードを照合しないユーザーでも、照合するユーザーと同程度の時間をかけるためのダミーのハッシュ。
+ * コストは SignupService がパスワードのハッシュを作るときと同じ
+ */
+function getDummyPasswordHash(): Promise<string> {
+	dummyPasswordHashPromise ??= bcrypt.genSalt(8).then(salt => bcrypt.hash(secureRndstr(32), salt));
+	return dummyPasswordHashPromise;
+}
 
 @Injectable()
 export class SigninApiService {
@@ -145,18 +157,10 @@ export class SigninApiService {
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 
-		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスワードでログインできない。
-		// 凍結と同様、パスワードの検証前に判定する (intra で作成したユーザーはパスワードを持たない)
-		if (await this.intraAuthService.isPasswordLoginRestricted(user, profile)) {
-			reply.code(403);
-			return {
-				error: {
-					message: 'Password login is disabled for this account. Sign in with 42 intra.',
-					code: 'PASSWORD_LOGIN_DISABLED',
-					id: '50eed4c7-cca1-4bf7-95d0-c5d35c12cd7f',
-				},
-			};
-		}
+		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスワード・パスキーでログインできない。
+		// 制限対象かどうか (= 特権アカウントかどうか) を応答から推測されないよう、制限対象のユーザーにも通常と同じ流れを返し、
+		// パスワードは常に「一致しない」として扱う。どの経路でも signin まで進ませない
+		const passwordLoginRestricted = await this.intraAuthService.isPasswordLoginRestricted(user, profile);
 
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
 
@@ -181,7 +185,16 @@ export class SigninApiService {
 		}
 
 		// Compare password
-		const same = await bcrypt.compare(password, profile.password!);
+		// 制限対象のユーザーやパスワードを持たないユーザー (intra で作成したユーザー) は、ユーザーのハッシュと比較しない。
+		// 応答時間で区別されないよう、ダミーのハッシュと比較して同程度の時間をかける
+		const passwordHash = passwordLoginRestricted ? null : profile.password;
+		let same: boolean;
+		if (passwordHash != null) {
+			same = await bcrypt.compare(password, passwordHash);
+		} else {
+			await bcrypt.compare(password, await getDummyPasswordHash());
+			same = false;
+		}
 
 		const fail = async (status?: number, failure?: { id: string; }) => {
 			// Append signin history
@@ -263,7 +276,8 @@ export class SigninApiService {
 
 			const authorized = await this.webAuthnService.verifyAuthentication(user.id, body.credential);
 
-			if (authorized) {
+			// usePasswordLessLogin のユーザーはパスワード無しでここまで来るため、制限対象ならパスキーの失敗と同じ応答にする
+			if (authorized && !passwordLoginRestricted) {
 				return this.signinService.signin(request, reply, user);
 			} else {
 				return await fail(403, {

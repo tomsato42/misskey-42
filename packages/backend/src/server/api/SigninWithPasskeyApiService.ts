@@ -166,16 +166,12 @@ export class SigninWithPasskeyApiService {
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 
-		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスキーでログインできない
+		// 42 intra 連携が有効なときは、モデレーター以上と例外フラグ付きのユーザー以外はパスキーでログインできない。
+		// 専用の応答は返さず、認証失敗と同じ形 (失敗の記録付き) にする
 		if (await this.intraAuthService.isPasswordLoginRestricted(user, profile)) {
-			reply.code(403);
-			return {
-				error: {
-					message: 'Password login is disabled for this account. Sign in with 42 intra.',
-					code: 'PASSWORD_LOGIN_DISABLED',
-					id: '50eed4c7-cca1-4bf7-95d0-c5d35c12cd7f',
-				},
-			};
+			return await fail(user.id, 403, {
+				id: '932c904e-9460-45b7-9ce6-7ed33be7eb2c',
+			});
 		}
 
 		// Authentication was successful, but passwordless login is not enabled

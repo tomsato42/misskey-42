@@ -56,29 +56,32 @@ export function isSameIntraToken(a: unknown, b: unknown): boolean {
 	return timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
 }
 
-/**
- * state をブラウザにも持たせる Cookie の名前。
- * callback で Cookie とクエリの state を照合し、他人が始めたログインの callback を踏まされる攻撃 (login CSRF) を防ぐ
- */
+// state とログイン用コードは、発行したブラウザの Cookie にも保存し、使うときにクエリ・ボディの値と照合する。
+// 他人が始めたログインの callback や、他人のログイン用コードを踏まされる攻撃 (login CSRF) を防ぐため
+
+/** state を保存する Cookie の名前 */
 export const INTRA_STATE_COOKIE_NAME = 'intra_state';
-const INTRA_STATE_COOKIE_PATH = '/api/intra/';
+/** ログイン用の使い捨てコードを保存する Cookie の名前 */
+export const INTRA_LOGIN_COOKIE_NAME = 'intra_login';
+const INTRA_COOKIE_PATH = '/api/intra/';
 
-function stateCookieAttributes(secure: boolean, maxAge: number): string {
-	return `Path=${INTRA_STATE_COOKIE_PATH}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
+function cookieAttributes(secure: boolean, maxAge: number): string {
+	return `Path=${INTRA_COOKIE_PATH}; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
 }
 
 /**
- * state を保存する Set-Cookie ヘッダーの値
+ * 値を保存する Set-Cookie ヘッダーの値
+ * @param maxAge 秒
  */
-export function buildIntraStateCookie(state: string, secure: boolean): string {
-	return `${INTRA_STATE_COOKIE_NAME}=${state}; ${stateCookieAttributes(secure, INTRA_STATE_TTL_SEC)}`;
+export function buildIntraCookie(name: string, value: string, maxAge: number, secure: boolean): string {
+	return `${name}=${value}; ${cookieAttributes(secure, maxAge)}`;
 }
 
 /**
- * state の Cookie を消す Set-Cookie ヘッダーの値
+ * Cookie を消す Set-Cookie ヘッダーの値
  */
-export function buildIntraStateCookieClear(secure: boolean): string {
-	return `${INTRA_STATE_COOKIE_NAME}=; ${stateCookieAttributes(secure, 0)}`;
+export function buildIntraCookieClear(name: string, secure: boolean): string {
+	return `${name}=; ${cookieAttributes(secure, 0)}`;
 }
 
 /**

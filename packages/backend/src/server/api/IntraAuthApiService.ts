@@ -10,11 +10,15 @@ import { getIpHash } from '@/misc/get-ip-hash.js';
 import { bindThis } from '@/decorators.js';
 import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 import {
+	INTRA_LOGIN_CODE_TTL_SEC,
+	INTRA_LOGIN_COOKIE_NAME,
 	INTRA_STATE_COOKIE_NAME,
+	INTRA_STATE_TTL_SEC,
+	buildIntraCookie,
+	buildIntraCookieClear,
 	buildIntraErrorUrl,
-	buildIntraStateCookie,
-	buildIntraStateCookieClear,
 	getCookieValue,
+	isSameIntraToken,
 } from '@/core/intra/intra-auth.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
@@ -68,7 +72,7 @@ export class IntraAuthApiService {
 
 		const { url, state } = await this.intraAuthService.createAuthorizeUrl();
 		// @fastify/cookie は登録されていないため、既存箇所 (ClientServerService) と同様にヘッダーを直接設定する
-		reply.header('Set-Cookie', buildIntraStateCookie(state, this.intraAuthService.isSecureCookie()));
+		reply.header('Set-Cookie', buildIntraCookie(INTRA_STATE_COOKIE_NAME, state, INTRA_STATE_TTL_SEC, this.intraAuthService.isSecureCookie()));
 		return reply.redirect(url, 302);
 	}
 
@@ -82,10 +86,16 @@ export class IntraAuthApiService {
 			return reply.redirect(buildIntraErrorUrl(this.config.url, 'intra_error'), 302);
 		}
 
+		const secure = this.intraAuthService.isSecureCookie();
 		const cookieState = getCookieValue(request.headers.cookie, INTRA_STATE_COOKIE_NAME);
-		const url = await this.intraAuthService.handleCallback(request.query.code, request.query.state, cookieState);
+		const { url, loginCode } = await this.intraAuthService.handleCallback(request.query.code, request.query.state, cookieState);
+
 		// state は使い捨てなので、成否にかかわらず Cookie を消す
-		reply.header('Set-Cookie', buildIntraStateCookieClear(this.intraAuthService.isSecureCookie()));
+		const cookies = [buildIntraCookieClear(INTRA_STATE_COOKIE_NAME, secure)];
+		if (loginCode != null) {
+			cookies.push(buildIntraCookie(INTRA_LOGIN_COOKIE_NAME, loginCode, INTRA_LOGIN_CODE_TTL_SEC, secure));
+		}
+		reply.header('Set-Cookie', cookies);
 		return reply.redirect(url, 302);
 	}
 
@@ -102,7 +112,16 @@ export class IntraAuthApiService {
 			return { error: rateLimitExceededError };
 		}
 
-		const user = await this.intraAuthService.consumeLoginCode(request.body?.code);
+		const code = request.body?.code;
+		const cookieCode = getCookieValue(request.headers.cookie, INTRA_LOGIN_COOKIE_NAME);
+		const user = await this.intraAuthService.consumeLoginCode(code, cookieCode);
+
+		// Cookie と一致したコードは (ログインできたかにかかわらず) 使用済みなので、Cookie を消す。
+		// 一致しない場合は、このブラウザで進行中の別のログインを妨げないよう Cookie を残す
+		if (isSameIntraToken(code, cookieCode)) {
+			reply.header('Set-Cookie', buildIntraCookieClear(INTRA_LOGIN_COOKIE_NAME, this.intraAuthService.isSecureCookie()));
+		}
+
 		if (user == null) {
 			reply.code(400);
 			return {

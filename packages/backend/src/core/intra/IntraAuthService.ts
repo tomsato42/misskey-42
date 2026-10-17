@@ -139,34 +139,39 @@ export class IntraAuthService {
 	}
 
 	/**
-	 * 42 からの callback を処理し、ブラウザのリダイレクト先を返す
+	 * 42 からの callback を処理し、ブラウザのリダイレクト先を返す。
+	 * ログインに成功した場合は loginCode も返すので、呼び出し側はそれをブラウザの Cookie にも保存すること (exchange で照合する)
 	 * @param cookieState authorize のときにブラウザの Cookie に保存した state
 	 */
 	@bindThis
-	public async handleCallback(code: unknown, state: unknown, cookieState: unknown): Promise<string> {
+	public async handleCallback(code: unknown, state: unknown, cookieState: unknown): Promise<{ url: string; loginCode: string | null }> {
 		try {
 			const user = await this.authenticate(code, state, cookieState);
 
 			const loginCode = generateIntraToken();
 			await this.redisClient.set(`intra:login:${loginCode}`, user.id, 'EX', INTRA_LOGIN_CODE_TTL_SEC);
 
-			return buildIntraCompleteUrl(this.config.url, loginCode);
+			return { url: buildIntraCompleteUrl(this.config.url, loginCode), loginCode };
 		} catch (err) {
 			if (err instanceof IntraAuthError) {
 				this.logger.info(`Rejected intra login (${err.reason}): ${err.message}`);
-				return buildIntraErrorUrl(this.config.url, err.reason);
+				return { url: buildIntraErrorUrl(this.config.url, err.reason), loginCode: null };
 			}
 
 			this.logger.error(`Unexpected error while handling intra callback: ${err instanceof Error ? err.message : String(err)}`);
-			return buildIntraErrorUrl(this.config.url, 'intra_error');
+			return { url: buildIntraErrorUrl(this.config.url, 'intra_error'), loginCode: null };
 		}
 	}
 
 	/**
-	 * ログイン用の使い捨てコードを消費し、ログインさせるユーザーを返す。無効なコードなら null
+	 * ログイン用の使い捨てコードを消費し、ログインさせるユーザーを返す。無効なコードなら null。
+	 * Cookie のコードと一致しない場合は、Redis のコードを消費せずに null を返す
+	 * @param cookieCode callback のときにブラウザの Cookie に保存したコード
 	 */
 	@bindThis
-	public async consumeLoginCode(code: unknown): Promise<MiLocalUser | null> {
+	public async consumeLoginCode(code: unknown, cookieCode: unknown): Promise<MiLocalUser | null> {
+		// ログインを完了させるブラウザが、callback を受けたブラウザと同じであることを確かめる
+		if (!isSameIntraToken(code, cookieCode)) return null;
 		if (!isIntraToken(code)) return null;
 
 		const userId = await this.redisClient.getdel(`intra:login:${code}`);

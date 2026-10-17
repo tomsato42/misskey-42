@@ -164,6 +164,10 @@ describe('IntraAuthService', () => {
 		return state;
 	}
 
+	async function callbackUrl(code: unknown, state: unknown, cookieState: unknown): Promise<string> {
+		return (await service.handleCallback(code, state, cookieState)).url;
+	}
+
 	function loginCodeOf(redirectUrl: string): string {
 		const prefix = `${BASE_URL}/intra-complete/`;
 		expect(redirectUrl.startsWith(prefix)).toBe(true);
@@ -186,7 +190,7 @@ describe('IntraAuthService', () => {
 
 	test('新規ユーザーを作成し、使い捨てコードでログインできる', async () => {
 		const state = await authorizeAndGetState();
-		const redirect = await service.handleCallback('authcode', state, state);
+		const redirect = await callbackUrl('authcode', state, state);
 		const code = loginCodeOf(redirect);
 
 		expect(users.rows).toHaveLength(1);
@@ -198,21 +202,21 @@ describe('IntraAuthService', () => {
 			intraBlackholedAt: new Date('2027-03-01T00:00:00.000Z'),
 		});
 
-		const user = await service.consumeLoginCode(code);
+		const user = await service.consumeLoginCode(code, code);
 		expect(user?.id).toBe(users.rows[0].id);
 		// 使い捨て
-		expect(await service.consumeLoginCode(code)).toBeNull();
+		expect(await service.consumeLoginCode(code, code)).toBeNull();
 	});
 
 	test('state は使い捨て', async () => {
 		const state = await authorizeAndGetState();
-		await service.handleCallback('authcode', state, state);
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		await callbackUrl('authcode', state, state);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
 	});
 
 	test('不正な state は拒否する', async () => {
-		expect(await service.handleCallback('authcode', undefined, undefined)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
-		expect(await service.handleCallback('authcode', 'a'.repeat(43), 'a'.repeat(43))).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		expect(await callbackUrl('authcode', undefined, undefined)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		expect(await callbackUrl('authcode', 'a'.repeat(43), 'a'.repeat(43))).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
 		expect(users.rows).toHaveLength(0);
 	});
 
@@ -220,9 +224,9 @@ describe('IntraAuthService', () => {
 		// 攻撃者が発行した state を、被害者のブラウザ (別の state の Cookie を持つ、または Cookie が無い) で使う状況
 		const attackerState = await authorizeAndGetState();
 		const victimState = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', attackerState, victimState)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
-		expect(await service.handleCallback('authcode', attackerState, null)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
-		expect(await service.handleCallback('authcode', attackerState, '')).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		expect(await callbackUrl('authcode', attackerState, victimState)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		expect(await callbackUrl('authcode', attackerState, null)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+		expect(await callbackUrl('authcode', attackerState, '')).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
 		expect(users.rows).toHaveLength(0);
 	});
 
@@ -234,33 +238,33 @@ describe('IntraAuthService', () => {
 
 	test('code が無い場合は intra_error', async () => {
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback(undefined, state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
+		expect(await callbackUrl(undefined, state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
 	});
 
 	test('42 API の失敗は intra_error', async () => {
 		intraApiFails = true;
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
 	});
 
 	test('初期セットアップ前は intra でログインさせない', async () => {
 		meta.rootUserId = null;
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=intra_error`);
 		expect(users.rows).toHaveLength(0);
 	});
 
 	test('対象 cursus に在籍していなければ not_eligible', async () => {
 		intraUser = createIntraUser({ cursus_users: [] });
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=not_eligible`);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=not_eligible`);
 		expect(users.rows).toHaveLength(0);
 	});
 
 	test('既存ユーザーは intra 系の列を更新してログインする', async () => {
 		addUser('existing', 'tomoki_2307', { intraId: 1000, intraLogin: 'old', intraBlackholedAt: null });
 		const state = await authorizeAndGetState();
-		const code = loginCodeOf(await service.handleCallback('authcode', state, state));
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
 
 		expect(users.rows).toHaveLength(1);
 		expect(profiles.rows[0]).toMatchObject({
@@ -268,26 +272,26 @@ describe('IntraAuthService', () => {
 			intraPoolYearMonth: '2307',
 			intraBlackholedAt: new Date('2027-03-01T00:00:00.000Z'),
 		});
-		expect((await service.consumeLoginCode(code))?.id).toBe('existing');
+		expect((await service.consumeLoginCode(code, code))?.id).toBe('existing');
 	});
 
 	test('凍結済みの既存ユーザーは suspended', async () => {
 		addUser('existing', 'tomoki_2307', { intraId: 1000 }, { isSuspended: true });
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=suspended`);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=suspended`);
 	});
 
 	test('ログイン後に凍結されたら使い捨てコードは無効', async () => {
 		const state = await authorizeAndGetState();
-		const code = loginCodeOf(await service.handleCallback('authcode', state, state));
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
 		users.rows[0].isSuspended = true;
-		expect(await service.consumeLoginCode(code)).toBeNull();
+		expect(await service.consumeLoginCode(code, code)).toBeNull();
 	});
 
 	test('ユーザー名が別の人に使われていれば username_taken', async () => {
 		addUser('other', 'tomoki_2307', { intraId: 999 });
 		const state = await authorizeAndGetState();
-		expect(await service.handleCallback('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=username_taken`);
+		expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/intra-complete/error?reason=username_taken`);
 		expect(users.rows).toHaveLength(1);
 	});
 
@@ -298,16 +302,38 @@ describe('IntraAuthService', () => {
 			addUser('concurrent', 'tomoki_2307', { intraId: 1000 });
 		};
 		const state = await authorizeAndGetState();
-		const code = loginCodeOf(await service.handleCallback('authcode', state, state));
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
 
 		expect(users.rows).toHaveLength(1);
-		expect((await service.consumeLoginCode(code))?.id).toBe('concurrent');
+		expect((await service.consumeLoginCode(code, code))?.id).toBe('concurrent');
 	});
 
 	test('不正な使い捨てコードは null', async () => {
-		expect(await service.consumeLoginCode(undefined)).toBeNull();
-		expect(await service.consumeLoginCode('a'.repeat(43))).toBeNull();
-		expect(await service.consumeLoginCode({ code: 'x' })).toBeNull();
+		expect(await service.consumeLoginCode(undefined, undefined)).toBeNull();
+		expect(await service.consumeLoginCode('a'.repeat(43), 'a'.repeat(43))).toBeNull();
+		expect(await service.consumeLoginCode({ code: 'x' }, { code: 'x' })).toBeNull();
+	});
+
+	test('Cookie のコードと一致しなければ null で、コードは消費しない (login CSRF 対策)', async () => {
+		const state = await authorizeAndGetState();
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
+
+		// 攻撃者が自分のコードを被害者のブラウザ (Cookie が無い、または別のコードの Cookie を持つ) で使わせる状況
+		expect(await service.consumeLoginCode(code, null)).toBeNull();
+		expect(await service.consumeLoginCode(code, 'b'.repeat(43))).toBeNull();
+		expect(redis.store.has(`intra:login:${code}`)).toBe(true);
+
+		expect((await service.consumeLoginCode(code, code))?.id).toBe(users.rows[0].id);
+	});
+
+	test('callback の戻り値の loginCode はリダイレクト先のコードと同じで、失敗時は null', async () => {
+		const state = await authorizeAndGetState();
+		const result = await service.handleCallback('authcode', state, state);
+		expect(result.loginCode).not.toBeNull();
+		expect(loginCodeOf(result.url)).toBe(result.loginCode);
+
+		const failed = await service.handleCallback('authcode', state, state);
+		expect(failed.loginCode).toBeNull();
 	});
 
 	describe('isPasswordLoginRestricted', () => {
