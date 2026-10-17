@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import * as Misskey from 'misskey-js';
 import { DI } from '@/di-symbols.js';
+import type { Config } from '@/config.js';
 import type { SigninsRepository, UserProfilesRepository } from '@/models/_.js';
 import { IdService } from '@/core/IdService.js';
 import type { MiLocalUser } from '@/models/User.js';
@@ -14,11 +15,15 @@ import { SigninEntityService } from '@/core/entities/SigninEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { EmailService } from '@/core/EmailService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { buildMediaGateCookie, issueMediaGateToken, nowUnixSec } from '@/core/media-gate/media-gate.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
 export class SigninService {
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.signinsRepository)
 		private signinsRepository: SigninsRepository,
 
@@ -55,6 +60,13 @@ export class SigninService {
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。');
 			}
 		});
+
+		// mediaGate が有効なら、画像・添付ファイルを見るための Cookie も発行する。
+		// Set-Cookie は既に設定されたものに追記される (intra の exchange はログイン用コードの Cookie を消す指定をしている)
+		if (this.config.mediaGate != null) {
+			const { token } = issueMediaGateToken(this.config.mediaGate, user.id, nowUnixSec());
+			reply.header('Set-Cookie', buildMediaGateCookie(this.config.mediaGate.cookieName, token, this.config.mediaGate.ttlSec, this.config.url.startsWith('https://')));
+		}
 
 		reply.code(200);
 		return {

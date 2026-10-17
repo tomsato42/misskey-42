@@ -19,6 +19,7 @@ import { VideoProcessingService } from '@/core/VideoProcessingService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { handleRequestRedirectToOmitSearch } from '@/misc/fastify-hook-handlers.js';
+import { registerMediaGateHooks } from './media-gate-hooks.js';
 import { FileServerDriveHandler } from './file/FileServerDriveHandler.js';
 import { FileServerFileResolver } from './file/FileServerFileResolver.js';
 import { FileServerProxyHandler } from './file/FileServerProxyHandler.js';
@@ -73,6 +74,11 @@ export class FileServerService {
 
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
+		// mediaGate が有効なら、/files/* と /proxy/* はログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
+		if (this.config.mediaGate != null) {
+			registerMediaGateHooks(fastify, this.config.mediaGate);
+		}
+
 		fastify.addHook('onRequest', (request, reply, done) => {
 			reply.header('Content-Security-Policy', 'default-src \'none\'; img-src \'self\'; media-src \'self\'; style-src \'unsafe-inline\'');
 			if (process.env.NODE_ENV === 'development') {

@@ -19,6 +19,7 @@ import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
 import { IntraAuthApiService } from './IntraAuthApiService.js';
+import { MediaSessionApiService } from './MediaSessionApiService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -41,6 +42,7 @@ export class ApiServerService {
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
 		private intraAuthApiService: IntraAuthApiService,
+		private mediaSessionApiService: MediaSessionApiService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -156,6 +158,15 @@ export class ApiServerService {
 			fastify.post<{
 				Body: { code?: string; } | undefined;
 			}>('/intra/exchange', (request, reply) => this.intraAuthApiService.exchange(request, reply));
+		}
+
+		// 画像・添付ファイルを見るための Cookie。mediaGate が無効なら登録せず、upstream と同じく 404 にする
+		if (this.config.mediaGate != null) {
+			fastify.post<{
+				Body: { i?: unknown; } | undefined;
+			}>('/media-session', (request, reply) => this.mediaSessionApiService.issue(request, reply));
+
+			fastify.post('/media-session/clear', (request, reply) => this.mediaSessionApiService.clear(request, reply));
 		}
 
 		// 42 intra 連携が有効なときは連合しないので、既知のサーバーの一覧も出さない (下の /* で 404 になる)

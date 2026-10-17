@@ -33,6 +33,7 @@ import { ClientServerService } from './web/ClientServerService.js';
 import { OpenApiServerService } from './api/openapi/OpenApiServerService.js';
 import { OAuth2ProviderService } from './oauth/OAuth2ProviderService.js';
 import { registerHttpAccessLog } from './http-access-log.js';
+import { mediaGateRouteOptions } from './media-gate-hooks.js';
 
 const _dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -162,7 +163,10 @@ export class ServerService implements OnApplicationShutdown {
 		fastify.register(this.oauth2ProviderService.createTokenServer, { prefix: '/oauth/token' });
 		fastify.register(this.healthServerService.createServer, { prefix: '/healthz' });
 
-		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', async (request, reply) => {
+		// アバター・カスタム絵文字・identicon は、mediaGate が有効ならログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
+		const mediaGateOptions = mediaGateRouteOptions(this.config.mediaGate);
+
+		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', mediaGateOptions, async (request, reply) => {
 			const path = request.params.path;
 
 			reply.header('Cache-Control', 'public, max-age=86400');
@@ -220,7 +224,7 @@ export class ServerService implements OnApplicationShutdown {
 			);
 		});
 
-		fastify.get<{ Params: { acct: string } }>('/avatar/@:acct', async (request, reply) => {
+		fastify.get<{ Params: { acct: string } }>('/avatar/@:acct', mediaGateOptions, async (request, reply) => {
 			const { username, host } = Acct.parse(request.params.acct);
 			const user = await this.usersRepository.findOne({
 				where: {
@@ -239,7 +243,7 @@ export class ServerService implements OnApplicationShutdown {
 			}
 		});
 
-		fastify.get<{ Params: { x: string } }>('/identicon/:x', async (request, reply) => {
+		fastify.get<{ Params: { x: string } }>('/identicon/:x', mediaGateOptions, async (request, reply) => {
 			reply.header('Content-Type', 'image/png');
 			reply.header('Cache-Control', 'public, max-age=86400');
 
