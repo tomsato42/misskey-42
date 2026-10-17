@@ -323,6 +323,8 @@ GitHub のドキュメントでは、Free プランの private リポジトリ�
 
 ## 日常の運用
 
+- 管理者のパスワード・パスキーでのログインは、通常のログイン画面には表示しない。`https://42times.kinachan.com/?admin-login` を開くと表示される。
+
 - `main` に push すると、自動でビルドとデプロイが走ります。`deploy/`・`cloudflare/`・`.claude/` などだけの変更では走りません。手で走らせるときは Actions タブの Run workflow を使います。
 - デプロイに失敗すると、`deploy.sh` が前回成功したタグ (`state/current-tag`) に戻します。ワークフローは失敗になります。
 - 前のバージョンに手で戻すときは、VPS で `state/history.log` からタグを選び、`/home/misskey/42times/deploy.sh sha-xxxxxxx` を実行します。VPS に残っているイメージは、今のタグと前のタグの 2 つだけです (それより古いタグは GHCR から pull し直します)。

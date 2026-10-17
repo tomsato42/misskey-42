@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<!-- intra 連携が有効なときは、ここから下 (ユーザー名・パスキーでのログインなど) を折りたたみの中に入れる。
 		無効なときは div になり、Vue は通常の要素に default 以外のスロットを描画しないので、upstream と同じ表示になる -->
-		<component :is="localSigninWrapper.component" v-bind="localSigninWrapper.props">
+		<component :is="localSigninWrapper.component" v-if="showLocalSignin" v-bind="localSigninWrapper.props">
 			<template #icon><i class="ti ti-shield-lock"></i></template>
 			<template #label>{{ i18n.ts._intra.passwordLogin }}</template>
 			<template #caption>{{ i18n.ts._intra.passwordLoginDescription }}</template>
@@ -108,8 +108,11 @@ const username = ref(props.initialUsername ?? '');
 
 // intra 連携が無効なら upstream と同じく折りたたまずに表示する。ダイアログ内なので MkFolder のページ表示は使わない
 const localSigninWrapper = instance.intraLoginEnabled
-	? { component: MkFolder, props: { canPage: false } }
+	? { component: MkFolder, props: { canPage: false, defaultOpen: true } }
 	: { component: 'div', props: {} };
+
+// intra 連携が有効なとき、パスワード・パスキーでのログイン (管理者向け) は URL に ?admin-login を付けたときだけ表示する
+const showLocalSignin = !instance.intraLoginEnabled || new URLSearchParams(window.location.search).has('admin-login');
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
