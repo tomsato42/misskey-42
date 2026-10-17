@@ -133,15 +133,26 @@ describe('extractIntraProfile', () => {
 			poolYearMonth: '2307',
 			blackholedAt: new Date('2025-03-01T00:00:00.000Z'),
 			paceDeadlineAt: null,
+			cursusBeginAt: new Date('2023-10-02T01:00:00.000Z'),
 			level: 5,
 			campus: { id: 26, name: 'Tokyo' },
 		});
 	});
 
-	test('対象 cursus に在籍していなければ level と BH は null', () => {
+	test('対象 cursus に在籍していなければ level と BH と開始日時は null', () => {
 		const profile = extractIntraProfile(createUser({ 'staff?': true, cursus_users: [] }), CURSUS_42);
 		expect(profile.level).toBeNull();
 		expect(profile.blackholedAt).toBeNull();
+		expect(profile.cursusBeginAt).toBeNull();
+	});
+
+	test('ピシンの cursus_user の begin_at は開始日時に使わない', () => {
+		const user = createUser({
+			cursus_users: [
+				{ cursus_id: CURSUS_PISCINE, level: 8.5, blackholed_at: null, begin_at: '2023-07-03T01:00:00.000Z', end_at: '2023-07-28T09:00:00.000Z' },
+			],
+		});
+		expect(extractIntraProfile(user, CURSUS_42).cursusBeginAt).toBeNull();
 	});
 
 	test('対象 cursus の cursus_user が複数あれば begin_at が新しいものを使う', () => {
@@ -154,6 +165,7 @@ describe('extractIntraProfile', () => {
 		const profile = extractIntraProfile(user, CURSUS_42);
 		expect(profile.level).toBe(7);
 		expect(profile.blackholedAt).toBeNull();
+		expect(profile.cursusBeginAt).toEqual(new Date('2023-01-01T00:00:00.000Z'));
 	});
 
 	test('is_primary のキャンパスが無ければ campus の先頭を使う', () => {

@@ -10,6 +10,7 @@ import { QueryFailedError } from 'typeorm';
 import { IntraSyncService } from '@/core/intra/IntraSyncService.js';
 import { RoleService } from '@/core/RoleService.js';
 import type { IntraUser } from '@/core/intra/intra-user.js';
+import type { IntraRoleKind } from '@/models/IntraRole.js';
 import type { Config } from '@/config.js';
 
 const CURSUS_42 = 21;
@@ -24,7 +25,7 @@ type FakeProfile = {
 	intraSyncedAt: Date | null;
 };
 type FakeRole = { id: string; name: string; [key: string]: unknown };
-type FakeIntraRole = { id: string; roleId: string; kind: 'level' | 'campus'; key: string };
+type FakeIntraRole = { id: string; roleId: string; kind: IntraRoleKind; key: string };
 type FakeAssignment = { id: string; userId: string; roleId: string; expiresAt: Date | null };
 
 function createIntraUser(overrides: Partial<IntraUser> = {}): IntraUser {
@@ -79,7 +80,7 @@ describe('IntraSyncService', () => {
 	}
 
 	/** 既に同期済みの intra 管理ロールを用意する */
-	function addManagedRole(kind: 'level' | 'campus', key: string, name: string): string {
+	function addManagedRole(kind: IntraRoleKind, key: string, name: string): string {
 		const roleId = nextId('role');
 		roles.push({ id: roleId, name });
 		intraRoles.push({ id: nextId('ir'), roleId, kind, key });
@@ -222,21 +223,25 @@ describe('IntraSyncService', () => {
 		expect(profiles[0].intraSyncedAt).toBeInstanceOf(Date);
 		expect(profileCache.get('u1')?.intraLogin).toBe('tomoki');
 
-		expect(intraRoles.map(r => [r.kind, r.key])).toEqual([['level', '5'], ['campus', '26']]);
-		expect(roles).toHaveLength(2);
-		expect(roles[0]).toMatchObject({
-			name: 'Lv.5',
-			target: 'manual',
-			isPublic: true,
-			asBadge: true,
-			isModerator: false,
-			isAdministrator: false,
-			canEditMembersByModerator: false,
-			color: null,
-			policies: {},
-		});
-		expect(roles[1].name).toBe('Tokyo');
-		expect(roleNamesOf('u1')).toEqual(['Lv.5', 'Tokyo']);
+		expect(intraRoles.map(r => [r.kind, r.key])).toEqual([['level', '5'], ['campus', '26'], ['pool', '2307'], ['cohort', '2310']]);
+		expect(roles.map(r => r.name)).toEqual(['Lv.5', 'Tokyo', 'Piscine 23/07', 'Cursus 23/10']);
+		for (const role of roles) {
+			expect(role).toMatchObject({
+				target: 'manual',
+				isPublic: true,
+				asBadge: true,
+				isModerator: false,
+				isAdministrator: false,
+				// ロールのタイムラインを公開する
+				isExplorable: true,
+				canEditMembersByModerator: false,
+				color: null,
+				policies: {},
+			});
+		}
+		expect(roles[2].description).toBe('42 intra のピシンの時期に応じて自動で付与されます');
+		expect(roles[3].description).toBe('42 intra の本科 (42cursus) への入学時期に応じて自動で付与されます');
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
 	test('レベルが上がったら新しいレベルのロールに付け替え、手動のロールには触れない', async () => {
@@ -250,31 +255,64 @@ describe('IntraSyncService', () => {
 
 		await service.syncUser('u1', createIntraUser());
 
-		expect(roleNamesOf('u1')).toEqual(['Lv.5', 'Manual', 'Tokyo']);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Manual', 'Piscine 23/07', 'Tokyo']);
 		// 既存のロールは作り直さない
 		expect(intraRoles.filter(r => r.kind === 'campus')).toHaveLength(1);
+	});
+
+	test('入学時期のロールを付け替え、ほかの入学時期のロールは外す', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const cohort2304 = addManagedRole('cohort', '2304', 'Cursus 23/04');
+		const cohort2310 = addManagedRole('cohort', '2310', 'Cursus 23/10');
+		assign('u1', cohort2304);
+
+		await service.syncUser('u1', createIntraUser({
+			cursus_users: [
+				// 日本時間では 2023-11-01 なので、24/04 になる
+				{ cursus_id: CURSUS_42, level: 5.73, blackholed_at: null, begin_at: '2023-10-31T15:00:00.000Z', end_at: null },
+			],
+		}));
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 24/04', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+		expect(intraRoles.filter(r => r.kind === 'cohort').map(r => r.key).sort()).toEqual(['2304', '2310', '2404']);
+		expect(assignments.some(a => a.roleId === cohort2304 || a.roleId === cohort2310)).toBe(false);
+	});
+
+	test('ピシンの年月が無ければピシンのロールを付けず、付いていれば外す', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const pool = addManagedRole('pool', '2307', 'Piscine 23/07');
+		assign('u1', pool);
+
+		await service.syncUser('u1', createIntraUser({ pool_year: null, pool_month: null }));
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Tokyo']);
+		expect(intraRoles.filter(r => r.kind === 'pool')).toHaveLength(1);
 	});
 
 	test('既存のロールの名前は上書きしない', async () => {
 		addProfile('u1', { intraId: 1000 });
 		const tokyo = addManagedRole('campus', '26', '東京校');
+		const pool = addManagedRole('pool', '2307', '2023 年 7 月ピシン');
 
 		await service.syncUser('u1', createIntraUser());
 
 		expect(roles.find(r => r.id === tokyo)?.name).toBe('東京校');
-		expect(roleNamesOf('u1')).toEqual(['Lv.5', '東京校']);
+		expect(roles.find(r => r.id === pool)?.name).toBe('2023 年 7 月ピシン');
+		expect(roleNamesOf('u1')).toEqual(['2023 年 7 月ピシン', 'Cursus 23/10', 'Lv.5', '東京校']);
 	});
 
-	test('対象 cursus に在籍していなければレベルのロールをすべて外す', async () => {
+	test('対象 cursus に在籍していなければレベルと入学時期のロールをすべて外す', async () => {
 		addProfile('u1', { intraId: 1000 });
 		const lv4 = addManagedRole('level', '4', 'Lv.4');
 		const lv5 = addManagedRole('level', '5', 'Lv.5');
+		const cohort = addManagedRole('cohort', '2310', 'Cursus 23/10');
 		assign('u1', lv4);
 		assign('u1', lv5);
+		assign('u1', cohort);
 
 		await service.syncUser('u1', createIntraUser({ cursus_users: [], 'staff?': true }));
 
-		expect(roleNamesOf('u1')).toEqual(['Tokyo']);
+		expect(roleNamesOf('u1')).toEqual(['Piscine 23/07', 'Tokyo']);
 	});
 
 	test('キャンパスが無ければキャンパスのロールを外す', async () => {
@@ -284,7 +322,7 @@ describe('IntraSyncService', () => {
 
 		await service.syncUser('u1', createIntraUser({ campus: [], campus_users: [] }));
 
-		expect(roleNamesOf('u1')).toEqual(['Lv.5']);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07']);
 	});
 
 	test('期限切れで付いている管理ロールは付け直す', async () => {
@@ -294,7 +332,7 @@ describe('IntraSyncService', () => {
 
 		await service.syncUser('u1', createIntraUser({ campus: [], campus_users: [] }));
 
-		const current = assignments.filter(a => a.userId === 'u1');
+		const current = assignments.filter(a => a.userId === 'u1' && a.roleId === lv5);
 		expect(current).toHaveLength(1);
 		expect(current[0]).toMatchObject({ roleId: lv5, expiresAt: null });
 	});
@@ -307,7 +345,7 @@ describe('IntraSyncService', () => {
 
 		expect(getUserCalls).toEqual([1000]);
 		expect(profiles[0].intraLogin).toBe('renamed');
-		expect(roleNamesOf('u1')).toEqual(['Lv.5', 'Tokyo']);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
 	test('42 API でユーザーが見つからなければ intraSyncedAt だけ更新する', async () => {
@@ -353,8 +391,8 @@ describe('IntraSyncService', () => {
 		await service.syncUser('u1', createIntraUser({ campus: [], campus_users: [] }));
 
 		expect(intraRoles.filter(r => r.kind === 'level')).toEqual([expect.objectContaining({ roleId: concurrentRoleId })]);
-		expect(roles.map(r => r.name)).toEqual(['Lv.5 (concurrent)']);
-		expect(roleNamesOf('u1')).toEqual(['Lv.5 (concurrent)']);
+		expect(roles.map(r => r.name)).toEqual(['Lv.5 (concurrent)', 'Piscine 23/07', 'Cursus 23/10']);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5 (concurrent)', 'Piscine 23/07']);
 	});
 
 	test('同時に同期しても同じ条件のロールは 1 つだけ', async () => {
@@ -366,10 +404,10 @@ describe('IntraSyncService', () => {
 			service.syncUser('u2', createIntraUser({ id: 2000, login: 'other' })),
 		]);
 
-		expect(intraRoles).toHaveLength(2);
-		expect(roles).toHaveLength(2);
-		expect(roleNamesOf('u1')).toEqual(['Lv.5', 'Tokyo']);
-		expect(roleNamesOf('u2')).toEqual(['Lv.5', 'Tokyo']);
+		expect(intraRoles).toHaveLength(4);
+		expect(roles).toHaveLength(4);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+		expect(roleNamesOf('u2')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
 	test('記録が重複以外の理由で失敗したら、作成したロールを消して例外を投げる', async () => {

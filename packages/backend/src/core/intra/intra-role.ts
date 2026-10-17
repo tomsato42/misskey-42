@@ -20,11 +20,68 @@ export type IntraRoleTarget = {
 	name: string;
 };
 
+/** 日本時間の UTC からのずれ。日本に夏時間は無いので固定値でよい */
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** YYMM 形式 (月は 01〜12) */
+const YEAR_MONTH_PATTERN = /^(\d{2})(0[1-9]|1[0-2])$/;
+
+function toYearMonth(year: number, month: number): string {
+	return `${String(year % 100).padStart(2, '0')}${String(month).padStart(2, '0')}`;
+}
+
+/**
+ * YYMM を "YY/MM" に変える。YYMM 形式でなければ null
+ */
+export function formatYearMonth(yearMonth: string): string | null {
+	const match = YEAR_MONTH_PATTERN.exec(yearMonth);
+	return match == null ? null : `${match[1]}/${match[2]}`;
+}
+
+/**
+ * 42cursus の開始日時から、本科への入学時期 (YYMM) を求める。
+ * 開始日時を日本時間の年月にしてから、11〜4 月なら次の 4 月 (11・12 月は翌年、1〜4 月は同じ年)、
+ * 5〜10 月なら同じ年の 10 月にまとめる。日時が不正なら null
+ */
+export function toCohortYearMonth(beginAt: Date): string | null {
+	const time = beginAt.getTime();
+	if (isNaN(time)) return null;
+
+	// UTC の値として読むと日本時間の年月になるよう、9 時間ずらす
+	const jst = new Date(time + JST_OFFSET_MS);
+	const year = jst.getUTCFullYear();
+	const month = jst.getUTCMonth() + 1;
+
+	if (month >= 11) return toYearMonth(year + 1, 4);
+	if (month <= 4) return toYearMonth(year, 4);
+	return toYearMonth(year, 10);
+}
+
+/**
+ * ピシンの時期のロール条件。ピシンの年月が無いか YYMM 形式でなければ null
+ */
+export function getPoolRoleTarget(poolYearMonth: string | null): IntraRoleTarget | null {
+	if (poolYearMonth == null) return null;
+	const label = formatYearMonth(poolYearMonth);
+	if (label == null) return null;
+	return { kind: 'pool', key: poolYearMonth, name: `Piscine ${label}` };
+}
+
+/**
+ * 本科への入学時期のロール条件。42cursus の開始日時が無ければ null
+ */
+export function getCohortRoleTarget(cursusBeginAt: Date | null): IntraRoleTarget | null {
+	if (cursusBeginAt == null) return null;
+	const yearMonth = toCohortYearMonth(cursusBeginAt);
+	if (yearMonth == null) return null;
+	return { kind: 'cohort', key: yearMonth, name: `Cursus ${formatYearMonth(yearMonth)}` };
+}
+
 /**
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
- * レベルやキャンパスが無ければ、その種類のロールは含めない
+ * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
  */
-export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus'>): IntraRoleTarget[] {
+export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'cursusBeginAt'>): IntraRoleTarget[] {
 	const targets: IntraRoleTarget[] = [];
 
 	if (profile.level != null) {
@@ -34,6 +91,12 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	if (profile.campus != null) {
 		targets.push({ kind: 'campus', key: String(profile.campus.id), name: profile.campus.name });
 	}
+
+	const pool = getPoolRoleTarget(profile.poolYearMonth);
+	if (pool != null) targets.push(pool);
+
+	const cohort = getCohortRoleTarget(profile.cursusBeginAt);
+	if (cohort != null) targets.push(cohort);
 
 	return targets;
 }

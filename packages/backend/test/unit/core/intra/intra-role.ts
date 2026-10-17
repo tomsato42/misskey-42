@@ -4,24 +4,137 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { diffIntraRoleAssignments, getIntraRoleTargets } from '@/core/intra/intra-role.js';
+import {
+	diffIntraRoleAssignments,
+	formatYearMonth,
+	getCohortRoleTarget,
+	getIntraRoleTargets,
+	getPoolRoleTarget,
+	toCohortYearMonth,
+} from '@/core/intra/intra-role.js';
+
+const EMPTY_PROFILE = { level: null, campus: null, poolYearMonth: null, cursusBeginAt: null };
 
 describe('getIntraRoleTargets', () => {
-	test('レベルとキャンパスのロール条件を返す', () => {
-		expect(getIntraRoleTargets({ level: 5, campus: { id: 26, name: 'Tokyo' } })).toEqual([
+	test('レベル・キャンパス・ピシン・入学時期のロール条件を返す', () => {
+		expect(getIntraRoleTargets({
+			level: 5,
+			campus: { id: 26, name: 'Tokyo' },
+			poolYearMonth: '2408',
+			cursusBeginAt: new Date('2024-10-01T00:00:00.000Z'),
+		})).toEqual([
 			{ kind: 'level', key: '5', name: 'Lv.5' },
 			{ kind: 'campus', key: '26', name: 'Tokyo' },
+			{ kind: 'pool', key: '2408', name: 'Piscine 24/08' },
+			{ kind: 'cohort', key: '2410', name: 'Cursus 24/10' },
 		]);
 	});
 
 	test('レベル 0 も対象にする', () => {
-		expect(getIntraRoleTargets({ level: 0, campus: null })).toEqual([
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, level: 0 })).toEqual([
 			{ kind: 'level', key: '0', name: 'Lv.0' },
 		]);
 	});
 
-	test('レベルもキャンパスも無ければ空', () => {
-		expect(getIntraRoleTargets({ level: null, campus: null })).toEqual([]);
+	test('どの情報も無ければ空', () => {
+		expect(getIntraRoleTargets(EMPTY_PROFILE)).toEqual([]);
+	});
+
+	test('ピシンの年月が無ければピシンのロールを含めない', () => {
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, cursusBeginAt: new Date('2025-02-03T00:00:00.000Z') })).toEqual([
+			{ kind: 'cohort', key: '2504', name: 'Cursus 25/04' },
+		]);
+	});
+
+	test('42cursus の開始日時が無ければ入学時期のロールを含めない', () => {
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, poolYearMonth: '2307' })).toEqual([
+			{ kind: 'pool', key: '2307', name: 'Piscine 23/07' },
+		]);
+	});
+});
+
+describe('formatYearMonth', () => {
+	test('YYMM を YY/MM にする', () => {
+		expect(formatYearMonth('2408')).toBe('24/08');
+		expect(formatYearMonth('0012')).toBe('00/12');
+	});
+
+	test('YYMM 形式でなければ null', () => {
+		expect(formatYearMonth('')).toBeNull();
+		expect(formatYearMonth('240')).toBeNull();
+		expect(formatYearMonth('24080')).toBeNull();
+		expect(formatYearMonth('2400')).toBeNull();
+		expect(formatYearMonth('2413')).toBeNull();
+		expect(formatYearMonth('24/8')).toBeNull();
+	});
+});
+
+describe('toCohortYearMonth', () => {
+	// 日本時間の月の中ほど (15 日の正午) で、丸め方を確認する
+	const jst = (year: number, month: number) => new Date(`${year}-${String(month).padStart(2, '0')}-15T12:00:00+09:00`);
+
+	test.each([
+		[2024, 8, '2410'],
+		[2024, 9, '2410'],
+		[2024, 10, '2410'],
+		[2024, 11, '2504'],
+		[2024, 12, '2504'],
+		[2025, 1, '2504'],
+		[2025, 2, '2504'],
+		[2025, 4, '2504'],
+		[2025, 5, '2510'],
+	])('%i 年 %i 月 → %s', (year, month, expected) => {
+		expect(toCohortYearMonth(jst(year, month))).toBe(expected);
+	});
+
+	test('すべての月を 4 月か 10 月にまとめる', () => {
+		const results = Array.from({ length: 12 }, (_, i) => toCohortYearMonth(jst(2024, i + 1)));
+		expect(results).toEqual(['2404', '2404', '2404', '2404', '2410', '2410', '2410', '2410', '2410', '2410', '2504', '2504']);
+	});
+
+	test('月の境目は日本時間で判定する', () => {
+		// UTC では 10 月 31 日だが、日本時間では 11 月 1 日
+		expect(toCohortYearMonth(new Date('2024-10-31T15:00:00.000Z'))).toBe('2504');
+		// 日本時間でも 10 月 31 日
+		expect(toCohortYearMonth(new Date('2024-10-31T14:59:59.999Z'))).toBe('2410');
+		// UTC では 4 月 30 日だが、日本時間では 5 月 1 日
+		expect(toCohortYearMonth(new Date('2025-04-30T15:00:00.000Z'))).toBe('2510');
+		// UTC では 12 月 31 日だが、日本時間では翌年 1 月 1 日
+		expect(toCohortYearMonth(new Date('2024-12-31T15:00:00.000Z'))).toBe('2504');
+	});
+
+	test('不正な日時なら null', () => {
+		expect(toCohortYearMonth(new Date('invalid'))).toBeNull();
+	});
+});
+
+describe('getPoolRoleTarget', () => {
+	test('ピシンの年月からロール名と key を作る', () => {
+		expect(getPoolRoleTarget('2408')).toEqual({ kind: 'pool', key: '2408', name: 'Piscine 24/08' });
+	});
+
+	test('ピシンの年月が無いか不正なら null', () => {
+		expect(getPoolRoleTarget(null)).toBeNull();
+		expect(getPoolRoleTarget('2413')).toBeNull();
+	});
+});
+
+describe('getCohortRoleTarget', () => {
+	test.each([
+		['2024-08-05T00:00:00.000Z', '2410', 'Cursus 24/10'],
+		['2024-09-30T00:00:00.000Z', '2410', 'Cursus 24/10'],
+		['2024-10-01T00:00:00.000Z', '2410', 'Cursus 24/10'],
+		['2024-11-04T00:00:00.000Z', '2504', 'Cursus 25/04'],
+		['2025-02-03T00:00:00.000Z', '2504', 'Cursus 25/04'],
+		['2025-04-07T00:00:00.000Z', '2504', 'Cursus 25/04'],
+		['2025-05-12T00:00:00.000Z', '2510', 'Cursus 25/10'],
+	])('%s → %s', (beginAt, key, name) => {
+		expect(getCohortRoleTarget(new Date(beginAt))).toEqual({ kind: 'cohort', key, name });
+	});
+
+	test('42cursus の開始日時が無いか不正なら null', () => {
+		expect(getCohortRoleTarget(null)).toBeNull();
+		expect(getCohortRoleTarget(new Date('invalid'))).toBeNull();
 	});
 });
 

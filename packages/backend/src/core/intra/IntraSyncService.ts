@@ -27,6 +27,8 @@ type IntraConfig = NonNullable<Config['intra']>;
 const ROLE_DESCRIPTIONS: Record<IntraRoleTarget['kind'], string> = {
 	level: '42 intra のレベルに応じて自動で付与されます',
 	campus: '42 intra のキャンパスに応じて自動で付与されます',
+	pool: '42 intra のピシンの時期に応じて自動で付与されます',
+	cohort: '42 intra の本科 (42cursus) への入学時期に応じて自動で付与されます',
 };
 
 /**
@@ -114,7 +116,7 @@ export class IntraSyncService {
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる
 	 */
 	@bindThis
-	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus'>): Promise<void> {
+	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'cursusBeginAt'>): Promise<void> {
 		const desiredRoleIds: MiRole['id'][] = [];
 		for (const target of getIntraRoleTargets(profile)) {
 			desiredRoleIds.push(await this.ensureRole(target));
@@ -168,7 +170,8 @@ export class IntraSyncService {
 			asBadge: true,
 			isModerator: false,
 			isAdministrator: false,
-			isExplorable: false,
+			// ロールのタイムラインを公開する
+			isExplorable: true,
 			preserveAssignmentOnMoveAccount: false,
 			canEditMembersByModerator: false,
 			displayOrder: 0,

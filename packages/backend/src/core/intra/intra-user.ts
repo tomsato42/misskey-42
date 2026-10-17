@@ -57,6 +57,8 @@ export type IntraProfile = {
 	poolYearMonth: string | null;
 	blackholedAt: Date | null;
 	paceDeadlineAt: Date | null;
+	/** 対象 cursus の cursus_user の begin_at。対象 cursus に在籍していないか、begin_at が無ければ null */
+	cursusBeginAt: Date | null;
 	/** 対象 cursus のレベルの整数部分。対象 cursus に在籍していなければ null */
 	level: number | null;
 	/** 主キャンパス */
@@ -170,6 +172,7 @@ export function extractIntraProfile(user: IntraUser, cursusId: number): IntraPro
 		// ペース期日が 42 API のどの項目に当たるかは未確認のため、現時点では常に null を返す。
 		// 項目が判明したら、推測ではなく実際のレスポンスを確認してから実装すること
 		paceDeadlineAt: null,
+		cursusBeginAt: parseDate(cursusUser?.begin_at),
 		level: cursusUser != null && Number.isFinite(cursusUser.level) ? Math.floor(cursusUser.level) : null,
 		campus: findPrimaryCampus(user),
 	};
