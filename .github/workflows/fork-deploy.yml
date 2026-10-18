@@ -10,9 +10,10 @@
 # 必要な secret (environment `production` か、リポジトリの secret に登録する):
 #   - TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET: Tailscale の OAuth クライアント (タグ tag:ci)
 #   - DEPLOY_SSH_KEY: デプロイ専用の SSH 秘密鍵
-# 必要なリポジトリ変数 (Variables):
 #   - DEPLOY_HOST / DEPLOY_PORT / DEPLOY_USER: VPS の Tailscale の IP、SSH のポート、ユーザー名
 #   - DEPLOY_KNOWN_HOSTS: VPS のホスト公開鍵 (known_hosts の形式。ssh-keyscan -p <ポート> <IP> の結果)
+#   リポジトリは public なので、接続先も Variables ではなく secret に置く (Variables はログで伏せ字にならない)。
+#   この 4 つはワークフロー全体の env で読むので、environment ではなくリポジトリの secret に登録する
 # 初回セットアップの手順は deploy/README.md を参照。
 
 name: Fork deploy (42times)
@@ -47,9 +48,9 @@ env:
   IMAGE_NAME: ghcr.io/tomsato42/misskey-42
   INSTANCE_URL: https://42times.kinachan.com
   # VPS の接続先は公開リポジトリに書かず、リポジトリ変数 (Settings → Secrets and variables → Actions → Variables) から読む
-  DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-  DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
-  DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
 
 jobs:
   build:
@@ -119,11 +120,11 @@ jobs:
       - name: Set up SSH key and known_hosts
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
         run: |
           install -d -m 700 ~/.ssh
           (umask 077 && printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key)
-          # VPS のホスト公開鍵はリポジトリ変数 DEPLOY_KNOWN_HOSTS (known_hosts の形式) から読む。VPS の鍵を作り直したら更新する
+          # VPS のホスト公開鍵は secret DEPLOY_KNOWN_HOSTS (known_hosts の形式) から読む。VPS の鍵を作り直したら更新する
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
