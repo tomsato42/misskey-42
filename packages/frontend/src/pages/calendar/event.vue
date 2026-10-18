@@ -183,6 +183,8 @@ function postWithHashtag() {
 	if (event.value?.hashtag == null) return;
 	os.post({
 		initialText: `#${event.value.hashtag} `,
+		// 投稿をこのイベントに紐づける (投稿フォームで外せる)
+		initialCalendarEvent: event.value,
 	});
 }
 

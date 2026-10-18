@@ -45,6 +45,27 @@ export function formatCalendarEventTime(event: { isAllDay: boolean; startTime: s
 	return i18n.tsx._calendar.timeRange({ start: event.startTime, end: event.endTime });
 }
 
+/** イベントの日時の表記 (「10月20日(火) 12:00〜15:00」「10月20日(火) 終日」) */
+export function formatCalendarSchedule(schedule: { date: string; isAllDay: boolean; startTime: string | null; endTime: string | null }): string {
+	return `${formatCalendarDay(schedule.date)} ${formatCalendarEventTime(schedule)}`;
+}
+
+/** イベントの日時と場所 (「10月20日(火) 12:00〜 ・ c3」)。場所が無ければ日時だけ */
+export function formatCalendarScheduleAndLocation(event: { date: string; isAllDay: boolean; startTime: string | null; endTime: string | null; location: string | null }): string {
+	const schedule = formatCalendarSchedule(event);
+	return event.location != null && event.location !== '' ? `${schedule} ・ ${event.location}` : schedule;
+}
+
+/** イベントのリマインドの通知の見出し */
+export function getCalendarReminderHeading(kind: 'week' | 'day' | 'today'): string {
+	return i18n.ts._calendar._notification[kind];
+}
+
+/** イベントの日時の変更・中止の通知の見出し */
+export function getCalendarUpdateHeading(kind: 'rescheduled' | 'canceled'): string {
+	return i18n.ts._calendar._notification[kind];
+}
+
 /** 入力の検証エラーの理由を、欄の下に出す文言にする */
 export function getCalendarEventValidationMessage(reason: CalendarEventValidationReason): string {
 	const t = i18n.ts._calendar._errors;
@@ -78,6 +99,12 @@ export function getCalendarApiErrorMessage(err: unknown): { title?: string; text
 		case 'NO_SUCH_CALENDAR_EVENT': return { text: i18n.ts.notFound };
 		case 'CALENDAR_EVENT_CANCELED': return { text: i18n.ts._calendar.alreadyCanceled };
 		case 'CANNOT_UNSUBSCRIBE_OWN_CALENDAR_EVENT': return { text: i18n.ts._calendar.cannotUnsubscribeOwn };
+		case 'CANNOT_LINK_NOTE_TO_CALENDAR_EVENT': {
+			const reason: unknown = e.info?.reason;
+			if (reason === 'specifiedVisibility') return { text: i18n.ts._calendar._errors.cannotLinkSpecified };
+			if (reason === 'pureRenote') return { text: i18n.ts._calendar._errors.cannotLinkPureRenote };
+			return { title: i18n.ts.error, text: e.message ?? i18n.ts.somethingHappened };
+		}
 		case 'ACCESS_DENIED': return { title: i18n.ts.permissionDeniedError, text: i18n.ts.permissionDeniedErrorDescription };
 		case 'RATE_LIMIT_EXCEEDED': return { title: i18n.ts.cannotPerformTemporary, text: i18n.ts.cannotPerformTemporaryDescription };
 		default: return { title: i18n.ts.error, text: e.message != null ? `${e.message}\n${e.id ?? ''}` : i18n.ts.somethingHappened };

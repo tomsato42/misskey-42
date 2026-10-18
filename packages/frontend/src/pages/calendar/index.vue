@@ -244,8 +244,7 @@ const headerActions = computed<PageHeaderItem[]>(() => [{
 	icon: 'ti ti-rss',
 	text: i18n.ts._calendar.feed,
 	handler: () => {
-		// カレンダー連携の設定画面 (/settings/calendar) はまだルートの定義が無いので、パスで移動する
-		router.pushByPath('/settings/calendar');
+		router.push('/settings/calendar');
 	},
 }, {
 	icon: 'ti ti-plus',

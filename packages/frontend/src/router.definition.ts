@@ -119,6 +119,11 @@ export const ROUTE_DEF = [{
 		name: 'notifications',
 		component: page(() => import('@/pages/settings/notifications.vue')),
 	}, {
+		// 42times: カレンダー連携 (配信 URL)
+		path: '/calendar',
+		name: 'calendar',
+		component: page(() => import('@/pages/settings/calendar.vue')),
+	}, {
 		path: '/email',
 		name: 'email',
 		component: page(() => import('@/pages/settings/email.vue')),

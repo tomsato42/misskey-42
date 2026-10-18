@@ -25,5 +25,7 @@ export interface PostFormProps {
 	initialLocalOnly?: boolean;
 	initialVisibleUsers?: Misskey.entities.UserDetailed[];
 	initialNote?: Misskey.entities.Note;
+	/** 42times: 紐づけるイベントの初期値 (イベントページの「#○○ で投稿する」など)。中止済みのイベントは無視する */
+	initialCalendarEvent?: Misskey.entities.CalendarEventLite | null;
 	instant?: boolean;
 };

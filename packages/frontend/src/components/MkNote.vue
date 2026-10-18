@@ -110,6 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span :class="$style.showLessLabel">{{ i18n.ts.showLess }}</span>
 					</button>
 				</div>
+				<MkNoteCalendarEvent v-if="appearNote.calendarEvent" v-show="appearNote.cw == null || showContent" :event="appearNote.calendarEvent"/>
 				<MkA v-if="appearNote.channel && !inChannel" :class="$style.channel" :to="`/channels/${appearNote.channel.id}`"><i class="ti ti-device-tv"></i> {{ appearNote.channel.name }}</MkA>
 			</div>
 			<MkReactionsViewer
@@ -220,6 +221,7 @@ import MkCwButton from '@/components/MkCwButton.vue';
 import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
+import MkNoteCalendarEvent from '@/components/MkNoteCalendarEvent.vue';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;

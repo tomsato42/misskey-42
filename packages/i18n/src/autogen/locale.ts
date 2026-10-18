@@ -10004,6 +10004,10 @@ export interface Locale extends ILocale {
          * ダイレクトメッセージ
          */
         "chat": string;
+        /**
+         * 近日のイベント
+         */
+        "upcomingCalendarEvents": string;
     };
     "_widgetOptions": {
         /**
@@ -13651,6 +13655,204 @@ export interface Locale extends ILocale {
          * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。
          */
         "hashtagDescription": string;
+        /**
+         * イベントを告知
+         */
+        "announceEvent": string;
+        /**
+         * 告知をやめる
+         */
+        "stopAnnouncing": string;
+        /**
+         * 告知してノート
+         */
+        "announceAndNote": string;
+        /**
+         * イベントに紐づける
+         */
+        "linkEvent": string;
+        /**
+         * 紐づけを外す
+         */
+        "unlinkEvent": string;
+        /**
+         * {event} に紐づけ
+         */
+        "linkedToEvent": ParameterizedString<"event">;
+        /**
+         * 紐づけるイベント
+         */
+        "eventToLink": string;
+        /**
+         * 今後のイベントはありません
+         */
+        "noUpcomingEvents": string;
+        /**
+         * ダイレクトのノートは、イベントの告知や紐づけができません。このまま投稿すると、イベントの情報は送られません。
+         */
+        "unavailableForSpecified": string;
+        /**
+         * 予約投稿では、イベントの告知や紐づけができません。このまま予約すると、イベントの情報は保存されません。
+         */
+        "unavailableForScheduled": string;
+        /**
+         * 下書きにはイベントの情報は保存されません。保存しますか？
+         */
+        "draftWithoutEvent": string;
+        /**
+         * 購読 {n}人
+         */
+        "subscribersShort": ParameterizedString<"n">;
+        /**
+         * イベントのページを開く
+         */
+        "openEvent": string;
+        /**
+         * 表示する件数
+         */
+        "widgetLimit": string;
+        /**
+         * 表示するイベント
+         */
+        "widgetFilter": string;
+        /**
+         * {before} → {after}
+         */
+        "scheduleChange": ParameterizedString<"before" | "after">;
+        "_notification": {
+            /**
+             * 1週間後のイベント
+             */
+            "week": string;
+            /**
+             * 明日のイベント
+             */
+            "day": string;
+            /**
+             * 今日のイベント
+             */
+            "today": string;
+            /**
+             * 日時が変更されました
+             */
+            "rescheduled": string;
+            /**
+             * 中止されました
+             */
+            "canceled": string;
+        };
+        "_notificationSettings": {
+            /**
+             * イベント
+             */
+            "title": string;
+            /**
+             * 購読しているイベントの通知
+             */
+            "caption": string;
+            /**
+             * 1週間前に通知
+             */
+            "week": string;
+            /**
+             * 開始の7日前の 9:00
+             */
+            "weekCaption": string;
+            /**
+             * 前日に通知
+             */
+            "day": string;
+            /**
+             * 開始の前日の 9:00
+             */
+            "dayCaption": string;
+            /**
+             * 当日に通知
+             */
+            "today": string;
+            /**
+             * 当日の 9:00。開始が 9:00 までなら開始の1時間前
+             */
+            "todayCaption": string;
+            /**
+             * 日時の変更・中止を通知
+             */
+            "changes": string;
+            /**
+             * 購読しているイベントの日時が変わったときや、中止になったとき
+             */
+            "changesCaption": string;
+        };
+        "_feed": {
+            /**
+             * Googleカレンダー、Appleカレンダー、Outlook などに 42times のイベントを表示できます。予定はカレンダーアプリが定期的に読み込み直すので、反映まで数時間から1日ほどかかることがあります。
+             */
+            "description": string;
+            /**
+             * 購読中のイベント
+             */
+            "subscribed": string;
+            /**
+             * 購読しているイベントと、自分が作成したイベント
+             */
+            "subscribedCaption": string;
+            /**
+             * すべてのイベント
+             */
+            "all": string;
+            /**
+             * 42times にあるすべてのイベント
+             */
+            "allCaption": string;
+            /**
+             * 購読中のイベントの配信URL
+             */
+            "subscribedUrl": string;
+            /**
+             * すべてのイベントの配信URL
+             */
+            "allUrl": string;
+            /**
+             * Googleカレンダーに追加
+             */
+            "addToGoogle": string;
+            /**
+             * Apple・Outlook で開く
+             */
+            "openInApps": string;
+            /**
+             * このURLを知っている人は、ログインしなくてもイベントを見られます。他の人に教えないでください。
+             */
+            "warning": string;
+            /**
+             * URLを作り直す
+             */
+            "regenerate": string;
+            /**
+             * 今のURLは使えなくなります。カレンダーアプリにも追加し直してください
+             */
+            "regenerateCaption": string;
+            /**
+             * URLを作り直しますか？今のURLは使えなくなり、カレンダーアプリにも新しいURLで追加し直す必要があります。
+             */
+            "regenerateConfirm": string;
+            /**
+             * カレンダーアプリへの追加方法
+             */
+            "howToAdd": string;
+            /**
+             * Googleカレンダー: 「Googleカレンダーに追加」を押すか、Googleカレンダーの「他のカレンダー」→「URLで追加」にURLを貼り付けます。
+             */
+            "howToGoogle": string;
+            /**
+             * Appleカレンダー: 「Apple・Outlook で開く」を押すか、「ファイル」→「新規照会カレンダー」にURLを貼り付けます。
+             */
+            "howToApple": string;
+            /**
+             * Outlook: 「予定表を追加」→「Webから購読」にURLを貼り付けます。
+             */
+            "howToOutlook": string;
+        };
         "_weekdayShort": {
             /**
              * 日
@@ -13734,6 +13936,14 @@ export interface Locale extends ILocale {
              * 月の指定が正しくありません。
              */
             "invalidMonth": string;
+            /**
+             * ダイレクトのノートはイベントに紐づけられません。
+             */
+            "cannotLinkSpecified": string;
+            /**
+             * 本文の無いリノートはイベントに紐づけられません。
+             */
+            "cannotLinkPureRenote": string;
         };
     };
 }
