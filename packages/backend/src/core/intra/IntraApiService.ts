@@ -13,6 +13,7 @@ import { StatusError } from '@/misc/status-error.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import type { IntraUser } from './intra-user.js';
+import type { IntraProjectSession, IntraQuestUser } from './intra-project.js';
 import type { Response } from 'node-fetch';
 
 type IntraConfig = NonNullable<Config['intra']>;
@@ -36,6 +37,11 @@ const MAX_RETRY_AFTER = 60 * 1000;
 const REQUEST_TIMEOUT = 10 * 1000;
 // /v2/me や /v2/users/:id は projects_users などを含むため大きくなることがある
 const MAX_RESPONSE_SIZE = 4 * 1024 * 1024;
+
+/** 一覧の API で 1 ページに取得する件数 (42 API の上限は 100) */
+const PAGE_SIZE = 100;
+/** 一覧の API で取得するページ数の上限 */
+const MAX_PAGES = 10;
 
 @Injectable()
 export class IntraApiService {
@@ -127,6 +133,61 @@ export class IntraApiService {
 		}
 
 		return await res.json() as IntraUser;
+	}
+
+	/**
+	 * アプリトークンで、キャンパス・cursus の課題のセッション (登録の条件を含む) をすべて取得する。
+	 * 42 Tokyo・42cursus では 161 件 (2 ページ、1 ページ目は約 600KB) だった
+	 */
+	@bindThis
+	public async getProjectSessions(campusId: number, cursusId: number): Promise<IntraProjectSession[]> {
+		const intra = this.getIntraConfig();
+		const query = new URLSearchParams({
+			'filter[campus_id]': String(campusId),
+			'filter[cursus_id]': String(cursusId),
+		});
+		return await this.appGetAllPages<IntraProjectSession>(`${intra.apiBaseUrl}/v2/project_sessions?${query.toString()}`);
+	}
+
+	/**
+	 * アプリトークンで、ユーザーのクエストの状態をすべて取得する。ユーザーが存在しなければ null
+	 */
+	@bindThis
+	public async getQuestsUsers(intraId: number): Promise<IntraQuestUser[] | null> {
+		const intra = this.getIntraConfig();
+		try {
+			return await this.appGetAllPages<IntraQuestUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/quests_users`);
+		} catch (err) {
+			if (err instanceof StatusError && err.statusCode === 404) return null;
+			throw err;
+		}
+	}
+
+	/**
+	 * アプリトークンで一覧の API をページごとに取得して連結する。
+	 * 返ってきた件数がページの大きさより少なくなるか、MAX_PAGES に達したら止める
+	 */
+	@bindThis
+	private async appGetAllPages<T>(url: string): Promise<T[]> {
+		const results: T[] = [];
+		const separator = url.includes('?') ? '&' : '?';
+
+		for (let page = 1; page <= MAX_PAGES; page++) {
+			const res = await this.appRequest(`${url}${separator}page[size]=${PAGE_SIZE}&page[number]=${page}`);
+			if (!res.ok) {
+				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
+			}
+
+			const body = await res.json() as unknown;
+			if (!Array.isArray(body)) {
+				throw new Error(`Unexpected response from 42 API: ${url}`);
+			}
+			results.push(...body as T[]);
+			if (body.length < PAGE_SIZE) return results;
+		}
+
+		this.logger.warn(`Reached the page limit (${MAX_PAGES}) while fetching ${url}`);
+		return results;
 	}
 
 	/**

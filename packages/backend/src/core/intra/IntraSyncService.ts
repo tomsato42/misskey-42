@@ -17,6 +17,7 @@ import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
+import { IntraProjectService } from './IntraProjectService.js';
 import { extractIntraProfile } from './intra-user.js';
 import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLevelRoleTarget } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
@@ -58,6 +59,7 @@ export class IntraSyncService {
 		private cacheService: CacheService,
 		private idService: IdService,
 		private loggerService: LoggerService,
+		private intraProjectService: IntraProjectService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-sync');
 	}
@@ -111,6 +113,13 @@ export class IntraSyncService {
 		await this.cacheService.userProfileCache.set(userId, updatedProfile);
 
 		await this.syncRoles(userId, extracted);
+
+		try {
+			await this.intraProjectService.syncUserProgress(userId, intraUser, extracted.campus?.id ?? null);
+		} catch (err) {
+			// 課題の状態を保存できなくても、ログインやロールの同期は失敗にしない
+			this.logger.warn(`Failed to sync projects of user ${userId}: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 
 	/**

@@ -6,6 +6,8 @@
 // 42 API (https://api.intra.42.fr/apidoc) のレスポンスを扱う純粋関数群。
 // DI に依存しないので、ユニットテストから直接呼び出せる。
 
+import type { IntraProjectUser } from './intra-project.js';
+
 /**
  * 42 API の cursus_users の要素 (使う項目だけ)
  */
@@ -48,6 +50,8 @@ export type IntraUser = {
 	cursus_users: IntraCursusUser[];
 	campus: IntraCampus[];
 	campus_users: IntraCampusUser[];
+	/** ユーザーのすべての課題の状態 (ページングされない)。古いテストのデータなどで無い場合がある */
+	projects_users?: IntraProjectUser[];
 };
 
 export type IntraProfile = {

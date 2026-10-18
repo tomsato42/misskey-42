@@ -37,6 +37,8 @@ import {
 	MiHashtag,
 	MiInstance,
 	MiIntraRole,
+	MiIntraProject,
+	MiIntraUserProgress,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -551,6 +553,18 @@ const $intraRolesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraProjectsRepository: Provider = {
+	provide: DI.intraProjectsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraProject).extend(miRepository as MiRepository<MiIntraProject>),
+	inject: [DI.db],
+};
+
+const $intraUserProgressesRepository: Provider = {
+	provide: DI.intraUserProgressesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraUserProgress).extend(miRepository as MiRepository<MiIntraUserProgress>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -631,6 +645,8 @@ const $intraRolesRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$intraProjectsRepository,
+		$intraUserProgressesRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -710,6 +726,8 @@ const $intraRolesRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$intraProjectsRepository,
+		$intraUserProgressesRepository,
 	],
 })
 export class RepositoryModule {

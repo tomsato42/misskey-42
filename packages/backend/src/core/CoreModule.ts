@@ -154,6 +154,7 @@ import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { IntraApiService } from './intra/IntraApiService.js';
 import { IntraAuthService } from './intra/IntraAuthService.js';
 import { IntraSyncService } from './intra/IntraSyncService.js';
+import { IntraProjectService } from './intra/IntraProjectService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -311,6 +312,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: IntraApiService };
 const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
 const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
+const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
 //#endregion
 
 @Module({
@@ -468,6 +470,7 @@ const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: 
 		IntraApiService,
 		IntraAuthService,
 		IntraSyncService,
+		IntraProjectService,
 		QueueService,
 		TelemetryService,
 
@@ -621,6 +624,7 @@ const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: 
 		$IntraApiService,
 		$IntraAuthService,
 		$IntraSyncService,
+		$IntraProjectService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -775,6 +779,7 @@ const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: 
 		IntraApiService,
 		IntraAuthService,
 		IntraSyncService,
+		IntraProjectService,
 		QueueService,
 		TelemetryService,
 
@@ -926,6 +931,7 @@ const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: 
 		$IntraApiService,
 		$IntraAuthService,
 		$IntraSyncService,
+		$IntraProjectService,
 		$TelemetryService,
 		//#endregion
 	],

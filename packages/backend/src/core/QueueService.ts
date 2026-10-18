@@ -92,6 +92,10 @@ const INTRA_REPEATABLE_SYSTEM_JOB_DEF = [{
 	name: 'syncIntraUsers',
 	// 毎時15分に起動
 	pattern: '15 * * * *',
+}, {
+	name: 'syncIntraProjects',
+	// 毎日午前4時45分に起動 (課題の条件はめったに変わらない)
+	pattern: '45 4 * * *',
 }];
 
 function parseRedisInfo(infoText: string): Record<string, string> {
