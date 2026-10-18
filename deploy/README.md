@@ -308,6 +308,15 @@ Tailscale の管理画面で行います。
 
 GitHub のドキュメントでは、Free プランの private リポジトリでは environment の secret と保護ルールを使えないとされています。その場合は、同じ名前でリポジトリの secret (Settings → Secrets and variables → Actions) に登録してください。ワークフローはどちらに登録しても同じように読めます。
 
+4. VPS の接続先は、公開リポジトリのファイルに書かず、リポジトリ変数 (Settings → Secrets and variables → Actions → Variables) に登録します。秘密の値ではないので、`gh variable set` でも登録できます。
+
+| 変数 | 値 |
+| --- | --- |
+| `DEPLOY_HOST` | VPS の Tailscale の IP |
+| `DEPLOY_PORT` | VPS の SSH のポート |
+| `DEPLOY_USER` | `misskey` |
+| `DEPLOY_KNOWN_HOSTS` | VPS のホスト公開鍵 (`ssh-keyscan -p <SSH のポート> <VPS の Tailscale IP>` の結果を、known_hosts の形式のまま) |
+
 ### 15. 初回デプロイと動作確認 (実行は Claude、管理画面の操作はユーザー)
 
 1. GitHub の Actions タブで「Fork deploy (42times)」を開き、Run workflow で main を実行します (Claude が `gh workflow run fork-deploy.yml --ref main` で実行することもできます)。ビルドには 20 分前後かかります。
