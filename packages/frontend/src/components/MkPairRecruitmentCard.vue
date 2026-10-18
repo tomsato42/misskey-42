@@ -102,6 +102,8 @@ function advise() {
 <style lang="scss" module>
 .root {
 	position: relative;
+	// 中の z-index をカードの中に閉じ込める
+	isolation: isolate;
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
@@ -118,11 +120,13 @@ function advise() {
 	content: "";
 	position: absolute;
 	inset: 0;
+	// 半透明 (opacity) の行は重なりの順で手前に描かれるので、広げたリンクをそれより手前に出す
+	z-index: 1;
 }
 
 .raised {
 	position: relative;
-	z-index: 1;
+	z-index: 2;
 }
 
 .closed {
