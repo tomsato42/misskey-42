@@ -31,6 +31,27 @@ export class CalendarEventNoteAlreadyLinkedError extends CalendarError {}
 /** ノートがどのイベントにも紐づいていない */
 export class CalendarEventNoteNotLinkedError extends CalendarError {}
 
+export const calendarNoteUnlinkableReasons = [
+	/** 公開範囲が「指定ユーザー」(ダイレクト) */
+	'specifiedVisibility',
+	/** 本文などの無い純粋なリノート */
+	'pureRenote',
+] as const;
+export type CalendarNoteUnlinkableReason = typeof calendarNoteUnlinkableReasons[number];
+
+/** イベントに紐づけられない種類のノート。reason で理由を見分ける */
+export class CalendarNoteNotLinkableError extends CalendarError {
+	public readonly reason: CalendarNoteUnlinkableReason;
+
+	constructor(reason: CalendarNoteUnlinkableReason) {
+		super(reason);
+		this.reason = reason;
+	}
+}
+
+/** ノートの投稿で、既存のイベントへの紐づけ (calendarEventId) とイベントの作成 (calendarEvent) を同時に指定した */
+export class CalendarNoteParamsConflictError extends CalendarError {}
+
 export const calendarEventValidationReasons = [
 	'titleRequired',
 	'titleTooLong',

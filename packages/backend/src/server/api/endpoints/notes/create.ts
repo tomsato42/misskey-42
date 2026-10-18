@@ -11,7 +11,9 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
 import { ApiError } from '../../error.js';
+import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput } from '../../calendar-api.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -123,6 +125,9 @@ export const meta = {
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
 		},
+
+		// 42times: カレンダーのイベントとの紐づけ
+		...calendarNoteCreateErrors,
 	},
 } as const;
 
@@ -182,6 +187,8 @@ export const paramDef = {
 			},
 			required: ['choices'],
 		},
+		// 42times: カレンダーのイベントとの紐づけ
+		...calendarNoteCreateProperties,
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -218,8 +225,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
+		private calendarNotePostService: CalendarNotePostService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42times: カレンダーのイベントの指定は、ノートを作る前に確かめる
+			const onInserted = await this.calendarNotePostService.prepare(me, {
+				calendarEventId: ps.calendarEventId,
+				calendarEvent: ps.calendarEvent ? toCalendarEventInput(ps.calendarEvent) : null,
+				note: {
+					visibility: ps.visibility,
+					renoteId: ps.renoteId,
+					replyId: ps.replyId,
+					text: ps.text,
+					cw: ps.cw,
+					fileIds: ps.fileIds ?? ps.mediaIds,
+					hasPoll: ps.poll != null,
+				},
+			}).catch(err => {
+				throw toCalendarApiError(err, calendarNoteCreateErrorMap);
+			});
+
 			try {
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
@@ -241,6 +266,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
+					onInserted,
 				});
 
 				return {

@@ -226,6 +226,16 @@ export class CalendarEventService {
 		return await this.roleService.isModerator(me);
 	}
 
+	/**
+	 * 複数のイベントについて canManage を判定する関数を返す (一覧の表示用)。
+	 * モデレーターかどうかは、自分が作成していないイベントがあるときに 1 回だけ調べる
+	 */
+	@bindThis
+	public async createManageChecker(me: Me, events: Pick<MiCalendarEvent, 'userId'>[]): Promise<(event: Pick<MiCalendarEvent, 'userId'>) => boolean> {
+		const isModerator = events.some(e => e.userId !== me.id) ? await this.roleService.isModerator(me) : false;
+		return event => event.userId === me.id || isModerator;
+	}
+
 	@bindThis
 	private async assertCanManage(event: Pick<MiCalendarEvent, 'userId'>, me: Me): Promise<void> {
 		if (!await this.canManage(event, me)) throw new CalendarEventPermissionError();

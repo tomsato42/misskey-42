@@ -23,6 +23,7 @@ import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
+import type { CalendarEventEntityService } from './CalendarEventEntityService.js';
 
 // is-renote.tsとよしなにリンク
 function isPureRenote(note: MiNote): note is MiNote & { renoteId: MiNote['id']; renote: MiNote } {
@@ -68,6 +69,7 @@ export class NoteEntityService implements OnModuleInit {
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
 	private cacheService: CacheService;
+	private calendarEventEntityService: CalendarEventEntityService;
 	private noteLoader = new DebounceLoader(this.findNoteOrFail);
 
 	constructor(
@@ -115,6 +117,7 @@ export class NoteEntityService implements OnModuleInit {
 		this.reactionsBufferingService = this.moduleRef.get('ReactionsBufferingService');
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
+		this.calendarEventEntityService = this.moduleRef.get('CalendarEventEntityService');
 	}
 
 	@bindThis
@@ -189,6 +192,7 @@ export class NoteEntityService implements OnModuleInit {
 		packedNote.text = null;
 		packedNote.poll = undefined;
 		packedNote.cw = null;
+		packedNote.calendarEvent = undefined; // 42times: 見られないノートが何のイベントのものかも隠す
 		packedNote.isHidden = true;
 		// TODO: hiddenReason みたいなのを提供しても良さそう
 	}
@@ -355,6 +359,8 @@ export class NoteEntityService implements OnModuleInit {
 				myReactions: Map<MiNote['id'], string | null>;
 				packedFiles: Map<MiNote['fileIds'][number], Packed<'DriveFile'> | null>;
 				packedUsers: Map<MiUser['id'], Packed<'UserLite'>>
+				/** 42times: ノートの ID ごとのカレンダーのイベント (紐づいていなければ null)。無い ID は 1 件ずつ引く */
+				calendarEvents?: Map<MiNote['id'], Packed<'CalendarEventLite'> | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -431,6 +437,7 @@ export class NoteEntityService implements OnModuleInit {
 			hasPoll: note.hasPoll || undefined,
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
+			calendarEvent: this.packCalendarEvent(note.id, me, options?._hint_?.calendarEvents),
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,
@@ -552,6 +559,11 @@ export class NoteEntityService implements OnModuleInit {
 		];
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
+		// 42times: pack の中で返り値に含めるノート (リプライ先・リノート元と、リノート元のリプライ先・リノート元) のイベントをまとめて引く
+		const calendarEvents = await this.calendarEventEntityService.packLiteManyByNoteIds(
+			notes.flatMap(n => [n.id, n.replyId, n.renoteId, n.renote?.replyId, n.renote?.renoteId]).filter(x => x != null),
+			me,
+		);
 
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
@@ -560,8 +572,24 @@ export class NoteEntityService implements OnModuleInit {
 				myReactions: myReactionsMap,
 				packedFiles,
 				packedUsers,
+				calendarEvents,
 			},
 		})));
+	}
+
+	/**
+	 * 42times: ノートが紐づいているカレンダーのイベント。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packCalendarEvent(
+		noteId: MiNote['id'],
+		me: { id: MiUser['id'] } | null | undefined,
+		hint: Map<MiNote['id'], Packed<'CalendarEventLite'> | null> | undefined,
+	): Promise<Packed<'CalendarEventLite'> | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.calendarEventEntityService.packLiteManyByNoteIds([noteId], me)).get(noteId);
+		return packed ?? undefined;
 	}
 
 	@bindThis

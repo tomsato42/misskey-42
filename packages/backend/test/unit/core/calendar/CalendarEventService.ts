@@ -397,6 +397,17 @@ describe('CalendarEventService', () => {
 			await expect(service.delete(created, BOB)).rejects.toThrow(CalendarEventPermissionError);
 			expect(events.rows).toHaveLength(1);
 		});
+
+		test('createManageChecker は canManage と同じ判定をまとめて行う', async () => {
+			const own = { userId: ALICE.id };
+			const others = { userId: BOB.id };
+
+			const aliceCheck = await service.createManageChecker(ALICE, [own, others]);
+			expect([aliceCheck(own), aliceCheck(others)]).toEqual([true, false]);
+
+			const modCheck = await service.createManageChecker(MOD, [own, others]);
+			expect([modCheck(own), modCheck(others)]).toEqual([true, true]);
+		});
 	});
 
 	describe('subscribe / unsubscribe', () => {

@@ -1140,6 +1140,114 @@ export type paths = {
          */
         post: operations['bubble-game___register'];
     };
+    '/calendar/events/cancel': {
+        /**
+         * calendar/events/cancel
+         * @description Cancel a calendar event. The event remains with isCanceled set. Only the creator and moderators can cancel it.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___cancel'];
+    };
+    '/calendar/events/create': {
+        /**
+         * calendar/events/create
+         * @description Create a calendar event. The creator is subscribed to it automatically.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___create'];
+    };
+    '/calendar/events/delete': {
+        /**
+         * calendar/events/delete
+         * @description Delete a calendar event. Linked notes are kept. Only the creator and moderators can delete it.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___delete'];
+    };
+    '/calendar/events/link-note': {
+        /**
+         * calendar/events/link-note
+         * @description Link your note to a calendar event. A note can be linked to only one event. Does nothing if already linked to the same event.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___link-note'];
+    };
+    '/calendar/events/list': {
+        /**
+         * calendar/events/list
+         * @description List calendar events starting in the given month (Asia/Tokyo), ordered by start time. Canceled events are included.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___list'];
+    };
+    '/calendar/events/notes': {
+        /**
+         * calendar/events/notes
+         * @description List notes linked to a calendar event, newest first. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___notes'];
+    };
+    '/calendar/events/show': {
+        /**
+         * calendar/events/show
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___show'];
+    };
+    '/calendar/events/subscribe': {
+        /**
+         * calendar/events/subscribe
+         * @description Subscribe to a calendar event. Does nothing if already subscribed.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___subscribe'];
+    };
+    '/calendar/events/unlink-note': {
+        /**
+         * calendar/events/unlink-note
+         * @description Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___unlink-note'];
+    };
+    '/calendar/events/unsubscribe': {
+        /**
+         * calendar/events/unsubscribe
+         * @description Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___unsubscribe'];
+    };
+    '/calendar/events/upcoming': {
+        /**
+         * calendar/events/upcoming
+         * @description List upcoming calendar events ordered by start time (for widgets). Canceled events are excluded. All-day events are upcoming until the end of the day, others until they end (or start, if they have no end time).
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___upcoming'];
+    };
+    '/calendar/events/update': {
+        /**
+         * calendar/events/update
+         * @description Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___update'];
+    };
     '/channels/create': {
         /**
          * channels/create
@@ -4544,6 +4652,7 @@ export type components = {
             clippedCount?: number;
             hasPoll?: boolean;
             myReaction?: string | null;
+            calendarEvent?: components['schemas']['CalendarEventLite'];
         };
         NoteDraft: {
             /**
@@ -5747,6 +5856,88 @@ export type components = {
             user?: components['schemas']['UserLite'];
             roomId: string;
             room?: components['schemas']['ChatRoom'];
+        };
+        CalendarEventLite: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            title: string;
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+            location: string | null;
+            isCanceled: boolean;
+            subscribersCount: number;
+            /** @description Only present when the viewer is signed in. */
+            isSubscribed?: boolean;
+        };
+        CalendarEvent: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            title: string;
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+            location: string | null;
+            isCanceled: boolean;
+            subscribersCount: number;
+            /** @description Only present when the viewer is signed in. */
+            isSubscribed?: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: id */
+            userId: string;
+            user: components['schemas']['UserLite'];
+            description: string | null;
+            /** @description Without the leading #. */
+            hashtag: string | null;
+            /** Format: date-time */
+            canceledAt: string | null;
+            /** Format: id */
+            announcementNoteId: string | null;
+            /** @description Whether the viewer can edit, cancel or delete the event. Only present when the viewer is signed in. */
+            canManage?: boolean;
         };
     };
     responses: never;
@@ -14866,6 +15057,910 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___cancel: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___create: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @description Required. Up to 100 characters after trimming. */
+                    title: string;
+                    /** @description YYYY-MM-DD (Asia/Tokyo). */
+                    date: string;
+                    /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                    startTime?: string | null;
+                    /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                    endTime?: string | null;
+                    /** @description Up to 128 characters. */
+                    location?: string | null;
+                    /** @description MFM. Up to 3000 characters. */
+                    description?: string | null;
+                    /** @description A single hashtag. The leading # is optional. */
+                    hashtag?: string | null;
+                    /** @default false */
+                    isAllDay?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___delete: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___link-note': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___list: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @description YYYY-MM (Asia/Tokyo). */
+                    month: string;
+                    /**
+                     * @description all: every event, subscribed: events you subscribe to (including your own), mine: events you created.
+                     * @default all
+                     * @enum {string}
+                     */
+                    filter?: 'all' | 'subscribed' | 'mine';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___notes: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Note'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___show: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___subscribe: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___unlink-note': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___unsubscribe: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___upcoming: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 5 */
+                    limit?: number;
+                    /**
+                     * @description all: every event, subscribed: events you subscribe to (including your own), mine: events you created.
+                     * @default all
+                     * @enum {string}
+                     */
+                    filter?: 'all' | 'subscribed' | 'mine';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___update: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /** @description Required. Up to 100 characters after trimming. */
+                    title?: string;
+                    /** @description YYYY-MM-DD (Asia/Tokyo). */
+                    date?: string;
+                    /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                    startTime?: string | null;
+                    /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                    endTime?: string | null;
+                    /** @description Up to 128 characters. */
+                    location?: string | null;
+                    /** @description MFM. Up to 3000 characters. */
+                    description?: string | null;
+                    /** @description A single hashtag. The leading # is optional. */
+                    hashtag?: string | null;
+                    isAllDay?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
                 };
             };
             /** @description Client error */
@@ -29714,6 +30809,30 @@ export interface operations {
                         multiple?: boolean;
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
+                    } | null;
+                    /**
+                     * Format: misskey:id
+                     * @description 42times: Link the note to an existing calendar event. Cannot be used with calendarEvent.
+                     */
+                    calendarEventId?: string | null;
+                    /** @description 42times: Create a calendar event announced by the note. If description is omitted, the note text is used (unless the note has a CW). Cannot be used with calendarEventId. */
+                    calendarEvent?: {
+                        /** @description Required. Up to 100 characters after trimming. */
+                        title: string;
+                        /** @description YYYY-MM-DD (Asia/Tokyo). */
+                        date: string;
+                        /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                        startTime?: string | null;
+                        /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                        endTime?: string | null;
+                        /** @description Up to 128 characters. */
+                        location?: string | null;
+                        /** @description MFM. Up to 3000 characters. */
+                        description?: string | null;
+                        /** @description A single hashtag. The leading # is optional. */
+                        hashtag?: string | null;
+                        /** @default false */
+                        isAllDay?: boolean;
                     } | null;
                 };
             };

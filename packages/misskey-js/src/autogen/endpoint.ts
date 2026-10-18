@@ -180,6 +180,27 @@ import type {
 	BubbleGameRankingRequest,
 	BubbleGameRankingResponse,
 	BubbleGameRegisterRequest,
+	CalendarEventsCancelRequest,
+	CalendarEventsCancelResponse,
+	CalendarEventsCreateRequest,
+	CalendarEventsCreateResponse,
+	CalendarEventsDeleteRequest,
+	CalendarEventsLinkNoteRequest,
+	CalendarEventsListRequest,
+	CalendarEventsListResponse,
+	CalendarEventsNotesRequest,
+	CalendarEventsNotesResponse,
+	CalendarEventsShowRequest,
+	CalendarEventsShowResponse,
+	CalendarEventsSubscribeRequest,
+	CalendarEventsSubscribeResponse,
+	CalendarEventsUnlinkNoteRequest,
+	CalendarEventsUnsubscribeRequest,
+	CalendarEventsUnsubscribeResponse,
+	CalendarEventsUpcomingRequest,
+	CalendarEventsUpcomingResponse,
+	CalendarEventsUpdateRequest,
+	CalendarEventsUpdateResponse,
 	ChannelsCreateRequest,
 	ChannelsCreateResponse,
 	ChannelsFavoriteRequest,
@@ -794,6 +815,18 @@ export type Endpoints = {
 	'blocking/list': { req: BlockingListRequest; res: BlockingListResponse };
 	'bubble-game/ranking': { req: BubbleGameRankingRequest; res: BubbleGameRankingResponse };
 	'bubble-game/register': { req: BubbleGameRegisterRequest; res: EmptyResponse };
+	'calendar/events/cancel': { req: CalendarEventsCancelRequest; res: CalendarEventsCancelResponse };
+	'calendar/events/create': { req: CalendarEventsCreateRequest; res: CalendarEventsCreateResponse };
+	'calendar/events/delete': { req: CalendarEventsDeleteRequest; res: EmptyResponse };
+	'calendar/events/link-note': { req: CalendarEventsLinkNoteRequest; res: EmptyResponse };
+	'calendar/events/list': { req: CalendarEventsListRequest; res: CalendarEventsListResponse };
+	'calendar/events/notes': { req: CalendarEventsNotesRequest; res: CalendarEventsNotesResponse };
+	'calendar/events/show': { req: CalendarEventsShowRequest; res: CalendarEventsShowResponse };
+	'calendar/events/subscribe': { req: CalendarEventsSubscribeRequest; res: CalendarEventsSubscribeResponse };
+	'calendar/events/unlink-note': { req: CalendarEventsUnlinkNoteRequest; res: EmptyResponse };
+	'calendar/events/unsubscribe': { req: CalendarEventsUnsubscribeRequest; res: CalendarEventsUnsubscribeResponse };
+	'calendar/events/upcoming': { req: CalendarEventsUpcomingRequest; res: CalendarEventsUpcomingResponse };
+	'calendar/events/update': { req: CalendarEventsUpdateRequest; res: CalendarEventsUpdateResponse };
 	'channels/create': { req: ChannelsCreateRequest; res: ChannelsCreateResponse };
 	'channels/favorite': { req: ChannelsFavoriteRequest; res: EmptyResponse };
 	'channels/featured': { req: EmptyRequest; res: ChannelsFeaturedResponse };
