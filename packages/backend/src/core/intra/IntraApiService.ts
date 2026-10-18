@@ -43,6 +43,13 @@ const PAGE_SIZE = 100;
 /** 一覧の API で取得するページ数の上限 */
 const MAX_PAGES = 10;
 
+/**
+ * project_sessions の 1 ページの件数とタイムアウト。登録の条件を含むため 42 API の応答が遅く、
+ * 100 件では 10 秒のタイムアウトを超えて取得できなかった
+ */
+const PROJECT_SESSIONS_PAGE_SIZE = 30;
+const PROJECT_SESSIONS_TIMEOUT = 60 * 1000;
+
 @Injectable()
 export class IntraApiService {
 	private logger: Logger;
@@ -137,7 +144,7 @@ export class IntraApiService {
 
 	/**
 	 * アプリトークンで、キャンパス・cursus の課題のセッション (登録の条件を含む) をすべて取得する。
-	 * 42 Tokyo・42cursus では 161 件 (2 ページ、1 ページ目は約 600KB) だった
+	 * 42 Tokyo・42cursus では 161 件 (100 件で約 600KB) だった
 	 */
 	@bindThis
 	public async getProjectSessions(campusId: number, cursusId: number): Promise<IntraProjectSession[]> {
@@ -146,7 +153,10 @@ export class IntraApiService {
 			'filter[campus_id]': String(campusId),
 			'filter[cursus_id]': String(cursusId),
 		});
-		return await this.appGetAllPages<IntraProjectSession>(`${intra.apiBaseUrl}/v2/project_sessions?${query.toString()}`);
+		return await this.appGetAllPages<IntraProjectSession>(`${intra.apiBaseUrl}/v2/project_sessions?${query.toString()}`, {
+			pageSize: PROJECT_SESSIONS_PAGE_SIZE,
+			timeout: PROJECT_SESSIONS_TIMEOUT,
+		});
 	}
 
 	/**
@@ -168,12 +178,13 @@ export class IntraApiService {
 	 * 返ってきた件数がページの大きさより少なくなるか、MAX_PAGES に達したら止める
 	 */
 	@bindThis
-	private async appGetAllPages<T>(url: string): Promise<T[]> {
+	private async appGetAllPages<T>(url: string, opts: { pageSize?: number; timeout?: number } = {}): Promise<T[]> {
+		const pageSize = opts.pageSize ?? PAGE_SIZE;
 		const results: T[] = [];
 		const separator = url.includes('?') ? '&' : '?';
 
 		for (let page = 1; page <= MAX_PAGES; page++) {
-			const res = await this.appRequest(`${url}${separator}page[size]=${PAGE_SIZE}&page[number]=${page}`);
+			const res = await this.appRequest(`${url}${separator}page[size]=${pageSize}&page[number]=${page}`, opts.timeout);
 			if (!res.ok) {
 				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 			}
@@ -183,7 +194,7 @@ export class IntraApiService {
 				throw new Error(`Unexpected response from 42 API: ${url}`);
 			}
 			results.push(...body as T[]);
-			if (body.length < PAGE_SIZE) return results;
+			if (body.length < pageSize) return results;
 		}
 
 		this.logger.warn(`Reached the page limit (${MAX_PAGES}) while fetching ${url}`);
@@ -238,14 +249,14 @@ export class IntraApiService {
 	 * 4xx/5xx でも例外にせずレスポンスを返す (429 の再試行後を除く)
 	 */
 	@bindThis
-	private async appRequest(url: string): Promise<Response> {
+	private async appRequest(url: string, timeout = REQUEST_TIMEOUT): Promise<Response> {
 		const run = this.appRequestQueue.then(async () => {
-			let res = await this.sendWithAppToken(url);
+			let res = await this.sendWithAppToken(url, timeout);
 			if (res.status === 429) {
 				const wait = this.parseRetryAfter(res.headers.get('Retry-After'));
 				this.logger.warn(`Rate limited by 42 API. Retrying after ${wait}ms`);
 				await setTimeout(wait);
-				res = await this.sendWithAppToken(url);
+				res = await this.sendWithAppToken(url, timeout);
 			}
 			return res;
 		});
@@ -255,7 +266,7 @@ export class IntraApiService {
 	}
 
 	@bindThis
-	private async sendWithAppToken(url: string): Promise<Response> {
+	private async sendWithAppToken(url: string, timeout = REQUEST_TIMEOUT): Promise<Response> {
 		const token = await this.getAppToken();
 
 		const wait = this.lastAppRequestAt + APP_REQUEST_MIN_INTERVAL - Date.now();
@@ -268,7 +279,7 @@ export class IntraApiService {
 				Accept: 'application/json',
 				Authorization: `Bearer ${token}`,
 			},
-			timeout: REQUEST_TIMEOUT,
+			timeout,
 			size: MAX_RESPONSE_SIZE,
 		}, {
 			throwErrorWhenResponseNotOk: false,
