@@ -2930,6 +2930,9 @@ _notification:
     createToken: "アクセストークンの作成"
     test: "通知のテスト"
     app: "連携アプリからの通知"
+    pairJoinRequested: "ペア募集への参加希望が届いた"
+    pairAccepted: "ペア募集への参加が承認された"
+    pairClosed: "ペア募集が締め切られた"
 
   _actions:
     followBack: "フォローバック"

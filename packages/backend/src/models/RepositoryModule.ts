@@ -39,6 +39,8 @@ import {
 	MiIntraRole,
 	MiIntraProject,
 	MiIntraUserProgress,
+	MiPairRecruitment,
+	MiPairMember,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -565,6 +567,18 @@ const $intraUserProgressesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $pairRecruitmentsRepository: Provider = {
+	provide: DI.pairRecruitmentsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairRecruitment).extend(miRepository as MiRepository<MiPairRecruitment>),
+	inject: [DI.db],
+};
+
+const $pairMembersRepository: Provider = {
+	provide: DI.pairMembersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairMember).extend(miRepository as MiRepository<MiPairMember>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -647,6 +661,8 @@ const $intraUserProgressesRepository: Provider = {
 		$intraRolesRepository,
 		$intraProjectsRepository,
 		$intraUserProgressesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -728,6 +744,8 @@ const $intraUserProgressesRepository: Provider = {
 		$intraRolesRepository,
 		$intraProjectsRepository,
 		$intraUserProgressesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 })
 export class RepositoryModule {

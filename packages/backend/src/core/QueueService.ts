@@ -96,6 +96,10 @@ const INTRA_REPEATABLE_SYSTEM_JOB_DEF = [{
 	name: 'syncIntraProjects',
 	// 毎日午前4時45分に起動 (課題の条件はめったに変わらない)
 	pattern: '45 4 * * *',
+}, {
+	name: 'closeExpiredPairRecruitments',
+	// 毎時5分に起動 (一覧と取得では期限切れの募集を締め切ったものとして扱うので、遅れても表示は変わらない)
+	pattern: '5 * * * *',
 }];
 
 function parseRedisInfo(infoText: string): Record<string, string> {

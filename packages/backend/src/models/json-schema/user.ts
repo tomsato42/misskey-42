@@ -649,6 +649,9 @@ export const packedMeDetailedOnlySchema = {
 				login: { optional: true, ...notificationRecieveConfig },
 				createToken: { optional: true, ...notificationRecieveConfig },
 				exportCompleted: { optional: true, ...notificationRecieveConfig },
+				pairJoinRequested: { optional: true, ...notificationRecieveConfig },
+				pairAccepted: { optional: true, ...notificationRecieveConfig },
+				pairClosed: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

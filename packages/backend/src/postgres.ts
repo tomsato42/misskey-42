@@ -40,6 +40,8 @@ import { MiInstance } from '@/models/Instance.js';
 import { MiIntraRole } from '@/models/IntraRole.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
+import { MiPairRecruitment } from '@/models/PairRecruitment.js';
+import { MiPairMember } from '@/models/PairMember.js';
 import { MiMeta } from '@/models/Meta.js';
 import { MiModerationLog } from '@/models/ModerationLog.js';
 import { MiMuting } from '@/models/Muting.js';
@@ -260,6 +262,8 @@ export const entities = [
 	MiIntraRole,
 	MiIntraProject,
 	MiIntraUserProgress,
+	MiPairRecruitment,
+	MiPairMember,
 	...charts,
 ];
 

@@ -4188,6 +4188,105 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * 参加希望を承認する (作成者だけ)。承認した人に通知し、人数がそろったら募集を締め切って、作成者以外のメンバーに通知する
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/accept', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * ペア募集に参加希望を送る。自分のその課題の判定が available か in_progress のときだけ送れる。作成者に通知する
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/apply', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 募集を締め切る (作成者だけ)。作成者以外のメンバー (承認済みと参加希望中) に通知する
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/close', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * ペア募集を作成する。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/create', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * ペア募集の一覧。open: 自分と同じキャンパスの募集中の募集、mine: 自分の募集 (締め切ったものを含む)、joined: 参加希望を送った・参加している募集 (締め切ったものを含む)。新しい順
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'pair-recruitments/list', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 自分のキャンパスの 2 人以上で取り組む課題と、自分のその課題の判定の一覧。取り組める課題 (available, in_progress) を上に並べる。キャンパスが分からなければ空
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'pair-recruitments/projects', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 参加希望を見送る (作成者だけ)。通知はしない。見送られた人は同じ募集に再び参加希望を送れない
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/reject', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * ペア募集とメンバーの一覧。参加希望中・見送りのメンバーは作成者と本人にだけ含める。同じキャンパスの人・作成者・参加希望を送った人だけが見られる
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'pair-recruitments/show', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 自分の参加希望・参加を取り下げる (募集中の間だけ)。取り下げた後は、もう一度参加希望を送れる
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/withdraw', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *No*

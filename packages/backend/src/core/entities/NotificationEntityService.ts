@@ -194,6 +194,16 @@ export class NotificationEntityService implements OnModuleInit {
 				header: notification.customHeader,
 				icon: notification.customIcon,
 			} : {}),
+			...(notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' ? {
+				pairRecruitment: {
+					id: notification.pairRecruitmentId,
+					projectSlug: notification.projectSlug,
+					projectName: notification.projectName,
+				},
+			} : {}),
+			...(notification.type === 'pairClosed' ? {
+				reason: notification.reason,
+			} : {}),
 		});
 	}
 

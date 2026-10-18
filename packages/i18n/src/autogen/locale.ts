@@ -11089,6 +11089,18 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * ペア募集への参加希望が届いた
+             */
+            "pairJoinRequested": string;
+            /**
+             * ペア募集への参加が承認された
+             */
+            "pairAccepted": string;
+            /**
+             * ペア募集が締め切られた
+             */
+            "pairClosed": string;
         };
         "_actions": {
             /**

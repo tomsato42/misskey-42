@@ -46,6 +46,8 @@ import { MiInstance } from '@/models/Instance.js';
 import { MiIntraRole } from '@/models/IntraRole.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
+import { MiPairRecruitment } from '@/models/PairRecruitment.js';
+import { MiPairMember } from '@/models/PairMember.js';
 import { MiMeta } from '@/models/Meta.js';
 import { MiModerationLog } from '@/models/ModerationLog.js';
 import { MiMuting } from '@/models/Muting.js';
@@ -179,6 +181,8 @@ export {
 	MiIntraRole,
 	MiIntraProject,
 	MiIntraUserProgress,
+	MiPairRecruitment,
+	MiPairMember,
 };
 
 export type AbuseUserReportsRepository = Repository<MiAbuseUserReport> & MiRepository<MiAbuseUserReport>;
@@ -262,3 +266,5 @@ export type ReversiGamesRepository = Repository<MiReversiGame> & MiRepository<Mi
 export type IntraRolesRepository = Repository<MiIntraRole> & MiRepository<MiIntraRole>;
 export type IntraProjectsRepository = Repository<MiIntraProject> & MiRepository<MiIntraProject>;
 export type IntraUserProgressesRepository = Repository<MiIntraUserProgress> & MiRepository<MiIntraUserProgress>;
+export type PairRecruitmentsRepository = Repository<MiPairRecruitment> & MiRepository<MiPairRecruitment>;
+export type PairMembersRepository = Repository<MiPairMember> & MiRepository<MiPairMember>;

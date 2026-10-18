@@ -94,5 +94,7 @@ export const DI = {
 	intraRolesRepository: Symbol('intraRolesRepository'),
 	intraProjectsRepository: Symbol('intraProjectsRepository'),
 	intraUserProgressesRepository: Symbol('intraUserProgressesRepository'),
+	pairRecruitmentsRepository: Symbol('pairRecruitmentsRepository'),
+	pairMembersRepository: Symbol('pairMembersRepository'),
 	//#endregion
 };

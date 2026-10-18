@@ -69,3 +69,7 @@ export type ChatMessageLiteForRoom = components['schemas']['ChatMessageLiteForRo
 export type ChatRoom = components['schemas']['ChatRoom'];
 export type ChatRoomInvitation = components['schemas']['ChatRoomInvitation'];
 export type ChatRoomMembership = components['schemas']['ChatRoomMembership'];
+export type PairRecruitmentProject = components['schemas']['PairRecruitmentProject'];
+export type PairRecruitment = components['schemas']['PairRecruitment'];
+export type PairRecruitmentDetailed = components['schemas']['PairRecruitmentDetailed'];
+export type PairMember = components['schemas']['PairMember'];

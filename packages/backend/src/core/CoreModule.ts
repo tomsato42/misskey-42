@@ -155,6 +155,8 @@ import { IntraApiService } from './intra/IntraApiService.js';
 import { IntraAuthService } from './intra/IntraAuthService.js';
 import { IntraSyncService } from './intra/IntraSyncService.js';
 import { IntraProjectService } from './intra/IntraProjectService.js';
+import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
+import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -313,6 +315,8 @@ const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: In
 const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
 const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
 const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
+const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
+const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
 //#endregion
 
 @Module({
@@ -471,6 +475,8 @@ const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExis
 		IntraAuthService,
 		IntraSyncService,
 		IntraProjectService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
 		QueueService,
 		TelemetryService,
 
@@ -625,6 +631,8 @@ const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExis
 		$IntraAuthService,
 		$IntraSyncService,
 		$IntraProjectService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -780,6 +788,8 @@ const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExis
 		IntraAuthService,
 		IntraSyncService,
 		IntraProjectService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
 		QueueService,
 		TelemetryService,
 
@@ -932,6 +942,8 @@ const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExis
 		$IntraAuthService,
 		$IntraSyncService,
 		$IntraProjectService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
 		$TelemetryService,
 		//#endregion
 	],
