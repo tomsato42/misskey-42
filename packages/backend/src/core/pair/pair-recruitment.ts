@@ -305,3 +305,13 @@ export function buildAnnouncementText(params: {
 	lines.push('', params.url);
 	return lines.join('\n');
 }
+
+/**
+ * 作成者の 42 intra の課題のページ (https://projects.intra.42.fr/<課題の slug>/<intra のログイン名>) の URL。
+ * 作成者がその課題に登録したことが無い (課題の状態の記録に無い) ときは、ページが無いので null
+ */
+export function getOwnerIntraProjectUrl(projectSlug: string, intraLogin: string | null | undefined, projectStatuses: Record<string, unknown> | null | undefined): string | null {
+	if (intraLogin == null || intraLogin === '') return null;
+	if (projectStatuses == null || !Object.hasOwn(projectStatuses, projectSlug)) return null;
+	return `https://projects.intra.42.fr/${encodeURIComponent(projectSlug)}/${encodeURIComponent(intraLogin)}`;
+}

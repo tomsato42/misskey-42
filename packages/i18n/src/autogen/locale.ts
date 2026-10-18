@@ -13416,6 +13416,10 @@ export interface Locale extends ILocale {
          */
         "title": string;
         /**
+         * ペア募集の一覧に戻る
+         */
+        "backToList": string;
+        /**
          * ペアを募集する
          */
         "newTitle": string;
@@ -13547,6 +13551,14 @@ export interface Locale extends ILocale {
          * 告知のノート
          */
         "announcementNote": string;
+        /**
+         * 42 intra の課題のページ
+         */
+        "intraProjectPage": string;
+        /**
+         * 募集した人の intra の課題のページ
+         */
+        "ownerIntraProjectPage": string;
         /**
          * 参加希望 {n}件
          */

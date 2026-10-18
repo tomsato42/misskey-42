@@ -4,14 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="[$style.root, { [$style.closed]: isClosed }]" @click="onClick">
+<div :class="[$style.root, { [$style.closed]: isClosed }]">
 	<div :class="$style.row1">
-		<MkA :to="detailPath" :class="$style.project">{{ recruitment.project.name }}</MkA>
+		<MkA :to="detailPath" :class="[$style.project, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
 		<span v-if="isClosed" :class="$style.closedBadge"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
 		<MkPairProjectStateBadge v-if="recruitment.myProjectState != null && recruitment.myStatus !== 'owner'" :class="$style.state" :state="recruitment.myProjectState" variant="viewer"/>
 	</div>
 	<div :class="$style.who">
-		<MkAvatar :class="$style.avatar" :user="recruitment.user" link preview/>
+		<MkAvatar :class="[$style.avatar, $style.raised]" :user="recruitment.user" link preview/>
 		<MkUserName :class="$style.name" :user="recruitment.user"/>
 		<span :class="$style.sub"><MkAcct :user="recruitment.user"/><MkTime :time="recruitment.createdAt"/></span>
 	</div>
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount"/>
 		<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
 		<span :class="$style.meta"><i class="ti ti-calendar" aria-hidden="true"></i>{{ startText }}</span>
-		<div v-if="action != null" :class="$style.action">
+		<div v-if="action != null" :class="[$style.action, $style.raised]">
 			<MkButton v-if="action === 'pendingCount'" type="routerLink" :to="detailPath" small rounded primary>
 				{{ i18n.tsx._pairRecruitment.pendingCount({ n: recruitment.pendingCount ?? 0 }) }}
 			</MkButton>
@@ -88,15 +88,6 @@ const myStatusText = computed(() => {
 	return null;
 });
 
-// カード全体のクリックはマウス向けの近道。キーボードでは課題名のリンクから詳細に行ける
-function onClick(ev: MouseEvent) {
-	// カードの中のリンクとボタンは、それぞれの動作を優先する
-	if (ev.target instanceof Element && ev.target.closest('a, button') != null) return;
-	// 文字を選択したときは移動しない
-	if ((window.getSelection()?.toString() ?? '') !== '') return;
-	router.push('/pair/:id', { params: { id: props.recruitment.id } });
-}
-
 async function apply() {
 	if (!applicable.value) return;
 	const updated = await pairRecruitmentAction('pair-recruitments/apply', { recruitmentId: props.recruitment.id });
@@ -110,15 +101,28 @@ function advise() {
 
 <style lang="scss" module>
 .root {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 	padding: 20px 24px;
-	cursor: pointer;
 
 	&:hover {
 		background: var(--MI_THEME-panelHighlight);
 	}
+}
+
+// 課題名のリンクをカード全体に広げ、カードのどこを押しても詳細に移る (中クリックで新しいタブにも開ける)。
+// カードの中のアバターとボタンは、raised で広げたリンクより手前に出して、それぞれの動作を優先する
+.stretchedLink::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.raised {
+	position: relative;
+	z-index: 1;
 }
 
 .closed {

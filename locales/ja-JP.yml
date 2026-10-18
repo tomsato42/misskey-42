@@ -3593,6 +3593,7 @@ _qr:
 
 _pairRecruitment:
   title: "ペア募集"
+  backToList: "ペア募集の一覧に戻る"
   newTitle: "ペアを募集する"
   recruit: "募集する"
   tabOpen: "募集中"
@@ -3626,6 +3627,8 @@ _pairRecruitment:
   expiresSoon: "まもなく締め切り"
   closedWithReason: "締め切り({reason})"
   announcementNote: "告知のノート"
+  intraProjectPage: "42 intra の課題のページ"
+  ownerIntraProjectPage: "募集した人の intra の課題のページ"
   pendingCount: "参加希望 {n}件"
   members: "メンバー(募集した人だけが承認できます)"
   owner: "募集した人"

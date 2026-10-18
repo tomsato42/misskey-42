@@ -5987,6 +5987,8 @@ export type components = {
             myProjectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
             /** @enum {string|null} */
             myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | null;
+            /** @description 作成者の 42 intra の課題のページ。作成者がその課題に登録したことが無ければ null */
+            ownerIntraProjectUrl: string | null;
             members: components['schemas']['PairMember'][];
         };
         PairMember: {

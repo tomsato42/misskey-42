@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader :actions="headerActions">
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
+		<MkA to="/pair" :class="$style.back"><i class="ti ti-arrow-left" aria-hidden="true"></i>{{ i18n.ts._pairRecruitment.backToList }}</MkA>
 		<div v-if="recruitment != null" class="_gaps">
 			<div class="_panel" :class="$style.main">
 				<div :class="$style.badges">
@@ -32,6 +33,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else>{{ closedText }}</span>
 					<template v-if="recruitment.noteId != null">
 						<i class="ti ti-note" aria-hidden="true"></i><MkA :to="`/notes/${recruitment.noteId}`" class="_link">{{ i18n.ts._pairRecruitment.announcementNote }}</MkA>
+					</template>
+					<i class="ti ti-external-link" aria-hidden="true"></i><a :href="intraProjectUrl" target="_blank" rel="noopener noreferrer" class="_link">{{ i18n.ts._pairRecruitment.intraProjectPage }}</a>
+					<template v-if="recruitment.ownerIntraProjectUrl != null">
+						<i class="ti ti-external-link" aria-hidden="true"></i><a :href="recruitment.ownerIntraProjectUrl" target="_blank" rel="noopener noreferrer" class="_link">{{ i18n.ts._pairRecruitment.ownerIntraProjectPage }}</a>
 					</template>
 				</div>
 				<div v-if="recruitment.comment" :class="$style.comment">{{ recruitment.comment }}</div>
@@ -133,6 +138,8 @@ watch(() => props.id, fetchRecruitment, { immediate: true });
 
 const isOwner = computed(() => recruitment.value?.myStatus === 'owner');
 const isOpen = computed(() => recruitment.value?.status === 'open');
+// 42 intra の課題のページ。42 API の課題の slug がそのまま URL になる
+const intraProjectUrl = computed(() => recruitment.value == null ? undefined : `https://projects.intra.42.fr/projects/${encodeURIComponent(recruitment.value.project.slug)}`);
 const remaining = computed(() => recruitment.value == null ? 0 : getRemainingSlots(recruitment.value));
 const applicable = computed(() => recruitment.value != null && canApply(recruitment.value));
 const canChat = computed(() => $i != null && $i.policies.chatAvailability === 'available');
@@ -246,6 +253,19 @@ definePage(() => ({
 </script>
 
 <style lang="scss" module>
+.back {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 12px;
+	font-size: 0.9em;
+	color: var(--MI_THEME-accent);
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
 .main {
 	display: flex;
 	flex-direction: column;

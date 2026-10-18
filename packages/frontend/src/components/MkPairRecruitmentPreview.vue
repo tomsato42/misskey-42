@@ -11,15 +11,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkPairProjectStateBadge v-if="recruitment != null && recruitment.myProjectState != null && recruitment.myStatus !== 'owner'" :class="$style.state" :state="recruitment.myProjectState" variant="viewer"/>
 	</div>
 	<template v-if="recruitment != null">
-		<MkA :to="detailPath" :class="$style.title">{{ recruitment.project.name }}</MkA>
+		<MkA :to="detailPath" :class="[$style.title, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
 		<div :class="$style.meta">
 			<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
 			<span><i class="ti ti-calendar" aria-hidden="true"></i>{{ getStartTimingText(recruitment) }}</span>
 			<span v-if="recruitment.status !== 'open'"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
 		</div>
-		<div v-if="showActions" :class="$style.actions">
-			<MkButton v-if="applicable" small rounded primary @click="apply">{{ i18n.ts._pairRecruitment.join }}</MkButton>
-			<MkButton type="routerLink" :to="detailPath" small rounded>{{ i18n.ts.details }}</MkButton>
+		<div v-if="showActions && applicable" :class="[$style.actions, $style.raised]">
+			<MkButton small rounded primary @click="apply">{{ i18n.ts._pairRecruitment.join }}</MkButton>
 		</div>
 	</template>
 	<div v-else :class="$style.title"><MkEllipsis/></div>
@@ -77,6 +76,7 @@ async function apply() {
 
 <style lang="scss" module>
 .root {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -84,6 +84,23 @@ async function apply() {
 	border: 0.5px solid var(--MI_THEME-divider);
 	border-radius: 8px;
 	font-size: 0.9em;
+
+	&:hover {
+		background: var(--MI_THEME-panelHighlight);
+	}
+}
+
+// 課題名のリンクをカード全体に広げる (Play や Page のカードと同じく、どこを押しても詳細に移る)。
+// 参加したい のボタンは raised で手前に出す
+.stretchedLink::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.raised {
+	position: relative;
+	z-index: 1;
 }
 
 .header {

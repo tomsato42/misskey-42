@@ -10,6 +10,7 @@ import type {
 	IntraProjectsRepository,
 	IntraUserProgressesRepository,
 	PairMembersRepository,
+	UserProfilesRepository,
 	MiUser,
 } from '@/models/_.js';
 import type { Packed } from '@/misc/json-schema.js';
@@ -20,7 +21,7 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import { judgeProjectAvailability } from '@/core/intra/intra-project.js';
 import type { IntraProjectAvailabilityState } from '@/core/intra/intra-project.js';
-import { canSeeMember, getEffectiveState } from '@/core/pair/pair-recruitment.js';
+import { canSeeMember, getEffectiveState, getOwnerIntraProjectUrl } from '@/core/pair/pair-recruitment.js';
 import type { PairViewerStatus } from '@/core/pair/pair-recruitment.js';
 import { UserEntityService } from './UserEntityService.js';
 
@@ -39,6 +40,9 @@ export class PairRecruitmentEntityService {
 
 		@Inject(DI.intraUserProgressesRepository)
 		private intraUserProgressesRepository: IntraUserProgressesRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		private userEntityService: UserEntityService,
 		private idService: IdService,
@@ -143,7 +147,7 @@ export class PairRecruitmentEntityService {
 		me: { id: MiUser['id'] },
 		now = new Date(),
 	): Promise<Packed<'PairRecruitmentDetailed'>> {
-		const [packed, members, projects] = await Promise.all([
+		const [packed, members, projects, ownerProfile, ownerProgress] = await Promise.all([
 			this.pack(recruitment, me, now),
 			this.pairMembersRepository.find({
 				where: { recruitmentId: recruitment.id },
@@ -151,6 +155,8 @@ export class PairRecruitmentEntityService {
 				order: { id: 'ASC' },
 			}),
 			this.fetchProjects([recruitment]),
+			this.userProfilesRepository.findOne({ where: { userId: recruitment.userId }, select: { userId: true, intraLogin: true } }),
+			this.intraUserProgressesRepository.findOne({ where: { userId: recruitment.userId }, select: { userId: true, projectStatuses: true } }),
 		]);
 
 		const visible = members.filter(m =>
@@ -169,6 +175,7 @@ export class PairRecruitmentEntityService {
 
 		return {
 			...packed,
+			ownerIntraProjectUrl: getOwnerIntraProjectUrl(recruitment.projectSlug, ownerProfile?.intraLogin, ownerProgress?.projectStatuses),
 			members: visible.map(m => ({
 				id: m.id,
 				createdAt: this.idService.parse(m.id).date.toISOString(),

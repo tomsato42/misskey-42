@@ -220,6 +220,11 @@ export const packedPairRecruitmentDetailedSchema = {
 	type: 'object',
 	properties: {
 		...packedPairRecruitmentProperties,
+		ownerIntraProjectUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+			description: '作成者の 42 intra の課題のページ。作成者がその課題に登録したことが無ければ null',
+		},
 		members: {
 			type: 'array',
 			optional: false, nullable: false,

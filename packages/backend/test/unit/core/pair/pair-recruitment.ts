@@ -10,6 +10,7 @@ import {
 	canSeeMember,
 	canWorkOn,
 	formatStartTiming,
+	getOwnerIntraProjectUrl,
 	getEffectiveState,
 	getTeamSizeRange,
 	isRecruitmentOpen,
@@ -271,5 +272,24 @@ describe('告知の文面', () => {
 			url: 'https://example.com/pair/abc',
 			now,
 		})).toBe('【ペア募集】cub3d\n人数: 2 人 (あと 1 人)\n始める時期: 今すぐ\n\nhttps://example.com/pair/abc');
+	});
+});
+
+describe('getOwnerIntraProjectUrl', () => {
+	const statuses = { '42cursus-minishell': { status: 'finished', validated: true } };
+
+	test('登録したことがある課題なら、intra の課題のページの URL を返す', () => {
+		expect(getOwnerIntraProjectUrl('42cursus-minishell', 'tomsato', statuses)).toBe('https://projects.intra.42.fr/42cursus-minishell/tomsato');
+	});
+
+	test('登録したことが無い課題・ログイン名が無い・課題の状態が無いときは null', () => {
+		expect(getOwnerIntraProjectUrl('42cursus-cloud-1', 'tomsato', statuses)).toBeNull();
+		expect(getOwnerIntraProjectUrl('42cursus-minishell', null, statuses)).toBeNull();
+		expect(getOwnerIntraProjectUrl('42cursus-minishell', '', statuses)).toBeNull();
+		expect(getOwnerIntraProjectUrl('42cursus-minishell', 'tomsato', null)).toBeNull();
+	});
+
+	test('プロトタイプのプロパティ名の課題を、登録済みと見なさない', () => {
+		expect(getOwnerIntraProjectUrl('constructor', 'tomsato', {})).toBeNull();
 	});
 });
