@@ -3635,7 +3635,6 @@ _pairRecruitment:
   pendingCount: "参加希望 {n}件"
   members: "メンバー(募集した人だけが承認できます)"
   owner: "募集した人"
-  stateNote: "状態は 42 intra の記録から自動で判定しています(毎時更新)。「未解放」は、前提の課題がまだ終わっていない人です。"
   project: "次に取り組む課題"
   teamSize: "人数(自分を含む)"
   startTiming: "始める時期"

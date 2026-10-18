@@ -71,8 +71,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</div>
-
-			<MkInfo>{{ i18n.ts._pairRecruitment.stateNote }}</MkInfo>
 		</div>
 		<MkResult v-else-if="notFound" type="notFound"/>
 		<MkResult v-else-if="errorText != null" type="error" :text="errorText"/>
@@ -89,7 +87,6 @@ import type * as Misskey from 'misskey-js';
 import type { MenuItem } from '@/types/menu.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
 import MkButton from '@/components/MkButton.vue';
-import MkInfo from '@/components/MkInfo.vue';
 import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import * as os from '@/os.js';

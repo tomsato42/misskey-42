@@ -13584,10 +13584,6 @@ export interface Locale extends ILocale {
          */
         "owner": string;
         /**
-         * 状態は 42 intra の記録から自動で判定しています(毎時更新)。「未解放」は、前提の課題がまだ終わっていない人です。
-         */
-        "stateNote": string;
-        /**
          * 次に取り組む課題
          */
         "project": string;
