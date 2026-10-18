@@ -53,6 +53,20 @@ export const ROUTE_DEF = [{
 	path: '/clips/:clipId',
 	component: page(() => import('@/pages/clip.vue')),
 }, {
+	// 42times のカレンダー。month は表示する月 (YYYY-MM)、filter はタブ (all / subscribed / mine)
+	path: '/calendar',
+	component: page(() => import('@/pages/calendar/index.vue')),
+	query: {
+		month: 'month',
+		filter: 'filter',
+	},
+	loginRequired: true,
+}, {
+	// カレンダー配信 (.ics) の各イベントの URL にも使うので、パスを変えない
+	path: '/calendar/events/:eventId',
+	component: page(() => import('@/pages/calendar/event.vue')),
+	loginRequired: true,
+}, {
 	path: '/chat',
 	component: chatPage(() => import('@/pages/chat/home.vue')),
 	loginRequired: true,

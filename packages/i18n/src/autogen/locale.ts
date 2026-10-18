@@ -13486,4 +13486,246 @@ export interface Locale extends ILocale {
          */
         "ugcVisibilityLocked": string;
     };
+    "_calendar": {
+        /**
+         * カレンダー
+         */
+        "calendar": string;
+        /**
+         * イベント
+         */
+        "event": string;
+        /**
+         * すべて
+         */
+        "all": string;
+        /**
+         * 購読中
+         */
+        "subscribed": string;
+        /**
+         * 自分が作成
+         */
+        "mine": string;
+        /**
+         * 購読していない
+         */
+        "notSubscribed": string;
+        /**
+         * カレンダー連携
+         */
+        "feed": string;
+        /**
+         * イベントを作成
+         */
+        "createEvent": string;
+        /**
+         * イベントを編集
+         */
+        "editEvent": string;
+        /**
+         * この日にイベントを作成
+         */
+        "createEventOnThisDay": string;
+        /**
+         * 前の月
+         */
+        "prevMonth": string;
+        /**
+         * 次の月
+         */
+        "nextMonth": string;
+        /**
+         * {year}年{month}月
+         */
+        "yearMonth": ParameterizedString<"year" | "month">;
+        /**
+         * {month}月{day}日({weekday})
+         */
+        "monthDay": ParameterizedString<"month" | "day" | "weekday">;
+        /**
+         * 終日
+         */
+        "allDay": string;
+        /**
+         * {start}〜{end}
+         */
+        "timeRange": ParameterizedString<"start" | "end">;
+        /**
+         * {start}〜
+         */
+        "timeFrom": ParameterizedString<"start">;
+        /**
+         * 他 {n} 件
+         */
+        "moreEvents": ParameterizedString<"n">;
+        /**
+         * あと{n}日
+         */
+        "daysLeft": ParameterizedString<"n">;
+        /**
+         * 中止
+         */
+        "canceled": string;
+        /**
+         * このイベントは中止されました
+         */
+        "eventCanceled": string;
+        /**
+         * {user} が作成
+         */
+        "createdBy": ParameterizedString<"user">;
+        /**
+         * {n}人が購読中
+         */
+        "subscribersCount": ParameterizedString<"n">;
+        /**
+         * 購読
+         */
+        "subscribe": string;
+        /**
+         * 購読を解除
+         */
+        "unsubscribe": string;
+        /**
+         * 作成したイベントは購読を解除できません
+         */
+        "cannotUnsubscribeOwn": string;
+        /**
+         * #{tag} で投稿する
+         */
+        "postWithHashtag": ParameterizedString<"tag">;
+        /**
+         * カレンダーに追加
+         */
+        "addToCalendar": string;
+        /**
+         * このイベントのノート
+         */
+        "notesOfEvent": string;
+        /**
+         * イベントを中止
+         */
+        "cancelEvent": string;
+        /**
+         * 「{x}」を中止しますか？中止すると元に戻せません。
+         */
+        "cancelConfirm": ParameterizedString<"x">;
+        /**
+         * このイベントは中止されています。
+         */
+        "alreadyCanceled": string;
+        /**
+         * イベント名
+         */
+        "eventTitle": string;
+        /**
+         * 日付
+         */
+        "date": string;
+        /**
+         * 開始時刻
+         */
+        "startTime": string;
+        /**
+         * 終了時刻
+         */
+        "endTime": string;
+        /**
+         * 省略できます。開始と同じ日の中で指定します。
+         */
+        "endTimeDescription": string;
+        /**
+         * ハッシュタグ
+         */
+        "hashtag": string;
+        /**
+         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。
+         */
+        "hashtagDescription": string;
+        "_weekdayShort": {
+            /**
+             * 日
+             */
+            "sunday": string;
+            /**
+             * 月
+             */
+            "monday": string;
+            /**
+             * 火
+             */
+            "tuesday": string;
+            /**
+             * 水
+             */
+            "wednesday": string;
+            /**
+             * 木
+             */
+            "thursday": string;
+            /**
+             * 金
+             */
+            "friday": string;
+            /**
+             * 土
+             */
+            "saturday": string;
+        };
+        "_errors": {
+            /**
+             * イベント名を入力してください。
+             */
+            "titleRequired": string;
+            /**
+             * イベント名は{max}文字以内で入力してください。
+             */
+            "titleTooLong": ParameterizedString<"max">;
+            /**
+             * 場所は{max}文字以内で入力してください。
+             */
+            "locationTooLong": ParameterizedString<"max">;
+            /**
+             * 説明は{max}文字以内で入力してください。
+             */
+            "descriptionTooLong": ParameterizedString<"max">;
+            /**
+             * ハッシュタグとして使えない文字が含まれています。
+             */
+            "invalidHashtag": string;
+            /**
+             * ハッシュタグは{max}文字以内で入力してください。
+             */
+            "hashtagTooLong": ParameterizedString<"max">;
+            /**
+             * 日付を正しく入力してください。
+             */
+            "invalidDate": string;
+            /**
+             * 開始時刻を正しく入力してください。
+             */
+            "invalidStartTime": string;
+            /**
+             * 終了時刻を正しく入力してください。
+             */
+            "invalidEndTime": string;
+            /**
+             * 開始時刻を入力するか、終日にしてください。
+             */
+            "startTimeRequired": string;
+            /**
+             * 終了時刻は開始時刻より後にしてください。
+             */
+            "endNotAfterStart": string;
+            /**
+             * 終了時刻は開始と同じ日の中で指定してください。
+             */
+            "endNotSameDay": string;
+            /**
+             * 月の指定が正しくありません。
+             */
+            "invalidMonth": string;
+        };
+    };
 }

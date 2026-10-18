@@ -188,6 +188,7 @@ export const PREF_DEF = definePreferences({
 	menu: {
 		default: [
 			'notifications',
+			'calendar',
 			'clips',
 			'drive',
 			'followRequests',
