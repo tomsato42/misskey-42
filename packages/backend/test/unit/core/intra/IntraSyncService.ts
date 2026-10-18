@@ -309,6 +309,19 @@ describe('IntraSyncService', () => {
 		expect(roles.find(r => r.id === lv7)?.iconUrl).toBe('https://example.com/custom.png');
 	});
 
+	test('Lv.0 から Lv.21 までのロールを先に作り、2 回目は作らない', async () => {
+		const lv3 = addManagedRole('level', '3', 'レベル3 (管理者が変えた名前)');
+
+		await service.ensureLevelRoles();
+		await service.ensureLevelRoles();
+
+		const levelKeys = intraRoles.filter(r => r.kind === 'level').map(r => Number(r.key)).sort((a, b) => a - b);
+		expect(levelKeys).toEqual(Array.from({ length: 22 }, (_, i) => i));
+		expect(roles.find(r => r.id === lv3)?.name).toBe('レベル3 (管理者が変えた名前)');
+		expect(roles.find(r => r.name === 'Lv.21')?.iconUrl).toBe('https://example.com/badges/lv-21.svg');
+		expect(roles).toHaveLength(22);
+	});
+
 	test('既存のロールの名前は上書きしない', async () => {
 		addProfile('u1', { intraId: 1000 });
 		const tokyo = addManagedRole('campus', '26', '東京校');

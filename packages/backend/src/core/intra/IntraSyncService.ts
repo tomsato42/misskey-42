@@ -18,7 +18,7 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
 import { extractIntraProfile } from './intra-user.js';
-import { diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets } from './intra-role.js';
+import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLevelRoleTarget } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
 
@@ -111,6 +111,17 @@ export class IntraSyncService {
 		await this.cacheService.userProfileCache.set(userId, updatedProfile);
 
 		await this.syncRoles(userId, extracted);
+	}
+
+	/**
+	 * Lv.0 から PRECREATED_MAX_LEVEL までのレベルのロールを、該当するユーザーがいなくても作っておく。
+	 * 既にあるロールには触れない (アイコンが未設定なら設定する)
+	 */
+	@bindThis
+	public async ensureLevelRoles(): Promise<void> {
+		for (let level = 0; level <= PRECREATED_MAX_LEVEL; level++) {
+			await this.ensureRole(getLevelRoleTarget(level));
+		}
 	}
 
 	/**

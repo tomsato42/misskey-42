@@ -96,6 +96,16 @@ export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: s
 	return { kind: 'cohort', key: yearMonth, name: `Cursus ${formatYearMonth(yearMonth)}` };
 }
 
+/** 先に作っておくレベルのロールの最大値 (42cursus の Common Core を終えるあたりまで) */
+export const PRECREATED_MAX_LEVEL = 21;
+
+/**
+ * レベルのロール条件
+ */
+export function getLevelRoleTarget(level: number): IntraRoleTarget {
+	return { kind: 'level', key: String(level), name: `Lv.${level}` };
+}
+
 /**
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
@@ -104,7 +114,7 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const targets: IntraRoleTarget[] = [];
 
 	if (profile.level != null) {
-		targets.push({ kind: 'level', key: String(profile.level), name: `Lv.${profile.level}` });
+		targets.push(getLevelRoleTarget(profile.level));
 	}
 
 	if (profile.campus != null) {

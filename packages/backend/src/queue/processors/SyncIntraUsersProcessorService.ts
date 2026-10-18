@@ -40,6 +40,13 @@ export class SyncIntraUsersProcessorService {
 		// 連携を無効にした直後は、登録済みのジョブが一度だけ実行されることがある
 		if (this.config.intra == null) return;
 
+		try {
+			await this.intraSyncService.ensureLevelRoles();
+		} catch (err) {
+			// レベルのロールを作れなくても、ユーザーの同期は続ける
+			this.logger.warn(`Failed to ensure level roles: ${err instanceof Error ? err.message : String(err)}`);
+		}
+
 		const profiles = await this.userProfilesRepository.createQueryBuilder('profile')
 			.innerJoin('profile.user', 'user')
 			.select(['profile.userId'])
