@@ -105,7 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<dt class="name"><i class="ti ti-school ti-fw"></i> {{ i18n.ts._intra.poolYearMonth }}</dt>
 									<dd class="value">{{ formatPoolYearMonth(user.intra.poolYearMonth) }}</dd>
 								</dl>
-								<dl v-if="user.intra.blackholedAt" class="field">
+								<dl v-if="isUpcoming(user.intra.blackholedAt)" class="field">
 									<dt class="name"><i class="ti ti-hourglass-low ti-fw"></i> {{ i18n.ts._intra.blackholedAt }}</dt>
 									<dd class="value">{{ dateString(user.intra.blackholedAt) }} (<MkTime :time="user.intra.blackholedAt"/>)</dd>
 								</dl>
@@ -227,6 +227,12 @@ function calcAge(birthdate: string): number {
 function formatPoolYearMonth(yymm: string): string {
 	if (!/^\d{4}$/.test(yymm)) return yymm;
 	return `20${yymm.slice(0, 2)}/${yymm.slice(2)}`;
+}
+
+// 42 API の blackholed_at はペースシステムやフリーズを反映せず、在籍中でも過去の日付のまま残ることがあるので、
+// 過去の日付は古い値として表示しない
+function isUpcoming(date: string | null): date is string {
+	return date != null && new Date(date).getTime() > Date.now();
 }
 
 const XFiles = defineAsyncComponent(() => import('./index.files.vue'));

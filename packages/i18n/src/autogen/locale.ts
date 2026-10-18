@@ -13442,11 +13442,11 @@ export interface Locale extends ILocale {
          */
         "intraAccount": string;
         /**
-         * 入学時期（ピシン）
+         * Piscine
          */
         "poolYearMonth": string;
         /**
-         * ブラックホール
+         * BH
          */
         "blackholedAt": string;
         /**

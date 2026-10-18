@@ -92,6 +92,31 @@ describe('XHome', () => {
 		assert.notExists(home.container.querySelector('.ti-hourglass-low'), 'blackhole is hidden when null');
 	});
 
+	test('Should render only an upcoming blackhole date', async () => {
+		const base = {
+			id: 'blobcat',
+			name: 'blobcat',
+			username: 'blobcat',
+			host: null,
+			uri: null,
+			url: null,
+			roles: [],
+			createdAt: '1970-01-01T00:00:00.000Z',
+			fields: [],
+			pinnedNotes: [],
+			avatarUrl: 'https://example.com',
+			avatarDecorations: [],
+		};
+
+		const past = renderHome({ ...base, intra: { login: 'blobcat', poolYearMonth: '2307', blackholedAt: '2000-01-01T00:00:00.000Z', paceDeadlineAt: null } });
+		assert.notExists(past.container.querySelector('.ti-hourglass-low'), 'past blackhole is hidden');
+		past.unmount();
+
+		const upcoming = renderHome({ ...base, intra: { login: 'blobcat', poolYearMonth: '2307', blackholedAt: '2100-01-01T00:00:00.000Z', paceDeadlineAt: null } });
+		assert.exists(upcoming.container.querySelector('.ti-hourglass-low'), 'upcoming blackhole is shown');
+		upcoming.unmount();
+	});
+
 	test('Should not render 42 intra information when user.intra is null', async () => {
 		const home = renderHome({
 			id: 'blobcat',
