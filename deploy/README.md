@@ -308,9 +308,9 @@ Tailscale の管理画面で行います。
 
 GitHub のドキュメントでは、Free プランの private リポジトリでは environment の secret と保護ルールを使えないとされています。その場合は、同じ名前でリポジトリの secret (Settings → Secrets and variables → Actions) に登録してください。ワークフローはどちらに登録しても同じように読めます。
 
-4. VPS の接続先は、公開リポジトリのファイルに書かず、リポジトリ変数 (Settings → Secrets and variables → Actions → Variables) に登録します。秘密の値ではないので、`gh variable set` でも登録できます。
+4. VPS の接続先は、公開リポジトリのファイルに書かず、リポジトリの secret (Settings → Secrets and variables → Actions → Secrets) に登録します。リポジトリが public なので、Actions のログで伏せ字にならない Variables には置きません。ワークフロー全体の env で読むので、environment ではなくリポジトリの secret にします。
 
-| 変数 | 値 |
+| secret | 値 |
 | --- | --- |
 | `DEPLOY_HOST` | VPS の Tailscale の IP |
 | `DEPLOY_PORT` | VPS の SSH のポート |
