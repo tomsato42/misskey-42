@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
 				</button>
 			</template>
-			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
+			<button v-if="visibility !== 'specified' && !instance.intraLoginEnabled" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
 			</button>
@@ -1188,7 +1188,8 @@ async function post(ev?: PointerEvent) {
 		channelId: targetChannel.value ? targetChannel.value.id : undefined,
 		poll: poll.value,
 		cw: useCw.value ? cw.value ?? '' : null,
-		localOnly: visibility.value === 'specified' ? false : localOnly.value,
+		// 学内SNSモードでは連合なしのボタンを出さないので、以前の設定が残っていても送らない
+		localOnly: visibility.value === 'specified' || instance.intraLoginEnabled ? false : localOnly.value,
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,

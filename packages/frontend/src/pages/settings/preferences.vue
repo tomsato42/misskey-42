@@ -384,7 +384,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 											</MkSelect>
 										</MkPreferenceContainer>
 
-										<MkPreferenceContainer k="defaultNoteLocalOnly">
+										<MkPreferenceContainer v-if="!instance.intraLoginEnabled" k="defaultNoteLocalOnly">
 											<MkSwitch v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
 										</MkPreferenceContainer>
 									</div>
