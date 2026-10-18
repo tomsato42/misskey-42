@@ -265,5 +265,12 @@ export const packedNoteSchema = {
 			type: 'string',
 			optional: true, nullable: true,
 		},
+
+		// 42times: ノートが紐づいているカレンダーのイベント。紐づいていなければ無い
+		calendarEvent: {
+			type: 'object',
+			optional: true, nullable: false,
+			ref: 'CalendarEventLite',
+		},
 	},
 } as const;

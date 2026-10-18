@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
+		<div v-else-if="notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated'" :class="[$style.icon, $style.icon_calendar]"><i class="ti ti-calendar-event" style="line-height: 1;"></i></div>
 		<MkAvatar v-else-if="'user' in notification" :class="$style.icon" :user="notification.user" link preview/>
 		<img v-else-if="'icon' in notification && notification.icon != null" :class="[$style.icon, $style.icon_app]" :src="notification.icon" alt=""/>
 		<div
@@ -31,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_createToken]: notification.type === 'createToken',
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
+				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated',
 				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed',
 			}]"
 		>
@@ -49,6 +51,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
 			<i v-else-if="notification.type === 'createToken'" class="ti ti-key"></i>
 			<i v-else-if="notification.type === 'chatRoomInvitationReceived'" class="ti ti-messages"></i>
+			<i v-else-if="notification.type === 'calendarEventReminder'" class="ti ti-clock"></i>
+			<i v-else-if="notification.type === 'calendarEventUpdated' && notification.updateKind === 'canceled'" class="ti ti-calendar-x"></i>
+			<i v-else-if="notification.type === 'calendarEventUpdated'" class="ti ti-calendar-time"></i>
 			<i v-else-if="notification.type === 'pairJoinRequested'" class="ti ti-hand-stop"></i>
 			<i v-else-if="notification.type === 'pairAccepted'" class="ti ti-check"></i>
 			<i v-else-if="notification.type === 'pairClosed'" class="ti ti-users-group"></i>
@@ -77,6 +82,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'login'">{{ i18n.ts._notification.login }}</span>
 			<span v-else-if="notification.type === 'createToken'">{{ i18n.ts._notification.createToken }}</span>
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
+			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
+			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
 			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
 			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
@@ -131,6 +138,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkA>
 			<MkA v-else-if="notification.type === 'exportCompleted'" :class="$style.text" :to="`/my/drive/file/${notification.fileId}`">
 				{{ i18n.ts.showFile }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'calendarEventReminder'" :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+				<b :class="$style.calendarLine">{{ notification.event.title }}</b>
+				<span :class="$style.calendarLine">{{ formatCalendarScheduleAndLocation(notification.event) }}</span>
+			</MkA>
+			<MkA v-else-if="notification.type === 'calendarEventUpdated'" :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+				<b :class="[$style.calendarLine, { [$style.calendarCanceled]: notification.updateKind === 'canceled' }]">{{ notification.event.title }}</b>
+				<span v-if="notification.updateKind === 'rescheduled' && notification.previousSchedule != null" :class="$style.calendarLine">
+					{{ i18n.tsx._calendar.scheduleChange({ before: formatCalendarSchedule(notification.previousSchedule), after: formatCalendarSchedule(notification.schedule) }) }}
+				</span>
+				<span v-else :class="$style.calendarLine">{{ formatCalendarSchedule(notification.schedule) }}</span>
 			</MkA>
 			<MkA v-else-if="notification.type === 'pairJoinRequested'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
 				{{ i18n.tsx._notification.pairJoinRequestedText({ project: notification.pairRecruitment.projectName }) }}
@@ -201,6 +219,7 @@ import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { ensureSignin } from '@/i.js';
+import { formatCalendarSchedule, formatCalendarScheduleAndLocation, getCalendarReminderHeading, getCalendarUpdateHeading } from '@/utility/calendar-event-messages.js';
 
 const $i = ensureSignin();
 
@@ -318,6 +337,15 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	border-radius: 6px;
 }
 
+// 42times: カレンダーの通知には送り手のユーザーがいないので、アバターの代わりにカレンダーのアイコンを出す
+.icon_calendar {
+	display: grid;
+	place-items: center;
+	border-radius: 100%;
+	font-size: 18px;
+	background: var(--MI_THEME-buttonBg);
+}
+
 .subIcon {
 	position: absolute;
 	z-index: 1;
@@ -409,6 +437,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
+.t_calendar,
 .t_pair {
 	background: var(--eventOther);
 	pointer-events: none;
@@ -417,6 +446,23 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 .tail {
 	flex: 1;
 	min-width: 0;
+}
+
+.calendarText {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+}
+
+.calendarLine {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.calendarCanceled {
+	text-decoration: line-through;
 }
 
 .header {

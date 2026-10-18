@@ -37,6 +37,10 @@ import {
 	MiHashtag,
 	MiInstance,
 	MiIntraRole,
+	MiCalendarEvent,
+	MiCalendarEventSubscription,
+	MiCalendarEventNote,
+	MiCalendarEventReminder,
 	MiIntraProject,
 	MiIntraUserProgress,
 	MiPairRecruitment,
@@ -555,6 +559,30 @@ const $intraRolesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $calendarEventsRepository: Provider = {
+	provide: DI.calendarEventsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEvent).extend(miRepository as MiRepository<MiCalendarEvent>),
+	inject: [DI.db],
+};
+
+const $calendarEventSubscriptionsRepository: Provider = {
+	provide: DI.calendarEventSubscriptionsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventSubscription).extend(miRepository as MiRepository<MiCalendarEventSubscription>),
+	inject: [DI.db],
+};
+
+const $calendarEventNotesRepository: Provider = {
+	provide: DI.calendarEventNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventNote).extend(miRepository as MiRepository<MiCalendarEventNote>),
+	inject: [DI.db],
+};
+
+const $calendarEventRemindersRepository: Provider = {
+	provide: DI.calendarEventRemindersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventReminder).extend(miRepository as MiRepository<MiCalendarEventReminder>),
+	inject: [DI.db],
+};
+
 const $intraProjectsRepository: Provider = {
 	provide: DI.intraProjectsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiIntraProject).extend(miRepository as MiRepository<MiIntraProject>),
@@ -659,6 +687,10 @@ const $pairMembersRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
 		$intraProjectsRepository,
 		$intraUserProgressesRepository,
 		$pairRecruitmentsRepository,
@@ -742,6 +774,10 @@ const $pairMembersRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
 		$intraProjectsRepository,
 		$intraUserProgressesRepository,
 		$pairRecruitmentsRepository,

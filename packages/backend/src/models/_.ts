@@ -44,6 +44,10 @@ import { MiGalleryPost } from '@/models/GalleryPost.js';
 import { MiHashtag } from '@/models/Hashtag.js';
 import { MiInstance } from '@/models/Instance.js';
 import { MiIntraRole } from '@/models/IntraRole.js';
+import { MiCalendarEvent } from '@/models/CalendarEvent.js';
+import { MiCalendarEventSubscription } from '@/models/CalendarEventSubscription.js';
+import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
+import { MiCalendarEventReminder } from '@/models/CalendarEventReminder.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
@@ -179,6 +183,10 @@ export {
 	MiBubbleGameRecord,
 	MiReversiGame,
 	MiIntraRole,
+	MiCalendarEvent,
+	MiCalendarEventSubscription,
+	MiCalendarEventNote,
+	MiCalendarEventReminder,
 	MiIntraProject,
 	MiIntraUserProgress,
 	MiPairRecruitment,
@@ -264,6 +272,10 @@ export type ChatApprovalsRepository = Repository<MiChatApproval> & MiRepository<
 export type BubbleGameRecordsRepository = Repository<MiBubbleGameRecord> & MiRepository<MiBubbleGameRecord>;
 export type ReversiGamesRepository = Repository<MiReversiGame> & MiRepository<MiReversiGame>;
 export type IntraRolesRepository = Repository<MiIntraRole> & MiRepository<MiIntraRole>;
+export type CalendarEventsRepository = Repository<MiCalendarEvent> & MiRepository<MiCalendarEvent>;
+export type CalendarEventSubscriptionsRepository = Repository<MiCalendarEventSubscription> & MiRepository<MiCalendarEventSubscription>;
+export type CalendarEventNotesRepository = Repository<MiCalendarEventNote> & MiRepository<MiCalendarEventNote>;
+export type CalendarEventRemindersRepository = Repository<MiCalendarEventReminder> & MiRepository<MiCalendarEventReminder>;
 export type IntraProjectsRepository = Repository<MiIntraProject> & MiRepository<MiIntraProject>;
 export type IntraUserProgressesRepository = Repository<MiIntraUserProgress> & MiRepository<MiIntraUserProgress>;
 export type PairRecruitmentsRepository = Repository<MiPairRecruitment> & MiRepository<MiPairRecruitment>;

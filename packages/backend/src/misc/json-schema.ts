@@ -76,6 +76,13 @@ import { packedChatRoomMembershipSchema } from '@/models/json-schema/chat-room-m
 import { packedAchievementNameSchema, packedAchievementSchema } from '@/models/json-schema/achievement.js';
 import { packedNoteDraftSchema } from '@/models/json-schema/note-draft.js';
 import {
+	packedCalendarEventLiteSchema,
+	packedCalendarEventSchema,
+	packedCalendarEventScheduleSchema,
+	packedCalendarFeedUrlsSchema,
+	packedCalendarNotificationSettingsSchema,
+} from '@/models/json-schema/calendar-event.js';
+import {
 	packedPairMemberSchema,
 	packedPairRecruitmentDetailedSchema,
 	packedPairRecruitmentProjectSchema,
@@ -153,6 +160,11 @@ export const refs = {
 	ChatRoom: packedChatRoomSchema,
 	ChatRoomInvitation: packedChatRoomInvitationSchema,
 	ChatRoomMembership: packedChatRoomMembershipSchema,
+	CalendarEventLite: packedCalendarEventLiteSchema,
+	CalendarEvent: packedCalendarEventSchema,
+	CalendarEventSchedule: packedCalendarEventScheduleSchema,
+	CalendarFeedUrls: packedCalendarFeedUrlsSchema,
+	CalendarNotificationSettings: packedCalendarNotificationSettingsSchema,
 	PairRecruitmentProject: packedPairRecruitmentProjectSchema,
 	PairRecruitment: packedPairRecruitmentSchema,
 	PairRecruitmentDetailed: packedPairRecruitmentDetailedSchema,

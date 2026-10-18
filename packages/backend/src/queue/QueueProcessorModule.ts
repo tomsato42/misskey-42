@@ -21,6 +21,7 @@ import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { CheckModeratorsActivityProcessorService } from './processors/CheckModeratorsActivityProcessorService.js';
 import { CleanRemoteNotesProcessorService } from './processors/CleanRemoteNotesProcessorService.js';
 import { SyncIntraUsersProcessorService } from './processors/SyncIntraUsersProcessorService.js';
+import { CalendarEventRemindersProcessorService } from './processors/CalendarEventRemindersProcessorService.js';
 import { SyncIntraProjectsProcessorService } from './processors/SyncIntraProjectsProcessorService.js';
 import { CloseExpiredPairRecruitmentsProcessorService } from './processors/CloseExpiredPairRecruitmentsProcessorService.js';
 import { CleanRemoteFilesProcessorService } from './processors/CleanRemoteFilesProcessorService.js';
@@ -91,6 +92,7 @@ import { RelationshipProcessorService } from './processors/RelationshipProcessor
 		CheckModeratorsActivityProcessorService,
 		CleanRemoteNotesProcessorService,
 		SyncIntraUsersProcessorService,
+		CalendarEventRemindersProcessorService,
 		SyncIntraProjectsProcessorService,
 		CloseExpiredPairRecruitmentsProcessorService,
 		QueueProcessorService,

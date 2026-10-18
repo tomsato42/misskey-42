@@ -12,6 +12,7 @@ import { cli } from '@/scripts/operations.js';
 import { getAccountFromId } from '@/scripts/get-account-from-id.js';
 import { swLang } from '@/scripts/lang.js';
 import { getUserName } from '@/scripts/get-user-name.js';
+import { formatCalendarSchedule } from '@/scripts/calendar.js';
 
 const closeNotificationsByTags = async (tags: string[]): Promise<void> => {
 	for (const n of (await Promise.all(tags.map(tag => globalThis.registration.getNotifications({ tag })))).flat()) {
@@ -239,6 +240,29 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					return [i18n.ts._notification.pollEnded, {
 						body: data.body.note.text ?? '',
 						badge: iconUrl('chart-arrows'),
+						data,
+					}];
+
+				// 42times: カレンダーのイベントの通知。押すとイベントのページを開く (sw.ts)
+				case 'calendarEventReminder': {
+					const location = data.body.event.location;
+					return [`${i18n.ts._calendar._notification[data.body.reminderKind]}: ${data.body.event.title}`, {
+						body: formatCalendarSchedule(i18n, data.body.event) + (location != null && location !== '' ? ` ・ ${location}` : ''),
+						badge: iconUrl('bell'),
+						data,
+						tag: `calendarEvent:${data.body.event.id}:${data.body.reminderKind}`,
+					}];
+				}
+
+				case 'calendarEventUpdated':
+					return [`${i18n.ts._calendar._notification[data.body.updateKind]}: ${data.body.event.title}`, {
+						body: data.body.updateKind === 'rescheduled' && data.body.previousSchedule != null
+							? i18n.tsx._calendar.scheduleChange({
+								before: formatCalendarSchedule(i18n, data.body.previousSchedule),
+								after: formatCalendarSchedule(i18n, data.body.schedule),
+							})
+							: formatCalendarSchedule(i18n, data.body.schedule),
+						badge: iconUrl('bell'),
 						data,
 					}];
 

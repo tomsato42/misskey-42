@@ -10,6 +10,7 @@ import { MiAccessToken } from './AccessToken.js';
 import { MiRole } from './Role.js';
 import { MiDriveFile } from './DriveFile.js';
 import { MiNoteDraft } from './NoteDraft.js';
+import type { CalendarEventReminderNotificationData, CalendarEventUpdatedNotificationData } from '@/core/calendar/calendar-notification.js';
 import { MiPairRecruitment } from './PairRecruitment.js';
 import type { PairClosedReason } from '@/core/pair/pair-recruitment.js';
 
@@ -144,7 +145,17 @@ export type MiNotification = {
 	type: 'test';
 	id: string;
 	createdAt: string;
-} | {
+} | ({
+	// 42times: 購読しているカレンダーのイベントのリマインド
+	type: 'calendarEventReminder';
+	id: string;
+	createdAt: string;
+} & CalendarEventReminderNotificationData) | ({
+	// 42times: 購読しているカレンダーのイベントの日時の変更・中止
+	type: 'calendarEventUpdated';
+	id: string;
+	createdAt: string;
+} & CalendarEventUpdatedNotificationData) | {
 	/** 自分のペア募集に参加希望が届いた。notifierId は参加希望を送った人 */
 	type: 'pairJoinRequested';
 	id: string;

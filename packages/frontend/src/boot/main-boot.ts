@@ -30,6 +30,7 @@ import { updateCurrentAccountPartial } from '@/accounts.js';
 import { unisonReload } from '@/utility/unison-reload.js';
 import { isBirthday } from '@/utility/is-birthday.js';
 import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
+import { addCalendarToMenu } from '@/utility/calendar-menu.js';
 
 export async function mainBoot() {
 	// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインならどの URL でもログイン画面だけを出す
@@ -107,6 +108,19 @@ export async function mainBoot() {
 	}
 
 	if ($i) {
+		// 42times: カレンダーを足す前から使っている人のメニューにも、カレンダーを一度だけ足す。
+		// menu の既定値は初回の読み込みで profile に保存されるので、既定値を変えただけでは既存の人に出ない。
+		// 同期 (syncEnabled) している menu をクラウドの値で上書きされないよう、クラウドの値の取得を待ってから行う
+		prefer.cloudReady.then(() => {
+			if (prefer.s['calendar.menuItemAdded']) return;
+			const menu = addCalendarToMenu(prefer.s.menu);
+			if (menu !== prefer.s.menu) prefer.commit('menu', [...menu]);
+			prefer.commit('calendar.menuItemAdded', true);
+		}).catch(err => {
+			// 取得に失敗したときは次の読み込みでやり直す
+			console.error(err);
+		});
+
 		store.loaded.then(async () => {
 			if (store.s.accountSetupWizard !== -1) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {

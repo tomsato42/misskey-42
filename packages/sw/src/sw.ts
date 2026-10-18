@@ -181,6 +181,11 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 							case 'reaction':
 								client = await swos.openNote(data.body.note.id, loginId);
 								break;
+							case 'calendarEventReminder':
+							case 'calendarEventUpdated':
+								// 42times: カレンダーの通知はイベントのページを開く
+								client = await swos.openClient('push', `/calendar/events/${data.body.event.id}`, loginId);
+								break;
 							case 'pairJoinRequested':
 							case 'pairAccepted':
 							case 'pairClosed':

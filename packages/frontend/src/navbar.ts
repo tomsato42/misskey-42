@@ -43,6 +43,12 @@ export const navbarItemDef = reactive<{
 		}),
 		to: '/my/notifications',
 	},
+	calendar: {
+		title: i18n.ts._calendar.calendar,
+		icon: 'ti ti-calendar',
+		show: computed(() => $i != null),
+		to: '/calendar',
+	},
 	drive: {
 		title: i18n.ts.drive,
 		icon: 'ti ti-cloud',

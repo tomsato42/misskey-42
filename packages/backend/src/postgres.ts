@@ -38,6 +38,10 @@ import { MiGalleryPost } from '@/models/GalleryPost.js';
 import { MiHashtag } from '@/models/Hashtag.js';
 import { MiInstance } from '@/models/Instance.js';
 import { MiIntraRole } from '@/models/IntraRole.js';
+import { MiCalendarEvent } from '@/models/CalendarEvent.js';
+import { MiCalendarEventSubscription } from '@/models/CalendarEventSubscription.js';
+import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
+import { MiCalendarEventReminder } from '@/models/CalendarEventReminder.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
@@ -260,6 +264,10 @@ export const entities = [
 	MiBubbleGameRecord,
 	MiReversiGame,
 	MiIntraRole,
+	MiCalendarEvent,
+	MiCalendarEventSubscription,
+	MiCalendarEventNote,
+	MiCalendarEventReminder,
 	MiIntraProject,
 	MiIntraUserProgress,
 	MiPairRecruitment,

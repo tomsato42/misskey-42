@@ -633,6 +633,84 @@ type BubbleGameRankingResponse = operations['bubble-game___ranking']['responses'
 type BubbleGameRegisterRequest = operations['bubble-game___register']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type CalendarEvent = components['schemas']['CalendarEvent'];
+
+// @public (undocumented)
+type CalendarEventLite = components['schemas']['CalendarEventLite'];
+
+// @public (undocumented)
+type CalendarEventsCancelRequest = operations['calendar___events___cancel']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsCancelResponse = operations['calendar___events___cancel']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventSchedule = components['schemas']['CalendarEventSchedule'];
+
+// @public (undocumented)
+type CalendarEventsCreateRequest = operations['calendar___events___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsCreateResponse = operations['calendar___events___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsDeleteRequest = operations['calendar___events___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsLinkNoteRequest = operations['calendar___events___link-note']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsListRequest = operations['calendar___events___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsListResponse = operations['calendar___events___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsNotesRequest = operations['calendar___events___notes']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsNotesResponse = operations['calendar___events___notes']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsShowRequest = operations['calendar___events___show']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsShowResponse = operations['calendar___events___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribeRequest = operations['calendar___events___subscribe']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribeResponse = operations['calendar___events___subscribe']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnlinkNoteRequest = operations['calendar___events___unlink-note']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnsubscribeRequest = operations['calendar___events___unsubscribe']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnsubscribeResponse = operations['calendar___events___unsubscribe']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpcomingRequest = operations['calendar___events___upcoming']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpcomingResponse = operations['calendar___events___upcoming']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpdateRequest = operations['calendar___events___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpdateResponse = operations['calendar___events___update']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarFeedUrls = components['schemas']['CalendarFeedUrls'];
+
+// @public (undocumented)
+type CalendarNotificationSettings = components['schemas']['CalendarNotificationSettings'];
+
+// @public (undocumented)
 type Channel = components['schemas']['Channel'];
 
 // Warning: (ae-forgotten-export) The symbol "AnyOf" needs to be exported by the entry point index.d.ts
@@ -1719,6 +1797,27 @@ declare namespace entities {
         BubbleGameRankingRequest,
         BubbleGameRankingResponse,
         BubbleGameRegisterRequest,
+        CalendarEventsCancelRequest,
+        CalendarEventsCancelResponse,
+        CalendarEventsCreateRequest,
+        CalendarEventsCreateResponse,
+        CalendarEventsDeleteRequest,
+        CalendarEventsLinkNoteRequest,
+        CalendarEventsListRequest,
+        CalendarEventsListResponse,
+        CalendarEventsNotesRequest,
+        CalendarEventsNotesResponse,
+        CalendarEventsShowRequest,
+        CalendarEventsShowResponse,
+        CalendarEventsSubscribeRequest,
+        CalendarEventsSubscribeResponse,
+        CalendarEventsUnlinkNoteRequest,
+        CalendarEventsUnsubscribeRequest,
+        CalendarEventsUnsubscribeResponse,
+        CalendarEventsUpcomingRequest,
+        CalendarEventsUpcomingResponse,
+        CalendarEventsUpdateRequest,
+        CalendarEventsUpdateResponse,
         ChannelsCreateRequest,
         ChannelsCreateResponse,
         ChannelsFavoriteRequest,
@@ -1957,6 +2056,11 @@ declare namespace entities {
         IAppsResponse,
         IAuthorizedAppsRequest,
         IAuthorizedAppsResponse,
+        ICalendarFeedResponse,
+        ICalendarFeedRegenerateResponse,
+        ICalendarNotificationSettingsResponse,
+        ICalendarNotificationSettingsUpdateRequest,
+        ICalendarNotificationSettingsUpdateResponse,
         IChangePasswordRequest,
         IClaimAchievementRequest,
         IDeleteAccountRequest,
@@ -2290,6 +2394,11 @@ declare namespace entities {
         ChatRoom,
         ChatRoomInvitation,
         ChatRoomMembership,
+        CalendarEventLite,
+        CalendarEvent,
+        CalendarEventSchedule,
+        CalendarFeedUrls,
+        CalendarNotificationSettings,
         PairRecruitmentProject,
         PairRecruitment,
         PairRecruitmentDetailed,
@@ -2619,6 +2728,21 @@ type IAuthorizedAppsRequest = operations['i___authorized-apps']['requestBody']['
 
 // @public (undocumented)
 type IAuthorizedAppsResponse = operations['i___authorized-apps']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedRegenerateResponse = operations['i___calendar-feed___regenerate']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedResponse = operations['i___calendar-feed']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsResponse = operations['i___calendar-notification-settings']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateRequest = operations['i___calendar-notification-settings___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateResponse = operations['i___calendar-notification-settings___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IChangePasswordRequest = operations['i___change-password']['requestBody']['content']['application/json'];
@@ -3166,7 +3290,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "pairJoinRequested", "pairAccepted", "pairClosed"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "pairJoinRequested", "pairAccepted", "pairClosed"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;

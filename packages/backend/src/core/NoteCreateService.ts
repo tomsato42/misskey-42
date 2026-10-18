@@ -188,6 +188,8 @@ type Option = {
 	uri?: string | null;
 	url?: string | null;
 	app?: MiApp | null;
+	/** 42times: ノートを保存した直後、配信などの後処理より前に呼ぶ (カレンダーのイベントとの紐づけ)。例外を投げないこと */
+	onInserted?: ((note: MiNote) => Promise<void>) | null;
 };
 
 @Injectable()
@@ -296,6 +298,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		apMentions?: MinimumUser[] | null;
 		apHashtags?: string[] | null;
 		apEmojis?: string[] | null;
+		onInserted?: Option['onInserted'];
 	}): Promise<MiNote> {
 		const visibleUsers = data.visibleUserIds.length > 0 ? await this.usersRepository.findBy({
 			id: In(data.visibleUserIds),
@@ -435,6 +438,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			apMentions: data.apMentions,
 			apHashtags: data.apHashtags,
 			apEmojis: data.apEmojis,
+			onInserted: data.onInserted,
 		});
 	}
 
@@ -632,6 +636,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		const note = await this.insertNote(user, data, tags, emojis, mentionedUsers);
+
+		// 42times: 配信するノートにカレンダーのイベントが付くよう、後処理より先に済ませる
+		if (data.onInserted) await data.onInserted(note);
 
 		setImmediate('post created', { signal: this.#shutdownController.signal }).then(
 			() => this.postNoteCreated(note, user, data, silent, tags!, mentionedUsers!),

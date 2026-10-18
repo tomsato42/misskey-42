@@ -154,6 +154,11 @@ import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { IntraApiService } from './intra/IntraApiService.js';
 import { IntraAuthService } from './intra/IntraAuthService.js';
 import { IntraSyncService } from './intra/IntraSyncService.js';
+import { CalendarEventService } from './calendar/CalendarEventService.js';
+import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
+import { CalendarNotificationService } from './calendar/CalendarNotificationService.js';
+import { CalendarFeedService } from './calendar/CalendarFeedService.js';
+import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
 import { IntraProjectService } from './intra/IntraProjectService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
 import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
@@ -314,6 +319,11 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: IntraApiService };
 const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
 const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
+const $CalendarEventService: Provider = { provide: 'CalendarEventService', useExisting: CalendarEventService };
+const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService', useExisting: CalendarNotePostService };
+const $CalendarNotificationService: Provider = { provide: 'CalendarNotificationService', useExisting: CalendarNotificationService };
+const $CalendarFeedService: Provider = { provide: 'CalendarFeedService', useExisting: CalendarFeedService };
+const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
 const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
 const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
@@ -474,6 +484,11 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraApiService,
 		IntraAuthService,
 		IntraSyncService,
+		CalendarEventService,
+		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
+		CalendarEventEntityService,
 		IntraProjectService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
@@ -630,6 +645,11 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraApiService,
 		$IntraAuthService,
 		$IntraSyncService,
+		$CalendarEventService,
+		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
+		$CalendarEventEntityService,
 		$IntraProjectService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
@@ -787,6 +807,11 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraApiService,
 		IntraAuthService,
 		IntraSyncService,
+		CalendarEventService,
+		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
+		CalendarEventEntityService,
 		IntraProjectService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
@@ -941,6 +966,11 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraApiService,
 		$IntraAuthService,
 		$IntraSyncService,
+		$CalendarEventService,
+		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
+		$CalendarEventEntityService,
 		$IntraProjectService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,

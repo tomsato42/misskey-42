@@ -37,6 +37,8 @@ export const notificationTypes = [
 	'test',
 	'login',
 	'createToken',
+	'calendarEventReminder',
+	'calendarEventUpdated',
 	'pairJoinRequested',
 	'pairAccepted',
 	'pairClosed',

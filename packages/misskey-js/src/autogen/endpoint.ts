@@ -180,6 +180,27 @@ import type {
 	BubbleGameRankingRequest,
 	BubbleGameRankingResponse,
 	BubbleGameRegisterRequest,
+	CalendarEventsCancelRequest,
+	CalendarEventsCancelResponse,
+	CalendarEventsCreateRequest,
+	CalendarEventsCreateResponse,
+	CalendarEventsDeleteRequest,
+	CalendarEventsLinkNoteRequest,
+	CalendarEventsListRequest,
+	CalendarEventsListResponse,
+	CalendarEventsNotesRequest,
+	CalendarEventsNotesResponse,
+	CalendarEventsShowRequest,
+	CalendarEventsShowResponse,
+	CalendarEventsSubscribeRequest,
+	CalendarEventsSubscribeResponse,
+	CalendarEventsUnlinkNoteRequest,
+	CalendarEventsUnsubscribeRequest,
+	CalendarEventsUnsubscribeResponse,
+	CalendarEventsUpcomingRequest,
+	CalendarEventsUpcomingResponse,
+	CalendarEventsUpdateRequest,
+	CalendarEventsUpdateResponse,
 	ChannelsCreateRequest,
 	ChannelsCreateResponse,
 	ChannelsFavoriteRequest,
@@ -420,6 +441,11 @@ import type {
 	IAppsResponse,
 	IAuthorizedAppsRequest,
 	IAuthorizedAppsResponse,
+	ICalendarFeedResponse,
+	ICalendarFeedRegenerateResponse,
+	ICalendarNotificationSettingsResponse,
+	ICalendarNotificationSettingsUpdateRequest,
+	ICalendarNotificationSettingsUpdateResponse,
 	IChangePasswordRequest,
 	IClaimAchievementRequest,
 	IDeleteAccountRequest,
@@ -811,6 +837,18 @@ export type Endpoints = {
 	'blocking/list': { req: BlockingListRequest; res: BlockingListResponse };
 	'bubble-game/ranking': { req: BubbleGameRankingRequest; res: BubbleGameRankingResponse };
 	'bubble-game/register': { req: BubbleGameRegisterRequest; res: EmptyResponse };
+	'calendar/events/cancel': { req: CalendarEventsCancelRequest; res: CalendarEventsCancelResponse };
+	'calendar/events/create': { req: CalendarEventsCreateRequest; res: CalendarEventsCreateResponse };
+	'calendar/events/delete': { req: CalendarEventsDeleteRequest; res: EmptyResponse };
+	'calendar/events/link-note': { req: CalendarEventsLinkNoteRequest; res: EmptyResponse };
+	'calendar/events/list': { req: CalendarEventsListRequest; res: CalendarEventsListResponse };
+	'calendar/events/notes': { req: CalendarEventsNotesRequest; res: CalendarEventsNotesResponse };
+	'calendar/events/show': { req: CalendarEventsShowRequest; res: CalendarEventsShowResponse };
+	'calendar/events/subscribe': { req: CalendarEventsSubscribeRequest; res: CalendarEventsSubscribeResponse };
+	'calendar/events/unlink-note': { req: CalendarEventsUnlinkNoteRequest; res: EmptyResponse };
+	'calendar/events/unsubscribe': { req: CalendarEventsUnsubscribeRequest; res: CalendarEventsUnsubscribeResponse };
+	'calendar/events/upcoming': { req: CalendarEventsUpcomingRequest; res: CalendarEventsUpcomingResponse };
+	'calendar/events/update': { req: CalendarEventsUpdateRequest; res: CalendarEventsUpdateResponse };
 	'channels/create': { req: ChannelsCreateRequest; res: ChannelsCreateResponse };
 	'channels/favorite': { req: ChannelsFavoriteRequest; res: EmptyResponse };
 	'channels/featured': { req: EmptyRequest; res: ChannelsFeaturedResponse };
@@ -958,6 +996,10 @@ export type Endpoints = {
 	'i/2fa/update-key': { req: I2faUpdateKeyRequest; res: EmptyResponse };
 	'i/apps': { req: IAppsRequest; res: IAppsResponse };
 	'i/authorized-apps': { req: IAuthorizedAppsRequest; res: IAuthorizedAppsResponse };
+	'i/calendar-feed': { req: EmptyRequest; res: ICalendarFeedResponse };
+	'i/calendar-feed/regenerate': { req: EmptyRequest; res: ICalendarFeedRegenerateResponse };
+	'i/calendar-notification-settings': { req: EmptyRequest; res: ICalendarNotificationSettingsResponse };
+	'i/calendar-notification-settings/update': { req: ICalendarNotificationSettingsUpdateRequest; res: ICalendarNotificationSettingsUpdateResponse };
 	'i/change-password': { req: IChangePasswordRequest; res: EmptyResponse };
 	'i/claim-achievement': { req: IClaimAchievementRequest; res: EmptyResponse };
 	'i/delete-account': { req: IDeleteAccountRequest; res: EmptyResponse };

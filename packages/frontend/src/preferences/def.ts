@@ -188,6 +188,7 @@ export const PREF_DEF = definePreferences({
 	menu: {
 		default: [
 			'notifications',
+			'calendar',
 			'clips',
 			'drive',
 			'followRequests',
@@ -201,6 +202,10 @@ export const PREF_DEF = definePreferences({
 			'-',
 			'ui',
 		],
+	},
+	// 42times: 既存の menu に calendar を一度だけ足したか (boot/main-boot.ts)。ユーザーが後で消したら足し直さないための印
+	'calendar.menuItemAdded': {
+		default: false,
 	},
 	statusbars: {
 		default: [] as StatusbarStore[],

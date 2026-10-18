@@ -178,6 +178,7 @@ export const hiddenNote = (note: misskey.entities.Note): misskey.entities.Note =
 	};
 	delete temp.visibleUserIds;
 	delete temp.poll;
+	delete temp.calendarEvent;
 	return temp;
 };
 

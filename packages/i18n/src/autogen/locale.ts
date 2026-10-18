@@ -10004,6 +10004,10 @@ export interface Locale extends ILocale {
          * ダイレクトメッセージ
          */
         "chat": string;
+        /**
+         * 近日のイベント
+         */
+        "upcomingCalendarEvents": string;
     };
     "_widgetOptions": {
         /**
@@ -11105,6 +11109,14 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * イベントのリマインド
+             */
+            "calendarEventReminder": string;
+            /**
+             * イベントの日時の変更・中止
+             */
+            "calendarEventUpdated": string;
             /**
              * ペア募集への参加希望
              */
@@ -13919,5 +13931,453 @@ export interface Locale extends ILocale {
          * 42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。
          */
         "ugcVisibilityLocked": string;
+    };
+    "_calendar": {
+        /**
+         * カレンダー
+         */
+        "calendar": string;
+        /**
+         * イベント
+         */
+        "event": string;
+        /**
+         * すべて
+         */
+        "all": string;
+        /**
+         * 購読中
+         */
+        "subscribed": string;
+        /**
+         * 自分が作成
+         */
+        "mine": string;
+        /**
+         * 購読していない
+         */
+        "notSubscribed": string;
+        /**
+         * カレンダー連携
+         */
+        "feed": string;
+        /**
+         * イベントを作成
+         */
+        "createEvent": string;
+        /**
+         * イベントを編集
+         */
+        "editEvent": string;
+        /**
+         * この日にイベントを作成
+         */
+        "createEventOnThisDay": string;
+        /**
+         * 前の月
+         */
+        "prevMonth": string;
+        /**
+         * 次の月
+         */
+        "nextMonth": string;
+        /**
+         * {year}年{month}月
+         */
+        "yearMonth": ParameterizedString<"year" | "month">;
+        /**
+         * {month}月{day}日({weekday})
+         */
+        "monthDay": ParameterizedString<"month" | "day" | "weekday">;
+        /**
+         * 終日
+         */
+        "allDay": string;
+        /**
+         * {start}〜{end}
+         */
+        "timeRange": ParameterizedString<"start" | "end">;
+        /**
+         * {start}〜
+         */
+        "timeFrom": ParameterizedString<"start">;
+        /**
+         * 他 {n} 件
+         */
+        "moreEvents": ParameterizedString<"n">;
+        /**
+         * あと{n}日
+         */
+        "daysLeft": ParameterizedString<"n">;
+        /**
+         * 中止
+         */
+        "canceled": string;
+        /**
+         * このイベントは中止されました
+         */
+        "eventCanceled": string;
+        /**
+         * {user} が作成
+         */
+        "createdBy": ParameterizedString<"user">;
+        /**
+         * {n}人が購読中
+         */
+        "subscribersCount": ParameterizedString<"n">;
+        /**
+         * 購読
+         */
+        "subscribe": string;
+        /**
+         * 購読を解除
+         */
+        "unsubscribe": string;
+        /**
+         * 作成したイベントは購読を解除できません
+         */
+        "cannotUnsubscribeOwn": string;
+        /**
+         * #{tag} で投稿する
+         */
+        "postWithHashtag": ParameterizedString<"tag">;
+        /**
+         * カレンダーに追加
+         */
+        "addToCalendar": string;
+        /**
+         * このイベントのノート
+         */
+        "notesOfEvent": string;
+        /**
+         * イベントを中止
+         */
+        "cancelEvent": string;
+        /**
+         * 「{x}」を中止しますか？中止すると元に戻せません。
+         */
+        "cancelConfirm": ParameterizedString<"x">;
+        /**
+         * このイベントは中止されています。
+         */
+        "alreadyCanceled": string;
+        /**
+         * イベント名
+         */
+        "eventTitle": string;
+        /**
+         * 日付
+         */
+        "date": string;
+        /**
+         * 開始時刻
+         */
+        "startTime": string;
+        /**
+         * 終了時刻
+         */
+        "endTime": string;
+        /**
+         * 省略できます。開始と同じ日の中で指定します。
+         */
+        "endTimeDescription": string;
+        /**
+         * ハッシュタグ
+         */
+        "hashtag": string;
+        /**
+         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。
+         */
+        "hashtagDescription": string;
+        /**
+         * イベントを告知
+         */
+        "announceEvent": string;
+        /**
+         * 告知をやめる
+         */
+        "stopAnnouncing": string;
+        /**
+         * 告知してノート
+         */
+        "announceAndNote": string;
+        /**
+         * イベントに紐づける
+         */
+        "linkEvent": string;
+        /**
+         * 紐づけを外す
+         */
+        "unlinkEvent": string;
+        /**
+         * {event} に紐づけ
+         */
+        "linkedToEvent": ParameterizedString<"event">;
+        /**
+         * 紐づけるイベント
+         */
+        "eventToLink": string;
+        /**
+         * 今後のイベントはありません
+         */
+        "noUpcomingEvents": string;
+        /**
+         * ダイレクトのノートは、イベントの告知や紐づけができません。このまま投稿すると、イベントの情報は送られません。
+         */
+        "unavailableForSpecified": string;
+        /**
+         * 予約投稿では、イベントの告知や紐づけができません。このまま予約すると、イベントの情報は保存されません。
+         */
+        "unavailableForScheduled": string;
+        /**
+         * 下書きにはイベントの情報は保存されません。保存しますか？
+         */
+        "draftWithoutEvent": string;
+        /**
+         * 購読 {n}人
+         */
+        "subscribersShort": ParameterizedString<"n">;
+        /**
+         * イベントのページを開く
+         */
+        "openEvent": string;
+        /**
+         * 表示する件数
+         */
+        "widgetLimit": string;
+        /**
+         * 表示するイベント
+         */
+        "widgetFilter": string;
+        /**
+         * {before} → {after}
+         */
+        "scheduleChange": ParameterizedString<"before" | "after">;
+        "_notification": {
+            /**
+             * 1週間後のイベント
+             */
+            "week": string;
+            /**
+             * 明日のイベント
+             */
+            "day": string;
+            /**
+             * 今日のイベント
+             */
+            "today": string;
+            /**
+             * 日時が変更されました
+             */
+            "rescheduled": string;
+            /**
+             * 中止されました
+             */
+            "canceled": string;
+        };
+        "_notificationSettings": {
+            /**
+             * イベント
+             */
+            "title": string;
+            /**
+             * 購読しているイベントの通知
+             */
+            "caption": string;
+            /**
+             * 1週間前に通知
+             */
+            "week": string;
+            /**
+             * 開始の7日前の 9:00
+             */
+            "weekCaption": string;
+            /**
+             * 前日に通知
+             */
+            "day": string;
+            /**
+             * 開始の前日の 9:00
+             */
+            "dayCaption": string;
+            /**
+             * 当日に通知
+             */
+            "today": string;
+            /**
+             * 当日の 9:00。開始が 9:00 までなら開始の1時間前
+             */
+            "todayCaption": string;
+            /**
+             * 日時の変更・中止を通知
+             */
+            "changes": string;
+            /**
+             * 購読しているイベントの日時が変わったときや、中止になったとき
+             */
+            "changesCaption": string;
+        };
+        "_feed": {
+            /**
+             * Googleカレンダー、Appleカレンダー、Outlook などに 42times のイベントを表示できます。予定はカレンダーアプリが定期的に読み込み直すので、反映まで数時間から1日ほどかかることがあります。
+             */
+            "description": string;
+            /**
+             * 購読中のイベント
+             */
+            "subscribed": string;
+            /**
+             * 購読しているイベントと、自分が作成したイベント
+             */
+            "subscribedCaption": string;
+            /**
+             * すべてのイベント
+             */
+            "all": string;
+            /**
+             * 42times にあるすべてのイベント
+             */
+            "allCaption": string;
+            /**
+             * 購読中のイベントの配信URL
+             */
+            "subscribedUrl": string;
+            /**
+             * すべてのイベントの配信URL
+             */
+            "allUrl": string;
+            /**
+             * Googleカレンダーに追加
+             */
+            "addToGoogle": string;
+            /**
+             * Apple・Outlook で開く
+             */
+            "openInApps": string;
+            /**
+             * このURLを知っている人は、ログインしなくてもイベントを見られます。他の人に教えないでください。
+             */
+            "warning": string;
+            /**
+             * URLを作り直す
+             */
+            "regenerate": string;
+            /**
+             * 今のURLは使えなくなります。カレンダーアプリにも追加し直してください
+             */
+            "regenerateCaption": string;
+            /**
+             * URLを作り直しますか？今のURLは使えなくなり、カレンダーアプリにも新しいURLで追加し直す必要があります。
+             */
+            "regenerateConfirm": string;
+            /**
+             * カレンダーアプリへの追加方法
+             */
+            "howToAdd": string;
+            /**
+             * Googleカレンダー: 「Googleカレンダーに追加」を押すか、Googleカレンダーの「他のカレンダー」→「URLで追加」にURLを貼り付けます。
+             */
+            "howToGoogle": string;
+            /**
+             * Appleカレンダー: 「Apple・Outlook で開く」を押すか、「ファイル」→「新規照会カレンダー」にURLを貼り付けます。
+             */
+            "howToApple": string;
+            /**
+             * Outlook: 「予定表を追加」→「Webから購読」にURLを貼り付けます。
+             */
+            "howToOutlook": string;
+        };
+        "_weekdayShort": {
+            /**
+             * 日
+             */
+            "sunday": string;
+            /**
+             * 月
+             */
+            "monday": string;
+            /**
+             * 火
+             */
+            "tuesday": string;
+            /**
+             * 水
+             */
+            "wednesday": string;
+            /**
+             * 木
+             */
+            "thursday": string;
+            /**
+             * 金
+             */
+            "friday": string;
+            /**
+             * 土
+             */
+            "saturday": string;
+        };
+        "_errors": {
+            /**
+             * イベント名を入力してください。
+             */
+            "titleRequired": string;
+            /**
+             * イベント名は{max}文字以内で入力してください。
+             */
+            "titleTooLong": ParameterizedString<"max">;
+            /**
+             * 場所は{max}文字以内で入力してください。
+             */
+            "locationTooLong": ParameterizedString<"max">;
+            /**
+             * 説明は{max}文字以内で入力してください。
+             */
+            "descriptionTooLong": ParameterizedString<"max">;
+            /**
+             * ハッシュタグとして使えない文字が含まれています。
+             */
+            "invalidHashtag": string;
+            /**
+             * ハッシュタグは{max}文字以内で入力してください。
+             */
+            "hashtagTooLong": ParameterizedString<"max">;
+            /**
+             * 日付を正しく入力してください。
+             */
+            "invalidDate": string;
+            /**
+             * 開始時刻を正しく入力してください。
+             */
+            "invalidStartTime": string;
+            /**
+             * 終了時刻を正しく入力してください。
+             */
+            "invalidEndTime": string;
+            /**
+             * 開始時刻を入力するか、終日にしてください。
+             */
+            "startTimeRequired": string;
+            /**
+             * 終了時刻は開始時刻より後にしてください。
+             */
+            "endNotAfterStart": string;
+            /**
+             * 終了時刻は開始と同じ日の中で指定してください。
+             */
+            "endNotSameDay": string;
+            /**
+             * 月の指定が正しくありません。
+             */
+            "invalidMonth": string;
+            /**
+             * ダイレクトのノートはイベントに紐づけられません。
+             */
+            "cannotLinkSpecified": string;
+            /**
+             * 本文の無いリノートはイベントに紐づけられません。
+             */
+            "cannotLinkPureRenote": string;
+        };
     };
 }

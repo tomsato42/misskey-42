@@ -71,6 +71,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
 	</MkInfo>
 	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
+	<XCalendarEvent
+		v-if="calendarEventForm != null || linkedCalendarEvent != null"
+		v-model:form="calendarEventForm"
+		v-model:errors="calendarEventFormErrors"
+		:linkedEvent="linkedCalendarEvent"
+		:unavailableReason="calendarUnavailableReason"
+		:disabled="posting || posted"
+		@stopAnnouncing="stopAnnouncingCalendarEvent"
+		@unlink="linkedCalendarEvent = null"
+	/>
 	<div v-show="useCw" :class="$style.cwOuter">
 		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
 		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
@@ -99,6 +109,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
 			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
+			<button
+				v-tooltip="i18n.ts._calendar.announceEvent"
+				class="_button"
+				:class="[$style.footerButton, { [$style.footerButtonActive]: calendarEventForm != null }]"
+				:aria-label="i18n.ts._calendar.announceEvent"
+				:aria-pressed="calendarEventForm != null"
+				:disabled="calendarUnavailableReason != null && calendarEventForm == null"
+				@click="toggleAnnounceCalendarEvent"
+			>
+				<i class="ti ti-speakerphone"></i>
+			</button>
+			<button
+				v-tooltip="i18n.ts._calendar.linkEvent"
+				class="_button"
+				:class="[$style.footerButton, { [$style.footerButtonActive]: linkedCalendarEvent != null }]"
+				:aria-label="i18n.ts._calendar.linkEvent"
+				aria-haspopup="menu"
+				:disabled="calendarUnavailableReason != null"
+				@click="pickLinkedCalendarEvent"
+			>
+				<i class="ti ti-calendar-event"></i>
+			</button>
 			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
@@ -158,6 +190,19 @@ import { checkDragDataType, getDragData } from '@/drag-and-drop.js';
 import { useUploader } from '@/composables/use-uploader.js';
 import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
+import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
+import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
+import {
+	calendarEventFormToParams,
+	calendarEventReasonToField,
+	createEmptyCalendarEventForm,
+	getCalendarEventValidationReason,
+	validateCalendarEventForm,
+} from '@/utility/calendar-event-form.js';
+import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js';
+import { pickCalendarEventForNote } from '@/utility/calendar-event-picker.js';
+import { buildCalendarNoteParams, getCalendarNoteFormUnavailableReason, getCalendarNoteUnlinkableReason } from '@/utility/calendar-note.js';
+import { toJstDateString } from '@/utility/calendar.js';
 
 const $i = ensureSignin();
 
@@ -227,6 +272,22 @@ const targetChannel = shallowRef(props.channel);
 const serverDraftId = ref<string | null>(null);
 const postFormActions = getPluginHandlers('post_form_action');
 
+//#region 42times: カレンダーのイベントの告知・紐づけ
+// 告知 (投稿しながらイベントを作る) と紐づけ (既存のイベント) は同時に使えないので、片方を選ぶともう片方を外す。
+// 下書き (ローカルの自動保存・サーバーの下書き・予約投稿) にはイベントの情報を保存しない
+/** 告知するイベントの入力。告知していないときは null */
+const calendarEventForm = ref<CalendarEventFormValue | null>(null);
+const calendarEventFormErrors = ref<CalendarEventFormErrors>({});
+/** 紐づけるイベント */
+const linkedCalendarEvent = shallowRef<Misskey.entities.CalendarEventLite | null>(props.initialCalendarEvent != null && !props.initialCalendarEvent.isCanceled ? props.initialCalendarEvent : null);
+/** イベントを扱えない理由 (ダイレクト・予約投稿)。あるときは欄を無効にし、notes/create にも送らない */
+const calendarUnavailableReason = computed(() => getCalendarNoteFormUnavailableReason({
+	visibility: visibility.value,
+	scheduledAt: scheduledAt.value,
+}));
+const hasCalendarEventState = computed(() => calendarEventForm.value != null || linkedCalendarEvent.value != null);
+//#endregion
+
 let textAutocomplete: Autocomplete | null = null;
 let cwAutocomplete: Autocomplete | null = null;
 let hashtagAutocomplete: Autocomplete | null = null;
@@ -279,6 +340,12 @@ const placeholder = computed((): string => {
 });
 
 const submitText = computed((): string => {
+	// 42times: イベントを告知するときは、ボタンの文言で分かるようにする
+	// (予約投稿のときは calendarUnavailableReason が 'scheduled' になるので、ここには来ない)
+	if (calendarEventForm.value != null && calendarUnavailableReason.value == null) {
+		return i18n.ts._calendar.announceAndNote;
+	}
+
 	return scheduledAt.value != null
 		? i18n.ts.schedule
 		: renoteTargetNote.value
@@ -660,6 +727,14 @@ function showOtherSettings() {
 					text: i18n.ts._drafts.cannotCreateDraft,
 				});
 			}
+			// 42times: 下書きにはイベントの告知・紐づけを保存しない
+			if (hasCalendarEventState.value) {
+				const { canceled } = await os.confirm({
+					type: 'warning',
+					text: i18n.ts._calendar.draftWithoutEvent,
+				});
+				if (canceled) return;
+			}
 			saveServerDraft();
 		},
 	}, ...($i.policies.scheduledNoteLimit > 0 ? [{
@@ -719,8 +794,77 @@ function clear() {
 	poll.value = null;
 	quoteId.value = null;
 	scheduledAt.value = null;
+	clearCalendarEvent();
 	uploader.reset();
 }
+
+//#region 42times: カレンダーのイベントの告知・紐づけ
+function clearCalendarEvent() {
+	calendarEventForm.value = null;
+	calendarEventFormErrors.value = {};
+	linkedCalendarEvent.value = null;
+}
+
+function stopAnnouncingCalendarEvent() {
+	calendarEventForm.value = null;
+	calendarEventFormErrors.value = {};
+}
+
+function toggleAnnounceCalendarEvent() {
+	if (props.mock) return;
+	if (calendarEventForm.value != null) {
+		stopAnnouncingCalendarEvent();
+		return;
+	}
+	if (calendarUnavailableReason.value != null) return;
+	calendarEventForm.value = createEmptyCalendarEventForm(toJstDateString(new Date()));
+	calendarEventFormErrors.value = {};
+	linkedCalendarEvent.value = null;
+}
+
+async function pickLinkedCalendarEvent(ev: PointerEvent) {
+	if (props.mock) return;
+	if (calendarUnavailableReason.value != null) return;
+	const event = await pickCalendarEventForNote(ev.currentTarget ?? ev.target, linkedCalendarEvent.value?.id);
+	if (event == null) return;
+	linkedCalendarEvent.value = event;
+	stopAnnouncingCalendarEvent();
+}
+
+/**
+ * notes/create のカレンダーに関するエラーを、告知の欄やダイアログに出す。扱ったら true
+ * @param sent notes/create にイベントのパラメータを送ったか
+ */
+function handleCalendarPostError(err: unknown, sent: boolean): boolean {
+	if (!sent) return false;
+
+	const reason = getCalendarEventValidationReason(err);
+	if (reason != null) {
+		const field = calendarEventReasonToField(reason);
+		if (calendarEventForm.value != null && field != null) {
+			calendarEventFormErrors.value = { ...calendarEventFormErrors.value, [field]: reason };
+			return true;
+		}
+	}
+
+	const code = (err as Partial<Misskey.api.APIError> | null)?.code;
+	switch (code) {
+		case 'INVALID_CALENDAR_EVENT':
+		case 'NO_SUCH_CALENDAR_EVENT':
+		case 'CALENDAR_EVENT_CANCELED':
+		case 'CANNOT_LINK_NOTE_TO_CALENDAR_EVENT':
+		case 'CALENDAR_EVENT_PARAMS_CONFLICT':
+		case 'RATE_LIMIT_EXCEEDED': {
+			os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+			// 紐づけたイベントが消された・中止されたときは、紐づけを外して投稿し直せるようにする
+			if (code === 'NO_SUCH_CALENDAR_EVENT' || code === 'CALENDAR_EVENT_CANCELED') linkedCalendarEvent.value = null;
+			return true;
+		}
+		default:
+			return false;
+	}
+}
+//#endregion
 
 function onKeydown(ev: KeyboardEvent) {
 	if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey) && canPost.value) post();
@@ -983,6 +1127,15 @@ async function post(ev?: PointerEvent) {
 
 	if (props.mock) return;
 
+	// 42times: 告知するイベントの入力は、ほかの確認やアップロードより先に確かめる
+	if (calendarEventForm.value != null && calendarUnavailableReason.value == null) {
+		const errors = validateCalendarEventForm(calendarEventForm.value, { withDescription: false });
+		if (Object.keys(errors).length > 0) {
+			calendarEventFormErrors.value = errors;
+			return;
+		}
+	}
+
 	if (visibility.value === 'public' && (
 		(useCw.value && cw.value != null && cw.value.trim() !== '' && isAnnoying(cw.value)) || // CWが迷惑になる場合
 		((!useCw.value || cw.value == null || cw.value.trim() === '') && text.value != null && text.value.trim() !== '' && isAnnoying(text.value)) // CWが無い かつ 本文が迷惑になる場合
@@ -1019,7 +1172,15 @@ async function post(ev?: PointerEvent) {
 		}
 	}
 
+	// 42times: イベントの告知・紐づけ。ダイレクトのときなどは送らない (告知の欄は注意書きを出して無効にしている)
+	const calendarParams = calendarUnavailableReason.value == null ? buildCalendarNoteParams({
+		announce: calendarEventForm.value != null ? calendarEventFormToParams(calendarEventForm.value, { withDescription: false }) : null,
+		linkedEventId: linkedCalendarEvent.value?.id ?? null,
+	}) : {};
+	const sendsCalendarParams = Object.keys(calendarParams).length > 0;
+
 	let postData = {
+		...calendarParams,
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
 		replyId: replyTargetNote.value ? replyTargetNote.value.id : undefined,
@@ -1046,6 +1207,15 @@ async function post(ev?: PointerEvent) {
 			}
 			postData.text = postTextLines.join('\n');
 		}
+	}
+
+	// 42times: 本文などの無いリノートは紐づけられない (API でも断られるが、先に分かるので送らない)
+	if (sendsCalendarParams && getCalendarNoteUnlinkableReason(postData) === 'pureRenote') {
+		os.alert({
+			type: 'error',
+			text: i18n.ts._calendar._errors.cannotLinkPureRenote,
+		});
+		return;
 	}
 
 	// plugin
@@ -1145,6 +1315,7 @@ async function post(ev?: PointerEvent) {
 		});
 	}).catch(err => {
 		posting.value = false;
+		if (handleCalendarPostError(err, sendsCalendarParams)) return;
 		os.alert({
 			type: 'error',
 			text: err.message + '\n' + (err as any).id,
@@ -1301,6 +1472,8 @@ async function openAccountMenu(ev: PointerEvent) {
 				});
 
 				serverDraftId.value = draft.id;
+				// 42times: 下書きにはイベントの情報が無いので、復元したらフォームのイベントの告知・紐づけも外す
+				clearCalendarEvent();
 			},
 			cancel: () => {
 
@@ -1466,6 +1639,10 @@ onMounted(() => {
 			}
 			quoteId.value = renoteTargetNote.value ? renoteTargetNote.value.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
+			// 42times: 削除して編集するとき、元のノートのイベントに紐づけ直す (告知のノートを消してもイベントは残る)
+			if (init.calendarEvent != null && !init.calendarEvent.isCanceled && linkedCalendarEvent.value == null) {
+				linkedCalendarEvent.value = init.calendarEvent;
+			}
 		}
 
 		nextTick(() => watchForDraft());
@@ -1834,6 +2011,11 @@ html[data-color-scheme=light] .preview {
 
 	&.footerButtonActive {
 		color: var(--MI_THEME-accent);
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		background: none;
 	}
 }
 

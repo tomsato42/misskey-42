@@ -4,6 +4,8 @@
  */
 
 import { notificationTypes, userExportableEntities } from '@/types.js';
+import { calendarEventReminderKinds } from '@/models/CalendarEventReminder.js';
+import { calendarEventUpdateKinds } from '@/core/calendar/calendar-notification.js';
 import { pairClosedReasons } from '@/core/pair/pair-recruitment.js';
 
 /** ペア募集の通知に含める募集の情報 (通知を作った時点の課題の slug と名前) */
@@ -494,6 +496,61 @@ export const packedNotificationSchema = {
 				type: 'string',
 				optional: false, nullable: false,
 				enum: ['test'],
+			},
+		},
+	}, {
+		// 42times: 購読しているカレンダーのイベントのリマインド
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['calendarEventReminder'],
+			},
+			event: {
+				type: 'object',
+				ref: 'CalendarEventLite',
+				optional: false, nullable: false,
+			},
+			reminderKind: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: calendarEventReminderKinds,
+				description: 'week: 7 days before (9:00 JST), day: the day before (9:00 JST), today: the day of the event (9:00 JST, or 1 hour before the start if it starts at or before 9:00).',
+			},
+		},
+	}, {
+		// 42times: 購読しているカレンダーのイベントの日時の変更・中止
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['calendarEventUpdated'],
+			},
+			event: {
+				type: 'object',
+				ref: 'CalendarEventLite',
+				optional: false, nullable: false,
+			},
+			updateKind: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: calendarEventUpdateKinds,
+			},
+			previousSchedule: {
+				type: 'object',
+				ref: 'CalendarEventSchedule',
+				optional: false, nullable: true,
+				description: 'The schedule before the change. null if updateKind is canceled.',
+			},
+			schedule: {
+				type: 'object',
+				ref: 'CalendarEventSchedule',
+				optional: false, nullable: false,
+				description: 'The schedule after the change (rescheduled), or at the time of cancellation (canceled).',
 			},
 		},
 	}, {
