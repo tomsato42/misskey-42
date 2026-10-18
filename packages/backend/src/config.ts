@@ -134,6 +134,8 @@ type Source = {
 		clientId: string;
 		clientSecret: string;
 		cursusId?: number;
+		/** レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (例: https://example.com/badges/lv-{level}.svg) */
+		levelBadgeUrl?: string;
 		apiBaseUrl?: string;
 	};
 
@@ -250,6 +252,7 @@ export type Config = {
 		clientId: string;
 		clientSecret: string;
 		cursusId: number;
+		levelBadgeUrl: string | null;
 		apiBaseUrl: string;
 	} | undefined;
 	/**
@@ -398,6 +401,7 @@ export function loadConfig(): Config {
 			clientSecret: config.intra.clientSecret,
 			// 21 = 42cursus
 			cursusId: config.intra.cursusId ?? 21,
+			levelBadgeUrl: config.intra.levelBadgeUrl ?? null,
 			apiBaseUrl: (config.intra.apiBaseUrl ?? 'https://api.intra.42.fr').replace(/\/+$/, ''),
 		} : undefined,
 		mediaGate: config.mediaGate ? convertMediaGateConfig(config.mediaGate) : undefined,

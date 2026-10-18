@@ -110,7 +110,7 @@ describe('IntraSyncService', () => {
 		beforeIntraRoleInsert = null;
 
 		const config = {
-			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr' },
+			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg' },
 		} as Partial<Config>;
 
 		const fakeProfilesRepository = {
@@ -146,6 +146,10 @@ describe('IntraSyncService', () => {
 		};
 
 		const fakeRoleService = {
+			getRoles: async () => roles,
+			update: async (role: { id: string }, params: Record<string, unknown>) => {
+				Object.assign(roles.find(r => r.id === role.id)!, params);
+			},
 			create: async (values: Record<string, unknown>) => {
 				const role = { ...values, id: nextId('role') } as FakeRole;
 				roles.push(role);
@@ -239,6 +243,7 @@ describe('IntraSyncService', () => {
 				policies: {},
 			});
 		}
+		expect(roles.map(r => r.iconUrl)).toEqual(['https://example.com/badges/lv-5.svg', null, null, null]);
 		expect(roles[2].description).toBe('42 intra のピシンの時期に応じて自動で付与されます');
 		expect(roles[3].description).toBe('42 intra の本科 (42cursus) への入学時期に応じて自動で付与されます');
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
@@ -288,6 +293,20 @@ describe('IntraSyncService', () => {
 
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Tokyo']);
 		expect(intraRoles.filter(r => r.kind === 'pool')).toHaveLength(1);
+	});
+
+	test('作成済みのレベルのロールにアイコンが無ければ設定し、設定済みのアイコンは上書きしない', async () => {
+		addProfile('u1', { intraId: 1000 });
+		addProfile('u2', { intraId: 2000 });
+		const lv5 = addManagedRole('level', '5', 'Lv.5');
+		const lv7 = addManagedRole('level', '7', 'Lv.7');
+		Object.assign(roles.find(r => r.id === lv7)!, { iconUrl: 'https://example.com/custom.png' });
+
+		await service.syncUser('u1', createIntraUser());
+		await service.syncUser('u2', createIntraUser({ id: 2000, cursus_users: [{ cursus_id: CURSUS_42, level: 7.2, blackholed_at: null, begin_at: '2023-10-02T00:00:00.000Z', end_at: null }] }));
+
+		expect(roles.find(r => r.id === lv5)?.iconUrl).toBe('https://example.com/badges/lv-5.svg');
+		expect(roles.find(r => r.id === lv7)?.iconUrl).toBe('https://example.com/custom.png');
 	});
 
 	test('既存のロールの名前は上書きしない', async () => {

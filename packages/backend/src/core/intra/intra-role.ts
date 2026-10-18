@@ -121,6 +121,14 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 }
 
 /**
+ * ロールのアイコンの URL。レベルのロールで、ひな形 (config.intra.levelBadgeUrl) があるときだけ返す
+ */
+export function getIntraRoleIconUrl(target: Pick<IntraRoleTarget, 'kind' | 'key'>, template: string | null): string | null {
+	if (template == null || target.kind !== 'level') return null;
+	return template.replaceAll('{level}', target.key);
+}
+
+/**
  * 付与・解除するロールを決める。
  * - 付けるべきロールのうち、まだ付いていないものを付与する
  * - intra_role で管理しているロールのうち、付いているが付けるべきでないものを解除する

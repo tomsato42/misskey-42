@@ -8,6 +8,7 @@ import {
 	diffIntraRoleAssignments,
 	formatYearMonth,
 	getCohortRoleTarget,
+	getIntraRoleIconUrl,
 	getIntraRoleTargets,
 	getPoolRoleTarget,
 	poolToCohortYearMonth,
@@ -202,5 +203,16 @@ describe('diffIntraRoleAssignments', () => {
 	test('重複した入力でも同じロールを二度扱わない', () => {
 		const result = diffIntraRoleAssignments(['lv4', 'lv4'], ['lv5', 'lv5'], ['lv4', 'lv4']);
 		expect(result).toEqual({ toAssign: ['lv5'], toUnassign: ['lv4'] });
+	});
+});
+
+describe('getIntraRoleIconUrl', () => {
+	test('レベルのロールだけ、ひな形の {level} をレベルに置き換える', () => {
+		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, 'https://example.com/lv-{level}.svg')).toBe('https://example.com/lv-10.svg');
+		expect(getIntraRoleIconUrl({ kind: 'campus', key: '26' }, 'https://example.com/lv-{level}.svg')).toBeNull();
+	});
+
+	test('ひな形が無ければ null', () => {
+		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, null)).toBeNull();
 	});
 });

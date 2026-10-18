@@ -104,6 +104,7 @@ describe('ApiCallService 学内SNSモードの未ログイン制限', () => {
 			clientSecret: 'secret',
 			cursusId: 21,
 			apiBaseUrl: 'https://api.intra.42.fr',
+		levelBadgeUrl: null,
 		},
 	};
 

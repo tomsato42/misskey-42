@@ -131,7 +131,7 @@ describe('IntraAuthService', () => {
 		meta = { rootUserId: 'root' };
 		config = {
 			url: BASE_URL,
-			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr' },
+			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: null },
 		};
 
 		const fakeIntraApiService = {

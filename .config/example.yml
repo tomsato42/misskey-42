@@ -354,6 +354,8 @@ id: 'aidx'
 #  #cursusId: 21
 #  # 42 API のベース URL (省略時は https://api.intra.42.fr)
 #  #apiBaseUrl: https://api.intra.42.fr
+#  # レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (省略時はアイコンなし)
+#  #levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg'
 
 #   ┌──────────────────────────────┐
 #───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────

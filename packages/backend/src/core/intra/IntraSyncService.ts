@@ -18,7 +18,7 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
 import { extractIntraProfile } from './intra-user.js';
-import { diffIntraRoleAssignments, getIntraRoleTargets } from './intra-role.js';
+import { diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
 
@@ -38,6 +38,7 @@ const ROLE_DESCRIPTIONS: Record<IntraRoleTarget['kind'], string> = {
 @Injectable()
 export class IntraSyncService {
 	private logger: Logger;
+	private checkedRoleIcons = new Set<MiRole['id']>();
 
 	constructor(
 		@Inject(DI.config)
@@ -157,14 +158,18 @@ export class IntraSyncService {
 	 */
 	@bindThis
 	private async ensureRole(target: IntraRoleTarget): Promise<MiRole['id']> {
+		const iconUrl = getIntraRoleIconUrl(target, this.config.intra?.levelBadgeUrl ?? null);
 		const existing = await this.intraRolesRepository.findOneBy({ kind: target.kind, key: target.key });
-		if (existing != null) return existing.roleId;
+		if (existing != null) {
+			if (iconUrl != null) await this.ensureRoleIcon(existing.roleId, iconUrl);
+			return existing.roleId;
+		}
 
 		const role = await this.roleService.create({
 			name: target.name,
 			description: ROLE_DESCRIPTIONS[target.kind],
 			color: null,
-			iconUrl: null,
+			iconUrl,
 			target: 'manual',
 			isPublic: true,
 			asBadge: true,
@@ -200,5 +205,21 @@ export class IntraSyncService {
 
 		this.logger.info(`Created role ${role.id} (${target.name}) for intra ${target.kind} ${target.key}`);
 		return role.id;
+	}
+
+	/**
+	 * 作成済みのロールにアイコンが無ければ設定する。管理者が設定したアイコンは上書きしない。
+	 * 同期のたびに確認しないよう、確認済みのロールはプロセスの中で覚えておく
+	 */
+	@bindThis
+	private async ensureRoleIcon(roleId: MiRole['id'], iconUrl: string): Promise<void> {
+		if (this.checkedRoleIcons.has(roleId)) return;
+		const role = (await this.roleService.getRoles()).find(r => r.id === roleId);
+		if (role == null) return;
+		if (role.iconUrl == null) {
+			await this.roleService.update(role, { iconUrl });
+			this.logger.info(`Set icon of role ${role.id} (${role.name})`);
+		}
+		this.checkedRoleIcons.add(roleId);
 	}
 }
