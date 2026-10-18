@@ -217,6 +217,9 @@ export const paramDef = {
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,
 				test: notificationRecieveConfig,
+				pairJoinRequested: notificationRecieveConfig,
+				pairAccepted: notificationRecieveConfig,
+				pairClosed: notificationRecieveConfig,
 			},
 		},
 		emailNotificationTypes: { type: 'array', items: {

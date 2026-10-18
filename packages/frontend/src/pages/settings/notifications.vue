@@ -129,6 +129,7 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
+import { instance } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
@@ -167,9 +168,12 @@ const notifyUserPaginator = markRaw(new Paginator('following/list', {
 // 42times: カレンダーの通知は送り手のユーザーがいないので、受け取る相手を選ぶ設定には出さない (オン・オフは下の「イベント」で切り替える)
 const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated'] as const satisfies (typeof notificationTypes[number])[];
 
-const configurableNotificationTypes = notificationTypes.filter(type => !nonConfigurableNotificationTypes.includes(type as any)) as Exclude<typeof notificationTypes[number], typeof nonConfigurableNotificationTypes[number]>[];
+// ペア募集の通知は学内SNSモード (42 intra ログイン) でだけ届くので、それ以外では設定に出さない
+const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed'] satisfies (typeof notificationTypes[number])[];
 
-const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed'] as const satisfies (typeof notificationTypes[number])[];
+const configurableNotificationTypes = notificationTypes.filter(type => !nonConfigurableNotificationTypes.includes(type as any) && (instance.intraLoginEnabled === true || !intraOnlyNotificationTypes.includes(type))) as Exclude<typeof notificationTypes[number], typeof nonConfigurableNotificationTypes[number]>[];
+
+const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed'] as const satisfies (typeof notificationTypes[number])[];
 
 const allowButton = useTemplateRef('allowButton');
 const pushRegistrationInServer = computed(() => allowButton.value?.pushRegistrationInServer);

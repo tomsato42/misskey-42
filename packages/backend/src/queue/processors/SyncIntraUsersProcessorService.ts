@@ -10,9 +10,13 @@ import type { UserProfilesRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IntraSyncService } from '@/core/intra/IntraSyncService.js';
+import { IntraProjectService } from '@/core/intra/IntraProjectService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
-/** 1 回のジョブで同期するユーザー数の上限。42 API へのリクエストは 500ms 以上の間隔を空けるため、300 人で 2.5 分以上かかる */
+/**
+ * 1 回のジョブで同期するユーザー数の上限。
+ * 1 人あたり 42 API へのリクエストは 2 回 (ユーザー情報とクエスト) で、500ms 以上の間隔を空けるため、300 人で 5 分以上かかる
+ */
 const MAX_USERS_PER_RUN = 300;
 
 /**
@@ -30,6 +34,7 @@ export class SyncIntraUsersProcessorService {
 		private userProfilesRepository: UserProfilesRepository,
 
 		private intraSyncService: IntraSyncService,
+		private intraProjectService: IntraProjectService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('sync-intra-users');
@@ -70,5 +75,13 @@ export class SyncIntraUsersProcessorService {
 		}
 
 		this.logger.succ(`Synced ${profiles.length - failed} users with 42 intra (${failed} failed).`);
+
+		try {
+			// 課題をまだ取り込んでいないキャンパス (初回や、新しいキャンパスのユーザーが来たとき) の課題を取り込む。
+			// 対象のキャンパスはユーザーの同期で記録した主キャンパスなので、ユーザーの同期の後に行う
+			await this.intraProjectService.syncMissingCampuses();
+		} catch (err) {
+			this.logger.warn(`Failed to sync projects: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 }

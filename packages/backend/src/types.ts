@@ -26,6 +26,9 @@
  * test - テスト通知（サーバー側）
  * calendarEventReminder - 購読しているイベントのリマインド (42times)
  * calendarEventUpdated - 購読しているイベントの日時が変わった・中止された (42times)
+ * pairJoinRequested - 自分のペア募集に参加希望が届いた
+ * pairAccepted - ペア募集への参加希望が承認された
+ * pairClosed - 参加希望を送った・参加しているペア募集か、自分のペア募集が締め切られた
  */
 export const notificationTypes = [
 	'note',
@@ -50,6 +53,9 @@ export const notificationTypes = [
 	'test',
 	'calendarEventReminder',
 	'calendarEventUpdated',
+	'pairJoinRequested',
+	'pairAccepted',
+	'pairClosed',
 ] as const;
 
 export const groupedNotificationTypes = [

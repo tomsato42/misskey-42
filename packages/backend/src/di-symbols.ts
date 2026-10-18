@@ -96,5 +96,9 @@ export const DI = {
 	calendarEventSubscriptionsRepository: Symbol('calendarEventSubscriptionsRepository'),
 	calendarEventNotesRepository: Symbol('calendarEventNotesRepository'),
 	calendarEventRemindersRepository: Symbol('calendarEventRemindersRepository'),
+	intraProjectsRepository: Symbol('intraProjectsRepository'),
+	intraUserProgressesRepository: Symbol('intraUserProgressesRepository'),
+	pairRecruitmentsRepository: Symbol('pairRecruitmentsRepository'),
+	pairMembersRepository: Symbol('pairMembersRepository'),
 	//#endregion
 };

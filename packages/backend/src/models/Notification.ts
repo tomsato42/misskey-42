@@ -11,6 +11,8 @@ import { MiRole } from './Role.js';
 import { MiDriveFile } from './DriveFile.js';
 import { MiNoteDraft } from './NoteDraft.js';
 import type { CalendarEventReminderNotificationData, CalendarEventUpdatedNotificationData } from '@/core/calendar/calendar-notification.js';
+import { MiPairRecruitment } from './PairRecruitment.js';
+import type { PairClosedReason } from '@/core/pair/pair-recruitment.js';
 
 // misskey-js の notificationTypes と同期すべし
 export type MiNotification = {
@@ -153,7 +155,35 @@ export type MiNotification = {
 	type: 'calendarEventUpdated';
 	id: string;
 	createdAt: string;
-} & CalendarEventUpdatedNotificationData);
+} & CalendarEventUpdatedNotificationData) | {
+	/** 自分のペア募集に参加希望が届いた。notifierId は参加希望を送った人 */
+	type: 'pairJoinRequested';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+	pairRecruitmentId: MiPairRecruitment['id'];
+	/** 通知を作った時点の課題の slug と名前 (募集が消えても表示できるように持つ) */
+	projectSlug: string;
+	projectName: string;
+} | {
+	/** ペア募集への参加希望が承認された。notifierId は募集の作成者 */
+	type: 'pairAccepted';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+	pairRecruitmentId: MiPairRecruitment['id'];
+	projectSlug: string;
+	projectName: string;
+} | {
+	/** ペア募集が締め切られた。作成者自身にも届く (期限切れのとき) ので notifierId は持たない */
+	type: 'pairClosed';
+	id: string;
+	createdAt: string;
+	pairRecruitmentId: MiPairRecruitment['id'];
+	projectSlug: string;
+	projectName: string;
+	reason: PairClosedReason;
+};
 
 export type MiGroupedNotification = MiNotification | {
 	type: 'reaction:grouped';

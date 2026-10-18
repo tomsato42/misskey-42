@@ -22,6 +22,8 @@ import { CheckModeratorsActivityProcessorService } from './processors/CheckModer
 import { CleanRemoteNotesProcessorService } from './processors/CleanRemoteNotesProcessorService.js';
 import { SyncIntraUsersProcessorService } from './processors/SyncIntraUsersProcessorService.js';
 import { CalendarEventRemindersProcessorService } from './processors/CalendarEventRemindersProcessorService.js';
+import { SyncIntraProjectsProcessorService } from './processors/SyncIntraProjectsProcessorService.js';
+import { CloseExpiredPairRecruitmentsProcessorService } from './processors/CloseExpiredPairRecruitmentsProcessorService.js';
 import { CleanRemoteFilesProcessorService } from './processors/CleanRemoteFilesProcessorService.js';
 import { DeleteAccountProcessorService } from './processors/DeleteAccountProcessorService.js';
 import { DeleteDriveFilesProcessorService } from './processors/DeleteDriveFilesProcessorService.js';
@@ -91,6 +93,8 @@ import { RelationshipProcessorService } from './processors/RelationshipProcessor
 		CleanRemoteNotesProcessorService,
 		SyncIntraUsersProcessorService,
 		CalendarEventRemindersProcessorService,
+		SyncIntraProjectsProcessorService,
+		CloseExpiredPairRecruitmentsProcessorService,
 		QueueProcessorService,
 	],
 	exports: [

@@ -2207,6 +2207,23 @@ declare namespace entities {
         PagesShowResponse,
         PagesUnlikeRequest,
         PagesUpdateRequest,
+        PairRecruitmentsAcceptRequest,
+        PairRecruitmentsAcceptResponse,
+        PairRecruitmentsApplyRequest,
+        PairRecruitmentsApplyResponse,
+        PairRecruitmentsCloseRequest,
+        PairRecruitmentsCloseResponse,
+        PairRecruitmentsCreateRequest,
+        PairRecruitmentsCreateResponse,
+        PairRecruitmentsListRequest,
+        PairRecruitmentsListResponse,
+        PairRecruitmentsProjectsResponse,
+        PairRecruitmentsRejectRequest,
+        PairRecruitmentsRejectResponse,
+        PairRecruitmentsShowRequest,
+        PairRecruitmentsShowResponse,
+        PairRecruitmentsWithdrawRequest,
+        PairRecruitmentsWithdrawResponse,
         PingResponse,
         PinnedUsersResponse,
         PromoReadRequest,
@@ -2381,7 +2398,11 @@ declare namespace entities {
         CalendarEvent,
         CalendarEventSchedule,
         CalendarFeedUrls,
-        CalendarNotificationSettings
+        CalendarNotificationSettings,
+        PairRecruitmentProject,
+        PairRecruitment,
+        PairRecruitmentDetailed,
+        PairMember
     }
 }
 export { entities }
@@ -3269,7 +3290,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "pairJoinRequested", "pairAccepted", "pairClosed"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;
@@ -3318,6 +3339,69 @@ type PagesUnlikeRequest = operations['pages___unlike']['requestBody']['content']
 
 // @public (undocumented)
 type PagesUpdateRequest = operations['pages___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairMember = components['schemas']['PairMember'];
+
+// @public (undocumented)
+type PairRecruitment = components['schemas']['PairRecruitment'];
+
+// @public (undocumented)
+type PairRecruitmentDetailed = components['schemas']['PairRecruitmentDetailed'];
+
+// @public (undocumented)
+type PairRecruitmentProject = components['schemas']['PairRecruitmentProject'];
+
+// @public (undocumented)
+type PairRecruitmentsAcceptRequest = operations['pair-recruitments___accept']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsAcceptResponse = operations['pair-recruitments___accept']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsApplyRequest = operations['pair-recruitments___apply']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsApplyResponse = operations['pair-recruitments___apply']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCloseRequest = operations['pair-recruitments___close']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCloseResponse = operations['pair-recruitments___close']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCreateRequest = operations['pair-recruitments___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCreateResponse = operations['pair-recruitments___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsListRequest = operations['pair-recruitments___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsListResponse = operations['pair-recruitments___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsProjectsResponse = operations['pair-recruitments___projects']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsRejectRequest = operations['pair-recruitments___reject']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsRejectResponse = operations['pair-recruitments___reject']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsShowRequest = operations['pair-recruitments___show']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsShowResponse = operations['pair-recruitments___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsWithdrawRequest = operations['pair-recruitments___withdraw']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsWithdrawResponse = operations['pair-recruitments___withdraw']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 function parse(_acct: string): Acct;

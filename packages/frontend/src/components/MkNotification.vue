@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="[$style.root, { [$style.contentVisibilityAuto]: contentVisibilityAuto }]">
 	<div :class="$style.head">
 		<MkAvatar v-if="['pollEnded', 'note'].includes(notification.type) && 'note' in notification" :class="$style.icon" :user="notification.note.user" link preview/>
-		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
+		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
@@ -33,6 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
 				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated',
+				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed',
 			}]"
 		>
 			<i v-if="notification.type === 'follow'" class="ti ti-plus"></i>
@@ -53,6 +54,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'calendarEventReminder'" class="ti ti-clock"></i>
 			<i v-else-if="notification.type === 'calendarEventUpdated' && notification.updateKind === 'canceled'" class="ti ti-calendar-x"></i>
 			<i v-else-if="notification.type === 'calendarEventUpdated'" class="ti ti-calendar-time"></i>
+			<i v-else-if="notification.type === 'pairJoinRequested'" class="ti ti-hand-stop"></i>
+			<i v-else-if="notification.type === 'pairAccepted'" class="ti ti-check"></i>
+			<i v-else-if="notification.type === 'pairClosed'" class="ti ti-users-group"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -80,6 +84,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
 			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
 			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
+			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
+			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
@@ -143,6 +149,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 					{{ i18n.tsx._calendar.scheduleChange({ before: formatCalendarSchedule(notification.previousSchedule), after: formatCalendarSchedule(notification.schedule) }) }}
 				</span>
 				<span v-else :class="$style.calendarLine">{{ formatCalendarSchedule(notification.schedule) }}</span>
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairJoinRequested'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairJoinRequestedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairAccepted'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairAcceptedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairClosed'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairClosedText({ project: notification.pairRecruitment.projectName, reason: i18n.ts._pairRecruitment._closedNotification[notification.reason] }) }}
 			</MkA>
 			<MkA v-else-if="notification.type === 'createToken'" :class="$style.text" to="/settings/apps">
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>
@@ -422,7 +437,8 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
-.t_calendar {
+.t_calendar,
+.t_pair {
 	background: var(--eventOther);
 	pointer-events: none;
 }

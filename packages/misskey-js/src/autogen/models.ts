@@ -74,3 +74,7 @@ export type CalendarEvent = components['schemas']['CalendarEvent'];
 export type CalendarEventSchedule = components['schemas']['CalendarEventSchedule'];
 export type CalendarFeedUrls = components['schemas']['CalendarFeedUrls'];
 export type CalendarNotificationSettings = components['schemas']['CalendarNotificationSettings'];
+export type PairRecruitmentProject = components['schemas']['PairRecruitmentProject'];
+export type PairRecruitment = components['schemas']['PairRecruitment'];
+export type PairRecruitmentDetailed = components['schemas']['PairRecruitmentDetailed'];
+export type PairMember = components['schemas']['PairMember'];

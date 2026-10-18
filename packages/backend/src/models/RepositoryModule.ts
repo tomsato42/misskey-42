@@ -41,6 +41,10 @@ import {
 	MiCalendarEventSubscription,
 	MiCalendarEventNote,
 	MiCalendarEventReminder,
+	MiIntraProject,
+	MiIntraUserProgress,
+	MiPairRecruitment,
+	MiPairMember,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -579,6 +583,30 @@ const $calendarEventRemindersRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraProjectsRepository: Provider = {
+	provide: DI.intraProjectsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraProject).extend(miRepository as MiRepository<MiIntraProject>),
+	inject: [DI.db],
+};
+
+const $intraUserProgressesRepository: Provider = {
+	provide: DI.intraUserProgressesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraUserProgress).extend(miRepository as MiRepository<MiIntraUserProgress>),
+	inject: [DI.db],
+};
+
+const $pairRecruitmentsRepository: Provider = {
+	provide: DI.pairRecruitmentsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairRecruitment).extend(miRepository as MiRepository<MiPairRecruitment>),
+	inject: [DI.db],
+};
+
+const $pairMembersRepository: Provider = {
+	provide: DI.pairMembersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairMember).extend(miRepository as MiRepository<MiPairMember>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -663,6 +691,10 @@ const $calendarEventRemindersRepository: Provider = {
 		$calendarEventSubscriptionsRepository,
 		$calendarEventNotesRepository,
 		$calendarEventRemindersRepository,
+		$intraProjectsRepository,
+		$intraUserProgressesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -746,6 +778,10 @@ const $calendarEventRemindersRepository: Provider = {
 		$calendarEventSubscriptionsRepository,
 		$calendarEventNotesRepository,
 		$calendarEventRemindersRepository,
+		$intraProjectsRepository,
+		$intraUserProgressesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 })
 export class RepositoryModule {

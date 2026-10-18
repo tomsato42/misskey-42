@@ -159,6 +159,9 @@ import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
 import { CalendarNotificationService } from './calendar/CalendarNotificationService.js';
 import { CalendarFeedService } from './calendar/CalendarFeedService.js';
 import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
+import { IntraProjectService } from './intra/IntraProjectService.js';
+import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
+import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -321,6 +324,9 @@ const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService',
 const $CalendarNotificationService: Provider = { provide: 'CalendarNotificationService', useExisting: CalendarNotificationService };
 const $CalendarFeedService: Provider = { provide: 'CalendarFeedService', useExisting: CalendarFeedService };
 const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
+const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
+const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
+const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
 //#endregion
 
 @Module({
@@ -483,6 +489,9 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		CalendarNotificationService,
 		CalendarFeedService,
 		CalendarEventEntityService,
+		IntraProjectService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
 		QueueService,
 		TelemetryService,
 
@@ -641,6 +650,9 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		$CalendarNotificationService,
 		$CalendarFeedService,
 		$CalendarEventEntityService,
+		$IntraProjectService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -800,6 +812,9 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		CalendarNotificationService,
 		CalendarFeedService,
 		CalendarEventEntityService,
+		IntraProjectService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
 		QueueService,
 		TelemetryService,
 
@@ -956,6 +971,9 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		$CalendarNotificationService,
 		$CalendarFeedService,
 		$CalendarEventEntityService,
+		$IntraProjectService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
 		$TelemetryService,
 		//#endregion
 	],

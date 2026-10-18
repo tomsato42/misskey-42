@@ -6,6 +6,28 @@
 import { notificationTypes, userExportableEntities } from '@/types.js';
 import { calendarEventReminderKinds } from '@/models/CalendarEventReminder.js';
 import { calendarEventUpdateKinds } from '@/core/calendar/calendar-notification.js';
+import { pairClosedReasons } from '@/core/pair/pair-recruitment.js';
+
+/** ペア募集の通知に含める募集の情報 (通知を作った時点の課題の slug と名前) */
+const pairRecruitmentSummarySchema = {
+	type: 'object',
+	optional: false, nullable: false,
+	properties: {
+		id: {
+			type: 'string',
+			optional: false, nullable: false,
+			format: 'id',
+		},
+		projectSlug: {
+			type: 'string',
+			optional: false, nullable: false,
+		},
+		projectName: {
+			type: 'string',
+			optional: false, nullable: false,
+		},
+	},
+} as const;
 
 const baseSchema = {
 	type: 'object',
@@ -529,6 +551,64 @@ export const packedNotificationSchema = {
 				ref: 'CalendarEventSchedule',
 				optional: false, nullable: false,
 				description: 'The schedule after the change (rescheduled), or at the time of cancellation (canceled).',
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['pairJoinRequested'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			pairRecruitment: pairRecruitmentSummarySchema,
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['pairAccepted'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			pairRecruitment: pairRecruitmentSummarySchema,
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['pairClosed'],
+			},
+			pairRecruitment: pairRecruitmentSummarySchema,
+			reason: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: pairClosedReasons,
 			},
 		},
 	}],

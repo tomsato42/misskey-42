@@ -82,6 +82,12 @@ import {
 	packedCalendarFeedUrlsSchema,
 	packedCalendarNotificationSettingsSchema,
 } from '@/models/json-schema/calendar-event.js';
+import {
+	packedPairMemberSchema,
+	packedPairRecruitmentDetailedSchema,
+	packedPairRecruitmentProjectSchema,
+	packedPairRecruitmentSchema,
+} from '@/models/json-schema/pair-recruitment.js';
 
 export const refs = {
 	UserLite: packedUserLiteSchema,
@@ -159,6 +165,10 @@ export const refs = {
 	CalendarEventSchedule: packedCalendarEventScheduleSchema,
 	CalendarFeedUrls: packedCalendarFeedUrlsSchema,
 	CalendarNotificationSettings: packedCalendarNotificationSettingsSchema,
+	PairRecruitmentProject: packedPairRecruitmentProjectSchema,
+	PairRecruitment: packedPairRecruitmentSchema,
+	PairRecruitmentDetailed: packedPairRecruitmentDetailedSchema,
+	PairMember: packedPairMemberSchema,
 };
 
 export type Packed<x extends keyof typeof refs> = SchemaType<typeof refs[x]>;

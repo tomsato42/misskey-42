@@ -592,6 +592,23 @@ import type {
 	PagesShowResponse,
 	PagesUnlikeRequest,
 	PagesUpdateRequest,
+	PairRecruitmentsAcceptRequest,
+	PairRecruitmentsAcceptResponse,
+	PairRecruitmentsApplyRequest,
+	PairRecruitmentsApplyResponse,
+	PairRecruitmentsCloseRequest,
+	PairRecruitmentsCloseResponse,
+	PairRecruitmentsCreateRequest,
+	PairRecruitmentsCreateResponse,
+	PairRecruitmentsListRequest,
+	PairRecruitmentsListResponse,
+	PairRecruitmentsProjectsResponse,
+	PairRecruitmentsRejectRequest,
+	PairRecruitmentsRejectResponse,
+	PairRecruitmentsShowRequest,
+	PairRecruitmentsShowResponse,
+	PairRecruitmentsWithdrawRequest,
+	PairRecruitmentsWithdrawResponse,
 	PingResponse,
 	PinnedUsersResponse,
 	PromoReadRequest,
@@ -1087,6 +1104,15 @@ export type Endpoints = {
 	'pages/show': { req: PagesShowRequest; res: PagesShowResponse };
 	'pages/unlike': { req: PagesUnlikeRequest; res: EmptyResponse };
 	'pages/update': { req: PagesUpdateRequest; res: EmptyResponse };
+	'pair-recruitments/accept': { req: PairRecruitmentsAcceptRequest; res: PairRecruitmentsAcceptResponse };
+	'pair-recruitments/apply': { req: PairRecruitmentsApplyRequest; res: PairRecruitmentsApplyResponse };
+	'pair-recruitments/close': { req: PairRecruitmentsCloseRequest; res: PairRecruitmentsCloseResponse };
+	'pair-recruitments/create': { req: PairRecruitmentsCreateRequest; res: PairRecruitmentsCreateResponse };
+	'pair-recruitments/list': { req: PairRecruitmentsListRequest; res: PairRecruitmentsListResponse };
+	'pair-recruitments/projects': { req: EmptyRequest; res: PairRecruitmentsProjectsResponse };
+	'pair-recruitments/reject': { req: PairRecruitmentsRejectRequest; res: PairRecruitmentsRejectResponse };
+	'pair-recruitments/show': { req: PairRecruitmentsShowRequest; res: PairRecruitmentsShowResponse };
+	'pair-recruitments/withdraw': { req: PairRecruitmentsWithdrawRequest; res: PairRecruitmentsWithdrawResponse };
 	'ping': { req: EmptyRequest; res: PingResponse };
 	'pinned-users': { req: EmptyRequest; res: PinnedUsersResponse };
 	'promo/read': { req: PromoReadRequest; res: EmptyResponse };

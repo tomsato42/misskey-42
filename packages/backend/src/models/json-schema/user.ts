@@ -652,6 +652,9 @@ export const packedMeDetailedOnlySchema = {
 				// 42times: カレンダーの通知は calendarNotificationSettings で切り替えるので、i/update では設定できない
 				calendarEventReminder: { optional: true, ...notificationRecieveConfig },
 				calendarEventUpdated: { optional: true, ...notificationRecieveConfig },
+				pairJoinRequested: { optional: true, ...notificationRecieveConfig },
+				pairAccepted: { optional: true, ...notificationRecieveConfig },
+				pairClosed: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

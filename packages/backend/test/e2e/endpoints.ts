@@ -1179,6 +1179,21 @@ describe('Endpoints', () => {
 			const res = await simpleGet('/api/intra/authorize');
 			assert.strictEqual(res.status, 404);
 		});
+
+		test('ペア募集の API は PAIR_RECRUITMENT_UNAVAILABLE を返す', async () => {
+			const list = await api('pair-recruitments/list', { tab: 'open' }, alice);
+			assert.strictEqual(list.status, 400);
+			assert.strictEqual(castAsError(list.body as any).error.code, 'PAIR_RECRUITMENT_UNAVAILABLE');
+
+			const create = await api('pair-recruitments/create', { projectSlug: 'cub3d', teamSize: 2, startTiming: 'now' }, alice);
+			assert.strictEqual(create.status, 400);
+			assert.strictEqual(castAsError(create.body as any).error.code, 'PAIR_RECRUITMENT_UNAVAILABLE');
+		});
+
+		test('ペア募集の API は未ログインでは使えない', async () => {
+			const res = await api('pair-recruitments/list', {});
+			assert.strictEqual(res.status, 401);
+		});
 	});
 
 	describe('URL preview', () => {

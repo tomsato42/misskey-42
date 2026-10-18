@@ -59,6 +59,8 @@ describe('IntraSyncService', () => {
 	let remoteUsers: Map<number, IntraUser>;
 	let getUserCalls: number[];
 	let beforeIntraRoleInsert: ((row: FakeIntraRole) => Promise<void> | void) | null;
+	let progressSyncCalls: { userId: string; intraId: number; campusId: number | null }[];
+	let progressSyncHook: (() => Promise<void> | void) | null;
 	let service: IntraSyncService;
 
 	function nextId(prefix: string) {
@@ -108,6 +110,8 @@ describe('IntraSyncService', () => {
 		remoteUsers = new Map();
 		getUserCalls = [];
 		beforeIntraRoleInsert = null;
+		progressSyncCalls = [];
+		progressSyncHook = null;
 
 		const config = {
 			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg' },
@@ -200,6 +204,13 @@ describe('IntraSyncService', () => {
 			getLogger: () => ({ info: noop, warn: noop, error: noop, debug: noop }),
 		};
 
+		const fakeIntraProjectService = {
+			syncUserProgress: async (userId: string, intraUser: IntraUser, campusId: number | null) => {
+				await progressSyncHook?.();
+				progressSyncCalls.push({ userId, intraId: intraUser.id, campusId });
+			},
+		};
+
 		service = new IntraSyncService(
 			config as Config,
 			fakeProfilesRepository as any,
@@ -210,6 +221,7 @@ describe('IntraSyncService', () => {
 			fakeCacheService as any,
 			{ gen: () => nextId('id') } as any,
 			fakeLoggerService as any,
+			fakeIntraProjectService as any,
 		);
 	});
 
@@ -394,11 +406,32 @@ describe('IntraSyncService', () => {
 		expect(roleNamesOf('u1')).toEqual(['Lv.5']);
 	});
 
+	test('課題の状態とクエストを主キャンパスとともに保存する', async () => {
+		addProfile('u1', { intraId: 1000 });
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(progressSyncCalls).toEqual([{ userId: 'u1', intraId: 1000, campusId: 26 }]);
+	});
+
+	test('課題の状態の保存に失敗しても、プロフィールとロールの同期は成功させる', async () => {
+		addProfile('u1', { intraId: 1000 });
+		progressSyncHook = () => {
+			throw new Error('42 API is down');
+		};
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(profiles[0].intraLogin).toBe('tomoki');
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
 	test('intra と連携していないユーザーには何もしない', async () => {
 		addProfile('u1');
 
 		await service.syncUser('u1');
 
+		expect(progressSyncCalls).toEqual([]);
 		expect(getUserCalls).toEqual([]);
 		expect(profiles[0].intraSyncedAt).toBeNull();
 		expect(roles).toHaveLength(0);

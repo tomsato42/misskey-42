@@ -112,6 +112,9 @@ export const meta = {
 					achievementEarned: { optional: true, ...notificationRecieveConfig },
 					app: { optional: true, ...notificationRecieveConfig },
 					test: { optional: true, ...notificationRecieveConfig },
+					pairJoinRequested: { optional: true, ...notificationRecieveConfig },
+					pairAccepted: { optional: true, ...notificationRecieveConfig },
+					pairClosed: { optional: true, ...notificationRecieveConfig },
 				},
 			},
 			isModerator: {
