@@ -242,6 +242,32 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'pairJoinRequested':
+					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
+						body: getUserName(data.body.user),
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('users'),
+						data,
+					}];
+
+				case 'pairAccepted':
+					return [i18n.tsx._notification.pairAcceptedText({ project: data.body.pairRecruitment.projectName }), {
+						body: getUserName(data.body.user),
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('circle-check'),
+						data,
+					}];
+
+				case 'pairClosed':
+					return [i18n.ts._notification.pairClosed, {
+						body: i18n.tsx._notification.pairClosedText({
+							project: data.body.pairRecruitment.projectName,
+							reason: i18n.ts._pairRecruitment._closedNotification[data.body.reason],
+						}),
+						badge: iconUrl('users'),
+						data,
+					}];
+
 				case 'app':
 					return [data.body.header ?? data.body.body, {
 						body: data.body.header ? data.body.body : '',

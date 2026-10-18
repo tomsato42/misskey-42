@@ -7,6 +7,7 @@ import { defineAsyncComponent } from 'vue';
 import type { AsyncComponentLoader } from 'vue';
 import type { RouteDef } from '@/lib/nirax.js';
 import { $i, iAmModerator } from '@/i.js';
+import { instance } from '@/instance.js';
 import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
 import PageTimeline from '@/pages/timeline.vue';
@@ -19,6 +20,11 @@ export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 
 function chatPage(...args: Parameters<typeof page>) {
 	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : page(() => import('@/pages/not-found.vue'));
+}
+
+/** 学内SNSモード (42 intra ログイン) でだけ使えるページ。それ以外では見つからない扱いにする。判定はページを開くときに行う */
+function intraPage(loader: AsyncComponentLoader) {
+	return page(() => instance.intraLoginEnabled === true ? loader() : import('@/pages/not-found.vue'));
 }
 
 export const ROUTE_DEF = [{
@@ -67,6 +73,18 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/chat/messages/:messageId',
 	component: chatPage(() => import('@/pages/chat/message.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair/new',
+	component: intraPage(() => import('@/pages/pair/new.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair/:id',
+	component: intraPage(() => import('@/pages/pair/recruitment.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair',
+	component: intraPage(() => import('@/pages/pair/index.vue')),
 	loginRequired: true,
 }, {
 	path: '/instance-info/:host',

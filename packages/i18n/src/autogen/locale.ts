@@ -11004,6 +11004,22 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * {project} のペア募集に参加希望が届きました
+         */
+        "pairJoinRequestedText": ParameterizedString<"project">;
+        /**
+         * {project} のペア募集への参加が承認されました
+         */
+        "pairAcceptedText": ParameterizedString<"project">;
+        /**
+         * ペア募集が締め切られました
+         */
+        "pairClosed": string;
+        /**
+         * {project} のペア募集: {reason}
+         */
+        "pairClosedText": ParameterizedString<"project" | "reason">;
         "_types": {
             /**
              * すべて
@@ -11090,15 +11106,15 @@ export interface Locale extends ILocale {
              */
             "app": string;
             /**
-             * ペア募集への参加希望が届いた
+             * ペア募集への参加希望
              */
             "pairJoinRequested": string;
             /**
-             * ペア募集への参加が承認された
+             * ペア募集への参加の承認
              */
             "pairAccepted": string;
             /**
-             * ペア募集が締め切られた
+             * ペア募集の締め切り
              */
             "pairClosed": string;
         };
@@ -13393,6 +13409,400 @@ export interface Locale extends ILocale {
          * MFM
          */
         "mfm": string;
+    };
+    "_pairRecruitment": {
+        /**
+         * ペア募集
+         */
+        "title": string;
+        /**
+         * ペアを募集する
+         */
+        "newTitle": string;
+        /**
+         * 募集する
+         */
+        "recruit": string;
+        /**
+         * 募集中
+         */
+        "tabOpen": string;
+        /**
+         * 自分の募集
+         */
+        "tabMine": string;
+        /**
+         * 参加中
+         */
+        "tabJoined": string;
+        /**
+         * 課題で絞り込む
+         */
+        "filterByProject": string;
+        /**
+         * すべての課題
+         */
+        "allProjects": string;
+        /**
+         * {name} (募集 {n}件)
+         */
+        "projectWithOpenCount": ParameterizedString<"name" | "n">;
+        /**
+         * 自分が取り組める課題だけ
+         */
+        "onlyWorkable": string;
+        /**
+         * 募集中の募集はまだありません
+         */
+        "emptyOpen": string;
+        /**
+         * まだ募集していません
+         */
+        "emptyMine": string;
+        /**
+         * 参加希望を送った募集はありません
+         */
+        "emptyJoined": string;
+        /**
+         * 参加したい
+         */
+        "join": string;
+        /**
+         * 取り下げる
+         */
+        "withdraw": string;
+        /**
+         * 参加希望を取り下げますか？
+         */
+        "withdrawConfirm": string;
+        /**
+         * アドバイスする
+         */
+        "advise": string;
+        /**
+         * メッセージを送る
+         */
+        "sendMessage": string;
+        /**
+         * 承認
+         */
+        "accept": string;
+        /**
+         * 見送る
+         */
+        "reject": string;
+        /**
+         * {name} さんの参加希望を見送りますか？見送った人は、この募集にもう一度参加希望を送れません。
+         */
+        "rejectConfirm": ParameterizedString<"name">;
+        /**
+         * 締め切る
+         */
+        "close": string;
+        /**
+         * この募集を締め切りますか？参加希望を送った人とメンバーに通知されます。
+         */
+        "closeConfirm": string;
+        /**
+         * {n}人 ・ あと{m}人
+         */
+        "teamSizeAndRemaining": ParameterizedString<"n" | "m">;
+        /**
+         * あと{n}人
+         */
+        "remaining": ParameterizedString<"n">;
+        /**
+         * {n}人
+         */
+        "teamSizeN": ParameterizedString<"n">;
+        /**
+         * {n}人で取り組む課題
+         */
+        "groupSizeProject": ParameterizedString<"n">;
+        /**
+         * {min}〜{max}人で取り組む課題
+         */
+        "groupSizeRangeProject": ParameterizedString<"min" | "max">;
+        /**
+         * {user} が募集
+         */
+        "recruitedBy": ParameterizedString<"user">;
+        /**
+         * {date}から
+         */
+        "startFrom": ParameterizedString<"date">;
+        /**
+         * あと{n}日で締め切り
+         */
+        "expiresInDays": ParameterizedString<"n">;
+        /**
+         * まもなく締め切り
+         */
+        "expiresSoon": string;
+        /**
+         * 締め切り({reason})
+         */
+        "closedWithReason": ParameterizedString<"reason">;
+        /**
+         * 告知のノート
+         */
+        "announcementNote": string;
+        /**
+         * 参加希望 {n}件
+         */
+        "pendingCount": ParameterizedString<"n">;
+        /**
+         * メンバー(募集した人だけが承認できます)
+         */
+        "members": string;
+        /**
+         * 募集した人
+         */
+        "owner": string;
+        /**
+         * 状態は 42 intra の記録から自動で判定しています(毎時更新)。「未解放」は、前提の課題がまだ終わっていない人です。
+         */
+        "stateNote": string;
+        /**
+         * 次に取り組む課題
+         */
+        "project": string;
+        /**
+         * 人数(自分を含む)
+         */
+        "teamSize": string;
+        /**
+         * 始める時期
+         */
+        "startTiming": string;
+        /**
+         * 始める日
+         */
+        "startDate": string;
+        /**
+         * ひとこと
+         */
+        "comment": string;
+        /**
+         * タイムラインにも告知する
+         */
+        "announce": string;
+        /**
+         * 募集のカードを付けたノートを投稿します
+         */
+        "announceDescription": string;
+        /**
+         * 選べる課題がありません。キャンパスが分からないときは、42 でログインし直してください。
+         */
+        "noProjects": string;
+        /**
+         * 今取り組める 2 人以上の課題がありません。未解放か完了済みの課題には募集できません。
+         */
+        "noWorkableProjects": string;
+        /**
+         * ペア募集
+         */
+        "cardTitle": string;
+        "_viewerState": {
+            /**
+             * あなたは取り組めます
+             */
+            "available": string;
+            /**
+             * 進行中
+             */
+            "in_progress": string;
+            /**
+             * 完了済み
+             */
+            "finished": string;
+            /**
+             * まだ取り組めません
+             */
+            "locked": string;
+        };
+        "_memberState": {
+            /**
+             * 取り組める
+             */
+            "available": string;
+            /**
+             * 進行中
+             */
+            "in_progress": string;
+            /**
+             * 完了済み
+             */
+            "finished": string;
+            /**
+             * 未解放
+             */
+            "locked": string;
+        };
+        "_startTiming": {
+            /**
+             * 今すぐ
+             */
+            "now": string;
+            /**
+             * 来週から
+             */
+            "nextWeek": string;
+            /**
+             * 来月から
+             */
+            "nextMonth": string;
+            /**
+             * 日付を指定
+             */
+            "date": string;
+        };
+        "_closedReason": {
+            /**
+             * メンバーがそろった
+             */
+            "full": string;
+            /**
+             * 締め切った
+             */
+            "manual": string;
+            /**
+             * 期限切れ
+             */
+            "expired": string;
+        };
+        "_closedNotification": {
+            /**
+             * メンバーがそろいました
+             */
+            "full": string;
+            /**
+             * 募集した人が締め切りました
+             */
+            "manual": string;
+            /**
+             * 期限が過ぎました
+             */
+            "expired": string;
+        };
+        "_myStatus": {
+            /**
+             * 参加希望を送りました
+             */
+            "pending": string;
+            /**
+             * 参加が決まりました
+             */
+            "accepted": string;
+            /**
+             * 見送られました
+             */
+            "rejected": string;
+        };
+        "_memberStatus": {
+            /**
+             * 参加希望
+             */
+            "pending": string;
+            /**
+             * 参加
+             */
+            "accepted": string;
+            /**
+             * 見送り
+             */
+            "rejected": string;
+            /**
+             * 取り下げ
+             */
+            "withdrawn": string;
+        };
+        "_errors": {
+            /**
+             * ペア募集を使えません。
+             */
+            "unavailable": string;
+            /**
+             * キャンパスが分かりません。42 でログインし直してください。
+             */
+            "noCampus": string;
+            /**
+             * この課題はあなたのキャンパスにありません。
+             */
+            "noSuchProject": string;
+            /**
+             * この課題は 2 人以上で取り組む課題ではありません。
+             */
+            "notPairProject": string;
+            /**
+             * 人数がこの課題の範囲を超えています。
+             */
+            "invalidTeamSize": string;
+            /**
+             * 始める日を正しく指定してください(今日から 1 年以内)。
+             */
+            "invalidStartDate": string;
+            /**
+             * ひとことが長すぎます。
+             */
+            "commentTooLong": string;
+            /**
+             * あなたはこの課題に取り組めません(未解放か完了済み)。
+             */
+            "projectNotAvailable": string;
+            /**
+             * 募集中の募集が多すぎます。いずれかを締め切ってから募集してください。
+             */
+            "tooManyOpenRecruitments": string;
+            /**
+             * 募集が見つかりません。
+             */
+            "noSuchRecruitment": string;
+            /**
+             * この募集は締め切られています。
+             */
+            "recruitmentClosed": string;
+            /**
+             * 自分の募集には参加できません。
+             */
+            "cannotApplyOwn": string;
+            /**
+             * 参加希望はもう送っています。
+             */
+            "alreadyApplied": string;
+            /**
+             * この募集への参加は見送られています。
+             */
+            "rejectedBefore": string;
+            /**
+             * 募集した人だけが操作できます。
+             */
+            "notOwner": string;
+            /**
+             * 参加希望が見つかりません。
+             */
+            "noSuchApplication": string;
+            /**
+             * この人は今この課題に取り組めないため、承認できません。
+             */
+            "applicantNotAvailable": string;
+            /**
+             * メンバーがそろっています。
+             */
+            "full": string;
+            /**
+             * この募集に参加希望を送っていません。
+             */
+            "notMember": string;
+            /**
+             * この募集には参加できません。
+             */
+            "blocked": string;
+            /**
+             * タイムラインへの告知には、ノートを投稿する権限が必要です。
+             */
+            "announcePermissionDenied": string;
+        };
     };
     "_intra": {
         /**

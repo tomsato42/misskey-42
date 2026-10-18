@@ -181,6 +181,12 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 							case 'reaction':
 								client = await swos.openNote(data.body.note.id, loginId);
 								break;
+							case 'pairJoinRequested':
+							case 'pairAccepted':
+							case 'pairClosed':
+								// ペア募集の通知は募集のページを開く
+								client = await swos.openClient('push', `/pair/${data.body.pairRecruitment.id}`, loginId);
+								break;
 							default:
 								if ('note' in data.body) {
 									client = await swos.openNote(data.body.note.id, loginId);
