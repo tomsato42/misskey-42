@@ -37,6 +37,10 @@ import {
 	MiHashtag,
 	MiInstance,
 	MiIntraRole,
+	MiCalendarEvent,
+	MiCalendarEventSubscription,
+	MiCalendarEventNote,
+	MiCalendarEventReminder,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -551,6 +555,30 @@ const $intraRolesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $calendarEventsRepository: Provider = {
+	provide: DI.calendarEventsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEvent).extend(miRepository as MiRepository<MiCalendarEvent>),
+	inject: [DI.db],
+};
+
+const $calendarEventSubscriptionsRepository: Provider = {
+	provide: DI.calendarEventSubscriptionsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventSubscription).extend(miRepository as MiRepository<MiCalendarEventSubscription>),
+	inject: [DI.db],
+};
+
+const $calendarEventNotesRepository: Provider = {
+	provide: DI.calendarEventNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventNote).extend(miRepository as MiRepository<MiCalendarEventNote>),
+	inject: [DI.db],
+};
+
+const $calendarEventRemindersRepository: Provider = {
+	provide: DI.calendarEventRemindersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventReminder).extend(miRepository as MiRepository<MiCalendarEventReminder>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -631,6 +659,10 @@ const $intraRolesRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -710,6 +742,10 @@ const $intraRolesRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
 	],
 })
 export class RepositoryModule {

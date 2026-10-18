@@ -9,6 +9,8 @@ import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiPage } from './Page.js';
 import { MiUserList } from './UserList.js';
+import { DEFAULT_CALENDAR_NOTIFICATION_SETTINGS } from './CalendarEvent.js';
+import type { CalendarNotificationSettings } from './CalendarEvent.js';
 
 // TODO: このテーブルで管理している情報すべてレジストリで管理するようにしても良いかも
 //       ただ、「emailVerified が true なユーザーを find する」のようなクエリは書けなくなるからウーン
@@ -317,6 +319,21 @@ export class MiUserProfile {
 		default: false,
 	})
 	public intraPasswordLoginAllowed: boolean;
+	//#endregion
+
+	//#region calendar
+	// カレンダー配信 (iCalendar) の URL に含める推測できない鍵。作り直せる
+	@Index({ unique: true })
+	@Column('varchar', {
+		length: 64, nullable: true,
+	})
+	public calendarFeedToken: string | null;
+
+	// 購読しているイベントの通知を種類ごとに受け取るか
+	@Column('jsonb', {
+		default: { ...DEFAULT_CALENDAR_NOTIFICATION_SETTINGS },
+	})
+	public calendarNotificationSettings: CalendarNotificationSettings;
 	//#endregion
 
 	//#region Denormalized fields
