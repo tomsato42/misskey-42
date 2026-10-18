@@ -13934,6 +13934,10 @@ export interface Locale extends ILocale {
          */
         "calendar": string;
         /**
+         * カレンダーに戻る
+         */
+        "backToCalendar": string;
+        /**
          * イベント
          */
         "event": string;

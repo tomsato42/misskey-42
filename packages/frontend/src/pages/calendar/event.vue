@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader :actions="headerActions">
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
+		<MkA :to="calendarUrl" :class="$style.back"><i class="ti ti-arrow-left" aria-hidden="true"></i>{{ i18n.ts._calendar.backToCalendar }}</MkA>
 		<div v-if="event" class="_gaps">
 			<MkInfo v-if="event.isCanceled" warn>{{ i18n.ts._calendar.eventCanceled }}</MkInfo>
 
@@ -120,6 +121,8 @@ const paginator = markRaw(new Paginator('calendar/events/notes', {
 }));
 
 const eventUrl = computed(() => `${url}/calendar/events/${props.eventId}`);
+/** イベントの月のカレンダー。読み込む前は今月 */
+const calendarUrl = computed(() => event.value != null ? `/calendar?month=${event.value.date.slice(0, 7)}` : '/calendar');
 const isOwner = computed(() => event.value != null && $i != null && event.value.userId === $i.id);
 
 const eventDate = computed(() => parseCalendarDate(event.value?.date) ?? { year: 0, month: 0, day: 0 });
@@ -290,6 +293,19 @@ definePage(() => ({
 </script>
 
 <style lang="scss" module>
+.back {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 12px;
+	font-size: 0.9em;
+	color: var(--MI_THEME-accent);
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
 .card {
 	padding: 24px 28px;
 	display: flex;

@@ -3730,6 +3730,7 @@ _intra:
 
 _calendar:
   calendar: "カレンダー"
+  backToCalendar: "カレンダーに戻る"
   event: "イベント"
   all: "すべて"
   subscribed: "購読中"
