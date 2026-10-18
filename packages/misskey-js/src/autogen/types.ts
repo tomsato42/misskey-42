@@ -1197,7 +1197,7 @@ export type paths = {
     '/calendar/events/show': {
         /**
          * calendar/events/show
-         * @description No description provided.
+         * @description Show a calendar event. Canceled events are also returned (with isCanceled set).
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -1215,7 +1215,7 @@ export type paths = {
     '/calendar/events/unlink-note': {
         /**
          * calendar/events/unlink-note
-         * @description Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this.
+         * @description Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this. Others get NOTE_NOT_LINKED_TO_CALENDAR_EVENT whether the note is linked or not.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
@@ -2582,6 +2582,44 @@ export type paths = {
          *     **Credential required**: *Yes*
          */
         post: operations['i___authorized-apps'];
+    };
+    '/i/calendar-feed': {
+        /**
+         * i/calendar-feed
+         * @description Get the calendar feed (iCalendar) URLs of your account. A feed token is created if you do not have one yet. Anyone who knows the URLs can see the events without signing in.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___calendar-feed'];
+    };
+    '/i/calendar-feed/regenerate': {
+        /**
+         * i/calendar-feed/regenerate
+         * @description Regenerate the calendar feed token. The old feed URLs stop working.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___calendar-feed___regenerate'];
+    };
+    '/i/calendar-notification-settings': {
+        /**
+         * i/calendar-notification-settings
+         * @description Get which notifications you receive for the calendar events you subscribe to.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___calendar-notification-settings'];
+    };
+    '/i/calendar-notification-settings/update': {
+        /**
+         * i/calendar-notification-settings/update
+         * @description Change which notifications you receive for the calendar events you subscribe to. Omitted items are left unchanged.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___calendar-notification-settings___update'];
     };
     '/i/change-password': {
         /**
@@ -4478,6 +4516,24 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                calendarEventReminder?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                calendarEventUpdated?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -4943,6 +4999,33 @@ export type components = {
             createdAt: string;
             /** @enum {string} */
             type: 'test';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventReminder';
+            event: components['schemas']['CalendarEventLite'];
+            /**
+             * @description week: 7 days before (9:00 JST), day: the day before (9:00 JST), today: the day of the event (9:00 JST, or 1 hour before the start if it starts at or before 9:00).
+             * @enum {string}
+             */
+            reminderKind: 'week' | 'day' | 'today';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventUpdated';
+            event: components['schemas']['CalendarEventLite'];
+            /** @enum {string} */
+            updateKind: 'rescheduled' | 'canceled';
+            /** @description The schedule before the change. null if updateKind is canceled. */
+            previousSchedule: components['schemas']['CalendarEventSchedule'] | null;
+            /** @description The schedule after the change (rescheduled), or at the time of cancellation (canceled). */
+            schedule: components['schemas']['CalendarEventSchedule'];
         };
         DriveFile: {
             /**
@@ -5938,6 +6021,50 @@ export type components = {
             announcementNoteId: string | null;
             /** @description Whether the viewer can edit, cancel or delete the event. Only present when the viewer is signed in. */
             canManage?: boolean;
+        };
+        CalendarEventSchedule: {
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+        };
+        CalendarFeedUrls: {
+            /**
+             * Format: url
+             * @description Events you subscribe to (including your own).
+             */
+            subscribedUrl: string;
+            /**
+             * Format: url
+             * @description All events.
+             */
+            allUrl: string;
+        };
+        CalendarNotificationSettings: {
+            /** @description 7 days before the event, at 9:00 (Asia/Tokyo). */
+            week: boolean;
+            /** @description The day before the event, at 9:00 (Asia/Tokyo). */
+            day: boolean;
+            /** @description The day of the event, at 9:00 (Asia/Tokyo), or 1 hour before the start if it starts at or before 9:00. */
+            today: boolean;
+            /** @description When the date or time of the event changes, or the event is canceled. */
+            changes: boolean;
         };
     };
     responses: never;
@@ -26431,6 +26558,275 @@ export interface operations {
             };
         };
     };
+    'i___calendar-feed': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarFeedUrls'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-feed___regenerate': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarFeedUrls'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-notification-settings': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarNotificationSettings'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-notification-settings___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    week?: boolean;
+                    day?: boolean;
+                    today?: boolean;
+                    changes?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarNotificationSettings'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'i___change-password': {
         requestBody: {
             content: {
@@ -27812,8 +28208,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -27897,8 +28293,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };

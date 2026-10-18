@@ -86,6 +86,15 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 }];
 
 /**
+ * 42times のカレンダー機能の repeatable ジョブ。カレンダーは学内SNSモード以外でも使えるので、常に登録する
+ */
+const CALENDAR_REPEATABLE_SYSTEM_JOB_DEF = [{
+	name: 'calendarEventReminders',
+	// 5分ごとに、送る時刻になったリマインドを送る
+	pattern: '*/5 * * * *',
+}];
+
+/**
  * 42 intra 連携が有効なときだけ登録する repeatable ジョブ
  */
 const INTRA_REPEATABLE_SYSTEM_JOB_DEF = [{
@@ -124,9 +133,11 @@ export class QueueService {
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 	) {
-		const repeatableJobDefs = this.config.intra != null
-			? [...REPEATABLE_SYSTEM_JOB_DEF, ...INTRA_REPEATABLE_SYSTEM_JOB_DEF]
-			: REPEATABLE_SYSTEM_JOB_DEF;
+		const repeatableJobDefs = [
+			...REPEATABLE_SYSTEM_JOB_DEF,
+			...CALENDAR_REPEATABLE_SYSTEM_JOB_DEF,
+			...(this.config.intra != null ? INTRA_REPEATABLE_SYSTEM_JOB_DEF : []),
+		];
 
 		for (const def of repeatableJobDefs) {
 			this.systemQueue.upsertJobScheduler(def.name, {

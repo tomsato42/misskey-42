@@ -10,6 +10,7 @@ import {
 	CalendarEventCanceledError,
 	CalendarEventNotFoundError,
 	CalendarEventPermissionError,
+	CalendarEventRateLimitError,
 	CalendarEventValidationError,
 	CalendarNoteNotLinkableError,
 	CalendarNoteParamsConflictError,
@@ -51,5 +52,13 @@ describe('toCalendarApiError', () => {
 			expect((toCalendarApiError(source, calendarNoteCreateErrorMap) as ApiError).id, source.name).toBe(expected.id);
 		}
 		expect((toCalendarApiError(new CalendarNoteNotLinkableError('pureRenote'), calendarNoteCreateErrorMap) as ApiError).info).toEqual({ reason: 'pureRenote' });
+	});
+
+	test('作成数の上限は、ApiCallService のレート制限と同じ形 (429、resetMs) にする', () => {
+		const err = toCalendarApiError(new CalendarEventRateLimitError(1_800_000_000_500), calendarNoteCreateErrorMap) as ApiError;
+		expect(err.code).toBe('RATE_LIMIT_EXCEEDED');
+		expect(err.id).toBe('d5826d14-3982-4d2e-8011-b9e9f02499ef');
+		expect(err.httpStatusCode).toBe(429);
+		expect(err.info).toEqual({ resetMs: 1_800_000_000_500, reset: 1_800_000_001 });
 	});
 });

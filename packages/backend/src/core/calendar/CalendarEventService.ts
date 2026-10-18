@@ -22,6 +22,7 @@ import { RoleService } from '@/core/RoleService.js';
 import { IdService } from '@/core/IdService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
+import { CalendarNotificationService } from './CalendarNotificationService.js';
 import {
 	CalendarEventCanceledError,
 	CalendarEventCannotUnsubscribeOwnError,
@@ -82,6 +83,7 @@ export class CalendarEventService {
 
 		private roleService: RoleService,
 		private idService: IdService,
+		private calendarNotificationService: CalendarNotificationService,
 	) {
 	}
 
@@ -242,19 +244,19 @@ export class CalendarEventService {
 	}
 
 	/**
-	 * イベントの日時が変わったあとに呼ばれる。購読者への通知はここに足す
+	 * イベントの日時が変わったあとに呼ばれる。購読者 (操作した本人を除く) に通知する (送るのは待たない)
 	 */
 	@bindThis
-	protected async onScheduleChanged(_event: MiCalendarEvent, _change: CalendarEventScheduleChange, _me: Me): Promise<void> {
-		// 通知は後で実装する
+	protected async onScheduleChanged(event: MiCalendarEvent, change: CalendarEventScheduleChange, me: Me): Promise<void> {
+		this.calendarNotificationService.notifyRescheduled(event, change, me);
 	}
 
 	/**
-	 * イベントを中止したあとに呼ばれる。購読者への通知はここに足す
+	 * イベントを中止したあとに呼ばれる。購読者 (操作した本人を除く) に通知する (送るのは待たない)
 	 */
 	@bindThis
-	protected async onCanceled(_event: MiCalendarEvent, _me: Me): Promise<void> {
-		// 通知は後で実装する
+	protected async onCanceled(event: MiCalendarEvent, me: Me): Promise<void> {
+		this.calendarNotificationService.notifyCanceled(event, me);
 	}
 
 	//#endregion
@@ -376,9 +378,9 @@ export class CalendarEventService {
 	}
 
 	/**
-	 * ノートとイベントの紐づけを外す。ノートの作成者、イベントの作成者、モデレーター以上ができる
-	 * @throws CalendarEventNoteNotLinkedError ノートがどのイベントにも紐づいていない
-	 * @throws CalendarEventPermissionError 外す権限が無い
+	 * ノートとイベントの紐づけを外す。ノートの作成者、イベントの作成者、モデレーター以上ができる。
+	 * 外す権限が無い人には、見る権限の無いノートの紐づけの有無が分からないよう、紐づいていないときと同じエラーを返す
+	 * @throws CalendarEventNoteNotLinkedError ノートがどのイベントにも紐づいていない、または外す権限が無い
 	 */
 	@bindThis
 	public async unlinkNote(note: Pick<MiNote, 'id'>, me: Me): Promise<void> {
@@ -388,7 +390,7 @@ export class CalendarEventService {
 		if (link.userId !== me.id) {
 			const event = await this.calendarEventsRepository.findOneBy({ id: link.eventId });
 			// 紐づけがあればイベントもある (イベントを消すと紐づけも消える)
-			if (event == null || !await this.canManage(event, me)) throw new CalendarEventPermissionError();
+			if (event == null || !await this.canManage(event, me)) throw new CalendarEventNoteNotLinkedError();
 		}
 
 		await this.calendarEventNotesRepository.delete({ id: link.id });
@@ -462,6 +464,28 @@ export class CalendarEventService {
 		const event = await this.findById(id);
 		if (event == null) throw new CalendarEventNotFoundError();
 		return event;
+	}
+
+	/**
+	 * me が since 以降に作ったイベントの作成日時を新しい順に最大 limit 件返す (作成数の上限の確認用)。
+	 * 作成日時は id から求める
+	 */
+	@bindThis
+	public async getCreatedDatesSince(me: Me, since: Date, limit: number): Promise<Date[]> {
+		const events = await this.calendarEventsRepository.find({
+			where: { userId: me.id, id: MoreThanOrEqual(this.idService.gen(since.getTime())) },
+			select: { id: true },
+			order: { id: 'DESC' },
+			take: limit,
+		});
+		return events.map(e => this.idService.parse(e.id).date);
+	}
+
+	/** id の順に関係なく、指定したイベントをまとめて引く (無いものは含まない) */
+	@bindThis
+	public async findByIds(ids: MiCalendarEvent['id'][]): Promise<MiCalendarEvent[]> {
+		if (ids.length === 0) return [];
+		return await this.calendarEventsRepository.findBy({ id: In(ids) });
 	}
 
 	/**

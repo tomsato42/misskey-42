@@ -53,6 +53,7 @@ import { NoteStreamingHidingService } from './api/stream/NoteStreamingHidingServ
 import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.js';
 import { IntraAuthApiService } from './api/IntraAuthApiService.js';
 import { MediaSessionApiService } from './api/MediaSessionApiService.js';
+import { CalendarFeedServerService } from './CalendarFeedServerService.js';
 
 @Module({
 	imports: [
@@ -82,6 +83,7 @@ import { MediaSessionApiService } from './api/MediaSessionApiService.js';
 		SigninWithPasskeyApiService,
 		IntraAuthApiService,
 		MediaSessionApiService,
+		CalendarFeedServerService,
 		SigninService,
 		SignupApiService,
 		StreamingApiServerService,

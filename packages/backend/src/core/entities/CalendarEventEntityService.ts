@@ -106,6 +106,28 @@ export class CalendarEventEntityService {
 	}
 
 	/**
+	 * イベントの ID ごとに軽量版を返す (通知の表示用)。削除されたイベントは Map に入らない。
+	 * 購読者数と購読状態はまとめて引く
+	 */
+	@bindThis
+	public async packLiteManyByIds(eventIds: MiCalendarEvent['id'][], me?: Me): Promise<Map<MiCalendarEvent['id'], Packed<'CalendarEventLite'>>> {
+		const result = new Map<MiCalendarEvent['id'], Packed<'CalendarEventLite'>>();
+		const events = await this.calendarEventService.findByIds([...new Set(eventIds)]);
+		if (events.length === 0) return result;
+
+		const foundIds = events.map(e => e.id);
+		const [counts, subscribed] = await Promise.all([
+			this.calendarEventService.countSubscribersOfEvents(foundIds),
+			me == null ? null : this.calendarEventService.getSubscribedEventIds(me, foundIds),
+		]);
+
+		for (const event of events) {
+			result.set(event.id, this.packLiteSync(event, counts.get(event.id) ?? 0, subscribed?.has(event.id)));
+		}
+		return result;
+	}
+
+	/**
 	 * ノートごとに、紐づいているイベントの軽量版を返す (ノートの表示用)。
 	 * 渡したノートはすべて Map に入り、紐づいていないノートは null。
 	 * 紐づいたノートが無ければクエリは 1 回だけで済む

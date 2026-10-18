@@ -6,9 +6,9 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { describe, beforeAll, test } from 'vitest';
+import { describe, beforeAll, test, vi } from 'vitest';
 import { formatJstDate } from '@/core/calendar/calendar-time.js';
-import { api, castAsError, failedApiCall, post, role, signup, successfulApiCall } from '../utils.js';
+import { api, castAsError, failedApiCall, post, relativeFetch, role, signup, successfulApiCall } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 // 各テストは前のテストで作ったイベントやノートを使うので、上から順に実行する
@@ -17,6 +17,8 @@ describe('カレンダー', () => {
 	let alice: misskey.entities.SignupResponse;
 	let bob: misskey.entities.SignupResponse;
 	let carol: misskey.entities.SignupResponse;
+	let dave: misskey.entities.SignupResponse;
+	let erin: misskey.entities.SignupResponse;
 
 	// 1週間後 (日本時間)。月をまたいでも一覧の month はこの日付から作る
 	const date = formatJstDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -32,6 +34,8 @@ describe('カレンダー', () => {
 		alice = await signup({ username: 'alice' });
 		bob = await signup({ username: 'bob' });
 		carol = await signup({ username: 'carol' });
+		dave = await signup({ username: 'dave' });
+		erin = await signup({ username: 'erin' });
 		const moderatorRole = await role(root, { isModerator: true, name: 'Moderator' });
 		await api('admin/roles/assign', { userId: carol.id, roleId: moderatorRole.id }, root);
 	}, 1000 * 60 * 2);
@@ -302,9 +306,13 @@ describe('カレンダー', () => {
 		});
 
 		test('紐づけを外せるのはノートの作成者・イベントの作成者・モデレーター', async () => {
-			// bob は alice のノートの作成者でもイベントの作成者でもない
+			// bob は alice のノートの作成者でもイベントの作成者でもない。紐づいていないノートと同じエラーになる
 			await failedApiCall({ endpoint: 'calendar/events/unlink-note', parameters: { noteId: aliceNote.id }, user: bob }, {
-				status: 400, code: 'ACCESS_DENIED', id: '568307ac-c95a-4ff3-ba4c-076b13bf9809',
+				status: 400, code: 'NOTE_NOT_LINKED_TO_CALENDAR_EVENT', id: '4de63727-115b-483c-905f-a90dc0d3ebb3',
+			});
+			const unlinkedNote = await post(alice, { text: '紐づけていないノート' });
+			await failedApiCall({ endpoint: 'calendar/events/unlink-note', parameters: { noteId: unlinkedNote.id }, user: bob }, {
+				status: 400, code: 'NOTE_NOT_LINKED_TO_CALENDAR_EVENT', id: '4de63727-115b-483c-905f-a90dc0d3ebb3',
 			});
 
 			// イベントの作成者 (alice) は bob のノートの紐づけを外せる
@@ -403,6 +411,191 @@ describe('カレンダー', () => {
 
 			const shown = await successfulApiCall({ endpoint: 'notes/show', parameters: { noteId: bobLinkedNote.id }, user: bob });
 			assert.strictEqual(shown.calendarEvent, undefined);
+		});
+	});
+
+	describe('ノートと一緒に作るイベントの数の上限', () => {
+		test('直近1時間に30件作っていると、notes/create でイベントを作れず、ノートも作らない', async () => {
+			for (let i = 0; i < 30; i++) {
+				await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: `上限の確認 ${i}`, date, isAllDay: true }, user: dave });
+			}
+
+			const res = await api('notes/create', { text: '上限を超えた告知', calendarEvent: { title: '31件目', date, isAllDay: true } }, dave);
+			assert.strictEqual(res.status, 429);
+			const err = castAsError(res.body as any).error;
+			assert.strictEqual(err.code, 'RATE_LIMIT_EXCEEDED');
+			assert.strictEqual(err.id, 'd5826d14-3982-4d2e-8011-b9e9f02499ef');
+			assert.ok(res.headers.get('retry-after') != null);
+
+			const notes = await successfulApiCall({ endpoint: 'users/notes', parameters: { userId: dave.id }, user: dave });
+			assert.ok(!notes.some(n => n.text === '上限を超えた告知'));
+
+			// 既存のイベントへの紐づけは数えない
+			const own = await successfulApiCall({ endpoint: 'calendar/events/list', parameters: { month, filter: 'mine' }, user: dave });
+			const linked = await successfulApiCall({ endpoint: 'notes/create', parameters: { text: '紐づけは作れる', calendarEventId: own[0].id }, user: dave });
+			assert.strictEqual(linked.createdNote.calendarEvent?.id, own[0].id);
+		});
+	});
+
+	describe('通知', () => {
+		const waitOptions = { timeout: 5000, interval: 50 };
+		let target: misskey.entities.CalendarEvent;
+
+		async function calendarNotifications(user: misskey.entities.SignupResponse) {
+			const res = await api('i/notifications', { includeTypes: ['calendarEventUpdated', 'calendarEventReminder'] }, user);
+			assert.strictEqual(res.status, 200);
+			return res.body.filter(n => n.type === 'calendarEventUpdated' && n.event.id === target.id);
+		}
+
+		test('通知の設定は既定ですべてオンで、項目ごとに変えられる', async () => {
+			const initial = await successfulApiCall({ endpoint: 'i/calendar-notification-settings', parameters: {}, user: carol });
+			assert.deepStrictEqual(initial, { week: true, day: true, today: true, changes: true });
+
+			const updated = await successfulApiCall({ endpoint: 'i/calendar-notification-settings/update', parameters: { changes: false }, user: carol });
+			assert.deepStrictEqual(updated, { week: true, day: true, today: true, changes: false });
+			const shown = await successfulApiCall({ endpoint: 'i/calendar-notification-settings', parameters: {}, user: carol });
+			assert.deepStrictEqual(shown, updated);
+		});
+
+		test('日時を変えると、操作した本人と changes をオフにした人を除く購読者に通知が届く', async () => {
+			target = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '通知の確認', date, startTime: '18:00' },
+				user: alice,
+			});
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: bob });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: carol });
+
+			// 日時以外の変更では通知しない
+			await successfulApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: target.id, location: 'c2' }, user: alice });
+			await successfulApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: target.id, startTime: '19:00', endTime: '20:00' }, user: alice });
+
+			await vi.waitFor(async () => {
+				const notifications = await calendarNotifications(bob);
+				assert.strictEqual(notifications.length, 1);
+				const n = notifications[0];
+				assert.ok(n.type === 'calendarEventUpdated');
+				assert.strictEqual(n.updateKind, 'rescheduled');
+				assert.strictEqual(n.event.title, '通知の確認');
+				assert.strictEqual(n.previousSchedule?.date, date);
+				assert.strictEqual(n.previousSchedule?.startTime, '18:00');
+				assert.strictEqual(n.previousSchedule?.endTime, null);
+				assert.strictEqual(n.schedule.startTime, '19:00');
+				assert.strictEqual(n.schedule.endTime, '20:00');
+			}, waitOptions);
+
+			assert.strictEqual((await calendarNotifications(alice)).length, 0);
+			assert.strictEqual((await calendarNotifications(carol)).length, 0);
+		});
+
+		test('中止すると canceled の通知が届く。モデレーターが中止したときは作成者にも届く', async () => {
+			await successfulApiCall({ endpoint: 'calendar/events/cancel', parameters: { eventId: target.id }, user: root });
+
+			await vi.waitFor(async () => {
+				const notifications = await calendarNotifications(bob);
+				assert.strictEqual(notifications.length, 2);
+				const canceled = notifications.find(n => n.type === 'calendarEventUpdated' && n.updateKind === 'canceled');
+				assert.ok(canceled != null && canceled.type === 'calendarEventUpdated');
+				assert.strictEqual(canceled.previousSchedule, null);
+				assert.strictEqual(canceled.schedule.startTime, '19:00');
+				assert.strictEqual(canceled.event.isCanceled, true);
+			}, waitOptions);
+
+			await vi.waitFor(async () => {
+				assert.strictEqual((await calendarNotifications(alice)).length, 1);
+			}, waitOptions);
+		});
+
+		test('イベントを削除すると、そのイベントの通知は出さない', async () => {
+			await successfulApiCall({ endpoint: 'calendar/events/delete', parameters: { eventId: target.id }, user: alice });
+			assert.strictEqual((await calendarNotifications(bob)).length, 0);
+		});
+	});
+
+	describe('カレンダー配信', () => {
+		let urls: { subscribedUrl: string; allUrl: string };
+		let subscribedEvent: misskey.entities.CalendarEvent;
+		let otherEvent: misskey.entities.CalendarEvent;
+
+		async function fetchFeed(url: string) {
+			return await relativeFetch(new URL(url).pathname);
+		}
+
+		beforeAll(async () => {
+			subscribedEvent = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '配信, 確認; する', date, startTime: '10:00', description: '1行目\n2行目' },
+				user: erin,
+			});
+			otherEvent = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: 'erin が購読していないイベント', date, isAllDay: true },
+				user: bob,
+			});
+		});
+
+		test('配信の URL を取ると鍵が作られ、2 回目も同じ URL を返す', async () => {
+			urls = await successfulApiCall({ endpoint: 'i/calendar-feed', parameters: {}, user: erin });
+			assert.match(urls.subscribedUrl, /\/calendar\/feed\/subscribed\/[A-Za-z0-9_-]{43}\.ics$/);
+			assert.match(urls.allUrl, /\/calendar\/feed\/all\/[A-Za-z0-9_-]{43}\.ics$/);
+			assert.strictEqual(urls.subscribedUrl.split('/').at(-1), urls.allUrl.split('/').at(-1));
+
+			const again = await successfulApiCall({ endpoint: 'i/calendar-feed', parameters: {}, user: erin });
+			assert.deepStrictEqual(again, urls);
+		});
+
+		test('購読中の配信は、購読している (自分が作成した) イベントだけ', async () => {
+			const res = await fetchFeed(urls.subscribedUrl);
+			assert.strictEqual(res.status, 200);
+			assert.strictEqual(res.headers.get('content-type'), 'text/calendar; charset=utf-8');
+			assert.strictEqual(res.headers.get('cache-control'), 'private, max-age=300');
+			assert.strictEqual(res.headers.get('content-disposition'), 'inline; filename="42times.ics"');
+
+			const body = await res.text();
+			const unfolded = body.replace(/\r\n /g, '');
+			assert.ok(body.startsWith('BEGIN:VCALENDAR\r\n'));
+			assert.ok(unfolded.includes(`UID:${subscribedEvent.id}@`));
+			assert.ok(unfolded.includes('SUMMARY:配信\\, 確認\\; する'));
+			assert.ok(unfolded.includes('DESCRIPTION:1行目\\n2行目\\n\\n'));
+			assert.ok(unfolded.includes(`/calendar/events/${subscribedEvent.id}`));
+			assert.ok(unfolded.includes('STATUS:CONFIRMED'));
+			assert.ok(!unfolded.includes(`UID:${otherEvent.id}@`));
+		});
+
+		test('すべての配信は、購読していないイベントと中止したイベントも含む', async () => {
+			await successfulApiCall({ endpoint: 'calendar/events/cancel', parameters: { eventId: otherEvent.id }, user: bob });
+
+			const res = await fetchFeed(urls.allUrl);
+			assert.strictEqual(res.status, 200);
+			const unfolded = (await res.text()).replace(/\r\n /g, '');
+			assert.ok(unfolded.includes(`UID:${subscribedEvent.id}@`));
+			assert.ok(unfolded.includes(`UID:${otherEvent.id}@`));
+			assert.ok(unfolded.includes('STATUS:CANCELLED'));
+			assert.ok(unfolded.includes('DTSTART;VALUE=DATE:'));
+		});
+
+		test('知らない鍵・形の違う鍵は 404', async () => {
+			assert.strictEqual((await relativeFetch(`/calendar/feed/all/${'A'.repeat(43)}.ics`)).status, 404);
+			assert.strictEqual((await relativeFetch('/calendar/feed/all/short.ics')).status, 404);
+		});
+
+		test('作り直すと古い URL は 404 になる', async () => {
+			const regenerated = await successfulApiCall({ endpoint: 'i/calendar-feed/regenerate', parameters: {}, user: erin });
+			assert.notStrictEqual(regenerated.allUrl, urls.allUrl);
+
+			assert.strictEqual((await fetchFeed(urls.allUrl)).status, 404);
+			assert.strictEqual((await fetchFeed(regenerated.allUrl)).status, 200);
+			urls = regenerated;
+		});
+
+		test('凍結されたユーザーの URL は 404 になる', async () => {
+			await api('admin/suspend-user', { userId: erin.id }, root);
+			try {
+				assert.strictEqual((await fetchFeed(urls.subscribedUrl)).status, 404);
+			} finally {
+				await api('admin/unsuspend-user', { userId: erin.id }, root);
+			}
+			assert.strictEqual((await fetchFeed(urls.subscribedUrl)).status, 200);
 		});
 	});
 });

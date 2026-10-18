@@ -49,6 +49,16 @@ export class CalendarNoteNotLinkableError extends CalendarError {
 	}
 }
 
+/** 短い時間にイベントを作りすぎた。resetMs (UNIX 時刻のミリ秒) を過ぎると作れるようになる */
+export class CalendarEventRateLimitError extends CalendarError {
+	public readonly resetMs: number;
+
+	constructor(resetMs: number) {
+		super('rate limit exceeded');
+		this.resetMs = resetMs;
+	}
+}
+
 /** ノートの投稿で、既存のイベントへの紐づけ (calendarEventId) とイベントの作成 (calendarEvent) を同時に指定した */
 export class CalendarNoteParamsConflictError extends CalendarError {}
 

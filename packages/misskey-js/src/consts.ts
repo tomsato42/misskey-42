@@ -37,6 +37,8 @@ export const notificationTypes = [
 	'test',
 	'login',
 	'createToken',
+	'calendarEventReminder',
+	'calendarEventUpdated',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;

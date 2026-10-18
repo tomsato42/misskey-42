@@ -47,6 +47,7 @@ import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { AggregateRetentionProcessorService } from './processors/AggregateRetentionProcessorService.js';
 import { CleanRemoteNotesProcessorService } from './processors/CleanRemoteNotesProcessorService.js';
 import { SyncIntraUsersProcessorService } from './processors/SyncIntraUsersProcessorService.js';
+import { CalendarEventRemindersProcessorService } from './processors/CalendarEventRemindersProcessorService.js';
 import { QueueLoggerService } from './QueueLoggerService.js';
 import { QUEUE, baseWorkerOptions } from './const.js';
 
@@ -132,6 +133,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private cleanProcessorService: CleanProcessorService,
 		private cleanRemoteNotesProcessorService: CleanRemoteNotesProcessorService,
 		private syncIntraUsersProcessorService: SyncIntraUsersProcessorService,
+		private calendarEventRemindersProcessorService: CalendarEventRemindersProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -176,6 +178,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'clean': return this.cleanProcessorService.process();
 					case 'cleanRemoteNotes': return this.cleanRemoteNotesProcessorService.process(job);
 					case 'syncIntraUsers': return this.syncIntraUsersProcessorService.process();
+					case 'calendarEventReminders': return this.calendarEventRemindersProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

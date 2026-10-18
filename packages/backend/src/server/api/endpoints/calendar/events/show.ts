@@ -16,6 +16,8 @@ export const meta = {
 
 	kind: 'read:account',
 
+	description: 'Show a calendar event. Canceled events are also returned (with isCanceled set).',
+
 	res: {
 		type: 'object',
 		optional: false, nullable: false,

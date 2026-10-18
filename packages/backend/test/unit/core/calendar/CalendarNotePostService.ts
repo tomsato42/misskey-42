@@ -10,6 +10,7 @@ import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService
 import {
 	CalendarEventCanceledError,
 	CalendarEventNotFoundError,
+	CalendarEventRateLimitError,
 	CalendarEventValidationError,
 	CalendarNoteNotLinkableError,
 	CalendarNoteParamsConflictError,
@@ -19,6 +20,7 @@ import type { LoggerService } from '@/core/LoggerService.js';
 import type { CalendarLinkableNoteLike } from '@/core/calendar/calendar-note-link.js';
 import type { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import type { MiNote } from '@/models/Note.js';
+import { CALENDAR_EVENT_CREATE_LIMIT } from '@/core/calendar/calendar-limits.js';
 
 const ME = { id: 'me' };
 
@@ -63,6 +65,7 @@ describe('CalendarNotePostService.prepare', () => {
 		create: ReturnType<typeof vi.fn>;
 		linkNote: ReturnType<typeof vi.fn>;
 		findByIdOrFail: ReturnType<typeof vi.fn>;
+		getCreatedDatesSince: ReturnType<typeof vi.fn>;
 	};
 	let warn: ReturnType<typeof vi.fn>;
 	let service: CalendarNotePostService;
@@ -72,6 +75,7 @@ describe('CalendarNotePostService.prepare', () => {
 			create: vi.fn(async () => event({ userId: ME.id })),
 			linkNote: vi.fn(async () => event()),
 			findByIdOrFail: vi.fn(async () => event()),
+			getCreatedDatesSince: vi.fn(async () => []),
 		};
 		warn = vi.fn();
 		const loggerService = { getLogger: () => ({ warn }) } as unknown as LoggerService;
@@ -126,6 +130,32 @@ describe('CalendarNotePostService.prepare', () => {
 		test('ノートの本文が説明の上限を超えると、ノートを作る前にエラー', async () => {
 			await expect(service.prepare(ME, { calendarEvent: EVENT_INPUT, note: { ...NOTE_PARAMS, text: 'あ'.repeat(3001) } }))
 				.rejects.toBeInstanceOf(CalendarEventValidationError);
+		});
+
+		test('直近1時間に作ったイベントが上限に達していると、ノートを作る前にエラー', async () => {
+			const { duration, max } = CALENDAR_EVENT_CREATE_LIMIT;
+			const now = Date.now();
+			// 新しい順。上限の件数目 (いちばん古いもの) が期間から外れる時刻に作れるようになる
+			const dates = Array.from({ length: max }, (_, i) => new Date(now - i * 1000));
+			calendarEventService.getCreatedDatesSince.mockResolvedValueOnce(dates);
+
+			const err = await service.prepare(ME, { calendarEvent: EVENT_INPUT, note: NOTE_PARAMS }).catch(e => e);
+			expect(err).toBeInstanceOf(CalendarEventRateLimitError);
+			expect((err as CalendarEventRateLimitError).resetMs).toBe(dates[max - 1].getTime() + duration);
+
+			const [me, since, limit] = calendarEventService.getCreatedDatesSince.mock.calls[0];
+			expect(me).toBe(ME);
+			expect(Math.abs((since as Date).getTime() - (now - duration))).toBeLessThan(1000);
+			expect(limit).toBe(max);
+		});
+
+		test('上限より少なければ作れる。既存のイベントへの紐づけでは数えない', async () => {
+			calendarEventService.getCreatedDatesSince.mockResolvedValueOnce(Array.from({ length: CALENDAR_EVENT_CREATE_LIMIT.max - 1 }, () => new Date()));
+			await expect(service.prepare(ME, { calendarEvent: EVENT_INPUT, note: NOTE_PARAMS })).resolves.toBeTypeOf('function');
+
+			calendarEventService.getCreatedDatesSince.mockClear();
+			await service.prepare(ME, { calendarEventId: 'event1', note: NOTE_PARAMS });
+			expect(calendarEventService.getCreatedDatesSince).not.toHaveBeenCalled();
 		});
 
 		test('イベントの作成に失敗しても例外を投げない (ノートは残す)', async () => {

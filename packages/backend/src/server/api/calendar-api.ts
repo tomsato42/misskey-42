@@ -13,6 +13,7 @@ import {
 	CalendarEventNoteNotLinkedError,
 	CalendarEventNotFoundError,
 	CalendarEventPermissionError,
+	CalendarEventRateLimitError,
 	CalendarEventValidationError,
 	CalendarNoteNotLinkableError,
 	CalendarNoteParamsConflictError,
@@ -81,6 +82,7 @@ export type CalendarApiErrorMap = {
 	noteNotLinkable?: ApiErrorDefinition;
 	validation?: ApiErrorDefinition;
 	paramsConflict?: ApiErrorDefinition;
+	rateLimit?: ApiErrorDefinition;
 };
 
 /**
@@ -100,6 +102,8 @@ export function toCalendarApiError(err: unknown, map: CalendarApiErrorMap): unkn
 	if (err instanceof CalendarNoteNotLinkableError && map.noteNotLinkable) return new ApiError(map.noteNotLinkable, { reason: err.reason });
 	if (err instanceof CalendarEventValidationError && map.validation) return new ApiError(map.validation, { reason: err.reason });
 	if (err instanceof CalendarNoteParamsConflictError && map.paramsConflict) return new ApiError(map.paramsConflict);
+	// ApiCallService のレート制限と同じく、info.resetMs から Retry-After ヘッダーが付く
+	if (err instanceof CalendarEventRateLimitError && map.rateLimit) return new ApiError(map.rateLimit, { resetMs: err.resetMs, reset: Math.ceil(err.resetMs / 1000) });
 
 	return err;
 }
@@ -147,6 +151,13 @@ export const calendarNoteCreateErrors = {
 		code: 'CALENDAR_EVENT_PARAMS_CONFLICT',
 		id: '6c749f7a-c6c8-43d2-8fd6-d2a1ef336bf7',
 	},
+	// calendar/events/create と同じ上限 (1時間30件)。クライアントが同じように扱えるよう、ApiCallService のレート制限のエラーと同じ識別子を使う
+	calendarEventRateLimitExceeded: {
+		message: 'Rate limit exceeded. Please try again later.',
+		code: 'RATE_LIMIT_EXCEEDED',
+		id: 'd5826d14-3982-4d2e-8011-b9e9f02499ef',
+		httpStatusCode: 429,
+	},
 } as const;
 
 export const calendarNoteCreateErrorMap: CalendarApiErrorMap = {
@@ -155,6 +166,7 @@ export const calendarNoteCreateErrorMap: CalendarApiErrorMap = {
 	validation: calendarNoteCreateErrors.invalidCalendarEvent,
 	noteNotLinkable: calendarNoteCreateErrors.cannotLinkNoteToCalendarEvent,
 	paramsConflict: calendarNoteCreateErrors.calendarEventParamsConflict,
+	rateLimit: calendarNoteCreateErrors.calendarEventRateLimitExceeded,
 };
 
 //#endregion

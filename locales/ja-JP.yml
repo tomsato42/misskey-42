@@ -2930,6 +2930,8 @@ _notification:
     createToken: "アクセストークンの作成"
     test: "通知のテスト"
     app: "連携アプリからの通知"
+    calendarEventReminder: "イベントのリマインド"
+    calendarEventUpdated: "イベントの日時の変更・中止"
 
   _actions:
     followBack: "フォローバック"

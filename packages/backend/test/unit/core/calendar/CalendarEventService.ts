@@ -148,6 +148,7 @@ describe('CalendarEventService', () => {
 	let reminders: FakeTable<ReminderRow>;
 	let scheduleChanges: CalendarEventScheduleChange[];
 	let canceledEvents: string[];
+	let notifiedOperators: string[];
 	let service: CalendarEventService;
 
 	function tableOf(entity: unknown): FakeTable<any> {
@@ -205,6 +206,19 @@ describe('CalendarEventService', () => {
 			isModerator: async (user: { id: string }) => user.id === MOD.id,
 		};
 
+		// 日時の変更・中止の通知を頼んだことを記録する
+		notifiedOperators = [];
+		const fakeCalendarNotificationService = {
+			notifyRescheduled: (_event: MiCalendarEvent, change: CalendarEventScheduleChange, operator: { id: string }) => {
+				scheduleChanges.push(change);
+				notifiedOperators.push(operator.id);
+			},
+			notifyCanceled: (event: MiCalendarEvent, operator: { id: string }) => {
+				canceledEvents.push(event.id);
+				notifiedOperators.push(operator.id);
+			},
+		};
+
 		service = new CalendarEventService(
 			fakeDb as any,
 			events as any,
@@ -213,15 +227,18 @@ describe('CalendarEventService', () => {
 			reminders as any,
 			fakeRoleService as any,
 			{ gen: () => `id${String(++seq).padStart(4, '0')}` } as any,
+			fakeCalendarNotificationService as any,
 		);
+	});
 
-		// 通知の差し込み口が呼ばれたことを記録する (@bindThis のため defineProperty で差し替える)
-		Object.defineProperty(service, 'onScheduleChanged', {
-			value: async (_event: MiCalendarEvent, change: CalendarEventScheduleChange) => { scheduleChanges.push(change); },
-		});
-		Object.defineProperty(service, 'onCanceled', {
-			value: async (event: MiCalendarEvent) => { canceledEvents.push(event.id); },
-		});
+	test('日時の変更と中止は、操作した人を添えて購読者への通知を頼む', async () => {
+		const created = await service.create(ALICE, INPUT);
+		await service.update(created, { startTime: '13:00' }, MOD);
+		await service.cancel(await getEvent(created.id), ALICE);
+
+		expect(scheduleChanges).toHaveLength(1);
+		expect(canceledEvents).toEqual([created.id]);
+		expect(notifiedOperators).toEqual([MOD.id, ALICE.id]);
 	});
 
 	describe('create', () => {
@@ -510,11 +527,21 @@ describe('CalendarEventService', () => {
 			expect(await service.getEventIdOfNote('note1')).toBeNull();
 		});
 
-		test('関係の無い人は紐づけを外せない', async () => {
+		test('関係の無い人は紐づけを外せず、紐づいていないときと同じエラーになる', async () => {
 			const created = await service.create(ALICE, INPUT);
 			await service.linkNote({ id: 'note1', userId: 'bob' }, created.id, BOB);
 
-			await expect(service.unlinkNote({ id: 'note1' }, { id: 'carol' })).rejects.toThrow(CalendarEventPermissionError);
+			await expect(service.unlinkNote({ id: 'note1' }, { id: 'carol' })).rejects.toThrow(CalendarEventNoteNotLinkedError);
+			await expect(service.unlinkNote({ id: 'note2' }, { id: 'carol' })).rejects.toThrow(CalendarEventNoteNotLinkedError);
+			expect(noteLinks.rows).toHaveLength(1);
+		});
+
+		test('別のイベントの作成者は紐づけを外せない', async () => {
+			const created = await service.create(ALICE, INPUT);
+			await service.create({ id: 'carol' }, INPUT);
+			await service.linkNote({ id: 'note1', userId: 'bob' }, created.id, BOB);
+
+			await expect(service.unlinkNote({ id: 'note1' }, { id: 'carol' })).rejects.toThrow(CalendarEventNoteNotLinkedError);
 			expect(noteLinks.rows).toHaveLength(1);
 		});
 

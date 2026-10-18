@@ -156,6 +156,8 @@ import { IntraAuthService } from './intra/IntraAuthService.js';
 import { IntraSyncService } from './intra/IntraSyncService.js';
 import { CalendarEventService } from './calendar/CalendarEventService.js';
 import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
+import { CalendarNotificationService } from './calendar/CalendarNotificationService.js';
+import { CalendarFeedService } from './calendar/CalendarFeedService.js';
 import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
@@ -316,6 +318,8 @@ const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: 
 const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
 const $CalendarEventService: Provider = { provide: 'CalendarEventService', useExisting: CalendarEventService };
 const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService', useExisting: CalendarNotePostService };
+const $CalendarNotificationService: Provider = { provide: 'CalendarNotificationService', useExisting: CalendarNotificationService };
+const $CalendarFeedService: Provider = { provide: 'CalendarFeedService', useExisting: CalendarFeedService };
 const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
 //#endregion
 
@@ -476,6 +480,8 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		IntraSyncService,
 		CalendarEventService,
 		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
 		CalendarEventEntityService,
 		QueueService,
 		TelemetryService,
@@ -632,6 +638,8 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		$IntraSyncService,
 		$CalendarEventService,
 		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
 		$CalendarEventEntityService,
 		$TelemetryService,
 		//#endregion
@@ -789,6 +797,8 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		IntraSyncService,
 		CalendarEventService,
 		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
 		CalendarEventEntityService,
 		QueueService,
 		TelemetryService,
@@ -943,6 +953,8 @@ const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntitySer
 		$IntraSyncService,
 		$CalendarEventService,
 		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
 		$CalendarEventEntityService,
 		$TelemetryService,
 		//#endregion
