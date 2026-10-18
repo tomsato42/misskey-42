@@ -83,8 +83,8 @@ intra:
   #cursusId: 21
   # 42 API のベース URL (省略時は https://api.intra.42.fr)
   #apiBaseUrl: https://api.intra.42.fr
-  # レベルのロールのアイコン。{level} がレベルの整数に置き換わる (deploy/badges/generate-level-badges.cjs で作り、nginx の /instance-assets/ から配信する)
-  levelBadgeUrl: 'https://42times.kinachan.com/instance-assets/badges/lv-{level}.svg'
+  # レベルのロールのアイコン (今は使っていない)。{level} がレベルの整数に置き換わる (deploy/badges/generate-level-badges.cjs で作り、nginx の /instance-assets/ から配信する)
+  #levelBadgeUrl: 'https://42times.kinachan.com/instance-assets/badges/lv-{level}.svg'
 
 #   ┌──────────────────────────────┐
 #───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────
