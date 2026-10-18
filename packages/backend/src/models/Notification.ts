@@ -10,6 +10,7 @@ import { MiAccessToken } from './AccessToken.js';
 import { MiRole } from './Role.js';
 import { MiDriveFile } from './DriveFile.js';
 import { MiNoteDraft } from './NoteDraft.js';
+import type { CalendarEventReminderNotificationData, CalendarEventUpdatedNotificationData } from '@/core/calendar/calendar-notification.js';
 
 // misskey-js の notificationTypes と同期すべし
 export type MiNotification = {
@@ -142,7 +143,17 @@ export type MiNotification = {
 	type: 'test';
 	id: string;
 	createdAt: string;
-};
+} | ({
+	// 42times: 購読しているカレンダーのイベントのリマインド
+	type: 'calendarEventReminder';
+	id: string;
+	createdAt: string;
+} & CalendarEventReminderNotificationData) | ({
+	// 42times: 購読しているカレンダーのイベントの日時の変更・中止
+	type: 'calendarEventUpdated';
+	id: string;
+	createdAt: string;
+} & CalendarEventUpdatedNotificationData);
 
 export type MiGroupedNotification = MiNotification | {
 	type: 'reaction:grouped';

@@ -11,8 +11,9 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { CalendarEventService } from './CalendarEventService.js';
-import { CalendarEventCanceledError, CalendarNoteParamsConflictError } from './calendar-errors.js';
+import { CalendarEventCanceledError, CalendarEventRateLimitError, CalendarNoteParamsConflictError } from './calendar-errors.js';
 import { normalizeCalendarEventInput } from './calendar-event-input.js';
+import { CALENDAR_EVENT_CREATE_LIMIT } from './calendar-limits.js';
 import { assertCalendarLinkableNote } from './calendar-note-link.js';
 import type { CalendarEventInput } from './calendar-event-input.js';
 import type { CalendarLinkableNoteLike } from './calendar-note-link.js';
@@ -53,6 +54,7 @@ export class CalendarNotePostService {
 	 * @throws CalendarNoteParamsConflictError calendarEventId と calendarEvent を同時に指定した
 	 * @throws CalendarNoteNotLinkableError 紐づけられない種類のノート
 	 * @throws CalendarEventValidationError イベントの入力が仕様に合わない
+	 * @throws CalendarEventRateLimitError イベントを作る数の上限に達している
 	 * @throws CalendarEventNotFoundError 紐づけるイベントが存在しない
 	 * @throws CalendarEventCanceledError 紐づけるイベントが中止されている
 	 */
@@ -73,6 +75,7 @@ export class CalendarNotePostService {
 			};
 			// ノートを作る前に検証だけしておく (イベントは作った後のノートを告知のノートにして作る)
 			normalizeCalendarEventInput(input);
+			await this.assertCanCreateEvent(me);
 			return async createdNote => {
 				await this.runAfterNoteCreated(createdNote, 'create', async () => {
 					await this.calendarEventService.create(me, input, { announcementNote: createdNote });
@@ -89,6 +92,20 @@ export class CalendarNotePostService {
 				await this.calendarEventService.linkNote(createdNote, event.id, me);
 			});
 		};
+	}
+
+	/**
+	 * calendar/events/create のレート制限と同じ上限 (1時間あたりの作成数) を、作ったイベントの数で確かめる
+	 * @throws CalendarEventRateLimitError 上限に達している
+	 */
+	@bindThis
+	private async assertCanCreateEvent(me: Me): Promise<void> {
+		const { duration, max } = CALENDAR_EVENT_CREATE_LIMIT;
+		const createdDates = await this.calendarEventService.getCreatedDatesSince(me, new Date(Date.now() - duration), max);
+		if (createdDates.length >= max) {
+			// 新しい順なので、上限の件数目が期間から外れると作れるようになる
+			throw new CalendarEventRateLimitError(createdDates[max - 1].getTime() + duration);
+		}
 	}
 
 	/**

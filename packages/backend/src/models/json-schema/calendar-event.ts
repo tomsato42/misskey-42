@@ -125,3 +125,68 @@ export const packedCalendarEventSchema = {
 		},
 	},
 } as const;
+
+/**
+ * カレンダー配信 (iCalendar) の URL。2 つの URL は同じ鍵を使う
+ */
+export const packedCalendarFeedUrlsSchema = {
+	type: 'object',
+	properties: {
+		subscribedUrl: {
+			type: 'string',
+			optional: false, nullable: false,
+			format: 'url',
+			description: 'Events you subscribe to (including your own).',
+		},
+		allUrl: {
+			type: 'string',
+			optional: false, nullable: false,
+			format: 'url',
+			description: 'All events.',
+		},
+	},
+} as const;
+
+/**
+ * 購読しているイベントの通知を種類ごとに受け取るか
+ */
+export const packedCalendarNotificationSettingsSchema = {
+	type: 'object',
+	properties: {
+		week: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: '7 days before the event, at 9:00 (Asia/Tokyo).',
+		},
+		day: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: 'The day before the event, at 9:00 (Asia/Tokyo).',
+		},
+		today: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: 'The day of the event, at 9:00 (Asia/Tokyo), or 1 hour before the start if it starts at or before 9:00.',
+		},
+		changes: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: 'When the date or time of the event changes, or the event is canceled.',
+		},
+	},
+} as const;
+
+/**
+ * ある時点のイベントの日時 (通知で、変更前後の日時を表すのに使う)
+ */
+export const packedCalendarEventScheduleSchema = {
+	type: 'object',
+	properties: {
+		date: calendarEventLiteProperties.date,
+		startTime: calendarEventLiteProperties.startTime,
+		endTime: calendarEventLiteProperties.endTime,
+		isAllDay: calendarEventLiteProperties.isAllDay,
+		startsAt: calendarEventLiteProperties.startsAt,
+		endsAt: calendarEventLiteProperties.endsAt,
+	},
+} as const;

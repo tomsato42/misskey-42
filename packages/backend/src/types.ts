@@ -24,6 +24,8 @@
  * createToken - トークン作成
  * app - アプリ通知
  * test - テスト通知（サーバー側）
+ * calendarEventReminder - 購読しているイベントのリマインド (42times)
+ * calendarEventUpdated - 購読しているイベントの日時が変わった・中止された (42times)
  */
 export const notificationTypes = [
 	'note',
@@ -46,6 +48,8 @@ export const notificationTypes = [
 	'createToken',
 	'app',
 	'test',
+	'calendarEventReminder',
+	'calendarEventUpdated',
 ] as const;
 
 export const groupedNotificationTypes = [

@@ -441,6 +441,11 @@ import type {
 	IAppsResponse,
 	IAuthorizedAppsRequest,
 	IAuthorizedAppsResponse,
+	ICalendarFeedResponse,
+	ICalendarFeedRegenerateResponse,
+	ICalendarNotificationSettingsResponse,
+	ICalendarNotificationSettingsUpdateRequest,
+	ICalendarNotificationSettingsUpdateResponse,
 	IChangePasswordRequest,
 	IClaimAchievementRequest,
 	IDeleteAccountRequest,
@@ -974,6 +979,10 @@ export type Endpoints = {
 	'i/2fa/update-key': { req: I2faUpdateKeyRequest; res: EmptyResponse };
 	'i/apps': { req: IAppsRequest; res: IAppsResponse };
 	'i/authorized-apps': { req: IAuthorizedAppsRequest; res: IAuthorizedAppsResponse };
+	'i/calendar-feed': { req: EmptyRequest; res: ICalendarFeedResponse };
+	'i/calendar-feed/regenerate': { req: EmptyRequest; res: ICalendarFeedRegenerateResponse };
+	'i/calendar-notification-settings': { req: EmptyRequest; res: ICalendarNotificationSettingsResponse };
+	'i/calendar-notification-settings/update': { req: ICalendarNotificationSettingsUpdateRequest; res: ICalendarNotificationSettingsUpdateResponse };
 	'i/change-password': { req: IChangePasswordRequest; res: EmptyResponse };
 	'i/claim-achievement': { req: IClaimAchievementRequest; res: EmptyResponse };
 	'i/delete-account': { req: IDeleteAccountRequest; res: EmptyResponse };

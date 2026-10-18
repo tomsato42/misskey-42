@@ -30,6 +30,7 @@ import { StreamingApiServerService } from './api/StreamingApiServerService.js';
 import { WellKnownServerService } from './WellKnownServerService.js';
 import { FileServerService } from './FileServerService.js';
 import { HealthServerService } from './HealthServerService.js';
+import { CalendarFeedServerService } from './CalendarFeedServerService.js';
 import { ClientServerService } from './web/ClientServerService.js';
 import { OpenApiServerService } from './api/openapi/OpenApiServerService.js';
 import { OAuth2ProviderService } from './oauth/OAuth2ProviderService.js';
@@ -69,6 +70,7 @@ export class ServerService implements OnApplicationShutdown {
 		private nodeinfoServerService: NodeinfoServerService,
 		private fileServerService: FileServerService,
 		private healthServerService: HealthServerService,
+		private calendarFeedServerService: CalendarFeedServerService,
 		private clientServerService: ClientServerService,
 		private globalEventService: GlobalEventService,
 		private loggerService: LoggerService,
@@ -173,6 +175,8 @@ export class ServerService implements OnApplicationShutdown {
 		fastify.register(this.oauth2ProviderService.createServer, { prefix: '/oauth' });
 		fastify.register(this.oauth2ProviderService.createTokenServer, { prefix: '/oauth/token' });
 		fastify.register(this.healthServerService.createServer, { prefix: '/healthz' });
+		// 42times: カレンダー配信 (iCalendar)。ClientServerService の /* より先に登録する
+		fastify.register(this.calendarFeedServerService.createServer);
 
 		// アバター・カスタム絵文字・identicon は、mediaGate が有効ならログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
 		const mediaGateOptions = mediaGateRouteOptions(this.config.mediaGate, createMediaGateUserChecker(this.cacheService, this.usersRepository));

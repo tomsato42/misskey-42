@@ -645,6 +645,9 @@ type CalendarEventsCancelRequest = operations['calendar___events___cancel']['req
 type CalendarEventsCancelResponse = operations['calendar___events___cancel']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type CalendarEventSchedule = components['schemas']['CalendarEventSchedule'];
+
+// @public (undocumented)
 type CalendarEventsCreateRequest = operations['calendar___events___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -700,6 +703,12 @@ type CalendarEventsUpdateRequest = operations['calendar___events___update']['req
 
 // @public (undocumented)
 type CalendarEventsUpdateResponse = operations['calendar___events___update']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarFeedUrls = components['schemas']['CalendarFeedUrls'];
+
+// @public (undocumented)
+type CalendarNotificationSettings = components['schemas']['CalendarNotificationSettings'];
 
 // @public (undocumented)
 type Channel = components['schemas']['Channel'];
@@ -2047,6 +2056,11 @@ declare namespace entities {
         IAppsResponse,
         IAuthorizedAppsRequest,
         IAuthorizedAppsResponse,
+        ICalendarFeedResponse,
+        ICalendarFeedRegenerateResponse,
+        ICalendarNotificationSettingsResponse,
+        ICalendarNotificationSettingsUpdateRequest,
+        ICalendarNotificationSettingsUpdateResponse,
         IChangePasswordRequest,
         IClaimAchievementRequest,
         IDeleteAccountRequest,
@@ -2364,7 +2378,10 @@ declare namespace entities {
         ChatRoomInvitation,
         ChatRoomMembership,
         CalendarEventLite,
-        CalendarEvent
+        CalendarEvent,
+        CalendarEventSchedule,
+        CalendarFeedUrls,
+        CalendarNotificationSettings
     }
 }
 export { entities }
@@ -2690,6 +2707,21 @@ type IAuthorizedAppsRequest = operations['i___authorized-apps']['requestBody']['
 
 // @public (undocumented)
 type IAuthorizedAppsResponse = operations['i___authorized-apps']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedRegenerateResponse = operations['i___calendar-feed___regenerate']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedResponse = operations['i___calendar-feed']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsResponse = operations['i___calendar-notification-settings']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateRequest = operations['i___calendar-notification-settings___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateResponse = operations['i___calendar-notification-settings___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IChangePasswordRequest = operations['i___change-password']['requestBody']['content']['application/json'];
@@ -3237,7 +3269,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;

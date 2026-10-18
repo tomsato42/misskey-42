@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import ms from 'ms';
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
+import { CALENDAR_EVENT_CREATE_LIMIT } from '@/core/calendar/calendar-limits.js';
 import { calendarEventCreateProperties, toCalendarApiError, toCalendarEventInput } from '@/server/api/calendar-api.js';
 
 export const meta = {
@@ -19,10 +19,8 @@ export const meta = {
 
 	kind: 'write:account',
 
-	limit: {
-		duration: ms('1hour'),
-		max: 30,
-	},
+	// notes/create でノートと一緒に作るときも、同じ上限を CalendarNotePostService で確かめる
+	limit: CALENDAR_EVENT_CREATE_LIMIT,
 
 	description: 'Create a calendar event. The creator is subscribed to it automatically.',
 

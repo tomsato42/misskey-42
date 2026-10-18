@@ -24,7 +24,7 @@ export const meta = {
 		max: 100,
 	},
 
-	description: 'Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this.',
+	description: 'Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this. Others get NOTE_NOT_LINKED_TO_CALENDAR_EVENT whether the note is linked or not.',
 
 	errors: {
 		noSuchNote: {
@@ -33,14 +33,9 @@ export const meta = {
 			id: '15265335-c3f4-4047-9995-fe7e131f9e67',
 		},
 		notLinked: {
-			message: 'The note is not linked to any calendar event.',
+			message: 'The note is not linked to any calendar event, or you do not have permission to unlink it.',
 			code: 'NOTE_NOT_LINKED_TO_CALENDAR_EVENT',
 			id: '4de63727-115b-483c-905f-a90dc0d3ebb3',
-		},
-		accessDenied: {
-			message: 'You do not have permission to unlink this note.',
-			code: 'ACCESS_DENIED',
-			id: '568307ac-c95a-4ff3-ba4c-076b13bf9809',
 		},
 	},
 } as const;
@@ -62,7 +57,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private calendarEventService: CalendarEventService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			// ノートの作成者以外 (イベントの作成者など) も外せるので、ノートの公開範囲は見ない。紐づけが無ければ notLinked になる
+			// ノートの作成者以外 (イベントの作成者など) も外せるので、ノートの公開範囲は見ない。
+			// 紐づけが無いときと外す権限が無いときは、どちらも notLinked にする (見られないノートの紐づけの有無を明かさない)
 			const note = await this.notesRepository.findOne({ where: { id: ps.noteId }, select: { id: true } });
 			if (note == null) throw new ApiError(meta.errors.noSuchNote);
 
@@ -71,7 +67,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			} catch (err) {
 				throw toCalendarApiError(err, {
 					noteNotLinked: meta.errors.notLinked,
-					permission: meta.errors.accessDenied,
 				});
 			}
 		});

@@ -11089,6 +11089,14 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * イベントのリマインド
+             */
+            "calendarEventReminder": string;
+            /**
+             * イベントの日時の変更・中止
+             */
+            "calendarEventUpdated": string;
         };
         "_actions": {
             /**
