@@ -268,14 +268,15 @@ describe('IntraSyncService', () => {
 
 		await service.syncUser('u1', createIntraUser({
 			cursus_users: [
-				// 日本時間では 2023-11-01 なので、24/04 になる
+				// 42cursus の開始日時 (日本時間で 2023-11-01) ではなく、ピシンの年月 (23/07) から 23/10 になる
 				{ cursus_id: CURSUS_42, level: 5.73, blackholed_at: null, begin_at: '2023-10-31T15:00:00.000Z', end_at: null },
 			],
 		}));
 
-		expect(roleNamesOf('u1')).toEqual(['Cursus 24/04', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
-		expect(intraRoles.filter(r => r.kind === 'cohort').map(r => r.key).sort()).toEqual(['2304', '2310', '2404']);
-		expect(assignments.some(a => a.roleId === cohort2304 || a.roleId === cohort2310)).toBe(false);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+		expect(intraRoles.filter(r => r.kind === 'cohort').map(r => r.key).sort()).toEqual(['2304', '2310']);
+		expect(assignments.some(a => a.roleId === cohort2304)).toBe(false);
+		expect(assignments.some(a => a.roleId === cohort2310)).toBe(true);
 	});
 
 	test('ピシンの年月が無ければピシンのロールを付けず、付いていれば外す', async () => {

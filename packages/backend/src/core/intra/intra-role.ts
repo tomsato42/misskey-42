@@ -39,9 +39,27 @@ export function formatYearMonth(yearMonth: string): string | null {
 }
 
 /**
- * 42cursus の開始日時から、本科への入学時期 (YYMM) を求める。
- * 開始日時を日本時間の年月にしてから、11〜4 月なら次の 4 月 (11・12 月は翌年、1〜4 月は同じ年)、
- * 5〜10 月なら同じ年の 10 月にまとめる。日時が不正なら null
+ * 年月を入学時期 (YYMM) にまとめる。11〜4 月なら次の 4 月 (11・12 月は翌年、1〜4 月は同じ年)、5〜10 月なら同じ年の 10 月
+ */
+function roundToCohort(year: number, month: number): string {
+	if (month >= 11) return toYearMonth(year + 1, 4);
+	if (month <= 4) return toYearMonth(year, 4);
+	return toYearMonth(year, 10);
+}
+
+/**
+ * ピシンの年月 (YYMM) から、本科への入学時期 (YYMM) を求める。YYMM 形式でなければ null。
+ * 例: ピシン 24/03 → 24/04、24/08・24/09 → 24/10
+ */
+export function poolToCohortYearMonth(poolYearMonth: string): string | null {
+	const match = YEAR_MONTH_PATTERN.exec(poolYearMonth);
+	if (match == null) return null;
+	return roundToCohort(2000 + parseInt(match[1], 10), parseInt(match[2], 10));
+}
+
+/**
+ * 42cursus の開始日時から、本科への入学時期 (YYMM) を求める (ピシンの年月が無い人向け)。
+ * 開始日時を日本時間の年月にしてから入学時期にまとめる。日時が不正なら null
  */
 export function toCohortYearMonth(beginAt: Date): string | null {
 	const time = beginAt.getTime();
@@ -52,9 +70,7 @@ export function toCohortYearMonth(beginAt: Date): string | null {
 	const year = jst.getUTCFullYear();
 	const month = jst.getUTCMonth() + 1;
 
-	if (month >= 11) return toYearMonth(year + 1, 4);
-	if (month <= 4) return toYearMonth(year, 4);
-	return toYearMonth(year, 10);
+	return roundToCohort(year, month);
 }
 
 /**
@@ -68,11 +84,14 @@ export function getPoolRoleTarget(poolYearMonth: string | null): IntraRoleTarget
 }
 
 /**
- * 本科への入学時期のロール条件。42cursus の開始日時が無ければ null
+ * 本科への入学時期のロール条件。42cursus に在籍していなければ (開始日時が無ければ) null。
+ * 入学時期はピシンの年月から求める (42cursus の開始日時は入学時期より後になることがあるため)。
+ * ピシンの年月が無い人 (スタッフなど) だけ、42cursus の開始日時から求める
  */
-export function getCohortRoleTarget(cursusBeginAt: Date | null): IntraRoleTarget | null {
+export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: string | null = null): IntraRoleTarget | null {
 	if (cursusBeginAt == null) return null;
-	const yearMonth = toCohortYearMonth(cursusBeginAt);
+	const fromPool = poolYearMonth != null ? poolToCohortYearMonth(poolYearMonth) : null;
+	const yearMonth = fromPool ?? toCohortYearMonth(cursusBeginAt);
 	if (yearMonth == null) return null;
 	return { kind: 'cohort', key: yearMonth, name: `Cursus ${formatYearMonth(yearMonth)}` };
 }
@@ -95,7 +114,7 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const pool = getPoolRoleTarget(profile.poolYearMonth);
 	if (pool != null) targets.push(pool);
 
-	const cohort = getCohortRoleTarget(profile.cursusBeginAt);
+	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolYearMonth);
 	if (cohort != null) targets.push(cohort);
 
 	return targets;

@@ -10,6 +10,7 @@ import {
 	getCohortRoleTarget,
 	getIntraRoleTargets,
 	getPoolRoleTarget,
+	poolToCohortYearMonth,
 	toCohortYearMonth,
 } from '@/core/intra/intra-role.js';
 
@@ -135,6 +136,39 @@ describe('getCohortRoleTarget', () => {
 	test('42cursus の開始日時が無いか不正なら null', () => {
 		expect(getCohortRoleTarget(null)).toBeNull();
 		expect(getCohortRoleTarget(new Date('invalid'))).toBeNull();
+	});
+
+	test.each([
+		// 本番で 42cursus の開始日時から求めると 10 月期になっていた、3 月ピシンの例
+		['2303', '2023-05-15T00:00:00.000Z', '2304'],
+		['2403', '2024-05-13T00:00:00.000Z', '2404'],
+		['2408', '2024-10-01T00:00:00.000Z', '2410'],
+		['2409', '2024-10-01T00:00:00.000Z', '2410'],
+		['2501', '2025-04-01T00:00:00.000Z', '2504'],
+		['2602', '2026-04-01T00:00:00.000Z', '2604'],
+		['2511', '2026-04-01T00:00:00.000Z', '2604'],
+	])('ピシン %s があれば、42cursus の開始日時 (%s) ではなくピシンの年月から求める → %s', (pool, beginAt, key) => {
+		expect(getCohortRoleTarget(new Date(beginAt), pool)).toEqual({ kind: 'cohort', key, name: `Cursus ${key.slice(0, 2)}/${key.slice(2)}` });
+	});
+
+	test('ピシンの年月があっても、42cursus に在籍していなければ null', () => {
+		expect(getCohortRoleTarget(null, '2403')).toBeNull();
+	});
+
+	test('ピシンの年月が YYMM 形式でなければ、42cursus の開始日時から求める', () => {
+		expect(getCohortRoleTarget(new Date('2024-05-13T00:00:00.000Z'), '2413')).toEqual({ kind: 'cohort', key: '2410', name: 'Cursus 24/10' });
+	});
+});
+
+describe('poolToCohortYearMonth', () => {
+	test('12 か月すべてを 4 月期と 10 月期にまとめる', () => {
+		const results = Array.from({ length: 12 }, (_, i) => poolToCohortYearMonth(`24${String(i + 1).padStart(2, '0')}`));
+		expect(results).toEqual(['2404', '2404', '2404', '2404', '2410', '2410', '2410', '2410', '2410', '2410', '2504', '2504']);
+	});
+
+	test('YYMM 形式でなければ null', () => {
+		expect(poolToCohortYearMonth('2400')).toBeNull();
+		expect(poolToCohortYearMonth('abc')).toBeNull();
 	});
 });
 
