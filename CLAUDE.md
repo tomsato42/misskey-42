@@ -27,6 +27,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
 
 ### 変更時の注意
+- プロフィールに出す intra 情報は login と Piscine だけ。BH (`blackholed_at`) はペースシステムやフリーズを反映せず古い値が残り、ペース期日は公開 API に無いため表示しない (値は DB と API には残っている)
 - `admin/roles/update-default-policies` は基本ポリシーを丸ごと置き換える。基本ポリシーの初期値は migration で入れているので、それを上書きする処理 (初期設定ウィザードなど) を足さない
 - `locales/ja-JP.yml` を変えたら `packages/i18n/src/autogen/locale.ts` (git 管理) も再生成してコミットする
 - UserDetailed に項目を足すときは `WebhookTestService.ts` のダミー、`test/e2e/users.ts` の `userDetailedNotMe`、`packages/frontend/.storybook/fakes.ts` も更新する

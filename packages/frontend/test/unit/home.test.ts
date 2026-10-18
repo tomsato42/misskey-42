@@ -88,11 +88,11 @@ describe('XHome', () => {
 		const anchor = home.container.querySelector<HTMLAnchorElement>('a[href="https://profile.intra.42.fr/users/blobcat"]');
 		assert.exists(anchor, 'anchor to the intra profile exists');
 		assert.include(home.container.textContent, '2023/07');
-		assert.exists(home.container.querySelector('.ti-calendar-due'), 'pace deadline is shown');
-		assert.notExists(home.container.querySelector('.ti-hourglass-low'), 'blackhole is hidden when null');
+		assert.notExists(home.container.querySelector('.ti-calendar-due'), 'pace deadline is never shown');
+		assert.notExists(home.container.querySelector('.ti-hourglass-low'), 'blackhole is never shown');
 	});
 
-	test('Should render only an upcoming blackhole date', async () => {
+	test('Should not render the blackhole date even if it is upcoming', async () => {
 		const base = {
 			id: 'blobcat',
 			name: 'blobcat',
@@ -108,12 +108,8 @@ describe('XHome', () => {
 			avatarDecorations: [],
 		};
 
-		const past = renderHome({ ...base, intra: { login: 'blobcat', poolYearMonth: '2307', blackholedAt: '2000-01-01T00:00:00.000Z', paceDeadlineAt: null } });
-		assert.notExists(past.container.querySelector('.ti-hourglass-low'), 'past blackhole is hidden');
-		past.unmount();
-
 		const upcoming = renderHome({ ...base, intra: { login: 'blobcat', poolYearMonth: '2307', blackholedAt: '2100-01-01T00:00:00.000Z', paceDeadlineAt: null } });
-		assert.exists(upcoming.container.querySelector('.ti-hourglass-low'), 'upcoming blackhole is shown');
+		assert.notExists(upcoming.container.querySelector('.ti-hourglass-low'), 'upcoming blackhole is hidden');
 		upcoming.unmount();
 	});
 

@@ -105,14 +105,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<dt class="name"><i class="ti ti-school ti-fw"></i> {{ i18n.ts._intra.poolYearMonth }}</dt>
 									<dd class="value">{{ formatPoolYearMonth(user.intra.poolYearMonth) }}</dd>
 								</dl>
-								<dl v-if="isUpcoming(user.intra.blackholedAt)" class="field">
-									<dt class="name"><i class="ti ti-hourglass-low ti-fw"></i> {{ i18n.ts._intra.blackholedAt }}</dt>
-									<dd class="value">{{ dateString(user.intra.blackholedAt) }} (<MkTime :time="user.intra.blackholedAt"/>)</dd>
-								</dl>
-								<dl v-if="user.intra.paceDeadlineAt" class="field">
-									<dt class="name"><i class="ti ti-calendar-due ti-fw"></i> {{ i18n.ts._intra.paceDeadlineAt }}</dt>
-									<dd class="value">{{ dateString(user.intra.paceDeadlineAt) }} (<MkTime :time="user.intra.paceDeadlineAt"/>)</dd>
-								</dl>
 							</template>
 							<dl class="field">
 								<dt class="name"><i class="ti ti-calendar ti-fw"></i> {{ i18n.ts.registeredDate }}</dt>
@@ -229,11 +221,8 @@ function formatPoolYearMonth(yymm: string): string {
 	return `20${yymm.slice(0, 2)}/${yymm.slice(2)}`;
 }
 
-// 42 API の blackholed_at はペースシステムやフリーズを反映せず、在籍中でも過去の日付のまま残ることがあるので、
-// 過去の日付は古い値として表示しない
-function isUpcoming(date: string | null): date is string {
-	return date != null && new Date(date).getTime() > Date.now();
-}
+// BH とペース期日は表示しない。42 API の blackholed_at はペースシステムやフリーズを反映せず、
+// ペース期日は公開 API から取得できないため (user.intra の blackholedAt / paceDeadlineAt は API には残っている)
 
 const XFiles = defineAsyncComponent(() => import('./index.files.vue'));
 const XActivity = defineAsyncComponent(() => import('./index.activity.vue'));
