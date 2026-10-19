@@ -72,6 +72,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkSwitch>
 		</SearchMarker>
 
+		<SearchMarker v-if="instance.intraLoginEnabled" :keywords="['pair', 'invite']">
+			<MkSwitch v-model="pairInvitationsEnabled" @update:modelValue="save()">
+				<template #label><SearchLabel>{{ i18n.ts._pairRecruitment.receiveInvitations }}</SearchLabel></template>
+				<template #caption><SearchText>{{ i18n.ts._pairRecruitment.receiveInvitationsDescription }}</SearchText></template>
+			</MkSwitch>
+		</SearchMarker>
+
 		<SearchMarker :keywords="['chat']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.directMessage }}</SearchLabel></template>
@@ -242,6 +249,8 @@ const requireSigninToViewContents = ref($i.requireSigninToViewContents ?? false)
 const makeNotesFollowersOnlyBefore = ref($i.makeNotesFollowersOnlyBefore ?? null);
 const makeNotesHiddenBefore = ref($i.makeNotesHiddenBefore ?? null);
 const hideOnlineStatus = ref($i.hideOnlineStatus);
+// 42times: ペア募集の「取り組める人を招待」に出るか (学内SNSモードだけ)
+const pairInvitationsEnabled = ref($i.pairInvitationsEnabled);
 const publicReactions = ref($i.publicReactions);
 const {
 	model: followingVisibility,
@@ -415,6 +424,7 @@ function save() {
 		followingVisibility: followingVisibility.value,
 		followersVisibility: followersVisibility.value,
 		chatScope: chatScope.value,
+		...(instance.intraLoginEnabled ? { pairInvitationsEnabled: !!pairInvitationsEnabled.value } : {}),
 	});
 }
 

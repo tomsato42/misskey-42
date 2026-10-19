@@ -4,12 +4,16 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import type * as Misskey from 'misskey-js';
 import {
+	buildPairShareText,
 	canApply,
+	getCommonTeamSizes,
 	getDaysUntil,
 	getPairRecruitmentErrorText,
 	getRemainingSlots,
 	getTeamSizeRange,
+	isMultiProject,
 	parsePairRecruitmentUrl,
 } from '@/utility/pair-recruitment.js';
 
@@ -72,6 +76,11 @@ describe('canApply', () => {
 		expect(canApply({ ...base, myStatus: 'withdrawn' })).toBe(true);
 	});
 
+	test('招待された人・招待を見送った人も送れる', () => {
+		expect(canApply({ ...base, myStatus: 'invited' })).toBe(true);
+		expect(canApply({ ...base, myStatus: 'declined' })).toBe(true);
+	});
+
 	test('締め切り・人数がそろった・送信済み・取り組めない課題では送れない', () => {
 		expect(canApply({ ...base, status: 'closed' })).toBe(false);
 		expect(canApply({ ...base, acceptedCount: 1 })).toBe(false);
@@ -104,5 +113,60 @@ describe('getPairRecruitmentErrorText', () => {
 		expect(getPairRecruitmentErrorText({ code: 'toString' })).toBeNull();
 		expect(getPairRecruitmentErrorText(null)).toBeNull();
 		expect(getPairRecruitmentErrorText(new Error('x'))).toBeNull();
+	});
+});
+
+describe('getCommonTeamSizes', () => {
+	test('選んだ課題のどれでも組める人数', () => {
+		expect(getCommonTeamSizes([{ minGroupSize: 2, maxGroupSize: 3 }, { minGroupSize: 2, maxGroupSize: 2 }])).toEqual([2]);
+		expect(getCommonTeamSizes([{ minGroupSize: 1, maxGroupSize: 4 }, { minGroupSize: 3, maxGroupSize: 5 }])).toEqual([3, 4]);
+	});
+
+	test('共通の人数が無い・課題が無いときは空', () => {
+		expect(getCommonTeamSizes([{ minGroupSize: 2, maxGroupSize: 2 }, { minGroupSize: 3, maxGroupSize: 4 }])).toEqual([]);
+		expect(getCommonTeamSizes([])).toEqual([]);
+	});
+});
+
+describe('isMultiProject', () => {
+	test('課題が 2 つ以上なら複数の課題の募集', () => {
+		expect(isMultiProject({ projects: [] })).toBe(false);
+		expect(isMultiProject({ projects: [{ slug: 'a' }] as Misskey.entities.PairRecruitment['projects'] })).toBe(false);
+		expect(isMultiProject({ projects: [{ slug: 'a' }, { slug: 'b' }] as Misskey.entities.PairRecruitment['projects'] })).toBe(true);
+	});
+});
+
+describe('buildPairShareText', () => {
+	const recruitment = {
+		projects: [{ slug: 'webserv', name: 'webserv' }, { slug: 'ft_irc', name: 'ft_irc' }],
+		ownerIntraLogin: 'nmasuda',
+		user: { username: 'nmasuda_42' },
+		teamSize: 3,
+		acceptedCount: 0,
+		startTiming: 'now',
+		startDate: null,
+		myStatus: 'owner',
+		myProjectState: 'available',
+		comment: '頑張ります！',
+	} as unknown as Misskey.entities.PairRecruitmentDetailed;
+
+	test('分かる項目を埋め、リンクを最後に付ける', () => {
+		const text = buildPairShareText(recruitment, 'https://42times.example.com/pair/abc');
+		const lines = text.split('\n');
+		expect(lines[1]).toBe('nmasuda');
+		expect(lines[4]).toContain('webserv/ft_irc');
+		expect(text).toContain('頑張ります！');
+		expect(lines.at(-1)).toBe('https://42times.example.com/pair/abc');
+	});
+
+	test('作成者が課題に取り組み中なら現状を進行中にする', () => {
+		const notStarted = buildPairShareText(recruitment, 'u');
+		const inProgress = buildPairShareText({ ...recruitment, myProjectState: 'in_progress' }, 'u');
+		expect(notStarted).not.toBe(inProgress);
+	});
+
+	test('intra のログイン名が無ければユーザー名を使う', () => {
+		const text = buildPairShareText({ ...recruitment, ownerIntraLogin: null }, 'u');
+		expect(text.split('\n')[1]).toBe('nmasuda_42');
 	});
 });

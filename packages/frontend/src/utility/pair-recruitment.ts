@@ -62,9 +62,69 @@ export function canWorkOn(state: PairProjectState | null | undefined): boolean {
  */
 export function canApply(recruitment: Pick<Misskey.entities.PairRecruitment, 'status' | 'myStatus' | 'myProjectState'> & RecruitmentForCount): boolean {
 	if (recruitment.status !== 'open') return false;
-	if (recruitment.myStatus != null && recruitment.myStatus !== 'withdrawn') return false;
+	// 取り下げた人と、招待された人 (返事待ち・見送り) は送れる
+	if (recruitment.myStatus != null && recruitment.myStatus !== 'withdrawn' && recruitment.myStatus !== 'invited' && recruitment.myStatus !== 'declined') return false;
 	if (getRemainingSlots(recruitment) === 0) return false;
 	return canWorkOn(recruitment.myProjectState);
+}
+
+/**
+ * 選んだ課題のどれでも組める人数 (作成者を含む)。バックエンドの getCommonTeamSizeRange と同じ
+ */
+export function getCommonTeamSizes(projects: Pick<Misskey.entities.PairRecruitmentProject, 'minGroupSize' | 'maxGroupSize'>[]): number[] {
+	if (projects.length === 0) return [];
+	const min = Math.max(2, ...projects.map(p => p.minGroupSize));
+	const max = Math.min(...projects.map(p => p.maxGroupSize));
+	return getTeamSizeRange({ minGroupSize: min, maxGroupSize: max });
+}
+
+/**
+ * 複数の課題をまとめた募集か
+ */
+export function isMultiProject(recruitment: Pick<Misskey.entities.PairRecruitment, 'projects'>): boolean {
+	return recruitment.projects.length > 1;
+}
+
+/**
+ * 募集のページの URL
+ */
+export function getPairRecruitmentUrl(localUrl: string, id: string): string {
+	return `${localUrl}/pair/${id}`;
+}
+
+/**
+ * ほかの場所に貼る募集の文章。分かる項目は埋め、分からない項目 (活動可能時間) は空けておく
+ */
+export function buildPairShareText(recruitment: Misskey.entities.PairRecruitmentDetailed, url: string, now = new Date()): string {
+	const t = i18n.ts._pairRecruitment._shareTemplate;
+	const names = recruitment.projects.map(p => p.name);
+	const current = recruitment.acceptedCount + 1;
+	const lines = [
+		t.name,
+		recruitment.ownerIntraLogin ?? recruitment.user.username,
+		'',
+		t.project,
+		names.length > 1 ? i18n.tsx._pairRecruitment._shareTemplate.projectAny({ projects: names.join('/') }) : names[0],
+		'',
+		t.period,
+		getStartTimingText(recruitment, now),
+		'',
+		t.teamSize,
+		i18n.tsx._pairRecruitment._shareTemplate.teamSizeText({ n: recruitment.teamSize, current, remaining: getRemainingSlots(recruitment) }),
+		'',
+		t.status,
+		recruitment.myStatus === 'owner' && recruitment.myProjectState === 'in_progress' ? t.inProgress : t.notStarted,
+		'',
+		t.availableTime,
+		'',
+		'',
+		t.motivation,
+		recruitment.comment ?? '',
+		'',
+		t.link,
+		url,
+	];
+	return lines.join('\n');
 }
 
 /**
@@ -122,6 +182,15 @@ const errorCodeToKey = {
 	NOT_MEMBER: 'notMember',
 	BLOCKED: 'blocked',
 	ANNOUNCE_PERMISSION_DENIED: 'announcePermissionDenied',
+	TOO_MANY_PROJECTS: 'tooManyProjects',
+	INVALID_PROJECTS: 'invalidProjects',
+	NO_COMMON_TEAM_SIZE: 'noCommonTeamSize',
+	INVALID_WANTED_PROJECTS: 'invalidWantedProjects',
+	MEMBER_WOULD_LOSE_PROJECT: 'memberWouldLoseProject',
+	TEAM_SIZE_BELOW_MEMBERS: 'teamSizeBelowMembers',
+	TOO_MANY_INVITATIONS: 'tooManyInvitations',
+	CANNOT_INVITE: 'cannotInvite',
+	NOT_INVITED: 'notInvited',
 } as const satisfies Record<string, keyof typeof i18n.ts._pairRecruitment._errors>;
 
 /**

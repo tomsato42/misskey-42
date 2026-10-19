@@ -115,6 +115,8 @@ export const meta = {
 					pairJoinRequested: { optional: true, ...notificationRecieveConfig },
 					pairAccepted: { optional: true, ...notificationRecieveConfig },
 					pairClosed: { optional: true, ...notificationRecieveConfig },
+					pairInvited: { optional: true, ...notificationRecieveConfig },
+					pairApplicationCancelled: { optional: true, ...notificationRecieveConfig },
 				},
 			},
 			isModerator: {

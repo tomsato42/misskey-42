@@ -379,12 +379,17 @@ export * as 'notifications/test-notification' from './endpoints/notifications/te
 export * as 'page-push' from './endpoints/page-push.js';
 export * as 'pair-recruitments/accept' from './endpoints/pair-recruitments/accept.js';
 export * as 'pair-recruitments/apply' from './endpoints/pair-recruitments/apply.js';
+export * as 'pair-recruitments/cancel-invitation' from './endpoints/pair-recruitments/cancel-invitation.js';
 export * as 'pair-recruitments/close' from './endpoints/pair-recruitments/close.js';
 export * as 'pair-recruitments/create' from './endpoints/pair-recruitments/create.js';
+export * as 'pair-recruitments/decline' from './endpoints/pair-recruitments/decline.js';
+export * as 'pair-recruitments/invite' from './endpoints/pair-recruitments/invite.js';
+export * as 'pair-recruitments/invite-candidates' from './endpoints/pair-recruitments/invite-candidates.js';
 export * as 'pair-recruitments/list' from './endpoints/pair-recruitments/list.js';
 export * as 'pair-recruitments/projects' from './endpoints/pair-recruitments/projects.js';
 export * as 'pair-recruitments/reject' from './endpoints/pair-recruitments/reject.js';
 export * as 'pair-recruitments/show' from './endpoints/pair-recruitments/show.js';
+export * as 'pair-recruitments/update' from './endpoints/pair-recruitments/update.js';
 export * as 'pair-recruitments/withdraw' from './endpoints/pair-recruitments/withdraw.js';
 export * as 'pages/create' from './endpoints/pages/create.js';
 export * as 'pages/delete' from './endpoints/pages/delete.js';

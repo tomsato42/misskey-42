@@ -7,6 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="[$style.root, { [$style.closed]: isClosed }]">
 	<div :class="$style.row1">
 		<MkA :to="detailPath" :class="[$style.project, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
+		<span v-if="multi" :class="$style.tag">{{ i18n.tsx._pairRecruitment.fromNProjects({ n: recruitment.projects.length }) }}</span>
 		<span v-if="isClosed" :class="$style.closedBadge"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
 		<MkPairProjectStateBadge v-if="recruitment.myProjectState != null && recruitment.myStatus !== 'owner'" :class="$style.state" :state="recruitment.myProjectState" variant="viewer"/>
 	</div>
@@ -16,6 +17,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span :class="$style.sub"><MkAcct :user="recruitment.user"/><MkTime :time="recruitment.createdAt"/></span>
 	</div>
 	<div v-if="recruitment.comment" :class="$style.comment">{{ recruitment.comment }}</div>
+	<div v-if="multi" :class="$style.wanted">
+		<span v-for="project in recruitment.projects" :key="project.slug" :class="[$style.wantedChip, { [$style.wantedChipMine]: recruitment.myWantedProjectSlugs?.includes(project.slug) }]">
+			{{ i18n.tsx._pairRecruitment.projectWantedCount({ name: project.name, n: project.wantedCount }) }}
+		</span>
+	</div>
 	<div :class="$style.row3">
 		<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount"/>
 		<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
@@ -45,8 +51,8 @@ import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { useRouter } from '@/router.js';
-import { canApply, getRemainingSlots, getStartTimingText } from '@/utility/pair-recruitment.js';
-import { pairRecruitmentAction } from '@/utility/pair-recruitment-action.js';
+import { canApply, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
+import { applyToPairRecruitment } from '@/utility/pair-recruitment-dialog.js';
 
 const props = defineProps<{
 	recruitment: Misskey.entities.PairRecruitment;
@@ -59,6 +65,7 @@ const emit = defineEmits<{
 const router = useRouter();
 
 const detailPath = computed(() => `/pair/${props.recruitment.id}`);
+const multi = computed(() => isMultiProject(props.recruitment));
 const isClosed = computed(() => props.recruitment.status !== 'open');
 const closedText = computed(() => {
 	const reason = props.recruitment.closedReason;
@@ -90,7 +97,7 @@ const myStatusText = computed(() => {
 
 async function apply() {
 	if (!applicable.value) return;
-	const updated = await pairRecruitmentAction('pair-recruitments/apply', { recruitmentId: props.recruitment.id });
+	const updated = await applyToPairRecruitment(props.recruitment);
 	if (updated != null) emit('updated', updated);
 }
 
@@ -131,6 +138,34 @@ function advise() {
 
 .closed {
 	opacity: 0.7;
+}
+
+.tag {
+	padding: 2px 10px;
+	border-radius: 999px;
+	background: var(--MI_THEME-accentedBg);
+	color: var(--MI_THEME-accent);
+	font-size: 0.8em;
+	white-space: nowrap;
+}
+
+.wanted {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.wantedChip {
+	padding: 2px 8px;
+	border-radius: 6px;
+	background: var(--MI_THEME-buttonBg);
+	font-size: 0.85em;
+}
+
+.wantedChipMine {
+	background: var(--MI_THEME-accentedBg);
+	color: var(--MI_THEME-accent);
+	font-weight: bold;
 }
 
 .row1 {

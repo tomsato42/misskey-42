@@ -3658,11 +3658,20 @@ export type paths = {
     '/pair-recruitments/apply': {
         /**
          * pair-recruitments/apply
-         * @description ペア募集に参加希望を送る。自分のその課題の判定が available か in_progress のときだけ送れる。作成者に通知する
+         * @description ペア募集に参加希望を送る。wantedProjectSlugs (やりたい課題) のすべてで自分の判定が available か in_progress のときだけ送れる。指定しなければ取り組める課題すべてになる。招待された人も送れる。作成者に通知する
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
         post: operations['pair-recruitments___apply'];
+    };
+    '/pair-recruitments/cancel-invitation': {
+        /**
+         * pair-recruitments/cancel-invitation
+         * @description 招待を取り消す (作成者だけ)。返事待ちか、断られた招待だけ取り消せる。取り消すと、もう一度招待できる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___cancel-invitation'];
     };
     '/pair-recruitments/close': {
         /**
@@ -3676,11 +3685,38 @@ export type paths = {
     '/pair-recruitments/create': {
         /**
          * pair-recruitments/create
-         * @description ペア募集を作成する。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
+         * @description ペア募集を作成する。projectSlugs で複数の課題をまとめられる (人数はどの課題でも組める範囲にする)。projectSlug は 1 つの課題のときの古い指定。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
         post: operations['pair-recruitments___create'];
+    };
+    '/pair-recruitments/decline': {
+        /**
+         * pair-recruitments/decline
+         * @description 招待を断る (招待された人だけ)。断った後でも参加希望は送れる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___decline'];
+    };
+    '/pair-recruitments/invite': {
+        /**
+         * pair-recruitments/invite
+         * @description 募集に招待する (作成者だけ)。同じキャンパスで、募集の課題のどれかに取り組めて、招待を受け取る人だけを招待できる。全員を招待できるときだけ送り、招待した人に通知する
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___invite'];
+    };
+    '/pair-recruitments/invite-candidates': {
+        /**
+         * pair-recruitments/invite-candidates
+         * @description 招待の候補 (作成者だけ)。同じキャンパスで、募集の課題のどれか (projectSlug を指定したらその課題) に取り組めて、招待を受け取る人。既に参加希望を送った人と招待した人は除く
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['pair-recruitments___invite-candidates'];
     };
     '/pair-recruitments/list': {
         /**
@@ -3717,6 +3753,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
         post: operations['pair-recruitments___show'];
+    };
+    '/pair-recruitments/update': {
+        /**
+         * pair-recruitments/update
+         * @description 募集を編集する (作成者だけ、募集中の間だけ)。指定した項目だけを変える。課題を外すと、その課題だけをやりたい参加希望は取り下げになり、本人に通知する。参加が決まったメンバーのやりたい課題をすべて外すことはできない。人数を参加が決まった人数ちょうどにすると締め切る
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___update'];
     };
     '/pair-recruitments/withdraw': {
         /**
@@ -4462,6 +4507,8 @@ export type components = {
             autoSensitive: boolean;
             carefulBot: boolean;
             autoAcceptFollowed: boolean;
+            /** @description ペア募集の招待を受け取るか (42times) */
+            pairInvitationsEnabled: boolean;
             noCrawle: boolean;
             preventAiLearning: boolean;
             isExplorable: boolean;
@@ -4709,6 +4756,24 @@ export type components = {
                     userListId: string;
                 };
                 pairClosed?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairInvited?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairApplicationCancelled?: {
                     /** @enum {string} */
                     type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                 } | {
@@ -5267,6 +5332,38 @@ export type components = {
             };
             /** @enum {string} */
             reason: 'full' | 'manual' | 'expired';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairInvited';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairApplicationCancelled';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
         };
         DriveFile: {
             /**
@@ -6367,6 +6464,17 @@ export type components = {
                 minGroupSize: number;
                 maxGroupSize: number;
             };
+            /** @description まとめた課題 (1 つ以上)。project は最初の課題で、名前は課題の名前を / でつないだもの */
+            projects: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+                /** @enum {string|null} */
+                myState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+                /** @description この課題をやりたい参加希望中・参加中の人数 (作成者を含まない) */
+                wantedCount: number;
+            }[];
             teamSize: number;
             acceptedCount: number;
             pendingCount: number | null;
@@ -6380,7 +6488,9 @@ export type components = {
             /** @enum {string|null} */
             myProjectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
             /** @enum {string|null} */
-            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | null;
+            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined' | null;
+            /** @description 自分のやりたい課題 (参加希望中・参加中のときだけ) */
+            myWantedProjectSlugs: string[] | null;
         };
         PairRecruitmentDetailed: {
             /** Format: id */
@@ -6404,6 +6514,17 @@ export type components = {
                 minGroupSize: number;
                 maxGroupSize: number;
             };
+            /** @description まとめた課題 (1 つ以上)。project は最初の課題で、名前は課題の名前を / でつないだもの */
+            projects: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+                /** @enum {string|null} */
+                myState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+                /** @description この課題をやりたい参加希望中・参加中の人数 (作成者を含まない) */
+                wantedCount: number;
+            }[];
             teamSize: number;
             acceptedCount: number;
             pendingCount: number | null;
@@ -6417,10 +6538,17 @@ export type components = {
             /** @enum {string|null} */
             myProjectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
             /** @enum {string|null} */
-            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | null;
+            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined' | null;
+            /** @description 自分のやりたい課題 (参加希望中・参加中のときだけ) */
+            myWantedProjectSlugs: string[] | null;
             /** @description 作成者の 42 intra の課題のページ。作成者がその課題に登録したことが無ければ null */
             ownerIntraProjectUrl: string | null;
+            /** @description 作成者の 42 intra のログイン名 (共有の文章に使う) */
+            ownerIntraLogin: string | null;
+            /** @description 参加希望中・参加中・見送った人など (招待は含まない) */
             members: components['schemas']['PairMember'][];
+            /** @description 返事待ちと断られた招待。作成者にだけ返す (ほかの人には空) */
+            invitations: components['schemas']['PairMember'][];
         };
         PairMember: {
             /** Format: id */
@@ -6433,9 +6561,15 @@ export type components = {
             userId: string;
             user: components['schemas']['UserLite'];
             /** @enum {string} */
-            status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+            status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined';
             /** @enum {string|null} */
             projectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+            wantedProjectSlugs: string[];
+        };
+        PairInviteCandidate: {
+            user: components['schemas']['UserLite'];
+            /** @description その人が取り組める、募集の課題の slug */
+            projectSlugs: string[];
         };
     };
     responses: never;
@@ -12943,6 +13077,24 @@ export interface operations {
                                 userListId: string;
                             };
                             pairClosed?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairInvited?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairApplicationCancelled?: {
                                 /** @enum {string} */
                                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                             } | {
@@ -29179,8 +29331,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -29264,8 +29416,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -30444,6 +30596,7 @@ export interface operations {
                     publicReactions?: boolean;
                     carefulBot?: boolean;
                     autoAcceptFollowed?: boolean;
+                    pairInvitationsEnabled?: boolean;
                     noCrawle?: boolean;
                     preventAiLearning?: boolean;
                     requireSigninToViewContents?: boolean;
@@ -30639,6 +30792,24 @@ export interface operations {
                             userListId: string;
                         };
                         pairClosed?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairInvited?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairApplicationCancelled?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {
@@ -35535,6 +35706,84 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     recruitmentId: string;
+                    wantedProjectSlugs?: string[] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___cancel-invitation': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    /** Format: misskey:id */
+                    userId: string;
                 };
             };
         };
@@ -35683,7 +35932,8 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    projectSlug: string;
+                    projectSlug?: string;
+                    projectSlugs?: string[];
                     teamSize: number;
                     /** @enum {string} */
                     startTiming: 'now' | 'nextWeek' | 'nextMonth' | 'date';
@@ -35702,6 +35952,236 @@ export interface operations {
                 };
                 content: {
                     'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___decline': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___invite': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    userIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___invite-candidates': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    projectSlug?: string | null;
+                    query?: string | null;
+                    /** @default 30 */
+                    limit?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairInviteCandidate'][];
                 };
             };
             /** @description Client error */
@@ -36021,6 +36501,87 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    projectSlugs?: string[];
+                    teamSize?: number;
+                    /** @enum {string} */
+                    startTiming?: 'now' | 'nextWeek' | 'nextMonth' | 'date';
+                    startDate?: string | null;
+                    comment?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

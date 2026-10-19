@@ -11,8 +11,13 @@ import { ApiError } from '@/server/api/error.js';
 import { pairRecruitmentApiErrors, withPairRecruitmentApiErrors } from '@/server/api/pair-recruitment-errors.js';
 import * as accept from '@/server/api/endpoints/pair-recruitments/accept.js';
 import * as apply from '@/server/api/endpoints/pair-recruitments/apply.js';
+import * as cancelInvitation from '@/server/api/endpoints/pair-recruitments/cancel-invitation.js';
 import * as close from '@/server/api/endpoints/pair-recruitments/close.js';
 import * as create from '@/server/api/endpoints/pair-recruitments/create.js';
+import * as decline from '@/server/api/endpoints/pair-recruitments/decline.js';
+import * as invite from '@/server/api/endpoints/pair-recruitments/invite.js';
+import * as inviteCandidates from '@/server/api/endpoints/pair-recruitments/invite-candidates.js';
+import * as update from '@/server/api/endpoints/pair-recruitments/update.js';
 import * as list from '@/server/api/endpoints/pair-recruitments/list.js';
 import * as projects from '@/server/api/endpoints/pair-recruitments/projects.js';
 import * as reject from '@/server/api/endpoints/pair-recruitments/reject.js';
@@ -23,7 +28,7 @@ import * as withdraw from '@/server/api/endpoints/pair-recruitments/withdraw.js'
 const ENDPOINT_SPECIFIC_ERRORS = new Set(['announcePermissionDenied']);
 
 describe('pair-recruitments のエラー定義', () => {
-	const endpoints = { accept, apply, close, create, list, projects, reject, show, withdraw };
+	const endpoints = { accept, apply, cancelInvitation, close, create, decline, invite, inviteCandidates, list, projects, reject, show, update, withdraw };
 
 	test.each(Object.entries(endpoints))('%s の meta.errors は共通の定義をそのまま使う', (_name, mod) => {
 		const errors = mod.meta.errors as Record<string, unknown>;

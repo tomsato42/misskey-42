@@ -9,8 +9,15 @@ import {
 	buildAnnouncementText,
 	canSeeMember,
 	canWorkOn,
+	bestWantedState,
+	combineWantedStates,
 	formatStartTiming,
+	getCommonTeamSizeRange,
 	getOwnerIntraProjectUrl,
+	judgeInvite,
+	normalizeProjectSlugs,
+	normalizeWantedProjectSlugs,
+	planProjectChange,
 	getEffectiveState,
 	getTeamSizeRange,
 	isRecruitmentOpen,
@@ -291,5 +298,74 @@ describe('getOwnerIntraProjectUrl', () => {
 
 	test('プロトタイプのプロパティ名の課題を、登録済みと見なさない', () => {
 		expect(getOwnerIntraProjectUrl('constructor', 'tomsato', {})).toBeNull();
+	});
+});
+
+describe('複数の課題', () => {
+	test('getCommonTeamSizeRange は範囲の重なりを返す', () => {
+		expect(getCommonTeamSizeRange([{ minGroupSize: null, maxGroupSize: 3 }, { minGroupSize: 2, maxGroupSize: 2 }])).toEqual({ min: 2, max: 2 });
+		expect(getCommonTeamSizeRange([{ minGroupSize: null, maxGroupSize: 2 }, { minGroupSize: 4, maxGroupSize: 5 }])).toBeNull();
+		expect(getCommonTeamSizeRange([{ minGroupSize: null, maxGroupSize: 3 }, { minGroupSize: 1, maxGroupSize: 1 }])).toBeNull();
+		expect(getCommonTeamSizeRange([])).toBeNull();
+	});
+
+	test('normalizeProjectSlugs は空・重複・多すぎるものを拒む', () => {
+		expect(normalizeProjectSlugs(['a', 'b'])).toEqual(['a', 'b']);
+		expectCode(() => normalizeProjectSlugs([]), 'invalidProjects');
+		expectCode(() => normalizeProjectSlugs(['a', 'a']), 'invalidProjects');
+		expectCode(() => normalizeProjectSlugs(['a', 'b', 'c', 'd', 'e']), 'tooManyProjects');
+	});
+
+	test('normalizeWantedProjectSlugs は、指定が無ければ取り組める課題すべて、指定があれば募集の並び順にそろえる', () => {
+		const states = { a: 'available', b: 'finished', c: 'in_progress' } as const;
+		expect(normalizeWantedProjectSlugs({ wanted: null, recruitmentSlugs: ['a', 'b', 'c'], states })).toEqual(['a', 'c']);
+		expect(normalizeWantedProjectSlugs({ wanted: ['c', 'a'], recruitmentSlugs: ['a', 'b', 'c'], states })).toEqual(['a', 'c']);
+		expectCode(() => normalizeWantedProjectSlugs({ wanted: [], recruitmentSlugs: ['a'], states }), 'invalidWantedProjects');
+		expectCode(() => normalizeWantedProjectSlugs({ wanted: ['x'], recruitmentSlugs: ['a'], states }), 'invalidWantedProjects');
+		expectCode(() => normalizeWantedProjectSlugs({ wanted: null, recruitmentSlugs: ['b'], states }), 'projectNotAvailable');
+	});
+
+	test('combineWantedStates は取り組めない課題を優先し、bestWantedState は取り組める課題を優先する', () => {
+		expect(combineWantedStates(['available', 'locked'])).toBe('locked');
+		expect(combineWantedStates(['in_progress', 'available'])).toBe('in_progress');
+		expect(combineWantedStates([])).toBeNull();
+		expect(bestWantedState(['finished', 'available'])).toBe('available');
+		expect(bestWantedState(['finished', 'locked'])).toBe('finished');
+		expect(bestWantedState([])).toBeNull();
+	});
+
+	test('planProjectChange は外れる課題だけの参加希望を取り下げ、参加が決まった人の課題がすべて外れるなら拒む', () => {
+		const plan = planProjectChange({
+			newSlugs: ['a'],
+			members: [
+				{ userId: 'u1', status: 'pending', wantedProjectSlugs: ['a', 'b'] },
+				{ userId: 'u2', status: 'pending', wantedProjectSlugs: ['b'] },
+				{ userId: 'u3', status: 'accepted', wantedProjectSlugs: ['a'] },
+				{ userId: 'u4', status: 'invited', wantedProjectSlugs: [] },
+			],
+		});
+		expect(plan.withdrawUserIds).toEqual(['u2']);
+		expect([...plan.wanted]).toEqual([['u1', ['a']]]);
+		expectCode(() => planProjectChange({ newSlugs: ['a'], members: [{ userId: 'u', status: 'accepted', wantedProjectSlugs: ['b'] }] }), 'memberWouldLoseProject');
+	});
+
+	test('judgeInvite', () => {
+		const recruitment = { status: 'open' as const, expiresAt: future, userId: 'owner', teamSize: 2, acceptedCount: 0 };
+		const base = { recruitment, actorId: 'owner', inviteeId: 'u', existingStatus: null, acceptsInvitations: true, states: ['available' as const], now };
+		expect(judgeInvite(base)).toBeNull();
+		expect(judgeInvite({ ...base, actorId: 'x' })).toBe('notOwner');
+		expect(judgeInvite({ ...base, recruitment: { ...recruitment, expiresAt: past } })).toBe('recruitmentClosed');
+		expect(judgeInvite({ ...base, recruitment: { ...recruitment, acceptedCount: 1 } })).toBe('full');
+		expect(judgeInvite({ ...base, inviteeId: 'owner' })).toBe('cannotInvite');
+		expect(judgeInvite({ ...base, existingStatus: 'invited' })).toBe('cannotInvite');
+		expect(judgeInvite({ ...base, existingStatus: 'withdrawn' })).toBeNull();
+		expect(judgeInvite({ ...base, acceptsInvitations: false })).toBe('cannotInvite');
+		expect(judgeInvite({ ...base, states: ['finished', null] })).toBe('cannotInvite');
+	});
+
+	test('招待された人と断った人は参加希望を送れる', () => {
+		const recruitment = { status: 'open' as const, expiresAt: future, userId: 'owner', teamSize: 2, acceptedCount: 0 };
+		expect(judgeApply({ recruitment, applicantId: 'u', existingStatus: 'invited', state: 'available', now })).toBeNull();
+		expect(judgeApply({ recruitment, applicantId: 'u', existingStatus: 'declined', state: 'available', now })).toBeNull();
 	});
 });
