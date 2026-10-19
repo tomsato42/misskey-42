@@ -53,4 +53,10 @@ export class MiIntraUserProgress {
 		nullable: true,
 	})
 	public questsSyncedAt: Date | null;
+
+	/** intra_project_result を最後に更新した日時。null なら初回なので、見つかった結果を通知しない */
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public resultsSyncedAt: Date | null;
 }

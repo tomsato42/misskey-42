@@ -12,9 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated'" :class="[$style.icon, $style.icon_calendar]"><i class="ti ti-calendar-event" style="line-height: 1;"></i></div>
+		<div v-else-if="notification.type === 'intraProjectFinished'" :class="[$style.icon, $style.icon_intraProject]">
+			<MkIntraProjectResultTile :finalMark="notification.intraProjectResult.finalMark" :validated="notification.intraProjectResult.validated" small/>
+		</div>
 		<MkAvatar v-else-if="'user' in notification" :class="$style.icon" :user="notification.user" link preview/>
 		<img v-else-if="'icon' in notification && notification.icon != null" :class="[$style.icon, $style.icon_app]" :src="notification.icon" alt=""/>
 		<div
+			v-if="notification.type !== 'intraProjectFinished'"
 			:class="[$style.subIcon, {
 				[$style.t_follow]: notification.type === 'follow',
 				[$style.t_followRequestAccepted]: notification.type === 'followRequestAccepted',
@@ -88,6 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
 			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
 			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
+			<span v-else-if="notification.type === 'intraProjectFinished'">{{ i18n.ts._notification.intraProjectFinished }}</span>
 			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
@@ -184,6 +189,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkA v-else-if="notification.type === 'pairClosed'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
 				{{ i18n.tsx._notification.pairClosedText({ project: notification.pairRecruitment.projectName, reason: i18n.ts._pairRecruitment._closedNotification[notification.reason] }) }}
 			</MkA>
+			<template v-else-if="notification.type === 'intraProjectFinished'">
+				<b :class="[$style.text, $style.intraProjectName]">{{ notification.intraProjectResult.projectName }}</b>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="shareIntraProjectResult(notification.intraProjectResult.id)">{{ i18n.ts._intraProjectResult.post }}</MkButton>
+				</div>
+			</template>
 			<MkA v-else-if="notification.type === 'createToken'" :class="$style.text" to="/settings/apps">
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>
 			</MkA>
@@ -238,6 +249,8 @@ import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkIntraProjectResultTile from '@/components/MkIntraProjectResultTile.vue';
+import { shareIntraProjectResult } from '@/utility/intra-project-result.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
@@ -387,6 +400,19 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	border-radius: 100%;
 	font-size: 18px;
 	background: var(--MI_THEME-buttonBg);
+}
+
+.icon_intraProject {
+	display: grid;
+	place-items: center;
+
+	> span {
+		width: 100%;
+	}
+}
+
+.intraProjectName {
+	color: #00898b;
 }
 
 .subIcon {

@@ -11170,6 +11170,10 @@ export interface Locale extends ILocale {
          * {project} のペア募集の課題が変わり、参加希望が取り下げになりました
          */
         "pairApplicationCancelledText": ParameterizedString<"project">;
+        /**
+         * 課題が終わりました
+         */
+        "intraProjectFinished": string;
         "_types": {
             /**
              * すべて
@@ -11287,6 +11291,10 @@ export interface Locale extends ILocale {
              * ペア募集の参加希望の取り下げ(課題の変更)
              */
             "pairApplicationCancelled": string;
+            /**
+             * 課題の結果
+             */
+            "intraProjectFinished": string;
         };
         "_actions": {
             /**
@@ -15254,6 +15262,74 @@ export interface Locale extends ILocale {
              * このリストは使えません。自分のリストを選んでください。
              */
             "invalidUserList": string;
+        };
+    };
+    "_intraProjectResult": {
+        /**
+         * 点数を共有
+         */
+        "share": string;
+        /**
+         * 課題を選択
+         */
+        "selectProject": string;
+        /**
+         * 課題
+         */
+        "project": string;
+        /**
+         * 課題を外す
+         */
+        "removeProject": string;
+        /**
+         * 投稿する
+         */
+        "post": string;
+        /**
+         * success
+         */
+        "success": string;
+        /**
+         * fail
+         */
+        "fail": string;
+        /**
+         * /100
+         */
+        "outOf": string;
+        /**
+         * outstanding {n}
+         */
+        "outstanding": ParameterizedString<"n">;
+        /**
+         * 点数の付いた課題がありません
+         */
+        "noResults": string;
+        /**
+         * 課題の点数は下書きと予約投稿には保存されません。
+         */
+        "notSavedInDraft": string;
+        /**
+         * {project} {score}点 {result}
+         */
+        "scoreLabel": ParameterizedString<"project" | "score" | "result">;
+        /**
+         * 合格
+         */
+        "passed": string;
+        /**
+         * 不合格
+         */
+        "failed": string;
+        "_errors": {
+            /**
+             * この課題の結果が見つかりません。
+             */
+            "noSuchResult": string;
+            /**
+             * 本文の無いリノートには課題を付けられません。
+             */
+            "cannotAttachToPureRenote": string;
         };
     };
 }

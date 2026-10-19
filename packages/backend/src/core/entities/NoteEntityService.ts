@@ -24,6 +24,7 @@ import type { ReactionService } from '../ReactionService.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
 import type { CalendarEventEntityService } from './CalendarEventEntityService.js';
+import type { IntraProjectNoteEntityService } from './IntraProjectNoteEntityService.js';
 
 // is-renote.tsとよしなにリンク
 function isPureRenote(note: MiNote): note is MiNote & { renoteId: MiNote['id']; renote: MiNote } {
@@ -70,6 +71,7 @@ export class NoteEntityService implements OnModuleInit {
 	private idService: IdService;
 	private cacheService: CacheService;
 	private calendarEventEntityService: CalendarEventEntityService;
+	private intraProjectNoteEntityService: IntraProjectNoteEntityService;
 	private noteLoader = new DebounceLoader(this.findNoteOrFail);
 
 	constructor(
@@ -118,6 +120,7 @@ export class NoteEntityService implements OnModuleInit {
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
 		this.calendarEventEntityService = this.moduleRef.get('CalendarEventEntityService');
+		this.intraProjectNoteEntityService = this.moduleRef.get('IntraProjectNoteEntityService');
 	}
 
 	@bindThis
@@ -193,6 +196,7 @@ export class NoteEntityService implements OnModuleInit {
 		packedNote.poll = undefined;
 		packedNote.cw = null;
 		packedNote.calendarEvent = undefined; // 42times: 見られないノートが何のイベントのものかも隠す
+		packedNote.intraProjectResult = undefined; // 42times: 見られないノートに付けた課題の結果も隠す
 		packedNote.isHidden = true;
 		// TODO: hiddenReason みたいなのを提供しても良さそう
 	}
@@ -361,6 +365,8 @@ export class NoteEntityService implements OnModuleInit {
 				packedUsers: Map<MiUser['id'], Packed<'UserLite'>>
 				/** 42times: ノートの ID ごとのカレンダーのイベント (紐づいていなければ null)。無い ID は 1 件ずつ引く */
 				calendarEvents?: Map<MiNote['id'], Packed<'CalendarEventLite'> | null>;
+				/** 42times: ノートの ID ごとの課題の結果 (付いていなければ null)。無い ID は 1 件ずつ引く */
+				intraProjectResults?: Map<MiNote['id'], Packed<'IntraProjectNote'> | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -438,6 +444,7 @@ export class NoteEntityService implements OnModuleInit {
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
 			calendarEvent: this.packCalendarEvent(note.id, me, options?._hint_?.calendarEvents),
+			intraProjectResult: this.packIntraProjectResult(note.id, me, options?._hint_?.intraProjectResults),
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,
@@ -560,10 +567,11 @@ export class NoteEntityService implements OnModuleInit {
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
 		// 42times: pack の中で返り値に含めるノート (リプライ先・リノート元と、リノート元のリプライ先・リノート元) のイベントをまとめて引く
-		const calendarEvents = await this.calendarEventEntityService.packLiteManyByNoteIds(
-			notes.flatMap(n => [n.id, n.replyId, n.renoteId, n.renote?.replyId, n.renote?.renoteId]).filter(x => x != null),
-			me,
-		);
+		const relatedNoteIds = notes.flatMap(n => [n.id, n.replyId, n.renoteId, n.renote?.replyId, n.renote?.renoteId]).filter(x => x != null);
+		const calendarEvents = await this.calendarEventEntityService.packLiteManyByNoteIds(relatedNoteIds, me);
+		// 42times: 課題の結果も同じノートの分をまとめて引く。付いていないノートは null にして、1 件ずつ引き直さないようにする
+		const packedIntraProjectResults = await this.intraProjectNoteEntityService.packManyByNoteIds(relatedNoteIds, me);
+		const intraProjectResults = new Map<MiNote['id'], Packed<'IntraProjectNote'> | null>(relatedNoteIds.map(id => [id, packedIntraProjectResults.get(id) ?? null]));
 
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
@@ -573,6 +581,7 @@ export class NoteEntityService implements OnModuleInit {
 				packedFiles,
 				packedUsers,
 				calendarEvents,
+				intraProjectResults,
 			},
 		})));
 	}
@@ -589,6 +598,21 @@ export class NoteEntityService implements OnModuleInit {
 		const packed = hint?.has(noteId)
 			? hint.get(noteId)
 			: (await this.calendarEventEntityService.packLiteManyByNoteIds([noteId], me)).get(noteId);
+		return packed ?? undefined;
+	}
+
+	/**
+	 * 42times: ノートに付けた課題の結果。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packIntraProjectResult(
+		noteId: MiNote['id'],
+		me: { id: MiUser['id'] } | null | undefined,
+		hint: Map<MiNote['id'], Packed<'IntraProjectNote'> | null> | undefined,
+	): Promise<Packed<'IntraProjectNote'> | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.intraProjectNoteEntityService.packManyByNoteIds([noteId], me)).get(noteId);
 		return packed ?? undefined;
 	}
 

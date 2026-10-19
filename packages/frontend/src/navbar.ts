@@ -15,6 +15,7 @@ import { lookup } from '@/utility/lookup.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { unisonReload } from '@/utility/unison-reload.js';
+import { shareIntraProjectResult } from '@/utility/intra-project-result.js';
 
 export const navbarItemDef = reactive<{
 	[key: string]: {
@@ -147,6 +148,15 @@ export const navbarItemDef = reactive<{
 		to: '/pair',
 		// 学内SNSモード (42 intra ログイン) でだけ出す
 		show: computed(() => $i != null && instance.intraLoginEnabled === true),
+	},
+	projectShare: {
+		title: i18n.ts._intraProjectResult.share,
+		icon: 'ti ti-trophy',
+		// 学内SNSモード (42 intra ログイン) でだけ出す。課題を選んで、点数のカードを付けた投稿フォームを開く
+		show: computed(() => $i != null && instance.intraLoginEnabled === true),
+		action: () => {
+			shareIntraProjectResult();
+		},
 	},
 	achievements: {
 		title: i18n.ts.achievements,

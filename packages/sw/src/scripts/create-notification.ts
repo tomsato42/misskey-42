@@ -277,6 +277,13 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					}];
 				}
 
+				case 'intraProjectFinished':
+					return [`${i18n.ts._notification.intraProjectFinished}: ${data.body.intraProjectResult.projectName}`, {
+						body: `${data.body.intraProjectResult.finalMark}${i18n.ts._intraProjectResult.outOf} ${data.body.intraProjectResult.validated ? i18n.ts._intraProjectResult.success : i18n.ts._intraProjectResult.fail}`,
+						badge: iconUrl('medal'),
+						data,
+					}];
+
 				case 'pairJoinRequested':
 					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
 						body: getUserName(data.body.user),

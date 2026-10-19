@@ -27,5 +27,7 @@ export interface PostFormProps {
 	initialNote?: Misskey.entities.Note;
 	/** 42times: 紐づけるイベントの初期値 (イベントページの「#○○ で投稿する」など)。中止済みのイベントは無視する */
 	initialCalendarEvent?: Misskey.entities.CalendarEventLite | null;
+	/** 42times: 付ける課題の結果 (点数を共有) の初期値 */
+	initialIntraProjectResult?: Misskey.entities.IntraProjectResult | null;
 	instant?: boolean;
 };

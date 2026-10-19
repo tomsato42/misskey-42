@@ -89,6 +89,7 @@ import {
 	packedPairRecruitmentProjectSchema,
 	packedPairRecruitmentSchema,
 } from '@/models/json-schema/pair-recruitment.js';
+import { packedIntraProjectNoteSchema, packedIntraProjectResultSchema } from '@/models/json-schema/intra-project-result.js';
 
 export const refs = {
 	UserLite: packedUserLiteSchema,
@@ -171,6 +172,8 @@ export const refs = {
 	PairRecruitmentDetailed: packedPairRecruitmentDetailedSchema,
 	PairMember: packedPairMemberSchema,
 	PairInviteCandidate: packedPairInviteCandidateSchema,
+	IntraProjectResult: packedIntraProjectResultSchema,
+	IntraProjectNote: packedIntraProjectNoteSchema,
 };
 
 export type Packed<x extends keyof typeof refs> = SchemaType<typeof refs[x]>;

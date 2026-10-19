@@ -120,6 +120,7 @@ function progress(userId: string, overrides: Partial<MiIntraUserProgress> = {}):
 		validatedQuests: [],
 		projectsSyncedAt: now,
 		questsSyncedAt: now,
+		resultsSyncedAt: now,
 		...overrides,
 	};
 }

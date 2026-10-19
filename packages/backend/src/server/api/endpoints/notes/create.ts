@@ -12,6 +12,7 @@ import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
+import { IntraProjectResultNotAttachableError, IntraProjectResultNotFoundError, IntraProjectResultService } from '@/core/intra/IntraProjectResultService.js';
 import { ApiError } from '../../error.js';
 import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput, toCalendarEventVisibilityInput } from '../../calendar-api.js';
 
@@ -128,6 +129,19 @@ export const meta = {
 
 		// 42times: カレンダーのイベントとの紐づけ
 		...calendarNoteCreateErrors,
+
+		// 42times: 課題の結果
+		noSuchIntraProjectResult: {
+			message: 'No such intra project result.',
+			code: 'NO_SUCH_INTRA_PROJECT_RESULT',
+			id: '8e0b5273-9262-4653-bbe6-f112a2cc8e3e',
+		},
+
+		cannotAttachIntraProjectResultToPureRenote: {
+			message: 'Cannot attach an intra project result to a pure renote.',
+			code: 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE',
+			id: '6c96ccd5-e908-497c-b7bb-56702aed3f80',
+		},
 	},
 } as const;
 
@@ -189,6 +203,11 @@ export const paramDef = {
 		},
 		// 42times: カレンダーのイベントとの紐づけ
 		...calendarNoteCreateProperties,
+		// 42times: 課題の結果を付ける
+		intraProjectResultId: {
+			type: 'string', format: 'misskey:id', nullable: true,
+			description: '42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.',
+		},
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -203,6 +222,9 @@ export const paramDef = {
 				type: 'null',
 			},
 			poll: {
+				type: 'null',
+			},
+			intraProjectResultId: {
 				type: 'null',
 			},
 		},
@@ -226,6 +248,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
 		private calendarNotePostService: CalendarNotePostService,
+		private intraProjectResultService: IntraProjectResultService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			// 42times: カレンダーのイベントの指定は、ノートを作る前に確かめる
@@ -244,6 +267,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				},
 			}).catch(err => {
 				throw toCalendarApiError(err, calendarNoteCreateErrorMap);
+			});
+
+			// 42times: 付ける課題の結果も、ノートを作る前に確かめる
+			const onIntraProjectNoteInserted = await this.intraProjectResultService.prepareNote(me, ps.intraProjectResultId, {
+				renoteId: ps.renoteId,
+				text: ps.text,
+				fileIds: ps.fileIds ?? ps.mediaIds,
+				hasPoll: ps.poll != null,
+			}).catch(err => {
+				if (err instanceof IntraProjectResultNotFoundError) throw new ApiError(meta.errors.noSuchIntraProjectResult);
+				if (err instanceof IntraProjectResultNotAttachableError) throw new ApiError(meta.errors.cannotAttachIntraProjectResultToPureRenote);
+				throw err;
 			});
 
 			try {
@@ -267,7 +302,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
-					onInserted,
+					onInserted: onInserted == null && onIntraProjectNoteInserted == null ? null : async created => {
+						await onInserted?.(created);
+						await onIntraProjectNoteInserted?.(created);
+					},
 				});
 
 				return {

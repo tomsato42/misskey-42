@@ -679,5 +679,43 @@ export const packedNotificationSchema = {
 			},
 			pairRecruitment: pairRecruitmentSummarySchema,
 		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['intraProjectFinished'],
+			},
+			intraProjectResult: {
+				type: 'object',
+				optional: false, nullable: false,
+				description: 'The project result at the time of the notification.',
+				properties: {
+					id: {
+						type: 'string',
+						optional: false, nullable: false,
+						format: 'id',
+					},
+					projectSlug: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
+					projectName: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
+					finalMark: {
+						type: 'integer',
+						optional: false, nullable: false,
+					},
+					validated: {
+						type: 'boolean',
+						optional: false, nullable: false,
+					},
+				},
+			},
+		},
 	}],
 } as const;

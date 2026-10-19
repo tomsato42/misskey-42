@@ -43,14 +43,23 @@ export type IntraProjectSession = {
  * 42 API の projects_users の要素 (使う項目だけ)。GET /v2/me と GET /v2/users/:id に含まれる
  */
 export type IntraProjectUser = {
+	/** projects_users の ID */
+	id?: number;
 	/** 確認できた値: finished / in_progress / searching_a_group / creating_group / waiting_for_correction */
 	status: string;
 	/** 評価がまだ無ければ null。再挑戦の登録中でも前回の結果が残る */
 	'validated?': boolean | null;
+	/** 点数。評価がまだ無ければ null */
+	final_mark?: number | null;
+	/** 点数が付いた日時 */
+	marked_at?: string | null;
+	/** 最後に組んだチームの ID */
+	current_team_id?: number | null;
 	cursus_ids?: number[];
 	project: {
 		id: number;
 		slug: string;
+		name?: string;
 	};
 };
 

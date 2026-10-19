@@ -222,6 +222,15 @@ export class NotificationEntityService implements OnModuleInit {
 			...(notification.type === 'pairClosed' ? {
 				reason: notification.reason,
 			} : {}),
+			...(notification.type === 'intraProjectFinished' ? {
+				intraProjectResult: {
+					id: notification.intraProjectResultId,
+					projectSlug: notification.projectSlug,
+					projectName: notification.projectName,
+					finalMark: notification.finalMark,
+					validated: notification.validated,
+				},
+			} : {}),
 		});
 	}
 

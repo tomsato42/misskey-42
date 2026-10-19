@@ -79,3 +79,5 @@ export type PairRecruitment = components['schemas']['PairRecruitment'];
 export type PairRecruitmentDetailed = components['schemas']['PairRecruitmentDetailed'];
 export type PairMember = components['schemas']['PairMember'];
 export type PairInviteCandidate = components['schemas']['PairInviteCandidate'];
+export type IntraProjectResult = components['schemas']['IntraProjectResult'];
+export type IntraProjectNote = components['schemas']['IntraProjectNote'];

@@ -128,6 +128,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<div v-if="appearNote.renoteId" :class="$style.quote"><MkNoteSimple :note="appearNote?.renote ?? null" :class="$style.quoteNote"/></div>
 					<MkNoteCalendarEvent v-if="appearNote.calendarEvent" :event="appearNote.calendarEvent"/>
+					<MkIntraProjectResult v-if="appearNote.intraProjectResult" style="margin-top: 10px;" :result="appearNote.intraProjectResult"/>
 				</div>
 				<MkA v-if="appearNote.channel && !inChannel" :class="$style.channel" :to="`/channels/${appearNote.channel.id}`"><i class="ti ti-device-tv"></i> {{ appearNote.channel.name }}</MkA>
 			</div>
@@ -264,6 +265,7 @@ import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 import MkNoteCalendarEvent from '@/components/MkNoteCalendarEvent.vue';
+import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';

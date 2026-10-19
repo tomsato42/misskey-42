@@ -91,6 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
+	<MkIntraProjectResult v-if="intraProjectResult != null" :class="$style.intraProjectResult" :result="intraProjectResult" removable @remove="intraProjectResult = null"/>
 	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
@@ -131,6 +132,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 				@click="pickLinkedCalendarEvent"
 			>
 				<i class="ti ti-calendar-event"></i>
+			</button>
+			<button
+				v-if="instance.intraLoginEnabled"
+				v-tooltip="i18n.ts._intraProjectResult.project"
+				class="_button"
+				:class="[$style.footerButton, { [$style.footerButtonActive]: intraProjectResult != null }]"
+				:aria-label="i18n.ts._intraProjectResult.project"
+				aria-haspopup="dialog"
+				:disabled="scheduledAt != null"
+				@click="pickIntraProjectResult"
+			>
+				<i class="ti ti-trophy"></i>
 			</button>
 			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
@@ -192,6 +205,8 @@ import { useUploader } from '@/composables/use-uploader.js';
 import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
 import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
+import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
+import { openIntraProjectResultPicker } from '@/utility/intra-project-result.js';
 import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
 import {
 	calendarEventFormToParams,
@@ -290,6 +305,9 @@ const calendarUnavailableReason = computed(() => getCalendarNoteFormUnavailableR
 const hasCalendarEventState = computed(() => calendarEventForm.value != null || linkedCalendarEvent.value != null);
 //#endregion
 
+// 42times: 付ける課題の結果 (点数を共有)。下書きと予約投稿には保存しない
+const intraProjectResult = shallowRef<Misskey.entities.IntraProjectResult | null>(props.initialIntraProjectResult ?? null);
+
 let textAutocomplete: Autocomplete | null = null;
 let cwAutocomplete: Autocomplete | null = null;
 let hashtagAutocomplete: Autocomplete | null = null;
@@ -382,6 +400,7 @@ const canPost = computed((): boolean => {
 			1 <= files.value.length ||
 			1 <= uploader.items.value.length ||
 			poll.value != null ||
+			intraProjectResult.value != null ||
 			renoteTargetNote.value != null ||
 			quoteId.value != null
 		) &&
@@ -737,6 +756,14 @@ function showOtherSettings() {
 				});
 				if (canceled) return;
 			}
+			// 42times: 下書きには課題の結果を保存しない
+			if (intraProjectResult.value != null) {
+				const { canceled } = await os.confirm({
+					type: 'warning',
+					text: i18n.ts._intraProjectResult.notSavedInDraft,
+				});
+				if (canceled) return;
+			}
 			saveServerDraft();
 		},
 	}, ...($i.policies.scheduledNoteLimit > 0 ? [{
@@ -797,6 +824,7 @@ function clear() {
 	quoteId.value = null;
 	scheduledAt.value = null;
 	clearCalendarEvent();
+	intraProjectResult.value = null;
 	uploader.reset();
 }
 
@@ -884,6 +912,27 @@ function handleCalendarPostError(err: unknown, sent: boolean): boolean {
 	}
 }
 //#endregion
+
+async function pickIntraProjectResult() {
+	if (props.mock) return;
+	const result = await openIntraProjectResultPicker();
+	if (result != null) intraProjectResult.value = result;
+}
+
+/** notes/create の課題の結果に関するエラーをダイアログに出す。扱ったら true */
+function handleIntraProjectResultPostError(err: unknown): boolean {
+	switch ((err as Partial<Misskey.api.APIError> | null)?.code) {
+		case 'NO_SUCH_INTRA_PROJECT_RESULT':
+			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.noSuchResult });
+			intraProjectResult.value = null;
+			return true;
+		case 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE':
+			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.cannotAttachToPureRenote });
+			return true;
+		default:
+			return false;
+	}
+}
 
 function onKeydown(ev: KeyboardEvent) {
 	if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey) && canPost.value) post();
@@ -1201,6 +1250,7 @@ async function post(ev?: PointerEvent) {
 
 	let postData = {
 		...calendarParams,
+		...(intraProjectResult.value != null ? { intraProjectResultId: intraProjectResult.value.id } : {}),
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
 		replyId: replyTargetNote.value ? replyTargetNote.value.id : undefined,
@@ -1338,6 +1388,7 @@ async function post(ev?: PointerEvent) {
 	}).catch(err => {
 		posting.value = false;
 		if (handleCalendarPostError(err, sendsCalendarParams)) return;
+		if (handleIntraProjectResultPostError(err)) return;
 		os.alert({
 			type: 'error',
 			text: err.message + '\n' + (err as any).id,
@@ -1552,6 +1603,16 @@ async function schedule() {
 	});
 	if (canceled) return;
 	if (result.getTime() <= Date.now()) return;
+
+	// 42times: 予約投稿には課題の結果を付けられないので、外してよいか確かめる
+	if (intraProjectResult.value != null) {
+		const confirm = await os.confirm({
+			type: 'warning',
+			text: i18n.ts._intraProjectResult.notSavedInDraft,
+		});
+		if (confirm.canceled) return;
+		intraProjectResult.value = null;
+	}
 
 	scheduledAt.value = result.getTime();
 }
@@ -1925,6 +1986,10 @@ html[data-color-scheme=light] .preview {
 	}
 }
 
+.intraProjectResult {
+	margin: 0 24px 8px;
+}
+
 .cwOuter {
 	width: 100%;
 	position: relative;
@@ -2077,6 +2142,10 @@ html[data-color-scheme=light] .preview {
 
 	.text {
 		min-height: 80px;
+	}
+
+	.intraProjectResult {
+		margin: 0 16px 8px;
 	}
 
 	.footer {
