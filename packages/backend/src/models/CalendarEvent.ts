@@ -7,16 +7,19 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from 'typ
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
+import { MiUserList } from './UserList.js';
+import type { CalendarEventVisibility } from '@/core/calendar/calendar-visibility.js';
 
 /**
  * user_profile.calendarNotificationSettings の形。
- * week: 1週間前、day: 前日、today: 当日、changes: 日時の変更・中止
+ * week: 1週間前、day: 前日、today: 当日、changes: 日時の変更・中止、invited: イベントへの招待
  */
 export type CalendarNotificationSettings = {
 	week: boolean;
 	day: boolean;
 	today: boolean;
 	changes: boolean;
+	invited: boolean;
 };
 
 export const DEFAULT_CALENDAR_NOTIFICATION_SETTINGS: Readonly<CalendarNotificationSettings> = {
@@ -24,6 +27,7 @@ export const DEFAULT_CALENDAR_NOTIFICATION_SETTINGS: Readonly<CalendarNotificati
 	day: true,
 	today: true,
 	changes: true,
+	invited: true,
 };
 
 /**
@@ -93,6 +97,38 @@ export class MiCalendarEvent {
 		length: 128, nullable: true,
 	})
 	public hashtag: string | null;
+
+	/**
+	 * 公開範囲 (core/calendar/calendar-visibility.ts)
+	 */
+	@Column('varchar', {
+		length: 16, default: 'public',
+	})
+	public visibility: CalendarEventVisibility;
+
+	/**
+	 * 公開範囲が specified のときに見られるユーザー (作成者を除く)
+	 */
+	@Column({
+		...id(),
+		array: true, default: '{}',
+	})
+	public visibleUserIds: MiUser['id'][];
+
+	/**
+	 * 公開範囲が list のときのリスト (作成者のもの)。リストが消えると null になり、作成者 (とモデレーター) だけが見られる
+	 */
+	@Column({
+		...id(),
+		nullable: true,
+	})
+	public userListId: MiUserList['id'] | null;
+
+	@ManyToOne(() => MiUserList, {
+		onDelete: 'SET NULL',
+	})
+	@JoinColumn()
+	public userList: MiUserList | null;
 
 	/**
 	 * イベントを作るときに一緒に投稿した告知のノート。ノートが消えてもイベントは残す

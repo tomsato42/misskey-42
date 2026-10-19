@@ -42,6 +42,7 @@ import { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import { MiCalendarEventSubscription } from '@/models/CalendarEventSubscription.js';
 import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
 import { MiCalendarEventReminder } from '@/models/CalendarEventReminder.js';
+import { MiCalendarEventInvitation } from '@/models/CalendarEventInvitation.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
@@ -268,6 +269,7 @@ export const entities = [
 	MiCalendarEventSubscription,
 	MiCalendarEventNote,
 	MiCalendarEventReminder,
+	MiCalendarEventInvitation,
 	MiIntraProject,
 	MiIntraUserProgress,
 	MiPairRecruitment,

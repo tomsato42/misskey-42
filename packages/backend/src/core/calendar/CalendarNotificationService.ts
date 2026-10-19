@@ -10,7 +10,7 @@ import type {
 	CalendarEventsRepository,
 	CalendarEventSubscriptionsRepository,
 } from '@/models/_.js';
-import type { MiCalendarEvent } from '@/models/CalendarEvent.js';
+import { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import { MiCalendarEventReminder } from '@/models/CalendarEventReminder.js';
 import type { CalendarEventReminderKind } from '@/models/CalendarEventReminder.js';
 import { MiUser } from '@/models/User.js';
@@ -27,6 +27,7 @@ import {
 	getDueCalendarReminderKinds,
 } from './calendar-reminder.js';
 import { toCalendarEventScheduleSnapshot } from './calendar-notification.js';
+import { calendarEventVisibleSql } from './calendar-visibility.js';
 import type { CalendarEventUpdatedNotificationData } from './calendar-notification.js';
 import type { CalendarEventSchedule } from './calendar-time.js';
 
@@ -217,7 +218,8 @@ export class CalendarNotificationService {
 	//#endregion
 
 	/**
-	 * 通知を送る購読者のユーザー ID (ID の昇順)。凍結・削除済みのユーザーと、calendarNotificationSettings の該当項目をオフにした人を除く
+	 * 通知を送る購読者のユーザー ID (ID の昇順)。凍結・削除済みのユーザーと、calendarNotificationSettings の該当項目をオフにした人、
+	 * 購読したあとにフォローを外したなどで公開範囲の外になった人を除く
 	 */
 	@bindThis
 	protected async findSubscriberIdsToNotify(
@@ -235,7 +237,9 @@ export class CalendarNotificationService {
 			.select('subscription.userId', 'userId')
 			.innerJoin(MiUser, 'user', 'user.id = subscription.userId')
 			.innerJoin(MiUserProfile, 'profile', 'profile.userId = subscription.userId')
+			.innerJoin(MiCalendarEvent, 'event', 'event.id = subscription.eventId')
 			.where('subscription.eventId = :eventId', { eventId })
+			.andWhere(calendarEventVisibleSql('event', '"subscription"."userId"'))
 			.andWhere('user.isSuspended = FALSE')
 			.andWhere('user.isDeleted = FALSE')
 			// 既定はすべてオン。項目が無いときもオンとみなす

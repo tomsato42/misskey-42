@@ -8,6 +8,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
 import type { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
+import type { CalendarInvitationService } from '@/core/calendar/CalendarInvitationService.js';
+import type { CalendarVisibilityService } from '@/core/calendar/CalendarVisibilityService.js';
 import type { UserEntityService } from '@/core/entities/UserEntityService.js';
 import type { IdService } from '@/core/IdService.js';
 import type { MiCalendarEvent } from '@/models/CalendarEvent.js';
@@ -28,6 +30,10 @@ function event(overrides: Partial<MiCalendarEvent> = {}): MiCalendarEvent {
 		location: 'c3',
 		description: '説明',
 		hashtag: 'mokumoku',
+		visibility: 'public',
+		visibleUserIds: [],
+		userListId: null,
+		userList: null,
 		announcementNoteId: null,
 		announcementNote: null,
 		canceledAt: null,
@@ -38,6 +44,8 @@ function event(overrides: Partial<MiCalendarEvent> = {}): MiCalendarEvent {
 
 describe('CalendarEventEntityService', () => {
 	let calendarEventService: Record<string, ReturnType<typeof vi.fn>>;
+	let calendarInvitationService: Record<string, ReturnType<typeof vi.fn>>;
+	let calendarVisibilityService: Record<string, ReturnType<typeof vi.fn>>;
 	let userEntityService: Record<string, ReturnType<typeof vi.fn>>;
 	let service: CalendarEventEntityService;
 
@@ -51,6 +59,15 @@ describe('CalendarEventEntityService', () => {
 			getSubscribedEventIds: vi.fn(async (_me: unknown, ids: string[]) => new Set(ids.slice(0, 1))),
 			createManageChecker: vi.fn(async (me: { id: string }) => (e: { userId: string }) => e.userId === me.id),
 			getEventsOfNotes: vi.fn(async () => new Map()),
+			getSubscriberPreviewUserIds: vi.fn(async () => ['carol', 'alice']),
+			countFollowingSubscribers: vi.fn(async () => 1),
+		};
+		calendarInvitationService = {
+			getInviterId: vi.fn(async () => null),
+			canInvite: vi.fn(async () => false),
+		};
+		calendarVisibilityService = {
+			filterVisible: vi.fn(async (events: unknown[]) => events),
 		};
 		userEntityService = {
 			pack: vi.fn(async (u: string | { id: string }) => ({ id: typeof u === 'string' ? u : u.id })),
@@ -60,6 +77,8 @@ describe('CalendarEventEntityService', () => {
 		service = new CalendarEventEntityService(
 			userEntityService as unknown as UserEntityService,
 			calendarEventService as unknown as CalendarEventService,
+			calendarInvitationService as unknown as CalendarInvitationService,
+			calendarVisibilityService as unknown as CalendarVisibilityService,
 			idService,
 		);
 	});
@@ -83,6 +102,7 @@ describe('CalendarEventEntityService', () => {
 				location: 'c3',
 				description: '説明',
 				hashtag: 'mokumoku',
+				visibility: 'public',
 				isCanceled: false,
 				canceledAt: null,
 				announcementNoteId: null,
@@ -114,6 +134,39 @@ describe('CalendarEventEntityService', () => {
 		test('ID を渡すとイベントを引く', async () => {
 			await service.pack('event1', ALICE);
 			expect(calendarEventService.findByIdOrFail).toHaveBeenCalledWith('event1');
+		});
+
+		test('指定ユーザーとリストは、管理できる人にだけ返す', async () => {
+			const e = event({ visibility: 'specified', visibleUserIds: ['bob', 'carol'] });
+			expect(await service.pack(e, ALICE)).toMatchObject({ visibility: 'specified', visibleUserIds: ['bob', 'carol'], userListId: null });
+			const forBob = await service.pack(e, BOB);
+			expect(forBob.visibility).toBe('specified');
+			expect(forBob).not.toHaveProperty('visibleUserIds');
+			expect(forBob).not.toHaveProperty('userListId');
+		});
+
+		test('detail では購読者のアバター・フォローしている購読者の数・招待した人・招待できるかを付ける', async () => {
+			calendarInvitationService.getInviterId.mockResolvedValueOnce('carol');
+			calendarInvitationService.canInvite.mockResolvedValueOnce(true);
+			const packed = await service.pack(event(), BOB, undefined, { detail: true });
+			expect(packed).toMatchObject({
+				subscribersPreview: [{ id: 'carol' }, { id: 'alice' }],
+				followingSubscribersCount: 1,
+				invitedBy: { id: 'carol' },
+				canInvite: true,
+			});
+			expect(calendarInvitationService.canInvite).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB);
+			expect(calendarEventService.getSubscriberPreviewUserIds).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB, 5);
+			// アバターと招待した人はまとめて引く
+			expect(userEntityService.packMany).toHaveBeenCalledOnce();
+		});
+
+		test('detail を付けなければ、ページ用の項目は引かない', async () => {
+			const packed = await service.pack(event(), BOB);
+			expect(packed).not.toHaveProperty('subscribersPreview');
+			expect(calendarEventService.getSubscriberPreviewUserIds).not.toHaveBeenCalled();
+			expect(calendarInvitationService.getInviterId).not.toHaveBeenCalled();
+			expect(packed).not.toHaveProperty('canInvite');
 		});
 	});
 
@@ -170,6 +223,7 @@ describe('CalendarEventEntityService', () => {
 				startsAt: '2026-10-20T03:00:00.000Z',
 				endsAt: '2026-10-20T04:00:00.000Z',
 				location: 'c3',
+				visibility: 'public',
 				isCanceled: false,
 				subscribersCount: 1,
 				isSubscribed: true,
@@ -178,6 +232,18 @@ describe('CalendarEventEntityService', () => {
 			expect(calendarEventService.getEventsOfNotes).toHaveBeenCalledWith(['n1', 'n2', 'n3']);
 			expect(calendarEventService.countSubscribersOfEvents).toHaveBeenCalledWith(['e1']);
 			expect(calendarEventService.getSubscribedEventIds).toHaveBeenCalledWith(ALICE, ['e1']);
+		});
+
+		test('公開範囲の外のイベントは付けない', async () => {
+			const hidden = event({ id: 'e2', visibility: 'followers' });
+			calendarEventService.getEventsOfNotes.mockResolvedValueOnce(new Map([['n1', event({ id: 'e1' })], ['n2', hidden]]));
+			calendarVisibilityService.filterVisible.mockImplementationOnce(async (events: MiCalendarEvent[]) => events.filter(e => e.visibility === 'public'));
+
+			const result = await service.packLiteManyByNoteIds(['n1', 'n2'], BOB);
+
+			expect(result.get('n1')).toMatchObject({ id: 'e1' });
+			expect(result.get('n2')).toBeNull();
+			expect(calendarEventService.countSubscribersOfEvents).toHaveBeenCalledWith(['e1']);
 		});
 
 		test('閲覧者がいなければ isSubscribed を含めない', async () => {

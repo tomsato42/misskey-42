@@ -1152,7 +1152,7 @@ export type paths = {
     '/calendar/events/create': {
         /**
          * calendar/events/create
-         * @description Create a calendar event. The creator is subscribed to it automatically.
+         * @description Create a calendar event. The creator is subscribed to it automatically. If visibility is specified or list, the users who can see the event are invited.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
@@ -1166,6 +1166,24 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
         post: operations['calendar___events___delete'];
+    };
+    '/calendar/events/invitation-statuses': {
+        /**
+         * calendar/events/invitation-statuses
+         * @description Get whether you can invite each user to a calendar event. Only those who can invite to the event (see calendar/events/invite) can use this.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___invitation-statuses'];
+    };
+    '/calendar/events/invite': {
+        /**
+         * calendar/events/invite
+         * @description Invite users and/or the members of one of your lists to a calendar event. Subscribers can invite to public, followers and mutual events, except followers (mutual) events whose creator hides their followers (or following) list; the creator and moderators can invite to any event. Each user is invited only once (by whoever invites first) and gets a calendarEventInvited notification. Subscribed users and users who cannot see the event are skipped. Up to 200 users (including the list members) are processed per call. With dryRun, nothing is saved and the counts are returned.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___invite'];
     };
     '/calendar/events/link-note': {
         /**
@@ -1197,7 +1215,7 @@ export type paths = {
     '/calendar/events/show': {
         /**
          * calendar/events/show
-         * @description Show a calendar event. Canceled events are also returned (with isCanceled set).
+         * @description Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found.
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -1212,6 +1230,15 @@ export type paths = {
          */
         post: operations['calendar___events___subscribe'];
     };
+    '/calendar/events/subscribers': {
+        /**
+         * calendar/events/subscribers
+         * @description List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___subscribers'];
+    };
     '/calendar/events/unlink-note': {
         /**
          * calendar/events/unlink-note
@@ -1224,7 +1251,7 @@ export type paths = {
     '/calendar/events/unsubscribe': {
         /**
          * calendar/events/unsubscribe
-         * @description Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe.
+         * @description Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe. If you can no longer see the event, the subscription is still removed but NO_SUCH_CALENDAR_EVENT is returned.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
@@ -1242,7 +1269,7 @@ export type paths = {
     '/calendar/events/update': {
         /**
          * calendar/events/update
-         * @description Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it.
+         * @description Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it. If the visibility changes to specified or list, the users who can newly see the event are invited.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
@@ -2606,7 +2633,7 @@ export type paths = {
     '/i/calendar-notification-settings': {
         /**
          * i/calendar-notification-settings
-         * @description Get which notifications you receive for the calendar events you subscribe to.
+         * @description Get which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations).
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -2615,7 +2642,7 @@ export type paths = {
     '/i/calendar-notification-settings/update': {
         /**
          * i/calendar-notification-settings/update
-         * @description Change which notifications you receive for the calendar events you subscribe to. Omitted items are left unchanged.
+         * @description Change which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations). Omitted items are left unchanged.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
@@ -4624,6 +4651,15 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                calendarEventInvited?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
                 pairJoinRequested?: {
                     /** @enum {string} */
                     type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
@@ -5143,6 +5179,17 @@ export type components = {
             previousSchedule: components['schemas']['CalendarEventSchedule'] | null;
             /** @description The schedule after the change (rescheduled), or at the time of cancellation (canceled). */
             schedule: components['schemas']['CalendarEventSchedule'];
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventInvited';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            event: components['schemas']['CalendarEventLite'];
         } | {
             /** Format: id */
             id: string;
@@ -6132,6 +6179,11 @@ export type components = {
             /** Format: date-time */
             endsAt: string | null;
             location: string | null;
+            /**
+             * @description public: everyone, followers: followers of the creator, mutual: mutual followers of the creator, specified: the specified users, list: members of the creator's list. The creator and moderators can always see the event.
+             * @enum {string}
+             */
+            visibility: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
             isCanceled: boolean;
             subscribersCount: number;
             /** @description Only present when the viewer is signed in. */
@@ -6165,6 +6217,11 @@ export type components = {
             /** Format: date-time */
             endsAt: string | null;
             location: string | null;
+            /**
+             * @description public: everyone, followers: followers of the creator, mutual: mutual followers of the creator, specified: the specified users, list: members of the creator's list. The creator and moderators can always see the event.
+             * @enum {string}
+             */
+            visibility: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
             isCanceled: boolean;
             subscribersCount: number;
             /** @description Only present when the viewer is signed in. */
@@ -6185,6 +6242,21 @@ export type components = {
             announcementNoteId: string | null;
             /** @description Whether the viewer can edit, cancel or delete the event. Only present when the viewer is signed in. */
             canManage?: boolean;
+            /** @description The users who can see the event when visibility is specified (excluding the creator). Only present when the viewer can manage the event. */
+            visibleUserIds?: string[];
+            /**
+             * Format: id
+             * @description The list whose members can see the event when visibility is list. null if visibility is not list or the list has been deleted. Only present when the viewer can manage the event.
+             */
+            userListId?: string | null;
+            /** @description Up to 5 subscribers, the users you follow first. Only present in calendar/events/show. */
+            subscribersPreview?: components['schemas']['UserLite'][];
+            /** @description The number of subscribers you follow (excluding the creator). Only present in calendar/events/show. */
+            followingSubscribersCount?: number;
+            /** @description The user who invited you to the event. null if you are not invited. Only present in calendar/events/show. */
+            invitedBy?: components['schemas']['UserLite'] | null;
+            /** @description Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show. */
+            canInvite?: boolean;
         };
         CalendarEventSchedule: {
             /**
@@ -6229,6 +6301,8 @@ export type components = {
             today: boolean;
             /** @description When the date or time of the event changes, or the event is canceled. */
             changes: boolean;
+            /** @description When someone invites you to an event. */
+            invited: boolean;
         };
         PairRecruitmentProject: {
             slug: string;
@@ -15631,6 +15705,19 @@ export interface operations {
                     hashtag?: string | null;
                     /** @default false */
                     isAllDay?: boolean;
+                    /**
+                     * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId.
+                     * @default public
+                     * @enum {string}
+                     */
+                    visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                    /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                    visibleUserIds?: string[] | null;
+                    /**
+                     * Format: misskey:id
+                     * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                     */
+                    userListId?: string | null;
                 };
             };
         };
@@ -15714,6 +15801,173 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___invitation-statuses': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    userIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        userId: string;
+                        /**
+                         * @description invitable: you can invite the user, subscribed: the user subscribes (including the creator), invited: the user has already been invited, unavailable: you cannot invite the user (yourself, or the user cannot see the event, or is suspended or deleted).
+                         * @enum {string}
+                         */
+                        status: 'invitable' | 'subscribed' | 'invited' | 'unavailable';
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___invite: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    userIds?: string[];
+                    /**
+                     * Format: misskey:id
+                     * @description One of your lists.
+                     */
+                    userListId?: string | null;
+                    /** @default false */
+                    dryRun?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description The number of users invited (with dryRun, the number of users who would be invited). */
+                        invited: number;
+                        /** @description Skipped because they already subscribe (including the creator). */
+                        subscribed: number;
+                        /** @description Skipped because they have already been invited. */
+                        alreadyInvited: number;
+                        /** @description Skipped because they cannot see the event, are suspended or deleted, or are you. */
+                        unavailable: number;
+                    };
                 };
             };
             /** @description Client error */
@@ -16131,6 +16385,95 @@ export interface operations {
             };
         };
     };
+    calendar___events___subscribers: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /**
+                     * @description all: every subscriber, following: subscribers you follow.
+                     * @default all
+                     * @enum {string}
+                     */
+                    filter?: 'all' | 'following';
+                    /** @default 30 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /**
+                         * Format: id
+                         * @description The subscription ID (use it for sinceId / untilId).
+                         */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        user: components['schemas']['UserLite'];
+                        /** @description Whether you follow the user. */
+                        isFollowing: boolean;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'calendar___events___unlink-note': {
         requestBody: {
             content: {
@@ -16371,6 +16714,18 @@ export interface operations {
                     /** @description A single hashtag. The leading # is optional. */
                     hashtag?: string | null;
                     isAllDay?: boolean;
+                    /**
+                     * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId. Narrowing it unsubscribes the users who can no longer see the event.
+                     * @enum {string}
+                     */
+                    visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                    /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                    visibleUserIds?: string[] | null;
+                    /**
+                     * Format: misskey:id
+                     * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                     */
+                    userListId?: string | null;
                 };
             };
         };
@@ -27052,6 +27407,7 @@ export interface operations {
                     day?: boolean;
                     today?: boolean;
                     changes?: boolean;
+                    invited?: boolean;
                 };
             };
         };
@@ -28566,8 +28922,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -28651,8 +29007,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -31614,6 +31970,19 @@ export interface operations {
                         hashtag?: string | null;
                         /** @default false */
                         isAllDay?: boolean;
+                        /**
+                         * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId.
+                         * @default public
+                         * @enum {string}
+                         */
+                        visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                        /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                        visibleUserIds?: string[] | null;
+                        /**
+                         * Format: misskey:id
+                         * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                         */
+                        userListId?: string | null;
                     } | null;
                 };
             };

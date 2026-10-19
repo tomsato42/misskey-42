@@ -51,6 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						@click.stop
 					>
 						<span :class="$style.chipTime">{{ event.isAllDay ? i18n.ts._calendar.allDay : event.startTime }}</span>
+						<i v-if="event.visibility !== 'public'" class="ti ti-lock" :class="$style.chipVisibility" aria-hidden="true"></i>
 						<span>{{ event.title }}</span>
 					</MkA>
 					<button
@@ -69,13 +70,65 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span><i :class="[$style.legendMark, $style.subscribed]"></i>{{ i18n.ts._calendar.subscribed }}</span>
 			<span><i :class="$style.legendMark"></i>{{ i18n.ts._calendar.notSubscribed }}</span>
 			<span><i :class="[$style.legendMark, $style.canceled]"></i><s>{{ i18n.ts._calendar.canceled }}</s></span>
+			<span><i class="ti ti-lock" aria-hidden="true"></i>{{ i18n.ts._calendar.restrictedVisibility }}</span>
 		</div>
+
+		<!-- 表示している月のイベントを日付ごとに並べる。カレンダーと同じタブで絞り込む (スマホではこちらで中身を見る) -->
+		<section :class="$style.monthList" :aria-labelledby="monthListTitleId">
+			<div :class="$style.sectionLabel">
+				<i class="ti ti-calendar-event" aria-hidden="true"></i>
+				<h2 :id="monthListTitleId" :class="$style.sectionTitle">{{ i18n.tsx._calendar.monthEvents({ month: currentMonthNumber }) }}</h2>
+				<span v-if="!fetching && !error" :class="$style.sectionCount">{{ i18n.tsx._calendar.eventsCount({ n: events.length }) }}</span>
+			</div>
+
+			<div v-if="dateGroups.length > 0" class="_panel" :class="[$style.monthPanel, { [$style.fetching]: fetching }]">
+				<template v-for="group in dateGroups" :key="group.date">
+					<div v-if="group.todayDividerBefore" :class="$style.todayDivider">
+						<span>{{ i18n.tsx._calendar.todayWithDate({ date: formatCalendarDay(today) }) }}</span>
+					</div>
+					<div :class="[$style.dateGroup, { [$style.pastGroup]: group.isPast }]">
+						<div :class="[$style.groupDate, { [$style.groupToday]: group.isToday, [$style.sunday]: dayOfWeek(group.date) === 0 }]" aria-hidden="true">
+							<span :class="$style.groupDay">{{ parseCalendarDate(group.date)?.day }}</span>
+							<span :class="$style.groupDow">{{ getWeekdayShortLabel(dayOfWeek(group.date)) }}</span>
+						</div>
+						<div :class="$style.groupEvents">
+							<MkA
+								v-for="event in group.events"
+								:key="event.id"
+								:to="`/calendar/events/${event.id}`"
+								:class="$style.eventRow"
+								:aria-label="eventRowLabel(event)"
+							>
+								<span :class="$style.eventTime">{{ formatCalendarEventTime(event) }}</span>
+								<span :class="$style.eventBody">
+									<b :class="[$style.eventTitle, { [$style.canceledTitle]: event.isCanceled }]">{{ event.title }}</b>
+									<small :class="$style.eventMeta">
+										<span v-if="event.location"><i class="ti ti-map-pin" aria-hidden="true"></i>{{ event.location }}</span>
+										<span v-if="event.visibility !== 'public'"><i :class="getCalendarVisibilityIcon(event.visibility)" aria-hidden="true"></i>{{ getCalendarVisibilityLabel(event.visibility) }}</span>
+										<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._calendar.subscribersShort({ n: event.subscribersCount }) }}</span>
+									</small>
+								</span>
+								<span :class="$style.eventBadges">
+									<span v-if="event.isCanceled" :class="$style.canceledBadge">{{ i18n.ts._calendar.canceled }}</span>
+									<span v-else-if="event.isSubscribed" :class="$style.subscribedBadge"><i class="ti ti-bell-ringing" aria-hidden="true"></i>{{ i18n.ts._calendar.subscribed }}</span>
+									<i class="ti ti-chevron-right" :class="$style.eventChevron" aria-hidden="true"></i>
+								</span>
+							</MkA>
+						</div>
+					</div>
+				</template>
+			</div>
+			<div v-else-if="!fetching && !error" class="_panel" :class="$style.monthEmpty">
+				<MkResult type="empty" :text="i18n.ts._calendar.noEventsThisMonth"/>
+				<MkButton rounded @click="createEvent()"><i class="ti ti-plus"></i> {{ i18n.ts._calendar.createEvent }}</MkButton>
+			</div>
+		</section>
 	</div>
 </PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed, onActivated, ref } from 'vue';
+import { computed, onActivated, ref, useId } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MenuItem } from '@/types/menu.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
@@ -86,16 +139,20 @@ import { definePage } from '@/page.js';
 import { useRouter } from '@/router.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import {
+	buildCalendarDateGroups,
 	buildMonthGrid,
 	calendarFilters,
 	currentJstYearMonth,
+	dayOfWeek,
 	groupCalendarEventsByDate,
+	parseCalendarDate,
 	parseYearMonth,
 	shiftYearMonth,
 	toJstDateString,
 } from '@/utility/calendar.js';
 import type { CalendarFilter } from '@/utility/calendar.js';
-import { formatCalendarDay, formatCalendarEventTime, formatCalendarYearMonth, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
+import { formatCalendarDay, formatCalendarEventTime, formatCalendarYearMonth, getCalendarVisibilityLabel, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
+import { getCalendarVisibilityIcon } from '@/utility/calendar-visibility.js';
 import { openCalendarEventEditDialog } from '@/utility/calendar-event-dialog.js';
 
 /** セルに出すイベントの数。これより多い日は「他 N 件」にまとめる */
@@ -173,6 +230,23 @@ onActivated(() => {
 
 const eventsByDate = computed(() => groupCalendarEventsByDate(events.value));
 
+const monthListTitleId = useId();
+const currentMonthNumber = computed(() => parseYearMonth(currentMonth.value)?.month ?? 0);
+const dateGroups = computed(() => buildCalendarDateGroups(eventsByDate.value, today));
+
+/** 月の一覧の行の読み上げ用のラベル (日付は aria-hidden にしているので入れる) */
+function eventRowLabel(event: Misskey.entities.CalendarEvent): string {
+	return [
+		event.isCanceled ? i18n.ts._calendar.canceled : null,
+		event.title,
+		formatCalendarDay(event.date),
+		formatCalendarEventTime(event),
+		event.location,
+		event.visibility !== 'public' ? getCalendarVisibilityLabel(event.visibility) : null,
+		event.isSubscribed === true && !event.isCanceled ? i18n.ts._calendar.subscribed : null,
+	].filter(x => x != null && x !== '').join(' ');
+}
+
 function eventsOf(date: string): Misskey.entities.CalendarEvent[] {
 	return eventsByDate.value.get(date) ?? [];
 }
@@ -187,7 +261,12 @@ function hiddenCount(date: string): number {
 
 function chipTitle(event: Misskey.entities.CalendarEvent): string {
 	const text = `${formatCalendarEventTime(event)} ${event.title}`;
-	return event.isCanceled ? `${text} (${i18n.ts._calendar.canceled})` : text;
+	// 全員以外に公開しているイベントは、カレンダーでは鍵の印だけなので、公開範囲を添える
+	const notes = [
+		event.visibility !== 'public' ? getCalendarVisibilityLabel(event.visibility) : null,
+		event.isCanceled ? i18n.ts._calendar.canceled : null,
+	].filter(x => x != null);
+	return notes.length > 0 ? `${text} (${notes.join(', ')})` : text;
 }
 
 async function createEvent(date?: string) {
@@ -381,6 +460,11 @@ definePage(() => ({
 	margin-right: 4px;
 }
 
+.chipVisibility {
+	margin-right: 3px;
+	opacity: 0.75;
+}
+
 .more {
 	font-size: 0.8em;
 	text-align: left;
@@ -425,6 +509,200 @@ definePage(() => ({
 	}
 }
 
+.monthList {
+	margin-top: 28px;
+}
+
+.sectionLabel {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 10px;
+	font-size: 0.9em;
+	font-weight: bold;
+	opacity: 0.8;
+}
+
+.sectionTitle {
+	margin: 0;
+	font-size: 1em;
+}
+
+.sectionCount {
+	font-weight: normal;
+}
+
+.monthPanel {
+	transition: opacity 0.2s ease;
+
+	&.fetching {
+		opacity: 0.6;
+	}
+}
+
+.todayDivider {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 16px;
+	font-size: 0.8em;
+	font-weight: bold;
+	color: var(--MI_THEME-accent);
+	background: var(--MI_THEME-accentedBg);
+
+	&::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--MI_THEME-accent);
+		opacity: 0.35;
+	}
+}
+
+.dateGroup {
+	display: grid;
+	grid-template-columns: 76px minmax(0, 1fr);
+
+	& + & {
+		border-top: solid 0.5px var(--MI_THEME-divider);
+	}
+
+	&.pastGroup {
+		opacity: 0.55;
+	}
+}
+
+.groupDate {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 12px 0;
+
+	&.sunday {
+		color: var(--MI_THEME-error);
+	}
+}
+
+.groupDay {
+	width: 36px;
+	height: 36px;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	font-size: 1.25em;
+	font-weight: bold;
+
+	.groupToday & {
+		background: var(--MI_THEME-accent);
+		color: var(--MI_THEME-fgOnAccent);
+	}
+}
+
+.groupDow {
+	font-size: 0.8em;
+}
+
+.groupEvents {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	padding: 6px 8px 6px 0;
+}
+
+.eventRow {
+	display: grid;
+	grid-template-columns: 104px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+	padding: 9px 10px;
+	border-radius: 8px;
+
+	&:hover {
+		background: var(--MI_THEME-panelHighlight);
+		text-decoration: none;
+	}
+}
+
+.eventTime {
+	font-size: 0.9em;
+	font-variant-numeric: tabular-nums;
+	opacity: 0.85;
+}
+
+.eventBody {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.eventTitle {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--MI_THEME-fgHighlighted);
+}
+
+.canceledTitle {
+	text-decoration: line-through;
+}
+
+.eventMeta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 2px 12px;
+	font-size: 0.85em;
+	opacity: 0.75;
+
+	> span {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+	}
+}
+
+.eventBadges {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.canceledBadge,
+.subscribedBadge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 0.8em;
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+.canceledBadge {
+	background: var(--MI_THEME-buttonBg);
+}
+
+.subscribedBadge {
+	color: var(--MI_THEME-accent);
+	background: var(--MI_THEME-accentedBg);
+}
+
+.eventChevron {
+	opacity: 0.45;
+}
+
+.monthEmpty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 16px 24px;
+}
+
 // スマホ幅ではイベントを細い印にして、セルを押したときの一覧で中身を見る
 @container (max-width: 600px) {
 	.create {
@@ -448,6 +726,37 @@ definePage(() => ({
 	.more {
 		font-size: 0.7em;
 		padding: 0 2px;
+	}
+
+	.monthList {
+		margin-top: 20px;
+	}
+
+	.dateGroup {
+		grid-template-columns: 52px minmax(0, 1fr);
+	}
+
+	.groupDay {
+		width: 32px;
+		height: 32px;
+		font-size: 1.1em;
+	}
+
+	// 時刻は題名の上に置き、行を狭くする
+	.eventRow {
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 2px 8px;
+		padding: 8px;
+	}
+
+	.eventTime {
+		grid-column: 1 / -1;
+		font-size: 0.8em;
+	}
+
+	.eventBadges {
+		grid-row: 2;
+		grid-column: 2;
 	}
 }
 </style>

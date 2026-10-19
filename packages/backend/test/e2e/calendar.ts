@@ -449,10 +449,10 @@ describe('カレンダー', () => {
 
 		test('通知の設定は既定ですべてオンで、項目ごとに変えられる', async () => {
 			const initial = await successfulApiCall({ endpoint: 'i/calendar-notification-settings', parameters: {}, user: carol });
-			assert.deepStrictEqual(initial, { week: true, day: true, today: true, changes: true });
+			assert.deepStrictEqual(initial, { week: true, day: true, today: true, changes: true, invited: true });
 
 			const updated = await successfulApiCall({ endpoint: 'i/calendar-notification-settings/update', parameters: { changes: false }, user: carol });
-			assert.deepStrictEqual(updated, { week: true, day: true, today: true, changes: false });
+			assert.deepStrictEqual(updated, { week: true, day: true, today: true, changes: false, invited: true });
 			const shown = await successfulApiCall({ endpoint: 'i/calendar-notification-settings', parameters: {}, user: carol });
 			assert.deepStrictEqual(shown, updated);
 		});
@@ -596,6 +596,369 @@ describe('カレンダー', () => {
 				await api('admin/unsuspend-user', { userId: erin.id }, root);
 			}
 			assert.strictEqual((await fetchFeed(urls.subscribedUrl)).status, 200);
+		});
+	});
+
+	describe('公開範囲', () => {
+		let frank: misskey.entities.SignupResponse;
+		let grace: misskey.entities.SignupResponse;
+		let followersEvent: misskey.entities.CalendarEvent;
+
+		async function canShow(eventId: string, user: misskey.entities.SignupResponse): Promise<boolean> {
+			const res = await api('calendar/events/show', { eventId }, user);
+			if (res.status === 200) return true;
+			assert.strictEqual(castAsError(res.body).error.code, 'NO_SUCH_CALENDAR_EVENT');
+			return false;
+		}
+
+		async function monthIds(user: misskey.entities.SignupResponse): Promise<string[]> {
+			const events = await successfulApiCall({ endpoint: 'calendar/events/list', parameters: { month }, user });
+			return events.map(e => e.id);
+		}
+
+		async function invitedNotifications(user: misskey.entities.SignupResponse, eventId: string) {
+			const res = await api('i/notifications', { includeTypes: ['calendarEventInvited'] }, user);
+			assert.strictEqual(res.status, 200);
+			return res.body.filter(n => n.type === 'calendarEventInvited' && n.event.id === eventId);
+		}
+
+		beforeAll(async () => {
+			frank = await signup({ username: 'frank' });
+			grace = await signup({ username: 'grace' });
+			await api('following/create', { userId: alice.id }, frank);
+		}, 1000 * 60);
+
+		test('既定は全員で、公開範囲を返す。指定ユーザーとリストは管理できる人にだけ返す', async () => {
+			const open = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '全員向け', date, startTime: '09:00' }, user: alice });
+			assert.strictEqual(open.visibility, 'public');
+			assert.deepStrictEqual(open.visibleUserIds, []);
+			assert.strictEqual(open.userListId, null);
+
+			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: open.id }, user: frank });
+			assert.strictEqual(shown.visibility, 'public');
+			assert.strictEqual(shown.visibleUserIds, undefined);
+		});
+
+		test('フォロワー限定は、作成者のフォロワーとモデレーターだけが見られる', async () => {
+			followersEvent = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: 'フォロワー限定', date, startTime: '10:00', visibility: 'followers' },
+				user: alice,
+			});
+			assert.strictEqual(followersEvent.visibility, 'followers');
+
+			assert.ok(await canShow(followersEvent.id, frank));
+			assert.ok(await canShow(followersEvent.id, carol));
+			assert.ok(!await canShow(followersEvent.id, grace));
+			assert.ok((await monthIds(frank)).includes(followersEvent.id));
+			assert.ok(!(await monthIds(grace)).includes(followersEvent.id));
+
+			// 見られない人は購読もできない (存在しないのと同じエラー)
+			await failedApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: followersEvent.id }, user: grace }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '7ca24a7a-de71-4aa9-84da-160776c9a929' });
+		});
+
+		test('相互フォローは、作成者もフォローし返すと見られる', async () => {
+			const mutual = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '相互フォロー限定', date, startTime: '11:00', visibility: 'mutual' },
+				user: alice,
+			});
+			assert.ok(!await canShow(mutual.id, frank));
+			await api('following/create', { userId: frank.id }, alice);
+			assert.ok(await canShow(mutual.id, frank));
+		});
+
+		test('指定ユーザーは指定した人だけが見られ、作るとその人に招待の通知が届く', async () => {
+			const specified = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '指定ユーザー限定', date, startTime: '12:00', visibility: 'specified', visibleUserIds: [grace.id, alice.id] },
+				user: alice,
+			});
+			assert.strictEqual(specified.visibility, 'specified');
+			assert.deepStrictEqual(specified.visibleUserIds, [grace.id]);
+
+			assert.ok(await canShow(specified.id, grace));
+			assert.ok(!await canShow(specified.id, frank));
+
+			await vi.waitFor(async () => {
+				const notifications = await invitedNotifications(grace, specified.id);
+				assert.strictEqual(notifications.length, 1);
+				assert.ok(notifications[0].type === 'calendarEventInvited');
+				assert.strictEqual(notifications[0].user.id, alice.id);
+			}, { timeout: 5000, interval: 50 });
+			assert.strictEqual((await invitedNotifications(frank, specified.id)).length, 0);
+
+			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: specified.id }, user: grace });
+			assert.strictEqual(shown.invitedBy?.id, alice.id);
+		});
+
+		test('指定ユーザーが作成者だけのときはエラー', async () => {
+			const res = await api('calendar/events/create', { title: 'x', date, startTime: '12:00', visibility: 'specified', visibleUserIds: [alice.id] }, alice);
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual(castAsError(res.body).error.code, 'INVALID_CALENDAR_EVENT');
+			assert.strictEqual((castAsError(res.body).error.info as { reason: string }).reason, 'visibleUsersRequired');
+		});
+
+		test('リストはメンバーが見られて招待され、ほかの人のリストは使えない', async () => {
+			const list = await successfulApiCall({ endpoint: 'users/lists/create', parameters: { name: 'calendar' }, user: alice });
+			await successfulApiCall({ endpoint: 'users/lists/push', parameters: { listId: list.id, userId: grace.id }, user: alice });
+
+			const listEvent = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: 'リスト限定', date, startTime: '13:00', visibility: 'list', userListId: list.id },
+				user: alice,
+			});
+			assert.strictEqual(listEvent.userListId, list.id);
+			assert.ok(await canShow(listEvent.id, grace));
+			assert.ok(!await canShow(listEvent.id, frank));
+			await vi.waitFor(async () => {
+				assert.strictEqual((await invitedNotifications(grace, listEvent.id)).length, 1);
+			}, { timeout: 5000, interval: 50 });
+
+			const res = await api('calendar/events/create', { title: 'x', date, startTime: '12:00', visibility: 'list', userListId: list.id }, bob);
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((castAsError(res.body).error.info as { reason: string }).reason, 'invalidUserList');
+		});
+
+		test('公開範囲を狭めると、範囲の外になった人の購読が外れる', async () => {
+			const target = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: 'あとで狭める', date, startTime: '14:00' }, user: alice });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: frank });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: grace });
+
+			const updated = await successfulApiCall({
+				endpoint: 'calendar/events/update',
+				parameters: { eventId: target.id, visibility: 'specified', visibleUserIds: [grace.id] },
+				user: alice,
+			});
+			assert.strictEqual(updated.visibility, 'specified');
+			assert.strictEqual(updated.subscribersCount, 2);
+			assert.ok(!await canShow(target.id, frank));
+			assert.ok(await canShow(target.id, grace));
+		});
+
+		test('ノートに付けたイベントは、公開範囲の外の人には付かない (ノートだけ見える)', async () => {
+			const note = (await api('notes/create', {
+				text: '指定ユーザー向けのイベントを告知',
+				calendarEvent: { title: 'ノートで告知', date, startTime: '15:00', visibility: 'specified', visibleUserIds: [grace.id] },
+			}, alice)).body.createdNote;
+
+			await vi.waitFor(async () => {
+				const forGrace = await successfulApiCall({ endpoint: 'notes/show', parameters: { noteId: note.id }, user: grace });
+				assert.strictEqual(forGrace.calendarEvent?.title, 'ノートで告知');
+			}, { timeout: 5000, interval: 50 });
+			const forFrank = await successfulApiCall({ endpoint: 'notes/show', parameters: { noteId: note.id }, user: frank });
+			assert.strictEqual(forFrank.calendarEvent, undefined);
+		});
+
+		test('公開範囲の外になったイベントは、購読を外せるが中身は返さず、編集などのエラーでも存在が分からない', async () => {
+			const target = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: 'あとで見えなくなる', date, startTime: '16:00' }, user: alice });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: frank });
+			// 招待の通知は、イベントが見られるあいだは出る
+			await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userIds: [grace.id] }, user: alice });
+			await vi.waitFor(async () => {
+				assert.strictEqual((await invitedNotifications(grace, target.id)).length, 1);
+			}, { timeout: 5000, interval: 50 });
+
+			// 公開範囲を狭めて frank と grace が見られないようにする
+			await successfulApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: target.id, visibility: 'specified', visibleUserIds: [carol.id] }, user: alice });
+
+			await failedApiCall({ endpoint: 'calendar/events/unsubscribe', parameters: { eventId: target.id }, user: frank }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: 'c0c8b27b-3858-4ef0-9c13-c255a97be389' });
+			await failedApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: target.id, title: 'x' }, user: grace }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '4a76d49b-9560-4c56-b199-ba395d7f2c1f' });
+			const graceNote = await post(grace, { text: 'x' });
+			await failedApiCall({ endpoint: 'calendar/events/link-note', parameters: { noteId: graceNote.id, eventId: target.id }, user: grace }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: 'cea2e56f-0bcd-4557-9dc7-bc4b9a3d642d' });
+
+			// 見られなくなったイベントの通知は出さない (中身を引き直して出すので)
+			assert.strictEqual((await invitedNotifications(grace, target.id)).length, 0);
+		});
+
+		test('公開範囲の外のイベントは、購読者の一覧・招待でも存在しないのと同じエラー', async () => {
+			const hidden = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '見えない', date, startTime: '18:00', visibility: 'specified', visibleUserIds: [carol.id] },
+				user: alice,
+			});
+			await failedApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: hidden.id }, user: frank }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '66935c2f-b273-477d-94ef-0e3358048e32' });
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: hidden.id, userIds: [grace.id] }, user: frank }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '983c16f8-0bed-49ec-92f6-2a639172d2e0' });
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: hidden.id, userIds: [grace.id] }, user: frank }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '3fe65baa-d325-4863-8fe7-3f384762647f' });
+		});
+
+		test('指定ユーザー・リストのイベントは、購読しているだけでは招待できない (作成者はできる)', async () => {
+			const specified = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '招待は作成者だけ', date, startTime: '17:00', visibility: 'specified', visibleUserIds: [grace.id, frank.id] },
+				user: alice,
+			});
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: specified.id }, user: grace });
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: specified.id, userIds: [frank.id] }, user: grace }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
+			const statuses = await successfulApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: specified.id, userIds: [frank.id, dave.id] }, user: alice });
+			assert.deepStrictEqual(statuses.map(s => s.status), ['invited', 'unavailable']);
+		});
+
+		test('すべての配信は、鍵の持ち主が見られるイベントだけ', async () => {
+			const graceUrls = await successfulApiCall({ endpoint: 'i/calendar-feed', parameters: {}, user: grace });
+			const res = await relativeFetch(new URL(graceUrls.allUrl).pathname);
+			const unfolded = (await res.text()).replace(/\r\n /g, '');
+			assert.ok(!unfolded.includes(`UID:${followersEvent.id}@`));
+
+			const frankUrls = await successfulApiCall({ endpoint: 'i/calendar-feed', parameters: {}, user: frank });
+			const frankFeed = (await (await relativeFetch(new URL(frankUrls.allUrl).pathname)).text()).replace(/\r\n /g, '');
+			assert.ok(frankFeed.includes(`UID:${followersEvent.id}@`));
+		});
+	});
+
+	describe('購読者の一覧と招待', () => {
+		let hank: misskey.entities.SignupResponse;
+		let ivy: misskey.entities.SignupResponse;
+		let jack: misskey.entities.SignupResponse;
+		let target: misskey.entities.CalendarEvent;
+
+		async function invitedNotifications(user: misskey.entities.SignupResponse, eventId: string) {
+			const res = await api('i/notifications', { includeTypes: ['calendarEventInvited'] }, user);
+			assert.strictEqual(res.status, 200);
+			return res.body.filter(n => n.type === 'calendarEventInvited' && n.event.id === eventId);
+		}
+
+		beforeAll(async () => {
+			hank = await signup({ username: 'hank' });
+			ivy = await signup({ username: 'ivy' });
+			jack = await signup({ username: 'jack' });
+			target = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '購読者と招待', date, startTime: '16:00' }, user: hank });
+			await api('following/create', { userId: jack.id }, ivy);
+		}, 1000 * 60);
+
+		test('購読者の一覧は作成者を除き、新しく購読した順。フォローしている人に絞れる', async () => {
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: alice });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: jack });
+			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: bob });
+
+			const all = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id }, user: ivy });
+			assert.deepStrictEqual(all.map(s => s.user.id), [bob.id, jack.id, alice.id]);
+			assert.deepStrictEqual(all.map(s => s.isFollowing), [false, true, false]);
+
+			const following = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, filter: 'following' }, user: ivy });
+			assert.deepStrictEqual(following.map(s => s.user.id), [jack.id]);
+
+			const page = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, limit: 2 }, user: ivy });
+			const next = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, untilId: page.at(-1)!.id }, user: ivy });
+			assert.deepStrictEqual(next.map(s => s.user.id), [alice.id]);
+
+			// イベントのページでは、フォローしている人を先にアバターを並べる
+			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: target.id }, user: ivy });
+			assert.strictEqual(shown.followingSubscribersCount, 1);
+			assert.strictEqual(shown.subscribersPreview?.[0].id, jack.id);
+			assert.strictEqual(shown.subscribersPreview?.length, 4);
+			assert.strictEqual(shown.invitedBy, null);
+		});
+
+		test('購読していない人は招待できない', async () => {
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userIds: [dave.id] }, user: ivy }, { status: 400, code: 'ACCESS_DENIED', id: 'ffe95d7b-cf6b-4975-8d4c-d2d9443e3bf8' });
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: target.id, userIds: [dave.id] }, user: ivy }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
+		});
+
+		test('購読している人は招待でき、招待された人には招待した人の名前で通知が届く。同じ人には 1 回だけ', async () => {
+			const result = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userIds: [ivy.id, hank.id, alice.id, jack.id] }, user: jack });
+			assert.deepStrictEqual(result, { invited: 1, subscribed: 2, alreadyInvited: 0, unavailable: 1 });
+
+			await vi.waitFor(async () => {
+				const notifications = await invitedNotifications(ivy, target.id);
+				assert.strictEqual(notifications.length, 1);
+				assert.ok(notifications[0].type === 'calendarEventInvited');
+				assert.strictEqual(notifications[0].user.id, jack.id);
+			}, { timeout: 5000, interval: 50 });
+
+			const again = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userIds: [ivy.id] }, user: hank });
+			assert.deepStrictEqual(again, { invited: 0, subscribed: 0, alreadyInvited: 1, unavailable: 0 });
+
+			const statuses = await successfulApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: target.id, userIds: [hank.id, ivy.id, dave.id, jack.id] }, user: jack });
+			assert.deepStrictEqual(statuses, [
+				{ userId: hank.id, status: 'subscribed' },
+				{ userId: ivy.id, status: 'invited' },
+				{ userId: dave.id, status: 'invitable' },
+				{ userId: jack.id, status: 'unavailable' },
+			]);
+
+			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: target.id }, user: ivy });
+			assert.strictEqual(shown.invitedBy?.id, jack.id);
+		});
+
+		test('自分のリストのメンバーを招待できる。dryRun では送らずに数だけ返す', async () => {
+			const list = await successfulApiCall({ endpoint: 'users/lists/create', parameters: { name: 'invite' }, user: jack });
+			for (const user of [dave, erin, alice]) {
+				await successfulApiCall({ endpoint: 'users/lists/push', parameters: { listId: list.id, userId: user.id }, user: jack });
+			}
+
+			const dry = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userListId: list.id, dryRun: true }, user: jack });
+			assert.deepStrictEqual(dry, { invited: 2, subscribed: 1, alreadyInvited: 0, unavailable: 0 });
+			assert.strictEqual((await invitedNotifications(dave, target.id)).length, 0);
+
+			const sent = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userListId: list.id }, user: jack });
+			assert.deepStrictEqual(sent, { invited: 2, subscribed: 1, alreadyInvited: 0, unavailable: 0 });
+			await vi.waitFor(async () => {
+				assert.strictEqual((await invitedNotifications(dave, target.id)).length, 1);
+			}, { timeout: 5000, interval: 50 });
+
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: target.id, userListId: list.id }, user: hank }, { status: 400, code: 'NO_SUCH_LIST', id: 'ad4767f7-72d5-4995-bc83-c194c0aa350c' });
+		});
+
+		test('招待の通知をオフにした人には届かないが、招待済みになる', async () => {
+			await successfulApiCall({ endpoint: 'i/calendar-notification-settings/update', parameters: { invited: false }, user: bob });
+			const quiet = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '通知しない', date, startTime: '17:00' }, user: hank });
+			const result = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: quiet.id, userIds: [bob.id] }, user: hank });
+			assert.strictEqual(result.invited, 1);
+
+			// 通知は裏で作るので、ほかの人に届くのを待ってから確かめる
+			await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: quiet.id, userIds: [ivy.id] }, user: hank });
+			await vi.waitFor(async () => {
+				assert.strictEqual((await invitedNotifications(ivy, quiet.id)).length, 1);
+			}, { timeout: 5000, interval: 50 });
+			assert.strictEqual((await invitedNotifications(bob, quiet.id)).length, 0);
+			const statuses = await successfulApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: quiet.id, userIds: [bob.id] }, user: hank });
+			assert.strictEqual(statuses[0].status, 'invited');
+		});
+
+		test('公開範囲の外の人は招待できず、中止したイベントには招待できない', async () => {
+			const followersOnly = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: 'フォロワーだけ', date, startTime: '18:00', visibility: 'followers' },
+				user: hank,
+			});
+			const result = await successfulApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: hank });
+			assert.deepStrictEqual(result, { invited: 0, subscribed: 0, alreadyInvited: 0, unavailable: 1 });
+
+			await successfulApiCall({ endpoint: 'calendar/events/cancel', parameters: { eventId: followersOnly.id }, user: hank });
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: hank }, { status: 400, code: 'CALENDAR_EVENT_CANCELED', id: '8873aebe-3ee9-4ce7-83df-d20af01cd98d' });
+		});
+
+		test('作成者がフォロワー (相互フォローならフォローも) を非公開にしているイベントには、購読者は招待できない', async () => {
+			const kate = await signup({ username: 'kate' });
+			const leo = await signup({ username: 'leo' });
+			await api('following/create', { userId: kate.id }, leo);
+			await api('following/create', { userId: leo.id }, kate);
+			const followersOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: 'フォロワー限定', date, startTime: '19:00', visibility: 'followers' }, user: kate });
+			const mutualOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '相互フォロー限定', date, startTime: '20:00', visibility: 'mutual' }, user: kate });
+			for (const event of [followersOnly, mutualOnly]) {
+				await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: event.id }, user: leo });
+			}
+			const canInvite = async (event: misskey.entities.CalendarEvent, user: misskey.entities.SignupResponse) =>
+				(await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: event.id }, user })).canInvite;
+
+			assert.strictEqual(await canInvite(followersOnly, leo), true);
+			assert.strictEqual(await canInvite(mutualOnly, leo), true);
+
+			// 招待できるかの状態から、作成者をフォローしているかが分かってしまう
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'private' }, user: kate });
+			assert.strictEqual(await canInvite(followersOnly, leo), false);
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: followersOnly.id, userIds: [ivy.id], dryRun: true }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'ffe95d7b-cf6b-4975-8d4c-d2d9443e3bf8' });
+			// 作成者は自分で送れる
+			assert.strictEqual(await canInvite(followersOnly, kate), true);
+			await successfulApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: kate });
+
+			// 相互フォローは、フォローの一覧を非公開にしていても送れない
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'followers', followingVisibility: 'private' }, user: kate });
+			assert.strictEqual(await canInvite(followersOnly, leo), true);
+			assert.strictEqual(await canInvite(mutualOnly, leo), false);
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: mutualOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
 		});
 	});
 });

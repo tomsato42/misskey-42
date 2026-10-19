@@ -41,7 +41,7 @@ import { i18n } from '@/i18n.js';
 import { DI } from '@/di.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { dayOfWeek, parseCalendarDate } from '@/utility/calendar.js';
-import { formatCalendarDay, formatCalendarEventTime, getCalendarApiErrorMessage, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
+import { formatCalendarDay, formatCalendarEventTime, getCalendarApiErrorMessage, getCalendarVisibilityLabel, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
 
 const props = defineProps<{
 	event: Misskey.entities.CalendarEventLite;
@@ -65,6 +65,8 @@ const weekday = computed(() => parseCalendarDate(props.event.date) != null ? day
 const metaText = computed(() => [
 	formatCalendarEventTime(props.event),
 	props.event.location,
+	// 全員以外に公開しているときは、見られる人が限られることを示す
+	props.event.visibility !== 'public' ? getCalendarVisibilityLabel(props.event.visibility) : null,
 	i18n.tsx._calendar.subscribersShort({ n: subscribersCount.value }),
 ].filter(x => x != null && x !== '').join(' ・ '));
 

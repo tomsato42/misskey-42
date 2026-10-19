@@ -21,7 +21,9 @@ import {
 import { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import { MiCalendarEventSubscription } from '@/models/CalendarEventSubscription.js';
 import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
+import { isCalendarEventVisibleTo, normalizeCalendarEventVisibility } from '@/core/calendar/calendar-visibility.js';
 import type { CalendarEventScheduleChange } from '@/core/calendar/CalendarEventService.js';
+import type { CalendarEventVisibilityInput } from '@/core/calendar/calendar-visibility.js';
 
 type Row = { id: string; [key: string]: unknown };
 
@@ -129,7 +131,7 @@ class FakeTable<T extends Row> {
 	}
 }
 
-type EventRow = Row & Omit<MiCalendarEvent, 'user' | 'announcementNote'>;
+type EventRow = Row & Omit<MiCalendarEvent, 'user' | 'announcementNote' | 'userList'>;
 type SubscriptionRow = Row & { eventId: string; userId: string };
 type NoteLinkRow = Row & { eventId: string; noteId: string; userId: string };
 type ReminderRow = Row & { eventId: string; userId: string; kind: string };
@@ -149,6 +151,9 @@ describe('CalendarEventService', () => {
 	let scheduleChanges: CalendarEventScheduleChange[];
 	let canceledEvents: string[];
 	let notifiedOperators: string[];
+	let invitedAudiences: string[];
+	/** フォローの関係 ([followerId, followeeId]) */
+	let followings: [string, string][];
 	let service: CalendarEventService;
 
 	function tableOf(entity: unknown): FakeTable<any> {
@@ -219,6 +224,31 @@ describe('CalendarEventService', () => {
 			},
 		};
 
+		// 公開範囲の判定は calendar-visibility.ts の純粋関数と、メモリ上のフォローの関係で再現する (リストのメンバーは扱わない)
+		followings = [];
+		const canView = (event: EventRow, me: { id: string } | null | undefined) => {
+			if (me?.id === MOD.id) return true;
+			return isCalendarEventVisibleTo(event, me ?? null, {
+				isFollowingCreator: me != null && followings.some(([a, b]) => a === me.id && b === event.userId),
+				isFollowedByCreator: me != null && followings.some(([a, b]) => a === event.userId && b === me.id),
+			});
+		};
+		const fakeCalendarVisibilityService = {
+			resolve: async (input: CalendarEventVisibilityInput, creatorId: string) => normalizeCalendarEventVisibility(input, creatorId),
+			canView: async (event: EventRow, me: { id: string } | null | undefined) => canView(event, me),
+			filterVisible: async (rows: EventRow[], me: { id: string } | null | undefined) => rows.filter(e => canView(e, me)),
+			removeSubscriptionsOutsideVisibility: async (event: { id: string }) => {
+				const current = events.rows.find(e => e.id === event.id)!;
+				subscriptions.rows = subscriptions.rows.filter(s => s.eventId !== event.id || s.userId === current.userId || canView(current, { id: s.userId }));
+			},
+		};
+		invitedAudiences = [];
+		const fakeCalendarInvitationService = {
+			inviteAudience: async (event: { id: string }) => {
+				invitedAudiences.push(event.id);
+			},
+		};
+
 		service = new CalendarEventService(
 			fakeDb as any,
 			events as any,
@@ -228,6 +258,8 @@ describe('CalendarEventService', () => {
 			fakeRoleService as any,
 			{ gen: () => `id${String(++seq).padStart(4, '0')}` } as any,
 			fakeCalendarNotificationService as any,
+			fakeCalendarVisibilityService as any,
+			fakeCalendarInvitationService as any,
 		);
 	});
 
@@ -609,6 +641,81 @@ describe('CalendarEventService', () => {
 			expect((await service.listInRange(from, to, 'all', ALICE)).map(e => e.title)).toEqual(['early', 'allDay', 'late']);
 			expect((await service.listInRange(from, to, 'mine', ALICE)).map(e => e.id)).toEqual([late.id]);
 			expect((await service.listInRange(from, to, 'subscribed', ALICE)).map(e => e.id)).toEqual([early.id, late.id]);
+		});
+
+		test('listInRange は公開範囲の外のイベントを含めない', async () => {
+			const open = await service.create(BOB, { ...INPUT, title: 'open' });
+			await service.create(BOB, { ...INPUT, title: 'followers' }, { visibility: { visibility: 'followers' } });
+			await service.create(BOB, { ...INPUT, title: 'for carol' }, { visibility: { visibility: 'specified', visibleUserIds: ['carol'] } });
+
+			const from = new Date('2026-09-30T15:00:00.000Z');
+			const to = new Date('2026-10-31T15:00:00.000Z');
+
+			expect((await service.listInRange(from, to, 'all', ALICE)).map(e => e.id)).toEqual([open.id]);
+			followings.push([ALICE.id, BOB.id]);
+			expect((await service.listInRange(from, to, 'all', ALICE)).map(e => e.title)).toEqual(['open', 'followers']);
+			expect((await service.listInRange(from, to, 'all', BOB)).map(e => e.title)).toEqual(['open', 'followers', 'for carol']);
+			expect((await service.listInRange(from, to, 'all', MOD)).length).toBe(3);
+		});
+	});
+
+	describe('公開範囲', () => {
+		test('作るときに公開範囲を保存し、指定ユーザー・リストのときだけ見られる人を招待する', async () => {
+			const open = await service.create(ALICE, INPUT);
+			expect(await getEvent(open.id)).toMatchObject({ visibility: 'public', visibleUserIds: [], userListId: null });
+
+			const specified = await service.create(ALICE, INPUT, { visibility: { visibility: 'specified', visibleUserIds: ['bob', 'alice', 'bob'] } });
+			// 作成者と重複は除く
+			expect(await getEvent(specified.id)).toMatchObject({ visibility: 'specified', visibleUserIds: ['bob'] });
+
+			const list = await service.create(ALICE, INPUT, { visibility: { visibility: 'list', userListId: 'list1' } });
+			expect(await getEvent(list.id)).toMatchObject({ visibility: 'list', userListId: 'list1' });
+
+			await service.create(ALICE, INPUT, { visibility: { visibility: 'followers', visibleUserIds: ['bob'] } });
+
+			expect(invitedAudiences).toEqual([specified.id, list.id]);
+		});
+
+		test('指定ユーザーが作成者だけ、リストが無いときは検証エラーで、イベントは作らない', async () => {
+			await expect(service.create(ALICE, INPUT, { visibility: { visibility: 'specified', visibleUserIds: ['alice'] } }))
+				.rejects.toMatchObject({ reason: 'visibleUsersRequired' });
+			await expect(service.create(ALICE, INPUT, { visibility: { visibility: 'list' } }))
+				.rejects.toMatchObject({ reason: 'userListRequired' });
+			expect(events.rows).toHaveLength(0);
+		});
+
+		test('公開範囲を狭めると範囲の外になった人の購読を外し、変えたときだけ見られる人を招待する', async () => {
+			const created = await service.create(ALICE, INPUT);
+			await service.subscribe(created, BOB);
+			await service.subscribe(created, { id: 'carol' });
+
+			const unchanged = await service.update(await getEvent(created.id), { title: '名前だけ変える' }, ALICE);
+			expect(unchanged.visibilityChanged).toBe(false);
+
+			const result = await service.update(await getEvent(created.id), {}, ALICE, { visibility: 'specified', visibleUserIds: ['carol'] });
+			expect(result.visibilityChanged).toBe(true);
+			expect(await getEvent(created.id)).toMatchObject({ title: '名前だけ変える', visibility: 'specified', visibleUserIds: ['carol'] });
+			expect(subscriberIdsOf(created.id)).toEqual(['alice', 'carol']);
+			expect(invitedAudiences).toEqual([created.id]);
+
+			// 省略した項目は今の値のまま
+			await service.update(await getEvent(created.id), {}, ALICE, { visibleUserIds: ['carol', 'dave'] });
+			expect(await getEvent(created.id)).toMatchObject({ visibility: 'specified', visibleUserIds: ['carol', 'dave'] });
+			expect(invitedAudiences).toEqual([created.id, created.id]);
+		});
+
+		test('公開範囲の外のイベントは購読も、ノートの紐づけもできない (存在しないのと同じエラー)', async () => {
+			const created = await service.create(BOB, INPUT, { visibility: { visibility: 'mutual' } });
+
+			await expect(service.subscribe(created, ALICE)).rejects.toThrow(CalendarEventNotFoundError);
+			await expect(service.linkNote({ id: 'note1', userId: ALICE.id }, created.id, ALICE)).rejects.toThrow(CalendarEventNotFoundError);
+			await expect(service.findVisibleByIdOrFail(created.id, ALICE)).rejects.toThrow(CalendarEventNotFoundError);
+
+			// 相互フォローになれば見られる
+			followings.push([ALICE.id, BOB.id], [BOB.id, ALICE.id]);
+			await service.subscribe(created, ALICE);
+			expect(subscriberIdsOf(created.id)).toEqual(['alice', 'bob']);
+			expect((await service.findVisibleByIdOrFail(created.id, ALICE)).id).toBe(created.id);
 		});
 	});
 });

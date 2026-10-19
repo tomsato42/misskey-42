@@ -144,6 +144,14 @@ export async function mainBoot() {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {
 					closed: () => dispose(),
 				});
+			} else if (instance.intraLoginEnabled === true && !store.s.featureTutorialShown) {
+				// 42times: カレンダーとペア募集を足す前から使っている人にも、使い方の紹介を一度だけ出す。
+				// 初期設定が終わってから出す (初期設定からチュートリアルに進んだ人は、そこで見たことになる)
+				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkTutorialDialog.vue')), {
+					newFeatures: true,
+				}, {
+					closed: () => dispose(),
+				});
 			}
 		});
 

@@ -77,6 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		v-model:errors="calendarEventFormErrors"
 		:linkedEvent="linkedCalendarEvent"
 		:unavailableReason="calendarUnavailableReason"
+		:noteVisibility="visibility"
 		:disabled="posting || posted"
 		@stopAnnouncing="stopAnnouncingCalendarEvent"
 		@unlink="linkedCalendarEvent = null"
@@ -203,6 +204,7 @@ import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js
 import { pickCalendarEventForNote } from '@/utility/calendar-event-picker.js';
 import { buildCalendarNoteParams, getCalendarNoteFormUnavailableReason, getCalendarNoteUnlinkableReason } from '@/utility/calendar-note.js';
 import { toJstDateString } from '@/utility/calendar.js';
+import { noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
 
 const $i = ensureSignin();
 
@@ -826,10 +828,18 @@ function toggleAnnounceCalendarEvent() {
 		return;
 	}
 	if (calendarUnavailableReason.value != null) return;
-	calendarEventForm.value = createEmptyCalendarEventForm(toJstDateString(new Date()));
+	// イベントの公開範囲は、ノートの公開範囲に合わせて始める
+	calendarEventForm.value = createEmptyCalendarEventForm(toJstDateString(new Date()), noteVisibilityToCalendarVisibility(visibility.value));
 	calendarEventFormErrors.value = {};
 	linkedCalendarEvent.value = null;
 }
+
+// ノートの公開範囲を変えたとき、イベントの公開範囲をノートに合わせたままなら一緒に変える
+watch(visibility, (next, prev) => {
+	if (calendarEventForm.value == null) return;
+	if (calendarEventForm.value.visibility !== noteVisibilityToCalendarVisibility(prev)) return;
+	calendarEventForm.value = { ...calendarEventForm.value, visibility: noteVisibilityToCalendarVisibility(next) };
+});
 
 async function pickLinkedCalendarEvent(ev: PointerEvent) {
 	if (props.mock) return;

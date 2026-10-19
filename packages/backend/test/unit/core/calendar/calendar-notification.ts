@@ -84,11 +84,13 @@ describe('通知の返り値に足す項目', () => {
 
 describe('normalizeCalendarNotificationSettings', () => {
 	test('項目が無い・真偽値でないときは既定のオン', () => {
-		expect(normalizeCalendarNotificationSettings(null)).toEqual({ week: true, day: true, today: true, changes: true });
-		expect(normalizeCalendarNotificationSettings({ week: false, day: 'no' })).toEqual({ week: false, day: true, today: true, changes: true });
+		expect(normalizeCalendarNotificationSettings(null)).toEqual({ week: true, day: true, today: true, changes: true, invited: true });
+		expect(normalizeCalendarNotificationSettings({ week: false, day: 'no' })).toEqual({ week: false, day: true, today: true, changes: true, invited: true });
+		// 招待の項目が無い (足す前に保存した) 設定もオンになる
+		expect(normalizeCalendarNotificationSettings({ week: true, day: true, today: true, changes: false })).toEqual({ week: true, day: true, today: true, changes: false, invited: true });
 	});
 
 	test('余計な項目は落とす', () => {
-		expect(normalizeCalendarNotificationSettings({ changes: false, extra: true } as never)).toEqual({ week: true, day: true, today: true, changes: false });
+		expect(normalizeCalendarNotificationSettings({ changes: false, extra: true } as never)).toEqual({ week: true, day: true, today: true, changes: false, invited: true });
 	});
 });

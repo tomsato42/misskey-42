@@ -6840,6 +6840,144 @@ export interface Locale extends ILocale {
              */
             "doItToContinue": string;
         };
+        "_calendar": {
+            /**
+             * カレンダー
+             */
+            "title": string;
+            /**
+             * 学内のイベントを、みんなでひとつのカレンダーにまとめられます。気になるイベントを購読しておくと、近づいたときに通知が届きます。
+             */
+            "description": string;
+            /**
+             * 試しに「購読」を押してみましょう(練習なので実際には購読されません)
+             */
+            "trySubscribing": string;
+            /**
+             * これで、イベントの1週間前・前日・当日に通知が届きます
+             */
+            "subscribed": string;
+            /**
+             * イベントを作る
+             */
+            "create": string;
+            /**
+             * カレンダーの日付を押すか、投稿フォームの「イベントを告知」から作れます
+             */
+            "createDescription": string;
+            /**
+             * 購読する
+             */
+            "subscribe": string;
+            /**
+             * どの通知を受け取るかは、設定の「カレンダー」で選べます
+             */
+            "subscribeDescription": string;
+            /**
+             * カレンダー連携
+             */
+            "feed": string;
+            /**
+             * Googleカレンダーや Appleカレンダーにも表示できます
+             */
+            "feedDescription": string;
+            /**
+             * メニューの「カレンダー」からいつでも開けます。
+             */
+            "whereToOpen": string;
+            "_exampleEvent": {
+                /**
+                 * Libft 勉強会
+                 */
+                "title": string;
+                /**
+                 * 2F ラウンジ
+                 */
+                "location": string;
+            };
+        };
+        "_pairRecruitment": {
+            /**
+             * ペア募集
+             */
+            "title": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せます。42 intra の進み具合から、今取り組める課題だけが選べます。
+             */
+            "description": string;
+            /**
+             * 試しに「参加したい」を押してみましょう(練習なので実際には送られません)
+             */
+            "tryJoining": string;
+            /**
+             * 募集した人が承認すると、メンバーに決まって通知が届きます
+             */
+            "joined": string;
+            /**
+             * 募集する
+             */
+            "step1": string;
+            /**
+             * 課題・人数・始める時期を選んで募集
+             */
+            "step1Description": string;
+            /**
+             * 参加したい
+             */
+            "step2": string;
+            /**
+             * 気になる募集に参加希望を送る
+             */
+            "step2Description": string;
+            /**
+             * 承認
+             */
+            "step3": string;
+            /**
+             * 募集した人が承認してメンバーが決まる
+             */
+            "step3Description": string;
+            /**
+             * 課題を終えた人は「アドバイスする」から、募集した人にチャットで相談に乗れます
+             */
+            "advise": string;
+            /**
+             * メニューの「ペア募集」から募集の一覧を開けます。
+             */
+            "whereToOpen": string;
+            "_exampleRecruitment": {
+                /**
+                 * サーバー側を一緒に作れる人を探しています。平日の夜に進めたいです。
+                 */
+                "comment": string;
+            };
+        };
+        "_newFeatures": {
+            /**
+             * 新しい機能
+             */
+            "title": string;
+            /**
+             * 新しい機能が使えるようになりました
+             */
+            "heading": string;
+            /**
+             * {name} に「カレンダー」と「ペア募集」が加わりました。1分ほどで使い方を紹介します。
+             */
+            "description": ParameterizedString<"name">;
+            /**
+             * 学内のイベントを共有して、購読すると通知が届く
+             */
+            "calendarDescription": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せる
+             */
+            "pairRecruitmentDescription": string;
+            /**
+             * 使い方を見る
+             */
+            "showMe": string;
+        };
         "_done": {
             /**
              * チュートリアルは終了です🎉
@@ -11118,6 +11256,10 @@ export interface Locale extends ILocale {
              */
             "calendarEventUpdated": string;
             /**
+             * イベントへの招待
+             */
+            "calendarEventInvited": string;
+            /**
              * ペア募集への参加希望
              */
             "pairJoinRequested": string;
@@ -14179,6 +14321,280 @@ export interface Locale extends ILocale {
          * {before} → {after}
          */
         "scheduleChange": ParameterizedString<"before" | "after">;
+        /**
+         * {month}月のイベント
+         */
+        "monthEvents": ParameterizedString<"month">;
+        /**
+         * {n}件
+         */
+        "eventsCount": ParameterizedString<"n">;
+        /**
+         * この月のイベントはありません
+         */
+        "noEventsThisMonth": string;
+        /**
+         * 今日 ・ {date}
+         */
+        "todayWithDate": ParameterizedString<"date">;
+        /**
+         * 全員以外に公開
+         */
+        "restrictedVisibility": string;
+        /**
+         * 公開範囲
+         */
+        "visibility": string;
+        /**
+         * イベントの公開範囲
+         */
+        "eventVisibility": string;
+        /**
+         * すべてのユーザーのカレンダーに表示されます。
+         */
+        "visibilityPublicCaption": string;
+        /**
+         * あなたのフォロワーだけが見られます。あとからフォローした人も見られます。
+         */
+        "visibilityFollowersCaption": string;
+        /**
+         * あなたと相互フォローの人だけが見られます。
+         */
+        "visibilityMutualCaption": string;
+        /**
+         * 作成したあと、イベントページの「招待」から人やリストに通知を送れます。
+         */
+        "inviteFromEventPage": string;
+        /**
+         * 作成すると、{n}人に招待の通知が届きます。ここで追加した人だけが見られます。
+         */
+        "willInviteUsers": ParameterizedString<"n">;
+        /**
+         * 作成すると、リストのメンバー{n}人に招待の通知が届きます。あとからリストに追加した人も見られます (通知は届きません)。
+         */
+        "willInviteListMembers": ParameterizedString<"n">;
+        /**
+         * 保存すると、新しく見られるようになった人に招待の通知が届きます。範囲の外になった人の購読は外れます。
+         */
+        "willInviteNewAudience": string;
+        /**
+         * 招待する人
+         */
+        "invitees": string;
+        /**
+         * 招待する人を追加
+         */
+        "addInvitee": string;
+        /**
+         * {user} を外す
+         */
+        "removeInvitee": ParameterizedString<"user">;
+        /**
+         * リスト
+         */
+        "userList": string;
+        /**
+         * リストがありません。リストを作るとメンバーに公開できます。
+         */
+        "noUserLists": string;
+        /**
+         * {name} ({n}人)
+         */
+        "listWithCount": ParameterizedString<"name" | "n">;
+        /**
+         * ノートは「{note}」ですが、イベントは「{event}」の人にだけ表示されます。ほかの人にはノートだけが表示され、イベントのカードは出ません。
+         */
+        "narrowerThanNote": ParameterizedString<"note" | "event">;
+        /**
+         * ノートに合わせる
+         */
+        "matchNoteVisibility": string;
+        /**
+         * {user} のフォロワーに公開
+         */
+        "visibleToFollowersOf": ParameterizedString<"user">;
+        /**
+         * {user} と相互フォローのユーザーに公開
+         */
+        "visibleToMutualsOf": ParameterizedString<"user">;
+        /**
+         * 指定したユーザーに公開
+         */
+        "visibleToSpecified": string;
+        /**
+         * 指定したユーザー ({n}人) に公開
+         */
+        "visibleToSpecifiedCount": ParameterizedString<"n">;
+        /**
+         * リストのメンバーに公開
+         */
+        "visibleToList": string;
+        /**
+         * リスト「{name}」のメンバーに公開
+         */
+        "visibleToNamedList": ParameterizedString<"name">;
+        /**
+         * 購読者 {n}人
+         */
+        "subscribersWithCount": ParameterizedString<"n">;
+        /**
+         * フォロー中の{n}人を含む
+         */
+        "includesFollowing": ParameterizedString<"n">;
+        /**
+         * 購読者の一覧を開く
+         */
+        "openSubscribers": string;
+        /**
+         * 作成者
+         */
+        "creator": string;
+        /**
+         * フォロー中
+         */
+        "followingUsers": string;
+        /**
+         * 作成者のほかに購読している人はいません
+         */
+        "noSubscribers": string;
+        /**
+         * フォローしている人は購読していません
+         */
+        "noFollowingSubscribers": string;
+        /**
+         * 招待
+         */
+        "invite": string;
+        /**
+         * イベントに招待
+         */
+        "inviteToEvent": string;
+        /**
+         * ユーザー
+         */
+        "inviteUsers": string;
+        /**
+         * リスト
+         */
+        "inviteList": string;
+        /**
+         * 名前・ログイン名で検索
+         */
+        "searchUsers": string;
+        /**
+         * あなたのリスト
+         */
+        "yourLists": string;
+        /**
+         * 購読中
+         */
+        "inviteStatusSubscribed": string;
+        /**
+         * 招待済み
+         */
+        "inviteStatusInvited": string;
+        /**
+         * 公開範囲の外
+         */
+        "inviteStatusUnavailable": string;
+        /**
+         * 購読中 (送りません)
+         */
+        "inviteBreakdownSubscribed": string;
+        /**
+         * 招待済み (送りません)
+         */
+        "inviteBreakdownInvited": string;
+        /**
+         * 公開範囲の外 (送れません)
+         */
+        "inviteBreakdownUnavailable": string;
+        /**
+         * 招待を送る人
+         */
+        "inviteBreakdownSend": string;
+        /**
+         * {n}人に招待を送ります
+         */
+        "willSendInvites": ParameterizedString<"n">;
+        /**
+         * 招待する人を選んでください
+         */
+        "selectInvitees": string;
+        /**
+         * リストを選んでください
+         */
+        "selectUserList": string;
+        /**
+         * 招待を送る
+         */
+        "sendInvites": string;
+        /**
+         * {n}人に招待を送りました
+         */
+        "invitesSent": ParameterizedString<"n">;
+        /**
+         * 招待を送る人はいませんでした
+         */
+        "noInvitesSent": string;
+        /**
+         * 招待した人には、あなたの名前で通知が届きます。同じ人に送れるのは1回だけです。
+         */
+        "inviteNotice": string;
+        /**
+         * このイベントは「{visibility}」に公開されています。見られない人には送れません。
+         */
+        "inviteLimitedNotice": ParameterizedString<"visibility">;
+        /**
+         * {user} さんから招待されています
+         */
+        "invitedBy": ParameterizedString<"user">;
+        /**
+         * {n}人
+         */
+        "usersCount": ParameterizedString<"n">;
+        "_visibility": {
+            /**
+             * 全員
+             */
+            "public": string;
+            /**
+             * すべてのユーザーに公開
+             */
+            "publicDescription": string;
+            /**
+             * フォロワー
+             */
+            "followers": string;
+            /**
+             * 自分のフォロワーに公開
+             */
+            "followersDescription": string;
+            /**
+             * 相互フォロー
+             */
+            "mutual": string;
+            /**
+             * 相互フォローのユーザーに公開
+             */
+            "mutualDescription": string;
+            /**
+             * 指定ユーザー
+             */
+            "specified": string;
+            /**
+             * 指定したユーザーに公開
+             */
+            "specifiedDescription": string;
+            /**
+             * リスト
+             */
+            "list": string;
+            /**
+             * リストのメンバーに公開
+             */
+            "listDescription": string;
+        };
         "_notification": {
             /**
              * 1週間後のイベント
@@ -14200,6 +14616,14 @@ export interface Locale extends ILocale {
              * 中止されました
              */
             "canceled": string;
+            /**
+             * イベントに招待されました
+             */
+            "invited": string;
+            /**
+             * 購読しました
+             */
+            "subscribedFromNotification": string;
         };
         "_notificationSettings": {
             /**
@@ -14207,7 +14631,7 @@ export interface Locale extends ILocale {
              */
             "title": string;
             /**
-             * 購読しているイベントの通知
+             * カレンダーのイベントの通知
              */
             "caption": string;
             /**
@@ -14242,6 +14666,14 @@ export interface Locale extends ILocale {
              * 購読しているイベントの日時が変わったときや、中止になったとき
              */
             "changesCaption": string;
+            /**
+             * 招待の通知
+             */
+            "invited": string;
+            /**
+             * 指定ユーザー・リストに公開されたイベントや、イベントページの「招待」で招待されたとき
+             */
+            "invitedCaption": string;
         };
         "_feed": {
             /**
@@ -14261,7 +14693,7 @@ export interface Locale extends ILocale {
              */
             "all": string;
             /**
-             * 42times にあるすべてのイベント
+             * 42times にある、あなたが見られるすべてのイベント
              */
             "allCaption": string;
             /**
@@ -14404,6 +14836,22 @@ export interface Locale extends ILocale {
              * 本文の無いリノートはイベントに紐づけられません。
              */
             "cannotLinkPureRenote": string;
+            /**
+             * 招待する人を1人以上追加してください。
+             */
+            "visibleUsersRequired": string;
+            /**
+             * 招待する人は{max}人までです。
+             */
+            "tooManyVisibleUsers": ParameterizedString<"max">;
+            /**
+             * リストを選んでください。
+             */
+            "userListRequired": string;
+            /**
+             * このリストは使えません。自分のリストを選んでください。
+             */
+            "invalidUserList": string;
         };
     };
 }

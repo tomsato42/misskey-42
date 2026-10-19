@@ -16,7 +16,7 @@ export const meta = {
 
 	kind: 'read:account',
 
-	description: 'Get which notifications you receive for the calendar events you subscribe to.',
+	description: 'Get which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations).',
 
 	res: {
 		type: 'object',

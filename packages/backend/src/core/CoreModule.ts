@@ -158,6 +158,8 @@ import { CalendarEventService } from './calendar/CalendarEventService.js';
 import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
 import { CalendarNotificationService } from './calendar/CalendarNotificationService.js';
 import { CalendarFeedService } from './calendar/CalendarFeedService.js';
+import { CalendarVisibilityService } from './calendar/CalendarVisibilityService.js';
+import { CalendarInvitationService } from './calendar/CalendarInvitationService.js';
 import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
 import { IntraProjectService } from './intra/IntraProjectService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
@@ -323,6 +325,8 @@ const $CalendarEventService: Provider = { provide: 'CalendarEventService', useEx
 const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService', useExisting: CalendarNotePostService };
 const $CalendarNotificationService: Provider = { provide: 'CalendarNotificationService', useExisting: CalendarNotificationService };
 const $CalendarFeedService: Provider = { provide: 'CalendarFeedService', useExisting: CalendarFeedService };
+const $CalendarVisibilityService: Provider = { provide: 'CalendarVisibilityService', useExisting: CalendarVisibilityService };
+const $CalendarInvitationService: Provider = { provide: 'CalendarInvitationService', useExisting: CalendarInvitationService };
 const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
 const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
@@ -488,6 +492,8 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		CalendarNotePostService,
 		CalendarNotificationService,
 		CalendarFeedService,
+		CalendarVisibilityService,
+		CalendarInvitationService,
 		CalendarEventEntityService,
 		IntraProjectService,
 		PairRecruitmentService,
@@ -649,6 +655,8 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$CalendarNotePostService,
 		$CalendarNotificationService,
 		$CalendarFeedService,
+		$CalendarVisibilityService,
+		$CalendarInvitationService,
 		$CalendarEventEntityService,
 		$IntraProjectService,
 		$PairRecruitmentService,
@@ -811,6 +819,8 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		CalendarNotePostService,
 		CalendarNotificationService,
 		CalendarFeedService,
+		CalendarVisibilityService,
+		CalendarInvitationService,
 		CalendarEventEntityService,
 		IntraProjectService,
 		PairRecruitmentService,
@@ -970,6 +980,8 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$CalendarNotePostService,
 		$CalendarNotificationService,
 		$CalendarFeedService,
+		$CalendarVisibilityService,
+		$CalendarInvitationService,
 		$CalendarEventEntityService,
 		$IntraProjectService,
 		$PairRecruitmentService,

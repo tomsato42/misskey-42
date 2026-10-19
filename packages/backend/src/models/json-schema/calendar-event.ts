@@ -5,6 +5,8 @@
 
 // 日付と時刻は日本時間 (Asia/Tokyo)。startsAt / endsAt は同じ日時を ISO 8601 (UTC) で表したもの
 
+import { calendarEventVisibilities } from '@/core/calendar/calendar-visibility.js';
+
 const calendarEventLiteProperties = {
 	id: {
 		type: 'string',
@@ -51,6 +53,12 @@ const calendarEventLiteProperties = {
 	location: {
 		type: 'string',
 		optional: false, nullable: true,
+	},
+	visibility: {
+		type: 'string',
+		optional: false, nullable: false,
+		enum: calendarEventVisibilities,
+		description: 'public: everyone, followers: followers of the creator, mutual: mutual followers of the creator, specified: the specified users, list: members of the creator\'s list. The creator and moderators can always see the event.',
 	},
 	isCanceled: {
 		type: 'boolean',
@@ -123,6 +131,48 @@ export const packedCalendarEventSchema = {
 			optional: true, nullable: false,
 			description: 'Whether the viewer can edit, cancel or delete the event. Only present when the viewer is signed in.',
 		},
+		visibleUserIds: {
+			type: 'array',
+			optional: true, nullable: false,
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			description: 'The users who can see the event when visibility is specified (excluding the creator). Only present when the viewer can manage the event.',
+		},
+		userListId: {
+			type: 'string',
+			optional: true, nullable: true,
+			format: 'id',
+			description: 'The list whose members can see the event when visibility is list. null if visibility is not list or the list has been deleted. Only present when the viewer can manage the event.',
+		},
+		subscribersPreview: {
+			type: 'array',
+			optional: true, nullable: false,
+			items: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			description: 'Up to 5 subscribers, the users you follow first. Only present in calendar/events/show.',
+		},
+		followingSubscribersCount: {
+			type: 'integer',
+			optional: true, nullable: false,
+			description: 'The number of subscribers you follow (excluding the creator). Only present in calendar/events/show.',
+		},
+		invitedBy: {
+			type: 'object',
+			ref: 'UserLite',
+			optional: true, nullable: true,
+			description: 'The user who invited you to the event. null if you are not invited. Only present in calendar/events/show.',
+		},
+		canInvite: {
+			type: 'boolean',
+			optional: true, nullable: false,
+			description: 'Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show.',
+		},
 	},
 } as const;
 
@@ -148,7 +198,7 @@ export const packedCalendarFeedUrlsSchema = {
 } as const;
 
 /**
- * 購読しているイベントの通知を種類ごとに受け取るか
+ * カレンダーの通知を種類ごとに受け取るか (invited 以外は購読しているイベントの通知)
  */
 export const packedCalendarNotificationSettingsSchema = {
 	type: 'object',
@@ -172,6 +222,11 @@ export const packedCalendarNotificationSettingsSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 			description: 'When the date or time of the event changes, or the event is canceled.',
+		},
+		invited: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: 'When someone invites you to an event.',
 		},
 	},
 } as const;

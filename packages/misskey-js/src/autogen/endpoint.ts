@@ -185,6 +185,10 @@ import type {
 	CalendarEventsCreateRequest,
 	CalendarEventsCreateResponse,
 	CalendarEventsDeleteRequest,
+	CalendarEventsInvitationStatusesRequest,
+	CalendarEventsInvitationStatusesResponse,
+	CalendarEventsInviteRequest,
+	CalendarEventsInviteResponse,
 	CalendarEventsLinkNoteRequest,
 	CalendarEventsListRequest,
 	CalendarEventsListResponse,
@@ -194,6 +198,8 @@ import type {
 	CalendarEventsShowResponse,
 	CalendarEventsSubscribeRequest,
 	CalendarEventsSubscribeResponse,
+	CalendarEventsSubscribersRequest,
+	CalendarEventsSubscribersResponse,
 	CalendarEventsUnlinkNoteRequest,
 	CalendarEventsUnsubscribeRequest,
 	CalendarEventsUnsubscribeResponse,
@@ -841,11 +847,14 @@ export type Endpoints = {
 	'calendar/events/cancel': { req: CalendarEventsCancelRequest; res: CalendarEventsCancelResponse };
 	'calendar/events/create': { req: CalendarEventsCreateRequest; res: CalendarEventsCreateResponse };
 	'calendar/events/delete': { req: CalendarEventsDeleteRequest; res: EmptyResponse };
+	'calendar/events/invitation-statuses': { req: CalendarEventsInvitationStatusesRequest; res: CalendarEventsInvitationStatusesResponse };
+	'calendar/events/invite': { req: CalendarEventsInviteRequest; res: CalendarEventsInviteResponse };
 	'calendar/events/link-note': { req: CalendarEventsLinkNoteRequest; res: EmptyResponse };
 	'calendar/events/list': { req: CalendarEventsListRequest; res: CalendarEventsListResponse };
 	'calendar/events/notes': { req: CalendarEventsNotesRequest; res: CalendarEventsNotesResponse };
 	'calendar/events/show': { req: CalendarEventsShowRequest; res: CalendarEventsShowResponse };
 	'calendar/events/subscribe': { req: CalendarEventsSubscribeRequest; res: CalendarEventsSubscribeResponse };
+	'calendar/events/subscribers': { req: CalendarEventsSubscribersRequest; res: CalendarEventsSubscribersResponse };
 	'calendar/events/unlink-note': { req: CalendarEventsUnlinkNoteRequest; res: EmptyResponse };
 	'calendar/events/unsubscribe': { req: CalendarEventsUnsubscribeRequest; res: CalendarEventsUnsubscribeResponse };
 	'calendar/events/upcoming': { req: CalendarEventsUpcomingRequest; res: CalendarEventsUpcomingResponse };

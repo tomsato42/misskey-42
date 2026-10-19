@@ -13,7 +13,7 @@ import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
 import { ApiError } from '../../error.js';
-import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput } from '../../calendar-api.js';
+import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput, toCalendarEventVisibilityInput } from '../../calendar-api.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -232,6 +232,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const onInserted = await this.calendarNotePostService.prepare(me, {
 				calendarEventId: ps.calendarEventId,
 				calendarEvent: ps.calendarEvent ? toCalendarEventInput(ps.calendarEvent) : null,
+				calendarEventVisibility: ps.calendarEvent ? toCalendarEventVisibilityInput(ps.calendarEvent) : null,
 				note: {
 					visibility: ps.visibility,
 					renoteId: ps.renoteId,

@@ -180,3 +180,34 @@ export function groupCalendarEventsByDate<T extends SortableCalendarEvent>(event
 	}
 	return map;
 }
+
+export type CalendarDateGroup<T> = {
+	/** 'YYYY-MM-DD' */
+	date: string;
+	events: T[];
+	/** 今日より前の日 */
+	isPast: boolean;
+	isToday: boolean;
+	/** この日の前に「今日」の区切りを入れるか (今日以降の最初の日で、それより前に日があるとき) */
+	todayDividerBefore: boolean;
+};
+
+/**
+ * 日付ごとに分けたイベントを、日付順の一覧にする (月のイベントの一覧用)
+ * @param today 'YYYY-MM-DD' (日本時間)
+ */
+export function buildCalendarDateGroups<T>(eventsByDate: ReadonlyMap<string, T[]>, today: string): CalendarDateGroup<T>[] {
+	let dividerPlaced = false;
+	return [...eventsByDate.keys()].sort().map((date, index) => {
+		const isPast = date < today;
+		const todayDividerBefore = !isPast && !dividerPlaced && index > 0;
+		if (!isPast) dividerPlaced = true;
+		return {
+			date,
+			events: eventsByDate.get(date)!,
+			isPast,
+			isToday: date === today,
+			todayDividerBefore,
+		};
+	});
+}

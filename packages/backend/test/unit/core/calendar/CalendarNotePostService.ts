@@ -64,8 +64,9 @@ describe('CalendarNotePostService.prepare', () => {
 	let calendarEventService: {
 		create: ReturnType<typeof vi.fn>;
 		linkNote: ReturnType<typeof vi.fn>;
-		findByIdOrFail: ReturnType<typeof vi.fn>;
+		findVisibleByIdOrFail: ReturnType<typeof vi.fn>;
 		getCreatedDatesSince: ReturnType<typeof vi.fn>;
+		resolveVisibility: ReturnType<typeof vi.fn>;
 	};
 	let warn: ReturnType<typeof vi.fn>;
 	let service: CalendarNotePostService;
@@ -74,8 +75,9 @@ describe('CalendarNotePostService.prepare', () => {
 		calendarEventService = {
 			create: vi.fn(async () => event({ userId: ME.id })),
 			linkNote: vi.fn(async () => event()),
-			findByIdOrFail: vi.fn(async () => event()),
+			findVisibleByIdOrFail: vi.fn(async () => event()),
 			getCreatedDatesSince: vi.fn(async () => []),
+			resolveVisibility: vi.fn(async () => ({ visibility: 'public', visibleUserIds: [], userListId: null })),
 		};
 		warn = vi.fn();
 		const loggerService = { getLogger: () => ({ warn }) } as unknown as LoggerService;
@@ -97,7 +99,7 @@ describe('CalendarNotePostService.prepare', () => {
 			.rejects.toBeInstanceOf(CalendarNoteNotLinkableError);
 		await expect(service.prepare(ME, { calendarEventId: 'event1', note: { ...NOTE_PARAMS, renoteId: 'r', text: undefined } }))
 			.rejects.toBeInstanceOf(CalendarNoteNotLinkableError);
-		expect(calendarEventService.findByIdOrFail).not.toHaveBeenCalled();
+		expect(calendarEventService.findVisibleByIdOrFail).not.toHaveBeenCalled();
 	});
 
 	describe('イベントを作る (calendarEvent)', () => {
@@ -112,7 +114,7 @@ describe('CalendarNotePostService.prepare', () => {
 
 			const note = createdNote();
 			await hook!(note);
-			expect(calendarEventService.create).toHaveBeenCalledWith(ME, { ...EVENT_INPUT, description: '今週もボドゲやります' }, { announcementNote: note });
+			expect(calendarEventService.create).toHaveBeenCalledWith(ME, { ...EVENT_INPUT, description: '今週もボドゲやります' }, { announcementNote: note, visibility: {} });
 		});
 
 		test('説明を指定したとき (null を含む) はノートの本文を使わない', async () => {
@@ -166,15 +168,34 @@ describe('CalendarNotePostService.prepare', () => {
 		});
 	});
 
+	describe('イベントの公開範囲', () => {
+		test('公開範囲はノートを作る前に確かめ、イベントを作るときに渡す', async () => {
+			const visibility = { visibility: 'list' as const, userListId: 'list1' };
+			const onInserted = await service.prepare(ME, { calendarEvent: EVENT_INPUT, calendarEventVisibility: visibility, note: NOTE_PARAMS });
+			expect(calendarEventService.resolveVisibility).toHaveBeenCalledWith(visibility, ME.id);
+			expect(calendarEventService.create).not.toHaveBeenCalled();
+
+			const note = createdNote();
+			await onInserted!(note);
+			expect(calendarEventService.create.mock.calls[0][2]).toEqual({ announcementNote: note, visibility });
+		});
+
+		test('公開範囲が仕様に合わなければ、ノートを作る前にエラー', async () => {
+			calendarEventService.resolveVisibility.mockRejectedValueOnce(new CalendarEventValidationError('invalidUserList'));
+			await expect(service.prepare(ME, { calendarEvent: EVENT_INPUT, calendarEventVisibility: { visibility: 'list', userListId: 'x' }, note: NOTE_PARAMS }))
+				.rejects.toMatchObject({ reason: 'invalidUserList' });
+		});
+	});
+
 	describe('既存のイベントに紐づける (calendarEventId)', () => {
 		test('イベントが無ければ、ノートを作る前にエラー', async () => {
-			calendarEventService.findByIdOrFail.mockRejectedValueOnce(new CalendarEventNotFoundError());
+			calendarEventService.findVisibleByIdOrFail.mockRejectedValueOnce(new CalendarEventNotFoundError());
 			await expect(service.prepare(ME, { calendarEventId: 'missing', note: NOTE_PARAMS }))
 				.rejects.toBeInstanceOf(CalendarEventNotFoundError);
 		});
 
 		test('中止したイベントには紐づけられない', async () => {
-			calendarEventService.findByIdOrFail.mockResolvedValueOnce(event({ canceledAt: new Date() }));
+			calendarEventService.findVisibleByIdOrFail.mockResolvedValueOnce(event({ canceledAt: new Date() }));
 			await expect(service.prepare(ME, { calendarEventId: 'event1', note: NOTE_PARAMS }))
 				.rejects.toBeInstanceOf(CalendarEventCanceledError);
 		});
