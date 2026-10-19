@@ -392,7 +392,7 @@ export class ClientServerService {
 		});
 
 		fastify.get('/robots.txt', async (request, reply) => {
-			// 学内SNSモードでは、すべてのクロールを禁止する
+			// 学内SNSモードでは、カレンダー配信の他はすべてのクロールを禁止する
 			if (intraMode) {
 				reply.header('Content-Type', 'text/plain; charset=utf-8');
 				return await reply.send(INTRA_ROBOTS_TXT);

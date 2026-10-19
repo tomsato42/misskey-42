@@ -35,9 +35,12 @@ export function isIntraMode(config: Pick<Config, 'intra'>): boolean {
 export const INTRA_X_ROBOTS_TAG = 'noindex, nofollow, noarchive';
 
 /**
- * 学内SNSモードの robots.txt (すべてのクロールを禁止する)
+ * 学内SNSモードの robots.txt (カレンダー配信の他はすべてのクロールを禁止する)。
+ * Google カレンダーの「URL で追加」は robots.txt に従うので、配信 (/calendar/feed/) だけは許可する。
+ * 配信の URL は推測できない鍵を含み、X-Robots-Tag でインデックスもさせないので、許可しても検索結果には出ない。
+ * Allow を先に書くのは、最初に当てはまった行を使う古いクローラーのため (Google は長く当てはまる方を使う)
  */
-export const INTRA_ROBOTS_TXT = 'User-agent: *\nDisallow: /\n';
+export const INTRA_ROBOTS_TXT = 'User-agent: *\nAllow: /calendar/feed/\nDisallow: /\n';
 
 /**
  * トークンなしのリクエストでこのエンドポイントを呼び出してよいか
