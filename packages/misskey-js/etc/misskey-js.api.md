@@ -2268,6 +2268,8 @@ declare namespace entities {
         PairRecruitmentsInviteCandidatesResponse,
         PairRecruitmentsListRequest,
         PairRecruitmentsListResponse,
+        PairRecruitmentsOpenChatRequest,
+        PairRecruitmentsOpenChatResponse,
         PairRecruitmentsProjectsResponse,
         PairRecruitmentsRejectRequest,
         PairRecruitmentsRejectResponse,
@@ -3479,6 +3481,12 @@ type PairRecruitmentsListRequest = operations['pair-recruitments___list']['reque
 
 // @public (undocumented)
 type PairRecruitmentsListResponse = operations['pair-recruitments___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsOpenChatRequest = operations['pair-recruitments___open-chat']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsOpenChatResponse = operations['pair-recruitments___open-chat']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type PairRecruitmentsProjectsResponse = operations['pair-recruitments___projects']['responses']['200']['content']['application/json'];

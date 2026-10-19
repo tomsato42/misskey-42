@@ -4567,6 +4567,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * 募集のチーム候補で話すチャットルームを開く。作成者・参加希望中・参加が決まった人 (締め切った後は作成者と参加が決まった人) だけ。ルームが無ければ作り、自分が入っていなければ入れる
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:chat*
+     */
+    request<E extends 'pair-recruitments/open-chat', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * 自分のキャンパスの 2 人以上で取り組む課題と、自分のその課題の判定の一覧。取り組める課題 (available, in_progress) を上に並べる。キャンパスが分からなければ空
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*

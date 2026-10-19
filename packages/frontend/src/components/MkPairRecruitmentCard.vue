@@ -7,9 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="[$style.root, { [$style.closed]: isClosed }]">
 	<div :class="$style.row1">
 		<MkA :to="detailPath" :class="[$style.project, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
-		<span v-if="multi" :class="$style.tag">{{ i18n.tsx._pairRecruitment.fromNProjects({ n: recruitment.projects.length }) }}</span>
 		<span v-if="isClosed" :class="$style.closedBadge"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
-		<MkPairProjectStateBadge v-if="recruitment.myProjectState != null && recruitment.myStatus !== 'owner'" :class="$style.state" :state="recruitment.myProjectState" variant="viewer"/>
+		<span v-if="showJoinability" :class="[$style.state, $style.joinability, { [$style.joinable]: applicable }]">
+			<i :class="applicable ? 'ti ti-circle-check' : 'ti ti-circle-minus'" aria-hidden="true"></i>{{ applicable ? i18n.ts._pairRecruitment.joinable : i18n.ts._pairRecruitment.notJoinable }}
+		</span>
 	</div>
 	<div :class="$style.who">
 		<MkAvatar :class="[$style.avatar, $style.raised]" :user="recruitment.user" link preview/>
@@ -43,7 +44,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed } from 'vue';
 import type * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
-import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import { i18n } from '@/i18n.js';
 import { canApply, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
@@ -66,6 +66,15 @@ const closedText = computed(() => {
 });
 const startText = computed(() => getStartTimingText(props.recruitment));
 const applicable = computed(() => canApply(props.recruitment));
+
+/**
+ * 右上に参加可能・参加不可を出すか。作成者、締め切った募集、参加希望を送った人 (右下に状態を出す) には出さない
+ */
+const showJoinability = computed(() => {
+	const r = props.recruitment;
+	if (r.status !== 'open' || r.myProjectState == null) return false;
+	return r.myStatus !== 'owner' && r.myStatus !== 'pending' && r.myStatus !== 'accepted' && r.myStatus !== 'rejected';
+});
 
 /**
  * カードの右下に出すもの。締め切った募集では出さない。
@@ -127,15 +136,6 @@ async function apply() {
 	opacity: 0.7;
 }
 
-.tag {
-	padding: 2px 10px;
-	border-radius: 999px;
-	background: var(--MI_THEME-accentedBg);
-	color: var(--MI_THEME-accent);
-	font-size: 0.8em;
-	white-space: nowrap;
-}
-
 .wanted {
 	display: flex;
 	flex-wrap: wrap;
@@ -170,6 +170,25 @@ async function apply() {
 
 .state {
 	margin-left: auto;
+}
+
+.joinability {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 0.85em;
+	white-space: nowrap;
+	background: var(--MI_THEME-buttonBg);
+	opacity: 0.8;
+}
+
+.joinable {
+	background: var(--MI_THEME-accent);
+	color: var(--MI_THEME-fgOnAccent);
+	font-weight: bold;
+	opacity: 1;
 }
 
 .closedBadge {

@@ -3673,6 +3673,7 @@ _pairRecruitment:
   withdraw: "取り下げる"
   withdrawConfirm: "参加希望を取り下げますか？"
   sendMessage: "メッセージを送る"
+  openTeamChat: "チームのチャット"
   accept: "承認"
   reject: "見送る"
   rejectConfirm: "{name} さんの参加希望を見送りますか？見送った人は、この募集にもう一度参加希望を送れません。"
@@ -3753,6 +3754,8 @@ _pairRecruitment:
   noProjects: "選べる課題がありません。キャンパスが分からないときは、42 でログインし直してください。"
   noWorkableProjects: "今取り組める 2 人以上の課題がありません。未解放か完了済みの課題には募集できません。"
   cardTitle: "ペア募集"
+  joinable: "参加可能"
+  notJoinable: "参加不可"
   _viewerState:
     available: "あなたは取り組めます"
     in_progress: "進行中"

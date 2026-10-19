@@ -623,6 +623,8 @@ import type {
 	PairRecruitmentsInviteCandidatesResponse,
 	PairRecruitmentsListRequest,
 	PairRecruitmentsListResponse,
+	PairRecruitmentsOpenChatRequest,
+	PairRecruitmentsOpenChatResponse,
 	PairRecruitmentsProjectsResponse,
 	PairRecruitmentsRejectRequest,
 	PairRecruitmentsRejectResponse,
@@ -1145,6 +1147,7 @@ export type Endpoints = {
 	'pair-recruitments/invite': { req: PairRecruitmentsInviteRequest; res: PairRecruitmentsInviteResponse };
 	'pair-recruitments/invite-candidates': { req: PairRecruitmentsInviteCandidatesRequest; res: PairRecruitmentsInviteCandidatesResponse };
 	'pair-recruitments/list': { req: PairRecruitmentsListRequest; res: PairRecruitmentsListResponse };
+	'pair-recruitments/open-chat': { req: PairRecruitmentsOpenChatRequest; res: PairRecruitmentsOpenChatResponse };
 	'pair-recruitments/projects': { req: EmptyRequest; res: PairRecruitmentsProjectsResponse };
 	'pair-recruitments/reject': { req: PairRecruitmentsRejectRequest; res: PairRecruitmentsRejectResponse };
 	'pair-recruitments/show': { req: PairRecruitmentsShowRequest; res: PairRecruitmentsShowResponse };

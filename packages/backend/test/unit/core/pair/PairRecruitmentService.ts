@@ -29,6 +29,7 @@ function matches(row: Row, where: Row): boolean {
 				case 'lessThanOrEqual': return (value as number | Date) <= (operand as number | Date);
 				case 'moreThan': return (value as number | Date) > (operand as number | Date);
 				case 'in': return (operand as unknown[]).includes(value);
+				case 'isNull': return value == null;
 				default: throw new Error(`unsupported operator ${cond.type}`);
 			}
 		}
@@ -138,6 +139,9 @@ describe('PairRecruitmentService', () => {
 	let notes: { userId: string; text: string; visibility: string }[];
 	let noteError: Error | null;
 	let config: Partial<Config>;
+	let chatRooms: Row[];
+	let chatMemberships: Row[];
+	let chatReadable: boolean;
 	let service: PairRecruitmentService;
 
 	const owner = localUser('owner');
@@ -161,6 +165,9 @@ describe('PairRecruitmentService', () => {
 		notifications = [];
 		notes = [];
 		noteError = null;
+		chatRooms = [];
+		chatMemberships = [];
+		chatReadable = true;
 		config = {
 			url: 'https://42times.example',
 			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: 21, apiBaseUrl: 'https://api.intra.42.fr' } as Config['intra'],
@@ -195,6 +202,8 @@ describe('PairRecruitmentService', () => {
 			fakeRepository(progresses as unknown as Row[]) as any,
 			fakeRepository(users) as any,
 			{ ...fakeRepository(profiles), find: async (opts: { where: Row }) => profiles.filter(r => matches(r, opts.where)).map(r => ({ ...r })) } as any,
+			fakeRepository(chatRooms) as any,
+			fakeRepository(chatMemberships) as any,
 			{ gen: () => `id${String(++seq).padStart(4, '0')}` } as any,
 			{ userBlockingCache: blockingCache, userBlockedCache: blockedCache } as any,
 			{} as any,
@@ -208,6 +217,17 @@ describe('PairRecruitmentService', () => {
 					if (noteError) throw noteError;
 					notes.push({ userId: user.id, text: data.text, visibility: data.visibility });
 					return { id: `note${notes.length}` };
+				},
+			} as any,
+			{
+				getChatAvailability: async () => ({ read: chatReadable, write: chatReadable }),
+				createRoom: async (user: { id: string }, params: { name: string; description: string }) => {
+					const room = { id: `room${chatRooms.length + 1}`, ownerId: user.id, ...params };
+					chatRooms.push(room);
+					return { ...room };
+				},
+				leaveRoom: async (userId: string, roomId: string) => {
+					chatMemberships.splice(chatMemberships.findIndex(m => m.userId === userId && m.roomId === roomId), 1);
 				},
 			} as any,
 			{ getLogger: () => ({ info: noop, warn: noop, error: noop, debug: noop }) } as any,
@@ -779,6 +799,83 @@ describe('PairRecruitmentService', () => {
 			await service.decline(bob, r.id, now);
 			await expectCode(service.cancelInvitation(owner, r.id, 'bob'), 'notInvited');
 			await expectCode(service.invite(owner, r.id, ['bob'], now), 'cannotInvite');
+		});
+	});
+	describe('openChat', () => {
+		const memberIds = () => chatMemberships.map(m => m.userId).sort();
+
+		test('初めて開くとルームを作り、参加希望中と参加が決まった人を入れる。2 回目からは同じルーム', async () => {
+			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
+			await service.accept(owner, r.id, 'alice', now);
+
+			const roomId = await service.openChat(owner, r.id, now);
+			expect(chatRooms).toEqual([{ id: roomId, ownerId: 'owner', name: 'ペア募集: ft_transcendence', description: `https://42times.example/pair/${r.id}` }]);
+			expect(recruitments[0].chatRoomId).toBe(roomId);
+			expect(memberIds()).toEqual(['alice', 'bob']);
+
+			expect(await service.openChat(bob, r.id, now)).toBe(roomId);
+			expect(chatRooms).toHaveLength(1);
+			expect(memberIds()).toEqual(['alice', 'bob']);
+		});
+
+		test('ルームがあれば、参加希望を送った人を入れ、取り下げた人・見送られた人を外す', async () => {
+			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
+			await service.openChat(owner, r.id, now);
+			expect(memberIds()).toEqual([]);
+
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
+			expect(memberIds()).toEqual(['alice', 'bob']);
+
+			await service.withdraw(alice, r.id, now);
+			await service.reject(owner, r.id, 'bob', now);
+			expect(memberIds()).toEqual([]);
+		});
+
+		test('締め切ると参加希望中の人を外し、参加が決まった人は残す', async () => {
+			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
+			await service.accept(owner, r.id, 'alice', now);
+			await service.openChat(alice, r.id, now);
+
+			await service.close(owner, r.id, now);
+			expect(memberIds()).toEqual(['alice']);
+			await expectCode(service.openChat(bob, r.id, now), 'notMember');
+			await service.openChat(alice, r.id, now);
+		});
+
+		test('チャットの画面から退出しても、開き直せばまた入る', async () => {
+			const r = await createRecruitment();
+			await service.apply(alice, r.id, undefined, now);
+			const roomId = await service.openChat(alice, r.id, now);
+			chatMemberships.splice(0, chatMemberships.length);
+
+			expect(await service.openChat(alice, r.id, now)).toBe(roomId);
+			expect(memberIds()).toEqual(['alice']);
+		});
+
+		test('ルームが消されていたら作り直す', async () => {
+			const r = await createRecruitment();
+			await service.openChat(owner, r.id, now);
+			chatRooms.splice(0, chatRooms.length);
+			recruitments[0].chatRoomId = null;
+
+			expect(await service.openChat(owner, r.id, now)).toBe('room1');
+			expect(recruitments[0].chatRoomId).toBe('room1');
+		});
+
+		test('参加していない人・招待中の人・チャットを使えない人は開けない', async () => {
+			const r = await createRecruitment();
+			await expectCode(service.openChat(alice, r.id, now), 'noSuchRecruitment');
+			await service.invite(owner, r.id, ['alice'], now);
+			await expectCode(service.openChat(alice, r.id, now), 'notMember');
+
+			chatReadable = false;
+			await expectCode(service.openChat(owner, r.id, now), 'unavailable');
+			expect(chatRooms).toEqual([]);
 		});
 	});
 });

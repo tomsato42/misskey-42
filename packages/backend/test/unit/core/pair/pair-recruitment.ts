@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	PairRecruitmentError,
 	buildAnnouncementText,
+	canJoinPairChat,
 	canSeeMember,
 	canWorkOn,
 	bestWantedState,
@@ -217,6 +218,34 @@ describe('judgeAccept', () => {
 		expect(judgeAccept({ ...base, applicantState: 'locked' })).toBe('applicantNotAvailable');
 		expect(judgeAccept({ ...base, applicantState: 'finished' })).toBe('applicantNotAvailable');
 		expect(judgeAccept({ ...base, applicantState: null })).toBe('applicantNotAvailable');
+	});
+});
+
+describe('canJoinPairChat', () => {
+	const now = new Date('2026-10-19T00:00:00Z');
+	const open = { userId: 'owner', status: 'open' as const, expiresAt: new Date('2026-10-20T00:00:00Z') };
+	const closed = { ...open, status: 'closed' as const };
+	const expired = { ...open, expiresAt: new Date('2026-10-18T00:00:00Z') };
+
+	test('作成者はいつでも入れる', () => {
+		expect(canJoinPairChat({ recruitment: closed, userId: 'owner', memberStatus: null, now })).toBe(true);
+	});
+
+	test('募集中は参加希望中と参加が決まった人が入れる', () => {
+		expect(canJoinPairChat({ recruitment: open, userId: 'alice', memberStatus: 'pending', now })).toBe(true);
+		expect(canJoinPairChat({ recruitment: open, userId: 'alice', memberStatus: 'accepted', now })).toBe(true);
+	});
+
+	test('締め切った後 (期限切れを含む) は参加が決まった人だけ', () => {
+		expect(canJoinPairChat({ recruitment: closed, userId: 'alice', memberStatus: 'pending', now })).toBe(false);
+		expect(canJoinPairChat({ recruitment: expired, userId: 'alice', memberStatus: 'pending', now })).toBe(false);
+		expect(canJoinPairChat({ recruitment: closed, userId: 'alice', memberStatus: 'accepted', now })).toBe(true);
+	});
+
+	test('招待中・取り下げ・見送り・断った人と、参加していない人は入れない', () => {
+		for (const memberStatus of ['invited', 'withdrawn', 'rejected', 'declined', null] as const) {
+			expect(canJoinPairChat({ recruitment: open, userId: 'alice', memberStatus, now })).toBe(false);
+		}
 	});
 });
 

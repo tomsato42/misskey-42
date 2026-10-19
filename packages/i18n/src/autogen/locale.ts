@@ -13724,6 +13724,10 @@ export interface Locale extends ILocale {
          */
         "sendMessage": string;
         /**
+         * チームのチャット
+         */
+        "openTeamChat": string;
+        /**
          * 承認
          */
         "accept": string;
@@ -14041,6 +14045,14 @@ export interface Locale extends ILocale {
          * ペア募集
          */
         "cardTitle": string;
+        /**
+         * 参加可能
+         */
+        "joinable": string;
+        /**
+         * 参加不可
+         */
+        "notJoinable": string;
         "_viewerState": {
             /**
              * あなたは取り組めます

@@ -4,10 +4,12 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { In, LessThan, LessThanOrEqual, MoreThan } from 'typeorm';
+import { In, IsNull, LessThan, LessThanOrEqual, MoreThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import type {
+	ChatRoomMembershipsRepository,
+	ChatRoomsRepository,
 	IntraProjectsRepository,
 	IntraUserProgressesRepository,
 	PairMembersRepository,
@@ -19,6 +21,7 @@ import type { MiLocalUser, MiUser } from '@/models/User.js';
 import type { MiIntraProject } from '@/models/IntraProject.js';
 import type { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import type { MiPairRecruitment, PairRecruitmentProjectEntry } from '@/models/PairRecruitment.js';
+import type { MiChatRoom } from '@/models/ChatRoom.js';
 import { MiPairMember } from '@/models/PairMember.js';
 import { MiUser as MiUserEntity } from '@/models/User.js';
 import { MiUserProfile } from '@/models/UserProfile.js';
@@ -28,6 +31,7 @@ import { CacheService } from '@/core/CacheService.js';
 import { QueryService } from '@/core/QueryService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { ChatService } from '@/core/ChatService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
@@ -41,6 +45,7 @@ import {
 	PairRecruitmentError,
 	bestWantedState,
 	buildAnnouncementText,
+	canJoinPairChat,
 	canWorkOn,
 	combineWantedStates,
 	formatProjectNames,
@@ -88,6 +93,9 @@ export type PairInviteCandidate = {
 /** 期限切れの締め切りで 1 回に処理する数 */
 const EXPIRE_BATCH_SIZE = 100;
 
+/** チャットルームに入れる人数の上限 (ChatService の MAX_ROOM_MEMBERS と同じ。作成者を含まない) */
+const CHAT_ROOM_MAX_MEMBERS = 50;
+
 /**
  * 42 の課題のペア募集。学内SNSモード (config.intra がある) のときだけ使える
  */
@@ -117,11 +125,18 @@ export class PairRecruitmentService {
 		@Inject(DI.userProfilesRepository)
 		private userProfilesRepository: UserProfilesRepository,
 
+		@Inject(DI.chatRoomsRepository)
+		private chatRoomsRepository: ChatRoomsRepository,
+
+		@Inject(DI.chatRoomMembershipsRepository)
+		private chatRoomMembershipsRepository: ChatRoomMembershipsRepository,
+
 		private idService: IdService,
 		private cacheService: CacheService,
 		private queryService: QueryService,
 		private notificationService: NotificationService,
 		private noteCreateService: NoteCreateService,
+		private chatService: ChatService,
 		private loggerService: LoggerService,
 	) {
 		this.logger = this.loggerService.getLogger('pair-recruitment');
@@ -323,6 +338,8 @@ export class PairRecruitmentService {
 			acceptedCount: 0,
 			noteId: null,
 			note: null,
+			chatRoomId: null,
+			chatRoom: null,
 			expiresAt: new Date(now.getTime() + PAIR_RECRUITMENT_LIFETIME_MS),
 			closedAt: null,
 		};
@@ -423,6 +440,7 @@ export class PairRecruitmentService {
 		for (const userId of plan.withdrawUserIds) {
 			const withdrawn = await this.pairMembersRepository.update({ recruitmentId: recruitment.id, userId, status: 'pending' }, { status: 'withdrawn', updatedAt: now });
 			if (withdrawn.affected === 0) continue;
+			await this.removeChatMembers(recruitment.id, [userId]);
 			this.notificationService.createNotification(userId, 'pairApplicationCancelled', {
 				pairRecruitmentId: latest.id,
 				projectSlug: latest.projectSlug,
@@ -592,6 +610,8 @@ export class PairRecruitmentService {
 				throw err;
 			}
 		}
+
+		await this.addChatMember(recruitment.id, me.id, now);
 
 		this.notificationService.createNotification(recruitment.userId, 'pairJoinRequested', {
 			pairRecruitmentId: recruitment.id,
@@ -823,6 +843,8 @@ export class PairRecruitmentService {
 		if (countUpdate.affected === 0) {
 			await this.pairMembersRepository.update({ id: member!.id, status: 'accepted' }, { status: 'pending', updatedAt: now });
 			const latest = await this.findRecruitmentOrFail(recruitment.id);
+			// 締め切りの処理が参加の決まった人として残していたら、参加希望中に戻したのでチャットから外す
+			if (!isRecruitmentOpen(latest, now)) await this.removeChatMembers(recruitment.id, [userId]);
 			throw new PairRecruitmentError(isRecruitmentOpen(latest, now) ? 'full' : 'recruitmentClosed');
 		}
 
@@ -855,6 +877,7 @@ export class PairRecruitmentService {
 
 		const result = await this.pairMembersRepository.update({ id: member.id, status: 'pending' }, { status: 'rejected', updatedAt: now });
 		if (result.affected === 0) throw new PairRecruitmentError('noSuchApplication');
+		await this.removeChatMembers(recruitment.id, [userId]);
 
 		return recruitment;
 	}
@@ -873,6 +896,7 @@ export class PairRecruitmentService {
 
 		const result = await this.pairMembersRepository.update({ id: member.id, status: member.status }, { status: 'withdrawn', updatedAt: now });
 		if (result.affected === 0) throw new PairRecruitmentError('notMember');
+		await this.removeChatMembers(recruitment.id, [me.id]);
 
 		if (member.status === 'accepted') {
 			await this.pairRecruitmentsRepository.update({
@@ -884,6 +908,114 @@ export class PairRecruitmentService {
 		}
 
 		return await this.findRecruitmentOrFail(recruitment.id);
+	}
+
+	/**
+	 * 募集のチャットルームを開く (作成者・参加希望中・参加が決まった人。締め切った後は作成者と参加が決まった人)。
+	 * ルームが無ければ作って入れる人をまとめて入れ、自分が入っていなければ入れる (チャットの画面から退出した後など)
+	 * @returns チャットルームの ID
+	 */
+	@bindThis
+	public async openChat(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], now = new Date()): Promise<MiChatRoom['id']> {
+		this.assertEnabled();
+		this.assertActive(me);
+		// ロールでチャットを使えない人は開けない
+		if (!(await this.chatService.getChatAvailability(me.id)).read) throw new PairRecruitmentError('unavailable');
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+
+		const member = recruitment.userId === me.id ? null : await this.pairMembersRepository.findOneBy({ recruitmentId: recruitment.id, userId: me.id });
+		if (!canJoinPairChat({ recruitment, userId: me.id, memberStatus: member?.status ?? null, now })) throw new PairRecruitmentError('notMember');
+		if (recruitment.userId !== me.id && await this.isBlockedWith(me.id, recruitment.userId)) throw new PairRecruitmentError('blocked');
+
+		const room = (recruitment.chatRoomId != null ? await this.chatRoomsRepository.findOneBy({ id: recruitment.chatRoomId }) : null)
+			?? await this.createChatRoom(recruitment, now);
+		await this.insertChatMemberships(room, [me.id]);
+		return room.id;
+	}
+
+	/**
+	 * チャットルームを作り、いま入れる人を入れる。同時に作られたら、先に作られた方を使う
+	 */
+	@bindThis
+	private async createChatRoom(recruitment: MiPairRecruitment, now: Date): Promise<MiChatRoom> {
+		const owner = await this.usersRepository.findOneBy({ id: recruitment.userId });
+		if (owner == null) throw new PairRecruitmentError('noSuchRecruitment');
+		const created = await this.chatService.createRoom(owner, {
+			name: `ペア募集: ${recruitment.projectName}`.slice(0, 256),
+			description: `${this.config.url}/pair/${recruitment.id}`,
+		});
+
+		const result = await this.pairRecruitmentsRepository.update({ id: recruitment.id, chatRoomId: IsNull() }, { chatRoomId: created.id });
+		if (result.affected === 0) {
+			await this.chatRoomsRepository.delete({ id: created.id });
+			const latest = await this.findRecruitmentOrFail(recruitment.id);
+			const existing = latest.chatRoomId != null ? await this.chatRoomsRepository.findOneBy({ id: latest.chatRoomId }) : null;
+			if (existing == null) throw new Error('failed to create the chat room of the pair recruitment');
+			return existing;
+		}
+
+		const members = await this.pairMembersRepository.findBy({ recruitmentId: recruitment.id, status: In(JOINED_STATUSES) });
+		await this.insertChatMemberships(created, members
+			.filter(m => canJoinPairChat({ recruitment, userId: m.userId, memberStatus: m.status, now }))
+			.map(m => m.userId));
+		return created;
+	}
+
+	/**
+	 * チャットルームにメンバーを入れる (既に入っている人と作成者は飛ばす)。上限に達したら、それ以上は入れない
+	 */
+	@bindThis
+	private async insertChatMemberships(room: MiChatRoom, userIds: MiUser['id'][]): Promise<void> {
+		for (const userId of userIds) {
+			if (userId === room.ownerId) continue;
+			if (await this.chatRoomMembershipsRepository.existsBy({ roomId: room.id, userId })) continue;
+			if (await this.chatRoomMembershipsRepository.countBy({ roomId: room.id }) >= CHAT_ROOM_MAX_MEMBERS) return;
+			try {
+				await this.chatRoomMembershipsRepository.insert({ id: this.idService.gen(), roomId: room.id, userId });
+			} catch (err) {
+				if (isDuplicateKeyValueError(err)) continue;
+				throw err;
+			}
+		}
+	}
+
+	/**
+	 * 参加希望を送った人を、チャットルームがあれば入れる。チャットの失敗で参加希望を失敗にはしない。
+	 * 同時に締め切られたときに入れてしまわないよう、募集と参加の状態を読み直して確かめる
+	 */
+	@bindThis
+	private async addChatMember(recruitmentId: MiPairRecruitment['id'], userId: MiUser['id'], now = new Date()): Promise<void> {
+		try {
+			const [recruitment, member] = await Promise.all([
+				this.findRecruitmentOrFail(recruitmentId),
+				this.pairMembersRepository.findOneBy({ recruitmentId, userId }),
+			]);
+			if (recruitment.chatRoomId == null) return;
+			if (!canJoinPairChat({ recruitment, userId, memberStatus: member?.status ?? null, now })) return;
+			const room = await this.chatRoomsRepository.findOneBy({ id: recruitment.chatRoomId });
+			if (room != null) await this.insertChatMemberships(room, [userId]);
+		} catch (err) {
+			this.logger.warn(`Failed to add a member to the chat room of pair recruitment ${recruitmentId}: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
+
+	/**
+	 * 取り下げた人・見送られた人などを、チャットルームがあれば外す
+	 */
+	@bindThis
+	private async removeChatMembers(recruitmentId: MiPairRecruitment['id'], userIds: MiUser['id'][]): Promise<void> {
+		if (userIds.length === 0) return;
+		try {
+			const recruitment = await this.findRecruitmentOrFail(recruitmentId);
+			if (recruitment.chatRoomId == null) return;
+			const memberships = await this.chatRoomMembershipsRepository.findBy({ roomId: recruitment.chatRoomId, userId: In(userIds) });
+			for (const membership of memberships) {
+				// 未読の印も消す
+				await this.chatService.leaveRoom(membership.userId, membership.roomId);
+			}
+		} catch (err) {
+			this.logger.warn(`Failed to remove members from the chat room of pair recruitment ${recruitmentId}: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 
 	/**
@@ -920,6 +1052,9 @@ export class PairRecruitmentService {
 		});
 		const notifieeIds = members.map(m => m.userId);
 		if (reason === 'expired') notifieeIds.push(recruitment.userId);
+
+		// 締め切った後のチャットは、参加が決まった人だけにする
+		await this.removeChatMembers(recruitment.id, members.filter(m => m.status === 'pending').map(m => m.userId));
 
 		for (const notifieeId of notifieeIds) {
 			this.notificationService.createNotification(notifieeId, 'pairClosed', {

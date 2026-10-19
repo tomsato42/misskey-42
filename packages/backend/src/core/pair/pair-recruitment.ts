@@ -412,6 +412,21 @@ export function judgeAccept(params: {
 }
 
 /**
+ * 募集のチャットに入れるか。作成者と、募集中は参加希望中・参加が決まった人、締め切った後は参加が決まった人だけ
+ */
+export function canJoinPairChat(params: {
+	recruitment: Pick<PairRecruitmentState, 'status' | 'expiresAt'> & { userId: string };
+	userId: string;
+	memberStatus: PairMemberStatus | null;
+	now: Date;
+}): boolean {
+	const { recruitment, userId, memberStatus, now } = params;
+	if (recruitment.userId === userId) return true;
+	if (memberStatus === 'accepted') return true;
+	return memberStatus === 'pending' && isRecruitmentOpen(recruitment, now);
+}
+
+/**
  * 他人の参加希望 (pending など承認済み以外) を見てよいか。作成者と本人だけ
  */
 export function canSeeMember(params: { viewerId: string | null; ownerId: string; memberUserId: string; memberStatus: PairMemberStatus }): boolean {
