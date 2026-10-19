@@ -16,6 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-else-if="page === 3" #header><i class="ti ti-home"></i> {{ i18n.ts._initialTutorial._timeline.title }}</template>
 	<template v-else-if="page === 4" #header><i class="ti ti-pencil-plus"></i> {{ i18n.ts._initialTutorial._postNote.title }}</template>
 	<template v-else-if="page === 5" #header><i class="ti ti-eye-exclamation"></i> {{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.title }}</template>
+	<template v-else-if="page === CALENDAR_PAGE" #header><i class="ti ti-calendar"></i> {{ i18n.ts._initialTutorial._calendar.title }}</template>
+	<template v-else-if="page === PAIR_RECRUITMENT_PAGE" #header><i class="ti ti-users-group"></i> {{ i18n.ts._initialTutorial._pairRecruitment.title }}</template>
+	<template v-else-if="page === 0 && newFeatures" #header>{{ i18n.ts._initialTutorial._newFeatures.title }}</template>
 	<template v-else #header>{{ i18n.ts._initialTutorial.title }}</template>
 
 	<div style="overflow-x: clip;">
@@ -26,7 +29,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:enterFromClass="$style.transition_x_enterFrom"
 			:leaveToClass="$style.transition_x_leaveTo"
 		>
-			<template v-if="page === 0">
+			<template v-if="page === 0 && newFeatures">
+				<div :class="$style.centerPage">
+					<MkAnimBg style="position: absolute; top: 0;" :scale="1.5"/>
+					<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;">
+						<div class="_gaps" style="text-align: center;">
+							<i class="ti ti-sparkles" style="display: block; margin: auto; font-size: 3em; color: var(--MI_THEME-accent);"></i>
+							<div style="font-size: 120%;">{{ i18n.ts._initialTutorial._newFeatures.heading }}</div>
+							<div>{{ i18n.tsx._initialTutorial._newFeatures.description({ name: instance.name ?? host }) }}</div>
+							<div :class="$style.newFeatures">
+								<div :class="$style.newFeature">
+									<i class="ti ti-calendar" :class="$style.newFeatureIcon"></i>
+									<b>{{ i18n.ts._initialTutorial._calendar.title }}</b>
+									<span :class="$style.newFeatureDescription">{{ i18n.ts._initialTutorial._newFeatures.calendarDescription }}</span>
+								</div>
+								<div :class="$style.newFeature">
+									<i class="ti ti-users-group" :class="$style.newFeatureIcon"></i>
+									<b>{{ i18n.ts._initialTutorial._pairRecruitment.title }}</b>
+									<span :class="$style.newFeatureDescription">{{ i18n.ts._initialTutorial._newFeatures.pairRecruitmentDescription }}</span>
+								</div>
+							</div>
+							<MkButton primary rounded gradate style="margin: 16px auto 0 auto;" @click="page = CALENDAR_PAGE">{{ i18n.ts._initialTutorial._newFeatures.showMe }} <i class="ti ti-arrow-right"></i></MkButton>
+							<MkButton style="margin: 0 auto;" transparent rounded @click="close(false)">{{ i18n.ts.close }}</MkButton>
+						</div>
+					</div>
+				</div>
+			</template>
+			<template v-else-if="page === 0">
 				<div :class="$style.centerPage">
 					<MkAnimBg style="position: absolute; top: 0;" :scale="1.5"/>
 					<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;">
@@ -115,13 +144,44 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div :class="$style.pageFooter">
 							<div class="_buttonsCenter">
 								<MkButton v-if="initialPage !== 2" rounded @click="page--"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
-								<MkButton primary rounded gradate :disabled="!isSensitiveTutorialSucceeded" @click="page++">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
+								<MkButton primary rounded gradate :disabled="!isSensitiveTutorialSucceeded" @click="goNext()">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
 							</div>
 						</div>
 					</div>
 				</div>
 			</template>
-			<template v-else-if="page === 6">
+			<template v-else-if="page === CALENDAR_PAGE">
+				<div style="height: 100cqh; overflow: auto;">
+					<div :class="$style.pageRoot">
+						<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;" :class="$style.pageMain">
+							<XCalendar/>
+						</div>
+						<div :class="$style.pageFooter">
+							<div class="_buttonsCenter">
+								<MkButton rounded @click="goBack()"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
+								<MkButton primary rounded gradate @click="goNext()">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
+			<template v-else-if="page === PAIR_RECRUITMENT_PAGE">
+				<div style="height: 100cqh; overflow: auto;">
+					<div :class="$style.pageRoot">
+						<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;" :class="$style.pageMain">
+							<XPairRecruitment/>
+						</div>
+						<div :class="$style.pageFooter">
+							<div class="_buttonsCenter">
+								<MkButton rounded @click="goBack()"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
+								<MkButton v-if="newFeatures" primary rounded gradate @click="close(false)">{{ i18n.ts.close }}</MkButton>
+								<MkButton v-else primary rounded gradate @click="goNext()">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
+			<template v-else-if="page === DONE_PAGE">
 				<div :class="$style.centerPage">
 					<MkAnimBg style="position: absolute; top: 0;" :scale="1.5"/>
 					<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;">
@@ -135,7 +195,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</I18n>
 							<div>{{ i18n.tsx._initialAccountSetting.haveFun({ name: instance.name ?? host }) }}</div>
 							<div class="_buttonsCenter" style="margin-top: 16px;">
-								<MkButton v-if="initialPage !== 4" rounded @click="page--"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
+								<MkButton v-if="initialPage !== 4" rounded @click="goBack()"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
 								<MkButton rounded primary gradate @click="close(false)">{{ i18n.ts.close }}</MkButton>
 							</div>
 						</div>
@@ -156,14 +216,19 @@ import XNote from '@/components/MkTutorialDialog.Note.vue';
 import XTimeline from '@/components/MkTutorialDialog.Timeline.vue';
 import XPostNote from '@/components/MkTutorialDialog.PostNote.vue';
 import XSensitive from '@/components/MkTutorialDialog.Sensitive.vue';
+import XCalendar from '@/components/MkTutorialDialog.Calendar.vue';
+import XPairRecruitment from '@/components/MkTutorialDialog.PairRecruitment.vue';
 import MkAnimBg from '@/components/MkAnimBg.vue';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import * as os from '@/os.js';
+import { store } from '@/store.js';
 
 const props = defineProps<{
 	initialPage?: number;
+	/** 42times: カレンダーとペア募集の紹介だけを見せる (チュートリアルを見る前から使っている人向け) */
+	newFeatures?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -175,18 +240,54 @@ const dialog = useTemplateRef('dialog');
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss
 const page = ref(props.initialPage ?? 0);
 
+// 42times: カレンダーとペア募集のページ。学内SNSモードでだけ出す (それ以外では upstream と同じ 6 ページ)
+const CALENDAR_PAGE = 6;
+const PAIR_RECRUITMENT_PAGE = 7;
+const DONE_PAGE = 8;
+const showsIntraPages = instance.intraLoginEnabled === true;
+
 watch(page, (to) => {
 	// チュートリアルの枚数を増やしたら必ず変更すること！！
-	if (to === 6) {
+	if (to === DONE_PAGE) {
 		claimAchievement('tutorialCompleted');
 	}
+	if (to === CALENDAR_PAGE) {
+		markFeatureTutorialShown();
+	}
 });
+
+// 紹介を開いたら、閉じ方によらず次からは出さない (boot/main-boot.ts)
+if (props.newFeatures) {
+	markFeatureTutorialShown();
+}
+
+function markFeatureTutorialShown() {
+	if (!store.s.featureTutorialShown) store.set('featureTutorialShown', true);
+}
+
+function goNext() {
+	if (page.value === 5 && !showsIntraPages) {
+		page.value = DONE_PAGE;
+	} else {
+		page.value++;
+	}
+}
+
+function goBack() {
+	if (page.value === DONE_PAGE && !showsIntraPages) {
+		page.value = 5;
+	} else if (page.value === CALENDAR_PAGE && props.newFeatures) {
+		page.value = 0;
+	} else {
+		page.value--;
+	}
+}
 
 const isReactionTutorialPushed = ref<boolean>(false);
 const isSensitiveTutorialSucceeded = ref<boolean>(false);
 
 async function close(skip: boolean) {
-	if (skip) {
+	if (skip && !props.newFeatures) {
 		const { canceled } = await os.confirm({
 			type: 'warning',
 			text: i18n.ts._initialTutorial.skipAreYouSure,
@@ -234,6 +335,34 @@ async function close(skip: boolean) {
 	height: 100cqh;
 	padding-bottom: 30px;
 	box-sizing: border-box;
+}
+
+.newFeatures {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 10px;
+	margin-top: 8px;
+}
+
+.newFeature {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 14px 12px;
+	border: solid 0.5px var(--MI_THEME-divider);
+	border-radius: var(--MI-radius);
+	background: var(--MI_THEME-panel);
+}
+
+.newFeatureIcon {
+	font-size: 1.5em;
+	color: var(--MI_THEME-accent);
+}
+
+.newFeatureDescription {
+	font-size: 0.85em;
+	opacity: 0.8;
 }
 
 .pageRoot {

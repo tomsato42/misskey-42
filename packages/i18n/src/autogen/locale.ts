@@ -6840,6 +6840,144 @@ export interface Locale extends ILocale {
              */
             "doItToContinue": string;
         };
+        "_calendar": {
+            /**
+             * カレンダー
+             */
+            "title": string;
+            /**
+             * 学内のイベントを、みんなでひとつのカレンダーにまとめられます。気になるイベントを購読しておくと、近づいたときに通知が届きます。
+             */
+            "description": string;
+            /**
+             * 試しに「購読」を押してみましょう(練習なので実際には購読されません)
+             */
+            "trySubscribing": string;
+            /**
+             * これで、イベントの1週間前・前日・当日に通知が届きます
+             */
+            "subscribed": string;
+            /**
+             * イベントを作る
+             */
+            "create": string;
+            /**
+             * カレンダーの日付を押すか、投稿フォームの「イベントを告知」から作れます
+             */
+            "createDescription": string;
+            /**
+             * 購読する
+             */
+            "subscribe": string;
+            /**
+             * どの通知を受け取るかは、設定の「カレンダー」で選べます
+             */
+            "subscribeDescription": string;
+            /**
+             * カレンダー連携
+             */
+            "feed": string;
+            /**
+             * Googleカレンダーや Appleカレンダーにも表示できます
+             */
+            "feedDescription": string;
+            /**
+             * メニューの「カレンダー」からいつでも開けます。
+             */
+            "whereToOpen": string;
+            "_exampleEvent": {
+                /**
+                 * Libft 勉強会
+                 */
+                "title": string;
+                /**
+                 * 2F ラウンジ
+                 */
+                "location": string;
+            };
+        };
+        "_pairRecruitment": {
+            /**
+             * ペア募集
+             */
+            "title": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せます。42 intra の進み具合から、今取り組める課題だけが選べます。
+             */
+            "description": string;
+            /**
+             * 試しに「参加したい」を押してみましょう(練習なので実際には送られません)
+             */
+            "tryJoining": string;
+            /**
+             * 募集した人が承認すると、メンバーに決まって通知が届きます
+             */
+            "joined": string;
+            /**
+             * 募集する
+             */
+            "step1": string;
+            /**
+             * 課題・人数・始める時期を選んで募集
+             */
+            "step1Description": string;
+            /**
+             * 参加したい
+             */
+            "step2": string;
+            /**
+             * 気になる募集に参加希望を送る
+             */
+            "step2Description": string;
+            /**
+             * 承認
+             */
+            "step3": string;
+            /**
+             * 募集した人が承認してメンバーが決まる
+             */
+            "step3Description": string;
+            /**
+             * 課題を終えた人は「アドバイスする」から、募集した人にチャットで相談に乗れます
+             */
+            "advise": string;
+            /**
+             * メニューの「ペア募集」から募集の一覧を開けます。
+             */
+            "whereToOpen": string;
+            "_exampleRecruitment": {
+                /**
+                 * サーバー側を一緒に作れる人を探しています。平日の夜に進めたいです。
+                 */
+                "comment": string;
+            };
+        };
+        "_newFeatures": {
+            /**
+             * 新しい機能
+             */
+            "title": string;
+            /**
+             * 新しい機能が使えるようになりました
+             */
+            "heading": string;
+            /**
+             * {name} に「カレンダー」と「ペア募集」が加わりました。1分ほどで使い方を紹介します。
+             */
+            "description": ParameterizedString<"name">;
+            /**
+             * 学内のイベントを共有して、購読すると通知が届く
+             */
+            "calendarDescription": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せる
+             */
+            "pairRecruitmentDescription": string;
+            /**
+             * 使い方を見る
+             */
+            "showMe": string;
+        };
         "_done": {
             /**
              * チュートリアルは終了です🎉
