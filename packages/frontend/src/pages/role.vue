@@ -56,6 +56,10 @@ watch(() => props.roleId, () => {
 		role.value = res;
 		error.value = null;
 		visible.value = res.isExplorable && res.isPublic;
+		// タブに足したあとでロール名が変わっていたら、タブの名前も合わせる
+		if (prefer.s.pinnedRoles.some(r => r.id === res.id && r.name !== res.name)) {
+			prefer.commit('pinnedRoles', prefer.s.pinnedRoles.map(r => r.id === res.id ? { id: r.id, name: res.name } : r));
+		}
 	}).catch((err) => {
 		if (err.code === 'NO_SUCH_ROLE') {
 			error.value = i18n.ts.noRole;
