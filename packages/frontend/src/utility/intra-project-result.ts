@@ -19,9 +19,65 @@ export function getIntraProjectResultLabel(result: Pick<Misskey.entities.IntraPr
 	});
 }
 
-/** intra の課題のページの URL */
-export function getIntraProjectUrl(projectSlug: string): string {
+export type IntraProjectSubmission = Misskey.entities.IntraProjectResult['submissions'][number];
+
+/**
+ * intra の課題のページの URL。ログイン名があれば、その人のその課題のページ (提出の一覧) にする
+ */
+export function getIntraProjectUrl(projectSlug: string, intraLogin?: string | null): string {
+	if (intraLogin != null && intraLogin !== '') {
+		return `https://projects.intra.42.fr/${encodeURIComponent(projectSlug)}/${encodeURIComponent(intraLogin)}`;
+	}
 	return `https://projects.intra.42.fr/projects/${encodeURIComponent(projectSlug)}`;
+}
+
+/** 提出の日付 (日本時間の YYYY/MM/DD) */
+export function formatIntraSubmissionDate(markedAt: string): string {
+	return new Date(markedAt).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+/**
+ * 提出の見出し (「3回目の提出 ・ 2026/10/18」)。提出が 1 件だけなら日付だけ。どちらも分からなければ null
+ */
+export function getIntraSubmissionLabel(attemptNumber: number | null, attemptCount: number | null, markedAt: string | null): string | null {
+	const date = markedAt != null ? formatIntraSubmissionDate(markedAt) : null;
+	if (attemptNumber == null || attemptCount == null || attemptCount <= 1) return date;
+	const attempt = i18n.tsx._intraProjectResult.attempt({ n: attemptNumber });
+	return date != null ? `${attempt} ・ ${date}` : attempt;
+}
+
+/**
+ * 投稿フォームに出すカードの値。teamId の提出 (無ければ最後の提出) の点数・メンバーにする
+ */
+export function toIntraProjectNote(result: Misskey.entities.IntraProjectResult, teamId: number | null): Misskey.entities.IntraProjectNote {
+	const attemptCount = result.submissions.length > 0 ? result.submissions.length : null;
+	const submission = result.submissions.find(s => s.teamId === (teamId ?? result.teamId));
+	if (submission == null || submission.teamId === result.teamId) {
+		return {
+			projectSlug: result.projectSlug,
+			projectName: result.projectName,
+			finalMark: result.finalMark,
+			validated: result.validated,
+			outstandingCount: result.outstandingCount ?? submission?.outstandingCount ?? null,
+			members: result.members.length > 0 ? result.members : (submission?.members ?? []),
+			attemptNumber: submission?.attemptNumber ?? null,
+			attemptCount,
+			markedAt: result.markedAt,
+			intraLogin: null,
+		};
+	}
+	return {
+		projectSlug: result.projectSlug,
+		projectName: result.projectName,
+		finalMark: submission.finalMark,
+		validated: submission.validated,
+		outstandingCount: submission.outstandingCount,
+		members: submission.members,
+		attemptNumber: submission.attemptNumber,
+		attemptCount,
+		markedAt: submission.markedAt,
+		intraLogin: null,
+	};
 }
 
 /** i/intra/refresh-project-results のエラーの文言 */
@@ -55,7 +111,7 @@ export async function shareIntraProjectResult(resultId: string): Promise<void> {
 		os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.noSuchResult });
 		return;
 	}
-	await os.post({ initialIntraProjectResult: result });
+	await os.post({ initialIntraProjectResult: result, initialIntraProjectTeamId: result.teamId });
 }
 
 /**

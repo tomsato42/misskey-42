@@ -58,6 +58,10 @@ const exampleResult: Misskey.entities.IntraProjectNote = {
 		{ login: 'ai', user: null },
 		{ login: 'marvin', user: null },
 	],
+	attemptNumber: null,
+	attemptCount: null,
+	markedAt: null,
+	intraLogin: null,
 };
 
 const posted = ref(false);

@@ -216,6 +216,11 @@ export const paramDef = {
 			type: 'string', format: 'misskey:id', nullable: true,
 			description: '42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.',
 		},
+		// 42times: 課題の結果のうち、どの提出を付けるか
+		intraProjectTeamId: {
+			type: 'integer', nullable: true,
+			description: '42times: The intra team ID of the submission to attach (one of the result\'s submissions). Omit for the latest submission. Ignored without intraProjectResultId.',
+		},
 		// 42times: レベルを付ける
 		intraLevel: {
 			type: 'integer', minimum: 0, nullable: true,
@@ -292,7 +297,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				text: ps.text,
 				fileIds: ps.fileIds ?? ps.mediaIds,
 				hasPoll: ps.poll != null,
-			}).catch(err => {
+			}, ps.intraProjectTeamId).catch(err => {
 				if (err instanceof IntraProjectResultNotFoundError) throw new ApiError(meta.errors.noSuchIntraProjectResult);
 				if (err instanceof IntraProjectResultNotAttachableError) throw new ApiError(meta.errors.cannotAttachIntraProjectResultToPureRenote);
 				throw err;

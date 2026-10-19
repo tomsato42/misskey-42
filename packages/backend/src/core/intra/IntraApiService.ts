@@ -13,7 +13,7 @@ import { StatusError } from '@/misc/status-error.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import type { IntraUser } from './intra-user.js';
-import type { IntraProjectSession, IntraQuestUser } from './intra-project.js';
+import type { IntraProjectSession, IntraProjectUser, IntraQuestUser } from './intra-project.js';
 import type { IntraCursusUserWithUser } from './intra-cohort.js';
 import type { IntraScaleTeam, IntraTeam } from './intra-project-result.js';
 import type { IntraBloc, IntraCoalitionUser } from './intra-coalition.js';
@@ -206,6 +206,20 @@ export class IntraApiService {
 		const intra = this.getIntraConfig();
 		try {
 			return await this.appGetAllPages<IntraQuestUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/quests_users`);
+		} catch (err) {
+			if (err instanceof StatusError && err.statusCode === 404) return null;
+			throw err;
+		}
+	}
+
+	/**
+	 * アプリトークンで、ユーザーの projects_users をすべて取得する (提出 (teams) を含む)。ユーザーが存在しなければ null
+	 */
+	@bindThis
+	public async getUserProjectsUsers(intraId: number): Promise<IntraProjectUser[] | null> {
+		const intra = this.getIntraConfig();
+		try {
+			return await this.appGetAllPages<IntraProjectUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/projects_users`);
 		} catch (err) {
 			if (err instanceof StatusError && err.statusCode === 404) return null;
 			throw err;

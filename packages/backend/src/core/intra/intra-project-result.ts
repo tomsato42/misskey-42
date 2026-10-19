@@ -6,7 +6,7 @@
 // 42 API の課題の結果 (projects_users の点数と、チーム・評価) を扱う純粋関数群。
 // DI に依存しないので、ユニットテストから直接呼び出せる。
 
-import type { IntraProjectUser } from './intra-project.js';
+import type { IntraProjectTeam, IntraProjectUser } from './intra-project.js';
 
 /** 評価のフラグのうち、outstanding を表すものの名前 */
 export const OUTSTANDING_FLAG_NAME = 'Outstanding project';
@@ -126,4 +126,50 @@ export function extractTeamMembers(team: IntraTeam): IntraProjectResultMember[] 
  */
 export function countOutstandingFlags(scaleTeams: IntraScaleTeam[]): number {
 	return scaleTeams.filter(s => s.flag?.name === OUTSTANDING_FLAG_NAME).length;
+}
+
+/**
+ * 課題の提出 (チーム) ごとの結果。intra_project_result.submissions の要素
+ */
+export type IntraProjectSubmission = {
+	teamId: number;
+	finalMark: number;
+	validated: boolean;
+	/** 提出が締め切られた日時 (ISO 8601)。分からなければ null */
+	markedAt: string | null;
+	members: IntraProjectResultMember[];
+	/** 評価で outstanding が付いた数。まだ取得していなければ null */
+	outstandingCount: number | null;
+};
+
+/**
+ * projects_users の teams から、点数が付いた提出を古い順に取り出す。
+ * 保存済みの提出にある outstanding の数は引き継ぐ (取得し直すには評価を 1 件ずつ見る必要があるため)
+ */
+export function extractSubmissions(teams: IntraProjectTeam[], previous: IntraProjectSubmission[] = []): IntraProjectSubmission[] {
+	const previousByTeamId = new Map(previous.map(s => [s.teamId, s]));
+	const submissions: IntraProjectSubmission[] = [];
+	for (const team of teams) {
+		if (typeof team.id !== 'number' || typeof team.final_mark !== 'number') continue;
+		if (submissions.some(s => s.teamId === team.id)) continue;
+		const markedAt = parseDate(team.closed_at) ?? parseDate(team.updated_at);
+		submissions.push({
+			teamId: team.id,
+			finalMark: team.final_mark,
+			validated: team['validated?'] === true,
+			markedAt: markedAt?.toISOString() ?? null,
+			members: extractTeamMembers({ id: team.id, users: team.users }),
+			outstandingCount: previousByTeamId.get(team.id)?.outstandingCount ?? null,
+		});
+	}
+	return submissions.sort((a, b) => a.teamId - b.teamId);
+}
+
+/**
+ * 提出が何回目か (1 から)。提出の一覧に無ければ null
+ */
+export function getAttemptNumber(submissions: Pick<IntraProjectSubmission, 'teamId'>[], teamId: number | null): number | null {
+	if (teamId == null) return null;
+	const index = submissions.findIndex(s => s.teamId === teamId);
+	return index === -1 ? null : index + 1;
 }

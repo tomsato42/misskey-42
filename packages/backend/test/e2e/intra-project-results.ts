@@ -40,6 +40,12 @@ describe('42 intra の課題の結果', () => {
 			// detailsTeamId が teamId と同じなので、投稿するときに 42 API を呼ばない
 			members: [{ intraId: 1, login: 'alice42' }, { intraId: 2, login: 'bob42' }, { intraId: 3, login: 'dave42' }],
 			outstandingCount: 2, detailsTeamId: 10, updatedAt: new Date(),
+			// 前の提出の outstanding の数も取得済みにして、42 API を呼ばない
+			submissions: [
+				{ teamId: 9, finalMark: 80, validated: false, markedAt: '2026-10-02T10:00:00.000Z', members: [{ intraId: 1, login: 'alice42' }, { intraId: 3, login: 'dave42' }], outstandingCount: 0 },
+				{ teamId: 10, finalMark: 125, validated: true, markedAt: '2026-10-18T09:00:00.000Z', members: [{ intraId: 1, login: 'alice42' }, { intraId: 2, login: 'bob42' }, { intraId: 3, login: 'dave42' }], outstandingCount: null },
+			],
+			submissionsTeamId: 10,
 		});
 		await Results.insert({
 			id: genAidx(Date.now() + 1), userId: alice.id, projectsUserId: 101, projectSlug: 'ft_irc', projectName: 'ft_irc',
@@ -66,6 +72,14 @@ describe('42 intra の課題の結果', () => {
 		assert.deepStrictEqual(res[0].members.map(m => [m.login, m.user?.id ?? null]), [['alice42', alice.id], ['bob42', bob.id], ['dave42', null]]);
 		// メンバーをまだ取得していない結果は空
 		assert.deepStrictEqual(res[1].members, []);
+		// 提出は新しい順。最後の提出は課題の結果の日時と outstanding の数に合わせる
+		assert.deepStrictEqual(res[0].submissions.map(s => [s.teamId, s.attemptNumber, s.finalMark, s.outstandingCount, s.markedAt]), [
+			[10, 2, 125, 2, '2026-10-18T10:00:00.000Z'],
+			[9, 1, 80, 0, '2026-10-02T10:00:00.000Z'],
+		]);
+		assert.deepStrictEqual(res[0].submissions[1].members.map(m => [m.login, m.user?.id ?? null]), [['alice42', alice.id], ['dave42', null]]);
+		assert.strictEqual(res[0].teamId, 10);
+		assert.deepStrictEqual(res[1].submissions, []);
 
 		const others = await successfulApiCall({ endpoint: 'i/intra/project-results', parameters: {}, user: bob });
 		assert.deepStrictEqual(others, []);
@@ -79,6 +93,10 @@ describe('42 intra の課題の結果', () => {
 		assert.strictEqual(result.finalMark, 125);
 		assert.strictEqual(result.validated, true);
 		assert.strictEqual(result.outstandingCount, 2);
+		assert.strictEqual(result.attemptNumber, 2);
+		assert.strictEqual(result.attemptCount, 2);
+		assert.strictEqual(result.markedAt, '2026-10-18T10:00:00.000Z');
+		assert.strictEqual(result.intraLogin, 'alice42');
 		assert.deepStrictEqual(result.members.map(m => [m.login, m.user?.id ?? null]), [
 			['alice42', alice.id],
 			['bob42', bob.id],
@@ -90,6 +108,24 @@ describe('42 intra の課題の結果', () => {
 
 		const timeline = await successfulApiCall({ endpoint: 'users/notes', parameters: { userId: alice.id }, user: carol });
 		assert.strictEqual(timeline.find(n => n.id === res.createdNote.id)?.intraProjectResult?.projectSlug, 'webserv');
+	});
+
+	test('前の提出を選んで投稿できる', async () => {
+		const res = await successfulApiCall({ endpoint: 'notes/create', parameters: { intraProjectResultId: webservId, intraProjectTeamId: 9 }, user: alice });
+		const result = res.createdNote.intraProjectResult;
+		assert.ok(result);
+		assert.strictEqual(result.finalMark, 80);
+		assert.strictEqual(result.validated, false);
+		assert.strictEqual(result.outstandingCount, 0);
+		assert.strictEqual(result.attemptNumber, 1);
+		assert.strictEqual(result.markedAt, '2026-10-02T10:00:00.000Z');
+		assert.deepStrictEqual(result.members.map(m => m.login), ['alice42', 'dave42']);
+	});
+
+	test('提出の一覧に無いチームは選べない', async () => {
+		await failedApiCall({ endpoint: 'notes/create', parameters: { intraProjectResultId: webservId, intraProjectTeamId: 999, text: 'hi' }, user: alice }, {
+			status: 400, code: 'NO_SUCH_INTRA_PROJECT_RESULT', id: '8e0b5273-9262-4653-bbe6-f112a2cc8e3e',
+		});
 	});
 
 	test('結果の付いていないノートには無い', async () => {

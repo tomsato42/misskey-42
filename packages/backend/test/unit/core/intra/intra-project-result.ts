@@ -10,6 +10,8 @@ import {
 	extractProjectResults,
 	extractTeamMembers,
 	findNewlyMarkedResults,
+	extractSubmissions,
+	getAttemptNumber,
 } from '@/core/intra/intra-project-result.js';
 import type { IntraProjectResultValues } from '@/core/intra/intra-project-result.js';
 import type { IntraProjectUser } from '@/core/intra/intra-project.js';
@@ -120,5 +122,34 @@ describe('countOutstandingFlags', () => {
 			{},
 			{ flag: { name: 'Outstanding project' } },
 		])).toBe(2);
+	});
+});
+
+describe('extractSubmissions', () => {
+	test('点数が付いた提出を古い順に取り出し、保存済みの outstanding の数を引き継ぐ', () => {
+		const submissions = extractSubmissions([
+			{ id: 20, final_mark: 125, 'validated?': true, closed_at: '2026-10-18T10:00:00.000Z', users: [{ id: 1, login: 'tomsato' }] },
+			{ id: 11, final_mark: 0, 'validated?': false, closed_at: null, updated_at: '2026-09-12T10:00:00.000Z', users: [] },
+			{ id: 30, final_mark: null, 'validated?': null },
+		], [{ teamId: 20, finalMark: 125, validated: true, markedAt: null, members: [], outstandingCount: 2 }]);
+
+		expect(submissions).toEqual([
+			{ teamId: 11, finalMark: 0, validated: false, markedAt: '2026-09-12T10:00:00.000Z', members: [], outstandingCount: null },
+			{ teamId: 20, finalMark: 125, validated: true, markedAt: '2026-10-18T10:00:00.000Z', members: [{ intraId: 1, login: 'tomsato' }], outstandingCount: 2 },
+		]);
+	});
+
+	test('同じチームは 1 つにまとめる', () => {
+		expect(extractSubmissions([{ id: 1, final_mark: 100 }, { id: 1, final_mark: 100 }])).toHaveLength(1);
+	});
+});
+
+describe('getAttemptNumber', () => {
+	test('何回目の提出かを 1 から数える。一覧に無ければ null', () => {
+		const submissions = [{ teamId: 11 }, { teamId: 20 }];
+		expect(getAttemptNumber(submissions, 11)).toBe(1);
+		expect(getAttemptNumber(submissions, 20)).toBe(2);
+		expect(getAttemptNumber(submissions, 99)).toBeNull();
+		expect(getAttemptNumber(submissions, null)).toBeNull();
 	});
 });

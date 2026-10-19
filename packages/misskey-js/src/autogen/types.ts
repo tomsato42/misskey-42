@@ -6683,6 +6683,28 @@ export type components = {
             }[];
             /** Format: date-time */
             markedAt: string | null;
+            /** @description The intra team ID of the latest submission. */
+            teamId: number | null;
+            /** @description The submissions with a final mark, newest first. Empty if not fetched yet. */
+            submissions: {
+                /** @description The intra team ID. Pass it as intraProjectTeamId to notes/create. */
+                teamId: number;
+                /** @description 1 for the first submission. */
+                attemptNumber: number;
+                /** @example 125 */
+                finalMark: number;
+                validated: boolean;
+                /** @description The number of evaluations flagged as outstanding. null if unknown. */
+                outstandingCount: number | null;
+                /** @description The team members (including yourself). Empty if unknown. */
+                members: {
+                    login: string;
+                    /** @description null if the member has no account on this server. */
+                    user: components['schemas']['UserLite'] | null;
+                }[];
+                /** Format: date-time */
+                markedAt: string | null;
+            }[];
         };
         IntraProjectNote: {
             /** @example webserv */
@@ -6700,6 +6722,14 @@ export type components = {
                 /** @description null if the member has no account on this server. */
                 user: components['schemas']['UserLite'] | null;
             }[];
+            /** @description Which submission it was (1 for the first). null if unknown. */
+            attemptNumber: number | null;
+            /** @description The number of submissions when it was posted. null if unknown. */
+            attemptCount: number | null;
+            /** Format: date-time */
+            markedAt: string | null;
+            /** @description The intra login of the note author, for linking to their project page on intra. */
+            intraLogin: string | null;
         };
     };
     responses: never;
@@ -32723,6 +32753,8 @@ export interface operations {
                      * @description 42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.
                      */
                     intraProjectResultId?: string | null;
+                    /** @description 42times: The intra team ID of the submission to attach (one of the result's submissions). Omit for the latest submission. Ignored without intraProjectResultId. */
+                    intraProjectTeamId?: number | null;
                     /** @description 42times: Attach a 42 intra level you have reached (up to your current level). The note can then have no text. */
                     intraLevel?: number | null;
                 };

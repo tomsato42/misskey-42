@@ -43,7 +43,7 @@ export class IntraProjectNoteEntityService {
 	@bindThis
 	public async packResults(results: MiIntraProjectResult[], me: Me): Promise<Packed<'IntraProjectResult'>[]> {
 		const membersOf = (r: MiIntraProjectResult) => r.detailsTeamId != null ? r.members : [];
-		const resolve = await this.resolveMembers(results.flatMap(membersOf), me);
+		const resolve = await this.resolveMembers(results.flatMap(r => [...membersOf(r), ...r.submissions.flatMap(s => s.members)]), me);
 		return results.map(r => ({
 			id: r.id,
 			projectSlug: r.projectSlug,
@@ -53,6 +53,18 @@ export class IntraProjectNoteEntityService {
 			outstandingCount: r.detailsTeamId != null ? r.outstandingCount : null,
 			members: resolve(membersOf(r)),
 			markedAt: r.markedAt?.toISOString() ?? null,
+			teamId: r.teamId,
+			submissions: r.submissions.map((s, i) => ({
+				teamId: s.teamId,
+				attemptNumber: i + 1,
+				finalMark: s.finalMark,
+				validated: s.validated,
+				// 最後の提出の outstanding の数は、結果のほうに取得してあることがある
+				outstandingCount: s.outstandingCount ?? (s.teamId === r.detailsTeamId ? r.outstandingCount : null),
+				members: resolve(s.members),
+				// 最後の提出は、課題の結果の点数が付いた日時に合わせる
+				markedAt: s.teamId === r.teamId && r.markedAt != null ? r.markedAt.toISOString() : s.markedAt,
+			})).reverse(),
 		}));
 	}
 
@@ -77,6 +89,10 @@ export class IntraProjectNoteEntityService {
 				validated: row.validated,
 				outstandingCount: row.outstandingCount,
 				members: resolve(row.members),
+				attemptNumber: row.attemptNumber,
+				attemptCount: row.attemptCount,
+				markedAt: row.markedAt?.toISOString() ?? null,
+				intraLogin: row.intraLogin,
 			});
 		}
 		return result;
