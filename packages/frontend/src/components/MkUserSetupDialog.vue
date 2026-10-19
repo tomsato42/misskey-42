@@ -165,10 +165,13 @@ async function close(skip: boolean) {
 
 	dialog.value?.close();
 	store.set('accountSetupWizard', -1);
+	// 42times: 初期設定を終えた人には「新しい機能」の紹介を出さない (カレンダーとペア募集はチュートリアルで紹介する)
+	store.set('featureTutorialShown', true);
 }
 
 function setupComplete() {
 	store.set('accountSetupWizard', -1);
+	store.set('featureTutorialShown', true);
 	dialog.value?.close();
 }
 

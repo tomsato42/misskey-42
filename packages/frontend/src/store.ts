@@ -20,6 +20,11 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'account',
 		default: 0,
 	},
+	// 42times: カレンダーとペア募集のチュートリアルを見たか。見ていなければ読み込み時に一度だけ紹介を出す (boot/main-boot.ts)
+	featureTutorialShown: {
+		where: 'account',
+		default: false,
+	},
 	tips: {
 		where: 'device',
 		default: {} as Partial<Record<typeof TIPS[number], boolean>>, // true = 既読
