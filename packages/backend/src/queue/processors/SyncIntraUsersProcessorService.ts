@@ -55,6 +55,12 @@ export class SyncIntraUsersProcessorService {
 		}
 
 		try {
+			await this.intraSyncService.ensureRoleIcons();
+		} catch (err) {
+			this.logger.warn(`Failed to ensure role icons: ${err instanceof Error ? err.message : String(err)}`);
+		}
+
+		try {
 			// 入学時期をまだ集計していないキャンパス (初回など) の入学時期を、ユーザーのロールを決める前に集計する
 			await this.intraCohortService.syncMissingCampuses();
 		} catch (err) {

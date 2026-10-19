@@ -19,7 +19,7 @@ const intra = {
 	clientSecret: 'secret',
 	cursusId: 21,
 	apiBaseUrl: 'https://api.intra.42.fr',
-		levelBadgeUrl: null,
+		levelBadgeUrl: null, coalitionIconUrl: null,
 };
 
 const apps: FastifyInstance[] = [];

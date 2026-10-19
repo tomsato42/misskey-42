@@ -353,6 +353,29 @@ GitHub のドキュメントでは、Free プランの private リポジトリ�
   IMAGE_TAG=$(cat state/current-tag) docker compose logs --tail 200 -f web
   ```
 
+### コアリションのアイコン
+
+コアリションのロールのアイコンは、42 の CDN の画像を `/home/misskey/42times-assets/coalitions/<コアリション ID>.svg` に保存して、nginx の `/instance-assets/` から配信します。VPS で次を実行します (コアリションの一覧は web のコンテナの中で本番の設定を使って 42 API から取り、画像はホストの curl で保存します)。
+
+```sh
+mkdir -p /home/misskey/42times-assets/coalitions
+curl -fsSL https://raw.githubusercontent.com/tomsato42/misskey-42/main/deploy/coalitions/list-coalition-icons.mjs \
+  | docker exec -i -w /misskey/packages/backend misskey42-web-1 node --input-type=module - \
+  | while IFS="$(printf '\t')" read -r id url name; do
+      curl -fsSL "$url" -o "/home/misskey/42times-assets/coalitions/$id.svg" && echo "saved $id ($name): $url"
+    done
+chmod 644 /home/misskey/42times-assets/coalitions/*
+```
+
+画像の URL が `.svg` で終わっていない (PNG など) と表示されたら、拡張子が合わないので `coalitionIconUrl` の拡張子も合わせます。保存できたら `.config/default.yml` の `intra.coalitionIconUrl` を次のようにして、`docker restart misskey42-web-1` で設定を読み直させます (起動のたびに設定を読み直すので、次のデプロイでも反映されます)。
+
+```yaml
+intra:
+  coalitionIconUrl: 'https://42times.kinachan.com/instance-assets/coalitions/{id}.svg'
+```
+
+アイコンは次の毎時の同期 (毎時 15 分) で、アイコンが未設定のコアリションのロールに付きます。管理画面でアイコンを設定したロールは上書きしません。
+
 ## バックアップ
 
 misskey ユーザーの crontab から、毎日 3:15 (日本時間。VPS のタイムゾーンは JST) に `backup.sh` を実行します。1 回の実行で `42times-<日本時間の YYYYmmdd-HHMMSS>.tar` を 1 つ作り、VPS の `/home/misskey/42times-backups/` と R2 のバケット `42times-backups` の両方に置きます。どちらも 7 日分を残します。

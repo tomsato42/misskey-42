@@ -164,11 +164,23 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 }
 
 /**
- * ロールのアイコンの URL。レベルのロールで、ひな形 (config.intra.levelBadgeUrl) があるときだけ返す
+ * ロールのアイコンの URL のひな形 (config.intra の levelBadgeUrl と coalitionIconUrl)
  */
-export function getIntraRoleIconUrl(target: Pick<IntraRoleTarget, 'kind' | 'key'>, template: string | null): string | null {
-	if (template == null || target.kind !== 'level') return null;
-	return template.replaceAll('{level}', target.key);
+export type IntraRoleIconTemplates = {
+	levelBadgeUrl: string | null;
+	coalitionIconUrl: string | null;
+};
+
+/**
+ * ロールのアイコンの URL。レベルとコアリションのロールで、それぞれのひな形があるときだけ返す。
+ * レベルは {level} がレベルの整数に、コアリションは {id} が intra のコアリション ID に置き換わる
+ */
+export function getIntraRoleIconUrl(target: Pick<IntraRoleTarget, 'kind' | 'key'>, templates: IntraRoleIconTemplates): string | null {
+	switch (target.kind) {
+		case 'level': return templates.levelBadgeUrl?.replaceAll('{level}', target.key) ?? null;
+		case 'coalition': return templates.coalitionIconUrl?.replaceAll('{id}', target.key) ?? null;
+		default: return null;
+	}
 }
 
 /**

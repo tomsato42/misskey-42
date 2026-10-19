@@ -83,7 +83,7 @@ describe('IntraAccountService', () => {
 
 		const config = {
 			url: BASE_URL,
-			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: null },
+			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: null, coalitionIconUrl: null },
 		} as Partial<Config>;
 
 		const fakeUsersRepository = {

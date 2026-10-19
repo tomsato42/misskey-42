@@ -245,13 +245,18 @@ describe('diffIntraRoleAssignments', () => {
 });
 
 describe('getIntraRoleIconUrl', () => {
-	test('レベルのロールだけ、ひな形の {level} をレベルに置き換える', () => {
-		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, 'https://example.com/lv-{level}.svg')).toBe('https://example.com/lv-10.svg');
-		expect(getIntraRoleIconUrl({ kind: 'campus', key: '26' }, 'https://example.com/lv-{level}.svg')).toBeNull();
+	const templates = { levelBadgeUrl: 'https://example.com/lv-{level}.svg', coalitionIconUrl: 'https://example.com/coalitions/{id}.svg' };
+
+	test('レベルのロールは {level} を、コアリションのロールは {id} を置き換え、ほかの種類は null', () => {
+		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, templates)).toBe('https://example.com/lv-10.svg');
+		expect(getIntraRoleIconUrl({ kind: 'coalition', key: '308' }, templates)).toBe('https://example.com/coalitions/308.svg');
+		expect(getIntraRoleIconUrl({ kind: 'campus', key: '26' }, templates)).toBeNull();
+		expect(getIntraRoleIconUrl({ kind: 'cohort', key: '2410' }, templates)).toBeNull();
 	});
 
 	test('ひな形が無ければ null', () => {
-		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, null)).toBeNull();
+		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, { levelBadgeUrl: null, coalitionIconUrl: null })).toBeNull();
+		expect(getIntraRoleIconUrl({ kind: 'coalition', key: '308' }, { ...templates, coalitionIconUrl: null })).toBeNull();
 	});
 });
 

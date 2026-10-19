@@ -23,7 +23,7 @@ import { IntraCohortService } from './IntraCohortService.js';
 import { IntraCoalitionService } from './IntraCoalitionService.js';
 import { extractIntraProfile } from './intra-user.js';
 import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLeveledUpLevel, getLevelRoleTarget } from './intra-role.js';
-import type { IntraRoleTarget } from './intra-role.js';
+import type { IntraRoleIconTemplates, IntraRoleTarget } from './intra-role.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
 import type { IntraCoalition } from './intra-coalition.js';
 
@@ -144,6 +144,29 @@ export class IntraSyncService {
 	}
 
 	/**
+	 * intra_role で管理しているロールのうち、アイコンのひな形があってアイコンが未設定のものにアイコンを設定する。
+	 * 毎時の同期ではコアリションの所属を取り直さない (ensureRole を通らない) ので、ひな形を後から設定したときのために別に確かめる
+	 */
+	@bindThis
+	public async ensureRoleIcons(): Promise<void> {
+		const templates = this.getIconTemplates();
+		if (templates.levelBadgeUrl == null && templates.coalitionIconUrl == null) return;
+		const managed = await this.intraRolesRepository.find({ select: { roleId: true, kind: true, key: true } });
+		for (const intraRole of managed) {
+			const iconUrl = getIntraRoleIconUrl(intraRole, templates);
+			if (iconUrl != null) await this.ensureRoleIcon(intraRole.roleId, iconUrl);
+		}
+	}
+
+	@bindThis
+	private getIconTemplates(): IntraRoleIconTemplates {
+		return {
+			levelBadgeUrl: this.config.intra?.levelBadgeUrl ?? null,
+			coalitionIconUrl: this.config.intra?.coalitionIconUrl ?? null,
+		};
+	}
+
+	/**
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる。
 	 * レベルが上がって新しいレベルのロールを付けたら intraLevelUp を通知する
 	 * @param refreshCoalition コアリションのロールが既に付いていても所属を取り直すか。コアリションは変わらないので、ログインのときだけ取り直す
@@ -222,7 +245,7 @@ export class IntraSyncService {
 	 */
 	@bindThis
 	private async ensureRole(target: IntraRoleTarget): Promise<MiRole['id']> {
-		const iconUrl = getIntraRoleIconUrl(target, this.config.intra?.levelBadgeUrl ?? null);
+		const iconUrl = getIntraRoleIconUrl(target, this.getIconTemplates());
 		const existing = await this.intraRolesRepository.findOneBy({ kind: target.kind, key: target.key });
 		if (existing != null) {
 			if (iconUrl != null) await this.ensureRoleIcon(existing.roleId, iconUrl);
