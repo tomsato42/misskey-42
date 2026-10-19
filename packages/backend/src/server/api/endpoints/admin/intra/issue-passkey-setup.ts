@@ -11,6 +11,8 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { ApiError } from '@/server/api/error.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { RoleService } from '@/core/RoleService.js';
+import { SystemAccountService } from '@/core/SystemAccountService.js';
 import { IntraAccountService } from '@/core/intra/IntraAccountService.js';
 
 export const meta = {
@@ -35,6 +37,12 @@ export const meta = {
 			message: 'No such user.',
 			code: 'NO_SUCH_USER',
 			id: '08555453-a067-4b02-90a8-0068e8b2df04',
+		},
+
+		accessDenied: {
+			message: 'Cannot issue a passkey setup link for another administrator.',
+			code: 'ACCESS_DENIED',
+			id: '9968189d-bbd4-4046-a970-dadf4f67cb13',
 		},
 	},
 
@@ -74,6 +82,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private intraAccountService: IntraAccountService,
 		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
+		private systemAccountService: SystemAccountService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (this.config.intra == null) {
@@ -83,6 +93,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const user = await this.usersRepository.findOneBy({ id: ps.userId, host: IsNull(), isDeleted: false });
 			if (user == null) {
 				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// システムアカウントにはログインさせない
+			if ((await this.systemAccountService.list()).some(account => account.userId === user.id)) {
+				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// 登録リンクはそのアカウントにログインできる鍵になるので、ほかの管理者 (root を含む) のアカウントには出さない (reset-password と同じ)
+			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			const { url, expiresAt } = await this.intraAccountService.issuePasskeySetup(user.id);

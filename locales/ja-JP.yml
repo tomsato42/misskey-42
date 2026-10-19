@@ -3787,6 +3787,7 @@ _intra:
   manualVerifyConfirm: "別の方法で在籍を確かめた場合は、このまま作成できます。42 のユーザーが取れないときは、42 のアカウントに結び付けずに (ロールの同期なしで) 作成します。"
   manualVerifyOk: "手動で確認して作成"
   manualUsernameTaken: "このログイン名のユーザー名は既に使われています。既存のアカウントなら、そのユーザーの管理画面からリンクを発行してください。"
+  cannotIssueForAdmin: "ほかの管理者のアカウントにはパスキーの登録リンクを発行できません。"
   issuePasskeySetup: "パスキーの登録リンクを発行"
   issuePasskeySetupConfirm: "このアカウントにパスキーを登録できるリンクを発行しますか？リンクを知っている人は、このアカウントにログインできるようになります。"
   passkeySetupLinkIssued: "パスキーの登録リンクを発行しました"

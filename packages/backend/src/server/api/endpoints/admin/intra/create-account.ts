@@ -9,6 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { ApiError } from '@/server/api/error.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IntraAccountError, IntraAccountService } from '@/core/intra/IntraAccountService.js';
 import type { IntraAccountFailureReason } from '@/core/intra/IntraAccountService.js';
 
@@ -58,6 +59,12 @@ export const meta = {
 			message: 'The username is already taken.',
 			code: 'USERNAME_TAKEN',
 			id: 'debc8a42-e3d2-4f41-b67d-5a2fdbb4ce2a',
+		},
+
+		accessDenied: {
+			message: 'Cannot issue a passkey setup link for another administrator.',
+			code: 'ACCESS_DENIED',
+			id: 'e8958362-53ed-4eb3-9196-15b01fada64a',
 		},
 	},
 
@@ -121,6 +128,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private intraAccountService: IntraAccountService,
 		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (this.config.intra == null) {
@@ -135,6 +143,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					throw new ApiError(errorsByReason[err.reason]);
 				}
 				throw err;
+			}
+
+			// 登録リンクはそのアカウントにログインできる鍵になるので、ほかの管理者 (root を含む) のアカウントには出さない (reset-password と同じ)
+			if (await this.roleService.isAdministrator(result.user) && me.id !== result.user.id) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			const { url, expiresAt } = await this.intraAccountService.issuePasskeySetup(result.user.id);

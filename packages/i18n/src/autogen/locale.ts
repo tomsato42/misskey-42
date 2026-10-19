@@ -14158,6 +14158,10 @@ export interface Locale extends ILocale {
          */
         "manualUsernameTaken": string;
         /**
+         * ほかの管理者のアカウントにはパスキーの登録リンクを発行できません。
+         */
+        "cannotIssueForAdmin": string;
+        /**
          * パスキーの登録リンクを発行
          */
         "issuePasskeySetup": string;

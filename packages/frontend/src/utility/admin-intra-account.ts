@@ -26,6 +26,7 @@ function getErrorMessage(err: Misskey.api.APIError): string {
 	switch (err.code) {
 		case 'SUSPENDED': return i18n.ts._intra._errors.suspended;
 		case 'USERNAME_TAKEN': return i18n.ts._intra.manualUsernameTaken;
+		case 'ACCESS_DENIED': return i18n.ts._intra.cannotIssueForAdmin;
 		default: return err.message;
 	}
 }
@@ -94,6 +95,12 @@ export async function issueIntraPasskeySetup(user: { id: string; username: strin
 	});
 	if (confirm.canceled) return;
 
-	const { url, expiresAt } = await os.apiWithDialog('admin/intra/issue-passkey-setup', { userId: user.id });
-	showPasskeySetupLink(user.username, url, expiresAt);
+	let res: Misskey.entities.AdminIntraIssuePasskeySetupResponse;
+	try {
+		res = await os.promiseDialog(misskeyApi('admin/intra/issue-passkey-setup', { userId: user.id }), null, () => {});
+	} catch (err) {
+		os.alert({ type: 'error', text: getErrorMessage(err as Misskey.api.APIError) });
+		return;
+	}
+	showPasskeySetupLink(user.username, res.url, res.expiresAt);
 }

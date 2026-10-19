@@ -26,6 +26,10 @@ class FakeRedis {
 		return this.store.get(key) ?? null;
 	}
 
+	public async del(key: string) {
+		return this.store.delete(key) ? 1 : 0;
+	}
+
 	public async getdel(key: string) {
 		const value = this.store.get(key) ?? null;
 		this.store.delete(key);
@@ -237,6 +241,13 @@ describe('IntraAccountService', () => {
 			await expect(service.completePasskeySetup(token, 'My key', {} as any)).rejects.toThrow();
 			expect(insertedKeys).toHaveLength(0);
 			expect(await service.beginPasskeySetup(token)).not.toBeNull();
+		});
+
+		test('リンクを出し直すと、前のリンクは使えなくなる', async () => {
+			const first = tokenOf((await service.issuePasskeySetup('u1')).url);
+			const second = tokenOf((await service.issuePasskeySetup('u1')).url);
+			expect(await service.beginPasskeySetup(first)).toBeNull();
+			expect(await service.beginPasskeySetup(second)).not.toBeNull();
 		});
 
 		test('不正なリンクや凍結されたユーザーのリンクは null', async () => {

@@ -153,8 +153,13 @@ export class IntraAccountService {
 	 */
 	@bindThis
 	public async issuePasskeySetup(userId: MiLocalUser['id']): Promise<{ url: string; expiresAt: Date }> {
+		// 前に出したリンクは使えなくする (渡し間違えたときに出し直せば済むように)
+		const previous = await this.redisClient.get(`intra:passkey-setup-user:${userId}`);
+		if (previous != null) await this.redisClient.del(`intra:passkey-setup:${previous}`);
+
 		const token = generateIntraToken();
 		await this.redisClient.set(`intra:passkey-setup:${token}`, userId, 'EX', INTRA_PASSKEY_SETUP_TTL_SEC);
+		await this.redisClient.set(`intra:passkey-setup-user:${userId}`, token, 'EX', INTRA_PASSKEY_SETUP_TTL_SEC);
 		return {
 			url: buildIntraPasskeySetupUrl(this.config.url, token),
 			expiresAt: new Date(Date.now() + INTRA_PASSKEY_SETUP_TTL_SEC * 1000),
@@ -199,6 +204,7 @@ export class IntraAccountService {
 
 		// 同じリンクで 2 回登録されないよう、登録の前に消費する
 		if (await this.redisClient.getdel(`intra:passkey-setup:${token}`) == null) return null;
+		await this.redisClient.del(`intra:passkey-setup-user:${user.id}`);
 
 		await this.userSecurityKeysRepository.insert({
 			id: keyInfo.credentialID,

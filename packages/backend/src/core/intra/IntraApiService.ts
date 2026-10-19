@@ -144,7 +144,7 @@ export class IntraApiService {
 
 	/**
 	 * アプリトークンで、ログイン名から intra のユーザー情報を取得する。ユーザーが存在しなければ null。
-	 * /v2/users/:id はログイン名も受け付ける
+	 * /v2/users/:id はログイン名も受け付ける (数字だけならユーザー ID として扱われる)
 	 */
 	@bindThis
 	public async getUserByLogin(login: string): Promise<IntraUser | null> {
@@ -156,7 +156,9 @@ export class IntraApiService {
 			throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 		}
 
-		return await res.json() as IntraUser;
+		// /v2/users/:id は数字なら 42 のユーザー ID として扱うので、ログイン名が一致しなければ別人として見つからない扱いにする
+		const user = await res.json() as IntraUser;
+		return user.login.toLowerCase() === login.toLowerCase() ? user : null;
 	}
 
 	/**
