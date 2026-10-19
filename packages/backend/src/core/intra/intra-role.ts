@@ -110,7 +110,7 @@ export function getLevelRoleTarget(level: number): IntraRoleTarget {
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
  */
-export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'cursusBeginAt'>): IntraRoleTarget[] {
+export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): IntraRoleTarget[] {
 	const targets: IntraRoleTarget[] = [];
 
 	if (profile.level != null) {
@@ -124,7 +124,8 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const pool = getPoolRoleTarget(profile.poolYearMonth);
 	if (pool != null) targets.push(pool);
 
-	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolYearMonth);
+	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際の期間の月ではなく名称の年月から求める
+	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth);
 	if (cohort != null) targets.push(cohort);
 
 	return targets;
