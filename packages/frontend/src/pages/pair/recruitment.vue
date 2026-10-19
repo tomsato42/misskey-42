@@ -9,18 +9,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkA to="/pair" :class="$style.back"><i class="ti ti-arrow-left" aria-hidden="true"></i>{{ i18n.ts._pairRecruitment.backToList }}</MkA>
 		<div v-if="recruitment != null" class="_gaps">
 			<div class="_panel" :class="$style.main">
-				<div :class="$style.badges">
+				<div v-if="(recruitment.myProjectState != null && !isOwner) || !isOpen" :class="$style.badges">
 					<MkPairProjectStateBadge v-if="recruitment.myProjectState != null && !isOwner" :state="recruitment.myProjectState" variant="viewer"/>
-					<span v-if="multi" :class="[$style.badge, $style.badgeTag]">{{ i18n.tsx._pairRecruitment.fromNProjects({ n: recruitment.projects.length }) }}</span>
-					<span v-if="isOpen" :class="[$style.badge, $style.badgeRemaining]"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.remaining({ n: remaining }) }}</span>
-					<span v-else :class="[$style.badge, $style.badgeClosed]"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
+					<span v-if="!isOpen" :class="[$style.badge, $style.badgeClosed]"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
 				</div>
 				<h1 :class="$style.title">{{ recruitment.project.name }}</h1>
 				<div :class="$style.rows">
 					<i class="ti ti-stairs" aria-hidden="true"></i><span>{{ getGroupSizeText(recruitment.project) }}</span>
 					<i class="ti ti-users" aria-hidden="true"></i>
 					<span :class="$style.slotsRow">
-						<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount" :members="acceptedUsers"/>
+						<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount" :members="acceptedUsers" link/>
 						<span>{{ i18n.tsx._pairRecruitment.memberFraction({ current: recruitment.acceptedCount + 1, n: recruitment.teamSize }) }}</span>
 					</span>
 					<i class="ti ti-calendar" aria-hidden="true"></i><span>{{ getStartTimingText(recruitment) }}</span>
@@ -55,6 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton v-if="showMessage" rounded @click="sendMessage"><i class="ti ti-message"></i> {{ i18n.ts._pairRecruitment.sendMessage }}</MkButton>
 					<MkButton rounded @click="share"><i class="ti ti-share"></i> {{ i18n.ts._pairRecruitment.share }}</MkButton>
 					<MkButton rounded @click="copyLink"><i class="ti ti-link"></i> {{ i18n.ts.copyLink }}</MkButton>
+					<MkButton v-if="isOwner && isOpen" rounded @click="edit"><i class="ti ti-pencil"></i> {{ i18n.ts._pairRecruitment.edit }}</MkButton>
 				</div>
 			</div>
 
@@ -312,11 +311,15 @@ function share() {
 	if (recruitment.value != null) openPairShareDialog(recruitment.value);
 }
 
+function edit() {
+	router.push('/pair/:id/edit', { params: { id: props.id } });
+}
+
 function copyLink() {
 	copyToClipboard(getPairRecruitmentUrl(url, props.id));
 }
 
-// 共有とリンクのコピーは本文のボタンに置き、メニューには作成者の操作 (編集・締め切り) だけを出す
+// 共有・リンクのコピー・編集は本文のボタンに置き、メニューには締め切りだけを出す
 const headerActions = computed<PageHeaderItem[]>(() => recruitment.value == null || !isOwner.value || !isOpen.value ? [] : [{
 	icon: 'ti ti-dots',
 	text: i18n.ts.menu,
@@ -324,12 +327,6 @@ const headerActions = computed<PageHeaderItem[]>(() => recruitment.value == null
 		const items: MenuItem[] = [];
 		if (isOwner.value && isOpen.value) {
 			items.push({
-				icon: 'ti ti-pencil',
-				text: i18n.ts._pairRecruitment.edit,
-				action: () => {
-					router.push('/pair/:id/edit', { params: { id: props.id } });
-				},
-			}, {
 				icon: 'ti ti-lock',
 				text: i18n.ts._pairRecruitment.close,
 				danger: true,
@@ -384,17 +381,8 @@ definePage(() => ({
 	white-space: nowrap;
 }
 
-.badgeRemaining {
-	box-shadow: inset 0 0 0 1px var(--MI_THEME-fg);
-}
-
 .badgeClosed {
 	background: var(--MI_THEME-buttonBg);
-}
-
-.badgeTag {
-	background: var(--MI_THEME-accentedBg);
-	color: var(--MI_THEME-accent);
 }
 
 .title {

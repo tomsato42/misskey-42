@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</span>
 	</div>
 	<div :class="$style.row3">
-		<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount"/>
+		<MkPairRecruitmentSlots :class="$style.raised" :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount" link/>
 		<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.memberFraction({ current: recruitment.acceptedCount + 1, n: recruitment.teamSize }) }}</span>
 		<span :class="$style.meta"><i class="ti ti-calendar" aria-hidden="true"></i>{{ startText }}</span>
 		<div v-if="action != null" :class="[$style.action, $style.raised]">

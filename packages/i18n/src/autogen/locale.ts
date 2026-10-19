@@ -13742,7 +13742,7 @@ export interface Locale extends ILocale {
          */
         "pendingCount": ParameterizedString<"n">;
         /**
-         * メンバー(募集した人だけが承認できます)
+         * メンバー
          */
         "members": string;
         /**
@@ -13881,10 +13881,6 @@ export interface Locale extends ILocale {
          * 募集を共有
          */
         "shareTitle": string;
-        /**
-         * ほかの場所に貼るための文章です。編集してからコピーできます。開くには 42times へのログインが必要です。
-         */
-        "shareDescription": string;
         /**
          * 文章をコピー
          */
