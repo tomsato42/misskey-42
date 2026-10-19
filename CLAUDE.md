@@ -32,7 +32,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - Docker・PostgreSQL・Redis は無い。e2e と check-migrations は検証用 PR (tomsato42/misskey-42#1、main → ci-base、マージしない) の GitHub Actions で確認する
 - 新しい worktree では `pnpm install --frozen-lockfile` の後に `pnpm --filter misskey-js --filter misskey-reversi --filter i18n --filter misskey-bubble-game build` が必要 (無いと typecheck が通らない)
 - `pnpm build-misskey-js-with-types` には `.config/default.yml` が必要。`cp .config/example.yml .config/default.yml` で用意し、コミットしない
-- DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
+- DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)。`deploy/test/*.test.mjs` はリポジトリのルートで `node --test <file>` (backend と結果を比べるテストは Node の型除去で `packages/backend/src` の .ts を読む)
 
 ### 変更時の注意
 - プロフィールに出す intra 情報は login と Piscine だけ。BH (`blackholed_at`) はペースシステムやフリーズを反映せず古い値が残り、ペース期日は公開 API に無いため表示しない (値は DB と API には残っている)
@@ -47,7 +47,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - e2e のテストサーバー (`test-server/server.ts`) はジョブキューを動かさないので、ジョブを通る処理は e2e では確かめられない
 - フロントの preferences には移行の仕組みが無く、既定値は初回の読み込みで profile に保存される。既定値を変えても既存の人には反映されないので、一度だけ変えるときは印のキーを足して `prefer.cloudReady` の後に行う (例: `boot/main-boot.ts` の `calendar.menuItemAdded`)
 - 設定の検索の索引は `src/pages/settings/*.vue` (直下) だけが対象。RouterView はフルパスを key にするので、`router.replace` でクエリだけ変えてもページは作り直される。icons-subsetter はソースに文字列で書かれた `ti-xxx` だけを集める
-- Agent の worktree は main から作られる。別のブランチで作業させるときは `git switch -c <新しいブランチ> <元のブランチ>` で切り替えさせる (`git reset --hard` は拒否されることがある)
+- Agent の worktree は main から作られる。別のブランチで作業させるときは `git switch -c <新しいブランチ> <元のブランチ>` で切り替えさせる (`git reset --hard` は拒否されることがある)。セッションとその subagent は、ほかの worktree のファイルに書き込めない (拒否される)。別のブランチの作業は、セッションの worktree で `git switch -c` してから行う
 - `@bindThis` のメソッドはテストでインスタンスに代入できない (`Object.defineProperty` で差し替える)
 - `<SearchMarker>` の直下に HTML コメントを置くと、本番ビルドの create-search-index が `Unexpected EOF in comment` で失敗する (typecheck や dev では検出されない)。設定画面ではコメントを `<script>` 側に書く。本番ビルドの確認は `pnpm --filter icons-subsetter build` の後に `pnpm --filter frontend build`
 - frontend-builder の locale inliner は `i18n.ts.<オブジェクト>` を括弧なしのオブジェクトリテラルに置き換える。`computed(() => i18n.ts._visibility[key])` のようにアロー関数の式本体でオブジェクトを添字で引くと、本番ビルドだけ `Unexpected token ':'` で画面が出なくなる (typecheck・dev・unit test では検出されない)。switch で `i18n.ts._xxx.yyy` を返す関数にする。確認は本番ビルドの後に `for f in built/_frontend_vite_/*/*.js; do node --input-type=module --check < "$f" || echo "$f"; done`
