@@ -50,6 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton v-if="showDecline" rounded @click="decline"><i class="ti ti-x"></i> {{ i18n.ts._pairRecruitment.declineInvitation }}</MkButton>
 					<MkButton v-if="showWithdraw" rounded @click="withdraw"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts._pairRecruitment.withdraw }}</MkButton>
 					<MkButton v-if="showInvite" primary rounded @click="invite"><i class="ti ti-user-plus"></i> {{ i18n.ts._pairRecruitment.invite }}</MkButton>
+					<MkButton v-if="showTeamChat" rounded @click="openTeamChat"><i class="ti ti-messages"></i> {{ i18n.ts._pairRecruitment.openTeamChat }}</MkButton>
 					<MkButton v-if="showMessage" rounded @click="sendMessage"><i class="ti ti-message"></i> {{ i18n.ts._pairRecruitment.sendMessage }}</MkButton>
 					<MkButton rounded @click="share"><i class="ti ti-share"></i> {{ i18n.ts._pairRecruitment.share }}</MkButton>
 					<MkButton rounded @click="copyLink"><i class="ti ti-link"></i> {{ i18n.ts.copyLink }}</MkButton>
@@ -139,7 +140,7 @@ import { userPage } from '@/filters/user.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { canApply, canWorkOn, getDaysUntil, getGroupSizeText, getPairRecruitmentErrorText, getPairRecruitmentUrl, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
-import { pairRecruitmentAction } from '@/utility/pair-recruitment-action.js';
+import { pairRecruitmentAction, showPairRecruitmentError } from '@/utility/pair-recruitment-action.js';
 import { applyToPairRecruitment, openPairInviteDialog, openPairShareDialog } from '@/utility/pair-recruitment-dialog.js';
 
 const props = defineProps<{
@@ -230,8 +231,14 @@ const showDecline = computed(() => isOpen.value && recruitment.value?.myStatus =
 const showInvite = computed(() => isOwner.value && isOpen.value && remaining.value > 0);
 /** 取り下げる: 募集中で、参加希望中か参加している人に出す */
 const showWithdraw = computed(() => isOpen.value && (recruitment.value?.myStatus === 'pending' || recruitment.value?.myStatus === 'accepted'));
-/** メッセージを送る: 作成者以外に出す (チャットを使えるときだけ) */
-const showMessage = computed(() => recruitment.value != null && !isOwner.value && canChat.value);
+/** チームのチャット: 作成者・参加が決まった人と、募集中は参加希望中の人に出す (チャットを読めるときだけ) */
+const showTeamChat = computed(() => {
+	const r = recruitment.value;
+	if (r == null || $i == null || $i.policies.chatAvailability === 'unavailable') return false;
+	return isOwner.value || r.myStatus === 'accepted' || (isOpen.value && r.myStatus === 'pending');
+});
+/** メッセージを送る: チームのチャットに入れない、作成者以外の人に出す (チャットを使えるときだけ) */
+const showMessage = computed(() => recruitment.value != null && !isOwner.value && !showTeamChat.value && canChat.value);
 
 function update(updated: Misskey.entities.PairRecruitmentDetailed | null) {
 	if (updated != null) recruitment.value = updated;
@@ -305,6 +312,18 @@ async function close() {
 function sendMessage() {
 	if (recruitment.value == null) return;
 	router.push('/chat/user/:userId', { params: { userId: recruitment.value.userId } });
+}
+
+async function openTeamChat() {
+	if (recruitment.value == null) return;
+	try {
+		const { roomId } = await os.promiseDialog(misskeyApi('pair-recruitments/open-chat', { recruitmentId: recruitment.value.id }), null, (err) => {
+			showPairRecruitmentError(err);
+		});
+		router.push('/chat/room/:roomId', { params: { roomId } });
+	} catch {
+		// エラーは表示済み
+	}
 }
 
 function share() {

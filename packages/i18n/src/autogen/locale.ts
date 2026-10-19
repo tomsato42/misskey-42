@@ -13662,6 +13662,10 @@ export interface Locale extends ILocale {
          */
         "sendMessage": string;
         /**
+         * チームのチャット
+         */
+        "openTeamChat": string;
+        /**
          * 承認
          */
         "accept": string;

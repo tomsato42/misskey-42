@@ -387,6 +387,7 @@ export * as 'pair-recruitments/decline' from './endpoints/pair-recruitments/decl
 export * as 'pair-recruitments/invite' from './endpoints/pair-recruitments/invite.js';
 export * as 'pair-recruitments/invite-candidates' from './endpoints/pair-recruitments/invite-candidates.js';
 export * as 'pair-recruitments/list' from './endpoints/pair-recruitments/list.js';
+export * as 'pair-recruitments/open-chat' from './endpoints/pair-recruitments/open-chat.js';
 export * as 'pair-recruitments/projects' from './endpoints/pair-recruitments/projects.js';
 export * as 'pair-recruitments/reject' from './endpoints/pair-recruitments/reject.js';
 export * as 'pair-recruitments/show' from './endpoints/pair-recruitments/show.js';

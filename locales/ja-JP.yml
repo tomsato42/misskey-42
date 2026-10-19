@@ -3657,6 +3657,7 @@ _pairRecruitment:
   withdraw: "取り下げる"
   withdrawConfirm: "参加希望を取り下げますか？"
   sendMessage: "メッセージを送る"
+  openTeamChat: "チームのチャット"
   accept: "承認"
   reject: "見送る"
   rejectConfirm: "{name} さんの参加希望を見送りますか？見送った人は、この募集にもう一度参加希望を送れません。"

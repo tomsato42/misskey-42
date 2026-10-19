@@ -7,6 +7,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from 'typ
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
+import { MiChatRoom } from './ChatRoom.js';
 import type { PairClosedReason, PairRecruitmentStatus, PairStartTiming } from '@/core/pair/pair-recruitment.js';
 
 /** 募集にまとめた課題の 1 つ (作成時・編集時の値) */
@@ -131,6 +132,19 @@ export class MiPairRecruitment {
 	})
 	@JoinColumn()
 	public note: MiNote | null;
+
+	/** チーム候補で話すチャットルーム (初めて開いたときに作る) */
+	@Column({
+		...id(),
+		nullable: true,
+	})
+	public chatRoomId: MiChatRoom['id'] | null;
+
+	@ManyToOne(() => MiChatRoom, {
+		onDelete: 'SET NULL',
+	})
+	@JoinColumn()
+	public chatRoom: MiChatRoom | null;
 
 	/** 自動で締め切る日時 */
 	@Column('timestamp with time zone')
