@@ -87,7 +87,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (note.userId !== me.id) throw new ApiError(meta.errors.accessDenied);
 
 			try {
-				const event = await this.calendarEventService.findByIdOrFail(ps.eventId);
+				// 公開範囲の外のイベントは、ほかの確認より先に存在しないのと同じエラーにする (中止したかなどが分からないように)
+				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me);
 				assertCalendarLinkableNote(note);
 				if (event.canceledAt != null) throw new CalendarEventCanceledError();
 				await this.calendarEventService.linkNote(note, event.id, me);

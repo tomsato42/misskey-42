@@ -16,6 +16,7 @@ import { CacheService } from '@/core/CacheService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
 import { buildICalendar } from './calendar-ical.js';
+import { CalendarVisibilityService } from './CalendarVisibilityService.js';
 
 /**
  * subscribed: 購読しているイベント (自分が作成したものを含む)、all: すべてのイベント
@@ -72,6 +73,7 @@ export class CalendarFeedService {
 
 		private idService: IdService,
 		private cacheService: CacheService,
+		private calendarVisibilityService: CalendarVisibilityService,
 	) {
 	}
 
@@ -172,6 +174,8 @@ export class CalendarFeedService {
 		if (kind === 'subscribed') {
 			query.innerJoin(MiCalendarEventSubscription, 'subscription', 'subscription.eventId = event.id AND subscription.userId = :userId', { userId: user.id });
 		}
+		// 鍵の持ち主が見られるイベントだけを配信する
+		await this.calendarVisibilityService.applyVisibleFilter(query, 'event', user);
 
 		const events = await query.getMany();
 		const instanceName = this.meta.name ?? this.config.host;

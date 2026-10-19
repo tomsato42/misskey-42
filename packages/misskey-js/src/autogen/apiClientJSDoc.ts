@@ -1403,7 +1403,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Create a calendar event. The creator is subscribed to it automatically.
+     * Create a calendar event. The creator is subscribed to it automatically. If visibility is specified or list, the users who can see the event are invited.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
@@ -1419,6 +1419,28 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
     request<E extends 'calendar/events/delete', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Get whether you can invite each user to a calendar event. Only those who can invite to the event (see calendar/events/invite) can use this.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'calendar/events/invitation-statuses', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Invite users and/or the members of one of your lists to a calendar event. Subscribers can invite to public, followers and mutual events; the creator and moderators can invite to any event. Each user is invited only once (by whoever invites first) and gets a calendarEventInvited notification. Subscribed users and users who cannot see the event are skipped. Up to 200 users (including the list members) are processed per call. With dryRun, nothing is saved and the counts are returned.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'calendar/events/invite', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
@@ -1458,7 +1480,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Show a calendar event. Canceled events are also returned (with isCanceled set).
+     * Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
@@ -1480,6 +1502,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'calendar/events/subscribers', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this. Others get NOTE_NOT_LINKED_TO_CALENDAR_EVENT whether the note is linked or not.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
@@ -1491,7 +1524,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe.
+     * Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe. If you can no longer see the event, the subscription is still removed but NO_SUCH_CALENDAR_EVENT is returned.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
@@ -1513,7 +1546,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it.
+     * Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it. If the visibility changes to specified or list, the users who can newly see the event are invited.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
@@ -3177,7 +3210,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Get which notifications you receive for the calendar events you subscribe to.
+     * Get which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations).
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
@@ -3188,7 +3221,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Change which notifications you receive for the calendar events you subscribe to. Omitted items are left unchanged.
+     * Change which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations). Omitted items are left unchanged.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */

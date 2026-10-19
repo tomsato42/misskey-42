@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_createToken]: notification.type === 'createToken',
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
-				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated',
+				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited',
 				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed',
 			}]"
 		>
@@ -54,6 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'calendarEventReminder'" class="ti ti-clock"></i>
 			<i v-else-if="notification.type === 'calendarEventUpdated' && notification.updateKind === 'canceled'" class="ti ti-calendar-x"></i>
 			<i v-else-if="notification.type === 'calendarEventUpdated'" class="ti ti-calendar-time"></i>
+			<i v-else-if="notification.type === 'calendarEventInvited'" class="ti ti-calendar-plus"></i>
 			<i v-else-if="notification.type === 'pairJoinRequested'" class="ti ti-hand-stop"></i>
 			<i v-else-if="notification.type === 'pairAccepted'" class="ti ti-check"></i>
 			<i v-else-if="notification.type === 'pairClosed'" class="ti ti-users-group"></i>
@@ -85,7 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
 			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
 			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
-			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
+			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
@@ -150,6 +151,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</span>
 				<span v-else :class="$style.calendarLine">{{ formatCalendarSchedule(notification.schedule) }}</span>
 			</MkA>
+			<template v-else-if="notification.type === 'calendarEventInvited'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._calendar._notification.invited }}</span>
+				<MkA :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+					<b :class="[$style.calendarLine, { [$style.calendarCanceled]: notification.event.isCanceled }]">{{ notification.event.title }}</b>
+					<span :class="$style.calendarLine">{{ formatCalendarScheduleAndLocation(notification.event) }}</span>
+				</MkA>
+				<!-- 通知の一覧ではその場で購読できる。購読済み (別の画面で購読したときを含む) なら状態だけ出す -->
+				<template v-if="full && !notification.event.isCanceled">
+					<div v-if="invitationSubscribed || notification.event.isSubscribed === true" :class="$style.calendarSubscribed">
+						<i class="ti ti-bell-ringing"></i> {{ invitationSubscribed ? i18n.ts._calendar._notification.subscribedFromNotification : i18n.ts._calendar.subscribed }}
+					</div>
+					<div v-else :class="$style.followRequestCommands">
+						<MkButton :class="$style.followRequestCommandButton" rounded primary :disabled="subscribingInvitation" @click="subscribeInvitation()"><i class="ti ti-bell"></i> {{ i18n.ts._calendar.subscribe }}</MkButton>
+					</div>
+				</template>
+			</template>
 			<MkA v-else-if="notification.type === 'pairJoinRequested'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
 				{{ i18n.tsx._notification.pairJoinRequestedText({ project: notification.pairRecruitment.projectName }) }}
 			</MkA>
@@ -219,7 +236,8 @@ import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { ensureSignin } from '@/i.js';
-import { formatCalendarSchedule, formatCalendarScheduleAndLocation, getCalendarReminderHeading, getCalendarUpdateHeading } from '@/utility/calendar-event-messages.js';
+import { formatCalendarSchedule, formatCalendarScheduleAndLocation, getCalendarApiErrorMessage, getCalendarReminderHeading, getCalendarUpdateHeading } from '@/utility/calendar-event-messages.js';
+import * as os from '@/os.js';
 
 const $i = ensureSignin();
 
@@ -261,6 +279,23 @@ const rejectFollowRequest = () => {
 	followRequestDone.value = true;
 	misskeyApi('following/requests/reject', { userId: props.notification.user.id });
 };
+
+// 42times: 招待の通知から購読する
+const invitationSubscribed = ref(false);
+const subscribingInvitation = ref(false);
+
+async function subscribeInvitation() {
+	if (props.notification.type !== 'calendarEventInvited' || subscribingInvitation.value) return;
+	subscribingInvitation.value = true;
+	try {
+		await misskeyApi('calendar/events/subscribe', { eventId: props.notification.event.id });
+		invitationSubscribed.value = true;
+	} catch (err) {
+		os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+	} finally {
+		subscribingInvitation.value = false;
+	}
+}
 
 function getActualReactedUsersCount(notification: Misskey.entities.Notification) {
 	if (notification.type !== 'reaction:grouped') return 0;
@@ -517,6 +552,12 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 }
 .followRequestCommandButton {
 	flex: 1;
+}
+
+.calendarSubscribed {
+	margin-top: 8px;
+	font-weight: bold;
+	color: var(--MI_THEME-accent);
 }
 
 .reactionsItem {

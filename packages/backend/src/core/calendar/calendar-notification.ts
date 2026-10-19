@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// カレンダーの通知 (calendarEventReminder / calendarEventUpdated) の保存と返り値の形。
+// カレンダーの通知 (calendarEventReminder / calendarEventUpdated / calendarEventInvited) の保存と返り値の形。
 // 通知は Redis に JSON で保存するので、日時は ISO 8601 の文字列で持つ
 
 import type { Packed } from '@/misc/json-schema.js';
@@ -14,7 +14,7 @@ import type { MiGroupedNotification, MiNotification } from '@/models/Notificatio
 import { formatJstDate, formatJstTime } from './calendar-time.js';
 import type { CalendarEventSchedule } from './calendar-time.js';
 
-export const calendarNotificationTypes = ['calendarEventReminder', 'calendarEventUpdated'] as const;
+export const calendarNotificationTypes = ['calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited'] as const;
 export type CalendarNotificationType = typeof calendarNotificationTypes[number];
 
 /**
@@ -46,8 +46,13 @@ export type CalendarEventUpdatedNotificationData = {
 	schedule: CalendarEventScheduleSnapshot;
 };
 
+/** MiNotification の calendarEventInvited の中身 (type・id・createdAt・notifierId 以外) */
+export type CalendarEventInvitedNotificationData = {
+	eventId: MiCalendarEvent['id'];
+};
+
 /**
- * 保存されている calendarNotificationSettings を 4 項目そろった形にする (項目が無い・真偽値でないときは既定のオン)
+ * 保存されている calendarNotificationSettings を全項目そろった形にする (項目が無い・真偽値でないときは既定のオン)
  */
 export function normalizeCalendarNotificationSettings(raw: Partial<Record<keyof CalendarNotificationSettings, unknown>> | null | undefined): CalendarNotificationSettings {
 	const result = { ...DEFAULT_CALENDAR_NOTIFICATION_SETTINGS };
@@ -82,7 +87,7 @@ export function packCalendarEventScheduleSnapshot(snapshot: CalendarEventSchedul
 
 /** カレンダーの通知なら、対象のイベントの ID を返す */
 export function getCalendarEventIdOfNotification(notification: MiNotification | MiGroupedNotification): MiCalendarEvent['id'] | null {
-	if (notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated') {
+	if (notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited') {
 		return notification.eventId;
 	}
 	return null;
@@ -108,6 +113,9 @@ export function packCalendarNotificationFields(
 			previousSchedule: notification.previousSchedule != null ? packCalendarEventScheduleSnapshot(notification.previousSchedule) : null,
 			schedule: packCalendarEventScheduleSnapshot(notification.schedule),
 		};
+	}
+	if (notification.type === 'calendarEventInvited') {
+		return { event };
 	}
 	return {};
 }

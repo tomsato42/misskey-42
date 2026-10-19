@@ -657,6 +657,18 @@ type CalendarEventsCreateResponse = operations['calendar___events___create']['re
 type CalendarEventsDeleteRequest = operations['calendar___events___delete']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type CalendarEventsInvitationStatusesRequest = operations['calendar___events___invitation-statuses']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInvitationStatusesResponse = operations['calendar___events___invitation-statuses']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInviteRequest = operations['calendar___events___invite']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInviteResponse = operations['calendar___events___invite']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type CalendarEventsLinkNoteRequest = operations['calendar___events___link-note']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -682,6 +694,12 @@ type CalendarEventsSubscribeRequest = operations['calendar___events___subscribe'
 
 // @public (undocumented)
 type CalendarEventsSubscribeResponse = operations['calendar___events___subscribe']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribersRequest = operations['calendar___events___subscribers']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribersResponse = operations['calendar___events___subscribers']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type CalendarEventsUnlinkNoteRequest = operations['calendar___events___unlink-note']['requestBody']['content']['application/json'];
@@ -1802,6 +1820,10 @@ declare namespace entities {
         CalendarEventsCreateRequest,
         CalendarEventsCreateResponse,
         CalendarEventsDeleteRequest,
+        CalendarEventsInvitationStatusesRequest,
+        CalendarEventsInvitationStatusesResponse,
+        CalendarEventsInviteRequest,
+        CalendarEventsInviteResponse,
         CalendarEventsLinkNoteRequest,
         CalendarEventsListRequest,
         CalendarEventsListResponse,
@@ -1811,6 +1833,8 @@ declare namespace entities {
         CalendarEventsShowResponse,
         CalendarEventsSubscribeRequest,
         CalendarEventsSubscribeResponse,
+        CalendarEventsSubscribersRequest,
+        CalendarEventsSubscribersResponse,
         CalendarEventsUnlinkNoteRequest,
         CalendarEventsUnsubscribeRequest,
         CalendarEventsUnsubscribeResponse,
@@ -3290,7 +3314,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "pairJoinRequested", "pairAccepted", "pairClosed"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;

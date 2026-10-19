@@ -14,7 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span>{{ i18n.ts._calendar.announceEvent }}</span>
 			<button v-tooltip="i18n.ts._calendar.stopAnnouncing" type="button" class="_button" :class="$style.close" :aria-label="i18n.ts._calendar.stopAnnouncing" :disabled="disabled" @click="emit('stopAnnouncing')"><i class="ti ti-x"></i></button>
 		</div>
-		<MkCalendarEventForm v-model="formModel" :errors="errors" :withDescription="false" :disabled="disabled || unavailableReason != null" autofocus/>
+		<MkCalendarEventForm v-model="formModel" :errors="errors" :withDescription="false" :visibilityLabel="i18n.ts._calendar.eventVisibility" :disabled="disabled || unavailableReason != null" autofocus/>
+		<MkInfo v-if="isNarrowerThanNote" warn>
+			<span :class="$style.narrower">
+				<span>{{ i18n.tsx._calendar.narrowerThanNote({ note: noteVisibilityLabel, event: getCalendarVisibilityLabel(form.visibility) }) }}</span>
+				<button type="button" class="_button" :class="$style.matchNote" :disabled="disabled" @click="matchNoteVisibility">{{ i18n.ts._calendar.matchNoteVisibility }}</button>
+			</span>
+		</MkInfo>
 	</section>
 
 	<div v-else-if="linkedEvent != null" :class="[$style.linked, { [$style.inactive]: unavailableReason != null }]">
@@ -41,17 +47,20 @@ import MkInfo from '@/components/MkInfo.vue';
 import MkCalendarEventForm from '@/components/MkCalendarEventForm.vue';
 import { i18n } from '@/i18n.js';
 import { clearChangedCalendarEventFormErrors } from '@/utility/calendar-event-form.js';
-import { formatCalendarSchedule } from '@/utility/calendar-event-messages.js';
+import { formatCalendarSchedule, getCalendarVisibilityLabel, getNoteVisibilityLabel } from '@/utility/calendar-event-messages.js';
+import { isCalendarVisibilityNarrowerThanNote, noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
 
 /** 告知するイベントの入力。告知していないときは null */
 const form = defineModel<CalendarEventFormValue | null>('form', { required: true });
 const errors = defineModel<CalendarEventFormErrors>('errors', { required: true });
 
-defineProps<{
+const props = defineProps<{
 	/** 紐づけるイベント。告知しているときは使わない */
 	linkedEvent: Misskey.entities.CalendarEventLite | null;
 	/** イベントを扱えない理由 (ダイレクト・予約投稿)。あるときは欄を無効にして注意書きを出す */
 	unavailableReason: CalendarNoteFormUnavailableReason | null;
+	/** ノートの公開範囲 (イベントの公開範囲がノートより狭いときに注意を出す) */
+	noteVisibility: typeof Misskey.noteVisibilities[number];
 	disabled?: boolean;
 }>();
 
@@ -59,6 +68,16 @@ const emit = defineEmits<{
 	(ev: 'stopAnnouncing'): void;
 	(ev: 'unlink'): void;
 }>();
+
+const noteVisibilityLabel = computed(() => getNoteVisibilityLabel(props.noteVisibility));
+
+// ノートは見えるがイベントは見えない人がいるとき (その人にはイベントのカードが出ない)
+const isNarrowerThanNote = computed(() => form.value != null && props.unavailableReason == null && isCalendarVisibilityNarrowerThanNote(form.value.visibility, props.noteVisibility));
+
+function matchNoteVisibility() {
+	if (form.value == null) return;
+	form.value = { ...form.value, visibility: noteVisibilityToCalendarVisibility(props.noteVisibility) };
+}
 
 // 入力し直した欄のエラーは消す
 const formModel = computed<CalendarEventFormValue>({
@@ -128,6 +147,21 @@ const formModel = computed<CalendarEventFormValue>({
 
 .inactive {
 	opacity: 0.6;
+}
+
+.narrower {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.matchNote {
+	flex: none;
+	font-weight: bold;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 @container (max-width: 500px) {

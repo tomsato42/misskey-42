@@ -9,6 +9,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkA :to="calendarUrl" :class="$style.back"><i class="ti ti-arrow-left" aria-hidden="true"></i>{{ i18n.ts._calendar.backToCalendar }}</MkA>
 		<div v-if="event" class="_gaps">
 			<MkInfo v-if="event.isCanceled" warn>{{ i18n.ts._calendar.eventCanceled }}</MkInfo>
+			<MkInfo v-else-if="showInvitation && event.invitedBy != null">
+				<span :class="$style.invited">
+					<MkAvatar :user="event.invitedBy" :class="$style.invitedAvatar"/>
+					<span :class="$style.invitedText">
+						<I18n :src="i18n.ts._calendar.invitedBy" tag="span">
+							<template #user><b><MkUserName :user="event.invitedBy"/></b></template>
+						</I18n>
+					</span>
+					<MkButton primary rounded small :disabled="subscribing" @click="subscribe"><i class="ti ti-bell"></i> {{ i18n.ts._calendar.subscribe }}</MkButton>
+				</span>
+			</MkInfo>
 
 			<div class="_panel" :class="[$style.card, { [$style.canceled]: event.isCanceled }]">
 				<div :class="$style.when">
@@ -46,6 +57,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</template>
 						</I18n>
 					</span>
+					<template v-if="event.visibility !== 'public'">
+						<i :class="[getCalendarVisibilityIcon(event.visibility), $style.rowIcon]" aria-hidden="true"></i>
+						<span>
+							<I18n v-if="event.visibility === 'followers' || event.visibility === 'mutual'" :src="event.visibility === 'followers' ? i18n.ts._calendar.visibleToFollowersOf : i18n.ts._calendar.visibleToMutualsOf">
+								<template #user><MkUserName :user="event.user"/></template>
+							</I18n>
+							<template v-else>{{ visibilityText }}</template>
+						</span>
+					</template>
 				</div>
 
 				<div v-if="event.description" :class="$style.description" class="_selectable">
@@ -58,13 +78,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i class="ti ti-bell-ringing"></i> {{ i18n.ts._calendar.subscribed }}
 						</MkButton>
 					</template>
-					<MkButton v-else-if="!event.isCanceled" rounded :disabled="subscribing" @click="subscribe">
+					<MkButton v-else-if="!event.isCanceled && !showInvitation" rounded :disabled="subscribing" @click="subscribe">
 						<i class="ti ti-bell"></i> {{ i18n.ts._calendar.subscribe }}
+					</MkButton>
+					<!-- 招待を送れるのは購読している人と、管理できる人 -->
+					<MkButton v-if="canInvite" rounded @click="invite">
+						<i class="ti ti-user-plus"></i> {{ i18n.ts._calendar.invite }}
 					</MkButton>
 					<MkButton v-if="event.hashtag && !event.isCanceled" gradate rounded @click="postWithHashtag">
 						<i class="ti ti-pencil"></i> {{ i18n.tsx._calendar.postWithHashtag({ tag: event.hashtag }) }}
 					</MkButton>
-					<span :class="$style.subscribers">{{ i18n.tsx._calendar.subscribersCount({ n: event.subscribersCount }) }}</span>
+					<button type="button" class="_button" :class="$style.subscribers" :aria-label="subscribersButtonLabel" @click="openSubscribers">
+						<span v-if="(event.subscribersPreview ?? []).length > 0" :class="$style.subscriberAvatars" aria-hidden="true">
+							<MkAvatar v-for="user in event.subscribersPreview" :key="user.id" :user="user" :class="$style.subscriberAvatar"/>
+						</span>
+						<span :class="$style.subscribersText">
+							<span>{{ i18n.tsx._calendar.subscribersCount({ n: event.subscribersCount }) }}</span>
+							<small v-if="(event.followingSubscribersCount ?? 0) > 0">{{ i18n.tsx._calendar.includesFollowing({ n: event.followingSubscribersCount ?? 0 }) }}</small>
+						</span>
+						<i class="ti ti-chevron-right" :class="$style.subscribersChevron" aria-hidden="true"></i>
+					</button>
 				</div>
 				<div v-if="isOwner && event.isSubscribed" :class="$style.ownerNote">{{ i18n.ts._calendar.cannotUnsubscribeOwn }}</div>
 			</div>
@@ -100,7 +133,8 @@ import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { dayOfWeek, diffDays, parseCalendarDate, toJstDateString } from '@/utility/calendar.js';
 import { buildCalendarEventIcs, getCalendarEventIcsFileName } from '@/utility/calendar-ics.js';
 import { formatCalendarDay, formatCalendarEventTime, getCalendarApiErrorMessage, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
-import { openCalendarEventEditDialog } from '@/utility/calendar-event-dialog.js';
+import { openCalendarEventEditDialog, openCalendarEventInviteDialog, openCalendarEventSubscribersDialog } from '@/utility/calendar-event-dialog.js';
+import { getCalendarVisibilityIcon } from '@/utility/calendar-visibility.js';
 
 const props = defineProps<{
 	eventId: string;
@@ -124,6 +158,49 @@ const eventUrl = computed(() => `${url}/calendar/events/${props.eventId}`);
 /** イベントの月のカレンダー。読み込む前は今月 */
 const calendarUrl = computed(() => event.value != null ? `/calendar?month=${event.value.date.slice(0, 7)}` : '/calendar');
 const isOwner = computed(() => event.value != null && $i != null && event.value.userId === $i.id);
+// 招待を送れるのは管理できる人と、購読している人 (指定ユーザー・リストのイベントは管理できる人だけ。backend の CalendarInvitationService.canInvite と同じ)
+const canInvite = computed(() => {
+	if (event.value == null || event.value.isCanceled) return false;
+	if (event.value.canManage === true) return true;
+	return event.value.isSubscribed === true && event.value.visibility !== 'specified' && event.value.visibility !== 'list';
+});
+
+/** 招待されていて、まだ購読していないときに案内を出す (そのときは購読のボタンを案内の中だけにする) */
+const showInvitation = computed(() => event.value != null && !event.value.isCanceled && event.value.invitedBy != null && event.value.isSubscribed !== true);
+
+const subscribersButtonLabel = computed(() => {
+	if (event.value == null) return '';
+	const following = event.value.followingSubscribersCount ?? 0;
+	return [
+		i18n.tsx._calendar.subscribersCount({ n: event.value.subscribersCount }),
+		following > 0 ? i18n.tsx._calendar.includesFollowing({ n: following }) : null,
+		i18n.ts._calendar.openSubscribers,
+	].filter(x => x != null).join(' ');
+});
+
+/** リストに公開しているイベントのリストの名前 (管理できる人にだけ出す) */
+const userListName = ref<string | null>(null);
+
+watch(() => event.value?.userListId, async (listId) => {
+	userListName.value = null;
+	if (listId == null) return;
+	try {
+		userListName.value = (await misskeyApi('users/lists/show', { listId })).name;
+	} catch {
+		// モデレーターが他人のリストを見るときなど、引けなければ名前を出さない
+	}
+});
+
+/** 指定ユーザー・リストの公開範囲の表記。フォロワー・相互フォローは作成者の名前を入れるのでテンプレートで書く */
+const visibilityText = computed(() => {
+	if (event.value == null) return '';
+	if (event.value.visibility === 'specified') {
+		return event.value.visibleUserIds != null
+			? i18n.tsx._calendar.visibleToSpecifiedCount({ n: event.value.visibleUserIds.length })
+			: i18n.ts._calendar.visibleToSpecified;
+	}
+	return userListName.value != null ? i18n.tsx._calendar.visibleToNamedList({ name: userListName.value }) : i18n.ts._calendar.visibleToList;
+});
 
 const eventDate = computed(() => parseCalendarDate(event.value?.date) ?? { year: 0, month: 0, day: 0 });
 const eventDayOfWeek = computed(() => event.value ? dayOfWeek(event.value.date) : 0);
@@ -158,11 +235,25 @@ function showError(err: unknown) {
 	os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
 }
 
+/**
+ * 購読・購読の解除のあと、購読者のアバターなどイベントのページ用の項目も読み直す。
+ * 読み直すまでは API の返り値 (ページ用の項目が無い) に前の値を残して出す
+ */
+async function applySubscription(updated: Misskey.entities.CalendarEvent) {
+	if (event.value == null) return;
+	event.value = { ...event.value, ...updated };
+	try {
+		event.value = await misskeyApi('calendar/events/show', { eventId: updated.id });
+	} catch {
+		// 購読はできているので、読み直せなくてもそのままにする
+	}
+}
+
 async function subscribe() {
 	if (event.value == null || subscribing.value) return;
 	subscribing.value = true;
 	try {
-		event.value = await misskeyApi('calendar/events/subscribe', { eventId: event.value.id });
+		await applySubscription(await misskeyApi('calendar/events/subscribe', { eventId: event.value.id }));
 	} catch (err) {
 		showError(err);
 	} finally {
@@ -174,12 +265,24 @@ async function unsubscribe() {
 	if (event.value == null || subscribing.value || isOwner.value) return;
 	subscribing.value = true;
 	try {
-		event.value = await misskeyApi('calendar/events/unsubscribe', { eventId: event.value.id });
+		await applySubscription(await misskeyApi('calendar/events/unsubscribe', { eventId: event.value.id }));
 	} catch (err) {
 		showError(err);
 	} finally {
 		subscribing.value = false;
 	}
+}
+
+function openSubscribers() {
+	if (event.value == null) return;
+	openCalendarEventSubscribersDialog(event.value);
+}
+
+async function invite() {
+	if (event.value == null) return;
+	const sent = await openCalendarEventInviteDialog(event.value);
+	if (sent == null) return;
+	os.toast(sent > 0 ? i18n.tsx._calendar.invitesSent({ n: sent }) : i18n.ts._calendar.noInvitesSent);
 }
 
 function postWithHashtag() {
@@ -210,7 +313,8 @@ function downloadIcs() {
 async function edit() {
 	if (event.value == null) return;
 	const updated = await openCalendarEventEditDialog({ event: event.value });
-	if (updated != null) event.value = updated;
+	// 公開範囲を変えると購読者が変わりうるので、ページ用の項目ごと読み直す
+	if (updated != null) await applySubscription(updated);
 }
 
 async function cancelEvent() {
@@ -221,7 +325,8 @@ async function cancelEvent() {
 	});
 	if (canceled) return;
 	try {
-		event.value = await misskeyApi('calendar/events/cancel', { eventId: event.value.id });
+		// 返り値にはページ用の項目 (購読者のアバターなど) が無いので、前の値に重ねる
+		event.value = { ...event.value, ...await misskeyApi('calendar/events/cancel', { eventId: event.value.id }) };
 	} catch (err) {
 		showError(err);
 	}
@@ -401,8 +506,64 @@ definePage(() => ({
 
 .subscribers {
 	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 40px;
+	padding: 4px 12px 4px 6px;
+	border-radius: 999px;
+	background: var(--MI_THEME-buttonBg);
+
+	&:hover {
+		background: var(--MI_THEME-buttonHoverBg);
+	}
+}
+
+.subscriberAvatars {
+	display: flex;
+	padding-left: 6px;
+}
+
+.subscriberAvatar {
+	width: 28px;
+	height: 28px;
+	margin-left: -6px;
+	box-shadow: 0 0 0 2px var(--MI_THEME-panel);
+}
+
+.subscribersText {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.25;
 	font-size: 0.9em;
-	opacity: 0.85;
+	text-align: left;
+
+	> small {
+		font-size: 0.85em;
+		opacity: 0.75;
+	}
+}
+
+.subscribersChevron {
+	opacity: 0.5;
+}
+
+.invited {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+}
+
+.invitedAvatar {
+	flex: none;
+	width: 24px;
+	height: 24px;
+}
+
+.invitedText {
+	flex: 1;
+	min-width: 0;
 }
 
 .ownerNote {

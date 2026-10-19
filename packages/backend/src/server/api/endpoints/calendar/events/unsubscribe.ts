@@ -8,6 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
+import { CalendarEventNotFoundError } from '@/core/calendar/calendar-errors.js';
 import { toCalendarApiError } from '@/server/api/calendar-api.js';
 
 export const meta = {
@@ -24,7 +25,7 @@ export const meta = {
 		max: 300,
 	},
 
-	description: 'Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe.',
+	description: 'Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe. If you can no longer see the event, the subscription is still removed but NO_SUCH_CALENDAR_EVENT is returned.',
 
 	res: {
 		type: 'object',
@@ -63,7 +64,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			try {
 				const event = await this.calendarEventService.findByIdOrFail(ps.eventId);
+				// 公開範囲の外になった人も購読を外せるようにするが、イベントの中身は返さない (存在しないのと同じエラーにする)
 				await this.calendarEventService.unsubscribe(event, me);
+				if (!await this.calendarEventService.canView(event, me)) throw new CalendarEventNotFoundError();
 				return await this.calendarEventEntityService.pack(event, me, { isSubscribed: false });
 			} catch (err) {
 				throw toCalendarApiError(err, {

@@ -8,7 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
-import { calendarEventUpdateProperties, toCalendarApiError } from '@/server/api/calendar-api.js';
+import { calendarEventUpdateProperties, toCalendarApiError, toCalendarEventVisibilityInput } from '@/server/api/calendar-api.js';
 
 export const meta = {
 	tags: ['calendar'],
@@ -24,7 +24,7 @@ export const meta = {
 		max: 60,
 	},
 
-	description: 'Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it.',
+	description: 'Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it. If the visibility changes to specified or list, the users who can newly see the event are invited.',
 
 	res: {
 		type: 'object',
@@ -73,7 +73,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
-				const event = await this.calendarEventService.findByIdOrFail(ps.eventId);
+				// 公開範囲の外のイベントは、存在しないのと同じエラーにする (権限のエラーで存在が分からないように)
+				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me);
 				const { event: updated } = await this.calendarEventService.update(event, {
 					title: ps.title,
 					date: ps.date,
@@ -83,7 +84,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					location: ps.location,
 					description: ps.description,
 					hashtag: ps.hashtag,
-				}, me);
+				}, me, toCalendarEventVisibilityInput(ps));
 				return await this.calendarEventEntityService.pack(updated, me);
 			} catch (err) {
 				throw toCalendarApiError(err, {

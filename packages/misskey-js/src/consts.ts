@@ -39,6 +39,7 @@ export const notificationTypes = [
 	'createToken',
 	'calendarEventReminder',
 	'calendarEventUpdated',
+	'calendarEventInvited',
 	'pairJoinRequested',
 	'pairAccepted',
 	'pairClosed',

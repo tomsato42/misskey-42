@@ -64,7 +64,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const event = await this.calendarEventService.findById(ps.eventId);
-			if (event == null) throw new ApiError(meta.errors.noSuchEvent);
+			if (event == null || !await this.calendarEventService.canView(event, me)) throw new ApiError(meta.errors.noSuchEvent);
 
 			// 紐づけの表は公開範囲を見ていないので、タイムラインと同じ条件で閲覧者が見てよいノートに絞る (notes/search-by-tag と同じ)
 			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)

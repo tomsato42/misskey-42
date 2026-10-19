@@ -16,6 +16,7 @@ import type {
 import { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import { MiCalendarEventSubscription } from '@/models/CalendarEventSubscription.js';
 import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
+import { MiFollowing } from '@/models/Following.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -23,6 +24,8 @@ import { IdService } from '@/core/IdService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
 import { CalendarNotificationService } from './CalendarNotificationService.js';
+import { CalendarVisibilityService } from './CalendarVisibilityService.js';
+import { CalendarInvitationService } from './CalendarInvitationService.js';
 import {
 	CalendarEventCanceledError,
 	CalendarEventCannotUnsubscribeOwnError,
@@ -33,8 +36,10 @@ import {
 } from './calendar-errors.js';
 import { normalizeCalendarEventInput } from './calendar-event-input.js';
 import { startOfJstDay, toCalendarEventScheduleInput } from './calendar-time.js';
+import { isCalendarEventVisibilityChanged } from './calendar-visibility.js';
 import type { CalendarEventInput } from './calendar-event-input.js';
 import type { CalendarEventSchedule } from './calendar-time.js';
+import type { CalendarEventVisibilityInput, NormalizedCalendarEventVisibility } from './calendar-visibility.js';
 
 type Me = { id: MiUser['id'] };
 
@@ -52,7 +57,22 @@ export type CalendarEventUpdateResult = {
 	event: MiCalendarEvent;
 	/** 日時 (開始・終了・終日) が変わったときだけ入る */
 	scheduleChange: CalendarEventScheduleChange | null;
+	/** 公開範囲が変わったか */
+	visibilityChanged: boolean;
 };
+
+/**
+ * 購読者の一覧の絞り込み。all: すべて、following: me がフォローしている人
+ */
+export type CalendarEventSubscriberFilter = 'all' | 'following';
+
+function hasVisibilityInput(input: CalendarEventVisibilityInput | undefined): input is CalendarEventVisibilityInput {
+	return input != null && (input.visibility !== undefined || input.visibleUserIds !== undefined || input.userListId !== undefined);
+}
+
+function visibilityOf(event: Pick<MiCalendarEvent, 'visibility' | 'visibleUserIds' | 'userListId'>): NormalizedCalendarEventVisibility {
+	return { visibility: event.visibility, visibleUserIds: event.visibleUserIds, userListId: event.userListId };
+}
 
 function isSameSchedule(a: CalendarEventSchedule, b: CalendarEventSchedule): boolean {
 	return a.startsAt.getTime() === b.startsAt.getTime()
@@ -84,6 +104,8 @@ export class CalendarEventService {
 		private roleService: RoleService,
 		private idService: IdService,
 		private calendarNotificationService: CalendarNotificationService,
+		private calendarVisibilityService: CalendarVisibilityService,
+		private calendarInvitationService: CalendarInvitationService,
 	) {
 	}
 
@@ -91,18 +113,24 @@ export class CalendarEventService {
 
 	/**
 	 * イベントを作り、作成者を購読させる。
-	 * 告知のノートを渡すと、イベントの告知のノートとして記録し、イベントに紐づける
+	 * 告知のノートを渡すと、イベントの告知のノートとして記録し、イベントに紐づける。
+	 * 公開範囲が指定ユーザー・リストなら、見られる人を招待する
 	 * @throws CalendarEventValidationError 入力が仕様に合わない
 	 * @throws CalendarEventPermissionError 告知のノートの作成者が me ではない
 	 * @throws CalendarEventNoteAlreadyLinkedError 告知のノートが既に別のイベントに紐づいている
 	 */
 	@bindThis
-	public async create(me: Me, input: CalendarEventInput, opts: { announcementNote?: Pick<MiNote, 'id' | 'userId'> } = {}): Promise<MiCalendarEvent> {
+	public async create(
+		me: Me,
+		input: CalendarEventInput,
+		opts: { announcementNote?: Pick<MiNote, 'id' | 'userId'>; visibility?: CalendarEventVisibilityInput } = {},
+	): Promise<MiCalendarEvent> {
 		const values = normalizeCalendarEventInput(input);
 		const announcementNote = opts.announcementNote ?? null;
 		if (announcementNote != null && announcementNote.userId !== me.id) {
 			throw new CalendarEventPermissionError();
 		}
+		const visibility = await this.resolveVisibility(opts.visibility ?? {}, me.id);
 
 		const eventId = this.idService.gen();
 
@@ -112,6 +140,7 @@ export class CalendarEventService {
 					id: eventId,
 					userId: me.id,
 					...values,
+					...visibility,
 					announcementNoteId: announcementNote?.id ?? null,
 					canceledAt: null,
 					updatedAt: null,
@@ -138,20 +167,46 @@ export class CalendarEventService {
 			throw err;
 		}
 
-		return await this.calendarEventsRepository.findOneByOrFail({ id: eventId });
+		const created = await this.calendarEventsRepository.findOneByOrFail({ id: eventId });
+		if (visibility.visibility === 'specified' || visibility.visibility === 'list') {
+			await this.onAudienceChanged(created);
+		}
+		return created;
 	}
 
 	/**
-	 * イベントを編集する。input に無い項目は変えない。
-	 * 日時が変わったら送ったリマインダーの記録を消し (送り直せるように)、onScheduleChanged を呼ぶ
+	 * 公開範囲の入力を検証して保存する形にする (ノートと一緒に作るときは、ノートを作る前に確かめるのに使う)
+	 * @param creatorId イベントの作成者
+	 * @throws CalendarEventValidationError
+	 */
+	@bindThis
+	public async resolveVisibility(input: CalendarEventVisibilityInput, creatorId: MiUser['id']): Promise<NormalizedCalendarEventVisibility> {
+		return await this.calendarVisibilityService.resolve(input, creatorId);
+	}
+
+	/**
+	 * イベントを編集する。input・visibility に無い項目は変えない。
+	 * 日時が変わったら送ったリマインダーの記録を消し (送り直せるように)、onScheduleChanged を呼ぶ。
+	 * 公開範囲が変わったら、範囲の外になった人の購読を外し、onAudienceChanged を呼ぶ
 	 * @throws CalendarEventPermissionError 作成者でもモデレーター以上でもない
 	 * @throws CalendarEventCanceledError 中止したイベント
 	 * @throws CalendarEventValidationError 入力が仕様に合わない
 	 */
 	@bindThis
-	public async update(event: MiCalendarEvent, input: Partial<CalendarEventInput>, me: Me): Promise<CalendarEventUpdateResult> {
+	public async update(event: MiCalendarEvent, input: Partial<CalendarEventInput>, me: Me, visibilityInput?: CalendarEventVisibilityInput): Promise<CalendarEventUpdateResult> {
 		await this.assertCanManage(event, me);
 		if (event.canceledAt != null) throw new CalendarEventCanceledError();
+
+		const previousVisibility = visibilityOf(event);
+		// 公開範囲の項目は、省略したものを今の値で補ってから検証する (リストは作成者のものでなければならない)
+		const visibility = hasVisibilityInput(visibilityInput)
+			? await this.resolveVisibility({
+				visibility: visibilityInput.visibility ?? event.visibility,
+				visibleUserIds: visibilityInput.visibleUserIds !== undefined ? visibilityInput.visibleUserIds : event.visibleUserIds,
+				userListId: visibilityInput.userListId !== undefined ? visibilityInput.userListId : event.userListId,
+			}, event.userId)
+			: previousVisibility;
+		const visibilityChanged = isCalendarEventVisibilityChanged(previousVisibility, visibility);
 
 		const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as Partial<CalendarEventInput>;
 		const merged: CalendarEventInput = {
@@ -167,6 +222,7 @@ export class CalendarEventService {
 		const values = {
 			...normalized,
 			hashtag: defined.hashtag !== undefined ? normalized.hashtag : event.hashtag,
+			...visibility,
 			updatedAt: new Date(),
 		};
 
@@ -182,7 +238,12 @@ export class CalendarEventService {
 			await this.onScheduleChanged(updated, scheduleChange, me);
 		}
 
-		return { event: updated, scheduleChange };
+		if (visibilityChanged) {
+			await this.calendarVisibilityService.removeSubscriptionsOutsideVisibility(updated);
+			await this.onAudienceChanged(updated);
+		}
+
+		return { event: updated, scheduleChange, visibilityChanged };
 	}
 
 	/**
@@ -259,16 +320,27 @@ export class CalendarEventService {
 		this.calendarNotificationService.notifyCanceled(event, me);
 	}
 
+	/**
+	 * 公開範囲が指定ユーザー・リストのイベントを作ったとき、公開範囲を変えたときに呼ばれる。
+	 * 見られる人のうち、まだ招待していない人を作成者から招待する (それ以外の公開範囲では何もしない)
+	 */
+	@bindThis
+	protected async onAudienceChanged(event: MiCalendarEvent): Promise<void> {
+		await this.calendarInvitationService.inviteAudience(event);
+	}
+
 	//#endregion
 
 	//#region 購読
 
 	/**
 	 * イベントを購読する。購読済みなら何もしない
+	 * @throws CalendarEventNotFoundError 公開範囲の外
 	 * @throws CalendarEventCanceledError 中止したイベント
 	 */
 	@bindThis
 	public async subscribe(event: MiCalendarEvent, me: Me): Promise<void> {
+		if (!await this.canView(event, me)) throw new CalendarEventNotFoundError();
 		if (event.canceledAt != null) throw new CalendarEventCanceledError();
 		if (await this.isSubscribed(event, me)) return;
 
@@ -321,6 +393,68 @@ export class CalendarEventService {
 	}
 
 	/**
+	 * 作成者以外の購読者を、新しく購読した順に引く (購読者の一覧用。sinceId だけを渡したときは古い順)。
+	 * 凍結・削除済みのユーザーは除く。user を結合して返す
+	 */
+	@bindThis
+	public async listSubscribers(
+		event: Pick<MiCalendarEvent, 'id' | 'userId'>,
+		me: Me,
+		opts: { filter: CalendarEventSubscriberFilter; limit: number; sinceId?: string; untilId?: string },
+	): Promise<MiCalendarEventSubscription[]> {
+		const query = this.calendarEventSubscriptionsRepository.createQueryBuilder('subscription')
+			.innerJoinAndSelect('subscription.user', 'user')
+			.where('subscription.eventId = :eventId', { eventId: event.id })
+			.andWhere('subscription.userId != :ownerId', { ownerId: event.userId })
+			.andWhere('user.isDeleted = FALSE')
+			.andWhere('user.isSuspended = FALSE')
+			.orderBy('subscription.id', opts.sinceId != null && opts.untilId == null ? 'ASC' : 'DESC')
+			.limit(opts.limit);
+
+		if (opts.sinceId != null) query.andWhere('subscription.id > :sinceId', { sinceId: opts.sinceId });
+		if (opts.untilId != null) query.andWhere('subscription.id < :untilId', { untilId: opts.untilId });
+		if (opts.filter === 'following') {
+			query.innerJoin(MiFollowing, 'following', 'following.followeeId = subscription.userId AND following.followerId = :meId', { meId: me.id });
+		}
+
+		return await query.getMany();
+	}
+
+	/**
+	 * 作成者以外の購読者のうち、me がフォローしている人の数 (凍結・削除済みを除く)
+	 */
+	@bindThis
+	public async countFollowingSubscribers(event: Pick<MiCalendarEvent, 'id' | 'userId'>, me: Me): Promise<number> {
+		return await this.calendarEventSubscriptionsRepository.createQueryBuilder('subscription')
+			.innerJoin('subscription.user', 'user')
+			.innerJoin(MiFollowing, 'following', 'following.followeeId = subscription.userId AND following.followerId = :meId', { meId: me.id })
+			.where('subscription.eventId = :eventId', { eventId: event.id })
+			.andWhere('subscription.userId != :ownerId', { ownerId: event.userId })
+			.andWhere('user.isDeleted = FALSE')
+			.andWhere('user.isSuspended = FALSE')
+			.getCount();
+	}
+
+	/**
+	 * 購読者のアバターに並べる人の ID (イベントのページ用)。me がフォローしている人を先に、新しく購読した順に limit 人まで
+	 */
+	@bindThis
+	public async getSubscriberPreviewUserIds(event: Pick<MiCalendarEvent, 'id'>, me: Me, limit: number): Promise<MiUser['id'][]> {
+		const rows = await this.calendarEventSubscriptionsRepository.createQueryBuilder('subscription')
+			.select('subscription.userId', 'userId')
+			.innerJoin('subscription.user', 'user')
+			.leftJoin(MiFollowing, 'following', 'following.followeeId = subscription.userId AND following.followerId = :meId', { meId: me.id })
+			.where('subscription.eventId = :eventId', { eventId: event.id })
+			.andWhere('user.isDeleted = FALSE')
+			.andWhere('user.isSuspended = FALSE')
+			.orderBy('CASE WHEN following.id IS NULL THEN 1 ELSE 0 END', 'ASC')
+			.addOrderBy('subscription.id', 'DESC')
+			.limit(limit)
+			.getRawMany<{ userId: MiUser['id'] }>();
+		return rows.map(r => r.userId);
+	}
+
+	/**
 	 * イベントごとの購読者の数 (一覧の表示用)。購読者がいないイベントは 0
 	 */
 	@bindThis
@@ -346,13 +480,14 @@ export class CalendarEventService {
 	/**
 	 * ノートをイベントに紐づける。同じイベントに紐づけ済みなら何もしない
 	 * @throws CalendarEventPermissionError ノートの作成者ではない
-	 * @throws CalendarEventNotFoundError イベントが存在しない
+	 * @throws CalendarEventNotFoundError イベントが存在しない、または公開範囲の外
 	 * @throws CalendarEventNoteAlreadyLinkedError ノートが既に別のイベントに紐づいている
 	 */
 	@bindThis
 	public async linkNote(note: Pick<MiNote, 'id' | 'userId'>, eventId: MiCalendarEvent['id'], me: Me): Promise<MiCalendarEvent> {
 		if (note.userId !== me.id) throw new CalendarEventPermissionError();
 		const event = await this.findByIdOrFail(eventId);
+		if (!await this.canView(event, me)) throw new CalendarEventNotFoundError();
 
 		const existing = await this.calendarEventNotesRepository.findOneBy({ noteId: note.id });
 		if (existing != null) {
@@ -467,6 +602,25 @@ export class CalendarEventService {
 	}
 
 	/**
+	 * me が見られるイベントを引く。公開範囲の外なら、存在しないときと同じエラーにする
+	 * @throws CalendarEventNotFoundError イベントが存在しない、または公開範囲の外
+	 */
+	@bindThis
+	public async findVisibleByIdOrFail(id: MiCalendarEvent['id'], me: Me | null | undefined): Promise<MiCalendarEvent> {
+		const event = await this.findByIdOrFail(id);
+		if (!await this.canView(event, me)) throw new CalendarEventNotFoundError();
+		return event;
+	}
+
+	/**
+	 * me がイベントを見られるか (作成者とモデレーター以上は常に見られる)
+	 */
+	@bindThis
+	public async canView(event: MiCalendarEvent, me: Me | null | undefined): Promise<boolean> {
+		return await this.calendarVisibilityService.canView(event, me);
+	}
+
+	/**
 	 * me が since 以降に作ったイベントの作成日時を新しい順に最大 limit 件返す (作成数の上限の確認用)。
 	 * 作成日時は id から求める
 	 */
@@ -489,7 +643,7 @@ export class CalendarEventService {
 	}
 
 	/**
-	 * 開始日時が from 以上 to 未満のイベントを開始日時順に返す (中止したものを含む)。
+	 * 開始日時が from 以上 to 未満の、me が見られるイベントを開始日時順に返す (中止したものを含む)。
 	 * 月の表示では getJstMonthRange の範囲を渡す
 	 */
 	@bindThis
@@ -499,10 +653,10 @@ export class CalendarEventService {
 		};
 		if (filter === 'mine') where.userId = me.id;
 
-		const events = await this.calendarEventsRepository.find({
+		const events = await this.calendarVisibilityService.filterVisible(await this.calendarEventsRepository.find({
 			where,
 			order: { startsAt: 'ASC', id: 'ASC' },
-		});
+		}), me);
 		if (filter !== 'subscribed') return events;
 
 		// 範囲内のイベントは多くないので、購読の有無はまとめて引いて絞り込む
@@ -511,7 +665,7 @@ export class CalendarEventService {
 	}
 
 	/**
-	 * これからのイベントを開始日時順に返す (ウィジェット用)。中止したものは含まない。
+	 * me が見られる、これからのイベントを開始日時順に返す (ウィジェット用)。中止したものは含まない。
 	 * 終日のイベントは当日中、終了時刻のあるイベントは終了まで、終了時刻の無いイベントは開始までを「これから」とする
 	 */
 	@bindThis
@@ -531,6 +685,7 @@ export class CalendarEventService {
 		} else if (filter === 'subscribed') {
 			query.innerJoin(MiCalendarEventSubscription, 'subscription', 'subscription.eventId = event.id AND subscription.userId = :meId', { meId: me.id });
 		}
+		await this.calendarVisibilityService.applyVisibleFilter(query, 'event', me);
 
 		return await query.getMany();
 	}

@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest';
 import * as Misskey from 'misskey-js';
 import {
 	addDays,
+	buildCalendarDateGroups,
 	buildMonthGrid,
 	currentJstYearMonth,
 	dayOfWeek,
@@ -17,6 +18,7 @@ import {
 	shiftYearMonth,
 	toJstDateString,
 } from '@/utility/calendar.js';
+import { getCalendarVisibilityIcon, isCalendarVisibilityNarrowerThanNote, noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
 import {
 	calendarEventFormToParams,
 	calendarEventFormToUpdateParams,
@@ -202,6 +204,9 @@ describe('calendar-event-form', () => {
 		location: 'c3',
 		hashtag: '#mokumoku',
 		description: '',
+		visibility: 'public',
+		visibleUsers: [],
+		userListId: null,
 	};
 
 	const event = {
@@ -214,7 +219,10 @@ describe('calendar-event-form', () => {
 		location: 'c3',
 		hashtag: 'mokumoku',
 		description: null,
-	} as Misskey.entities.CalendarEvent;
+		visibility: 'public',
+		visibleUserIds: [],
+		userListId: null,
+	} as unknown as Misskey.entities.CalendarEvent;
 
 	test('正しい入力にはエラーが無い', () => {
 		expect(validateCalendarEventForm(valid)).toEqual({});
@@ -243,6 +251,7 @@ describe('calendar-event-form', () => {
 			location: 'c3',
 			hashtag: 'mokumoku',
 			description: null,
+			visibility: 'public',
 		});
 		const allDay = calendarEventFormToParams({ ...valid, isAllDay: true, location: ' ', hashtag: '' }, { withDescription: false });
 		expect(allDay).toEqual({
@@ -253,8 +262,25 @@ describe('calendar-event-form', () => {
 			isAllDay: true,
 			location: null,
 			hashtag: null,
+			visibility: 'public',
 		});
 		expect('description' in allDay).toBe(false);
+	});
+
+	test('公開範囲は、指定ユーザー・リストのときだけそれぞれの項目を送る', () => {
+		const alice = { id: 'alice' } as Misskey.entities.UserLite;
+		expect(calendarEventFormToParams({ ...valid, visibility: 'specified', visibleUsers: [alice], userListId: 'list1' })).toMatchObject({ visibility: 'specified', visibleUserIds: ['alice'] });
+		expect(calendarEventFormToParams({ ...valid, visibility: 'specified', visibleUsers: [alice] })).not.toHaveProperty('userListId');
+		expect(calendarEventFormToParams({ ...valid, visibility: 'list', visibleUsers: [alice], userListId: 'list1' })).toMatchObject({ visibility: 'list', userListId: 'list1' });
+		expect(calendarEventFormToParams({ ...valid, visibility: 'list', userListId: 'list1' })).not.toHaveProperty('visibleUserIds');
+		expect(calendarEventFormToParams({ ...valid, visibility: 'mutual', visibleUsers: [alice] })).not.toHaveProperty('visibleUserIds');
+	});
+
+	test('指定ユーザーが居ない・リストを選んでいないときはエラー', () => {
+		expect(validateCalendarEventForm({ ...valid, visibility: 'specified' })).toEqual({ visibility: 'visibleUsersRequired' });
+		expect(validateCalendarEventForm({ ...valid, visibility: 'specified', visibleUsers: [{ id: 'a' } as Misskey.entities.UserLite] })).toEqual({});
+		expect(validateCalendarEventForm({ ...valid, visibility: 'list' })).toEqual({ visibility: 'userListRequired' });
+		expect(validateCalendarEventForm({ ...valid, visibility: 'list', userListId: 'list1' })).toEqual({});
 	});
 
 	test('編集では変わった項目だけを送る', () => {
@@ -269,10 +295,22 @@ describe('calendar-event-form', () => {
 		expect(calendarEventFormToUpdateParams(event, { ...calendarEventToForm(event), hashtag: '' })).toEqual({ hashtag: null });
 	});
 
+	test('編集で公開範囲を変えたときは、種類と指定ユーザー・リストをまとめて送る', () => {
+		const specifiedEvent = { ...event, visibility: 'specified', visibleUserIds: ['alice', 'bob'] } as Misskey.entities.CalendarEvent;
+		const users = [{ id: 'bob' }, { id: 'alice' }] as Misskey.entities.UserLite[];
+		// 並びが違うだけなら変わっていない
+		expect(calendarEventFormToUpdateParams(specifiedEvent, calendarEventToForm(specifiedEvent, users))).toEqual({});
+		expect(calendarEventFormToUpdateParams(specifiedEvent, calendarEventToForm(specifiedEvent, users.slice(0, 1)))).toEqual({ visibility: 'specified', visibleUserIds: ['bob'] });
+		expect(calendarEventFormToUpdateParams(specifiedEvent, { ...calendarEventToForm(specifiedEvent, users), visibility: 'public' })).toEqual({ visibility: 'public' });
+		expect(calendarEventFormToUpdateParams(event, { ...calendarEventToForm(event), visibility: 'list', userListId: 'list1' })).toEqual({ visibility: 'list', userListId: 'list1' });
+	});
+
 	test('検証エラーの理由と欄の対応', () => {
 		expect(calendarEventReasonToField('endNotSameDay')).toBe('endTime');
 		expect(calendarEventReasonToField('invalidHashtag')).toBe('hashtag');
 		expect(calendarEventReasonToField('invalidMonth')).toBeNull();
+		expect(calendarEventReasonToField('visibleUsersRequired')).toBe('visibility');
+		expect(calendarEventReasonToField('invalidUserList')).toBe('visibility');
 	});
 
 	test('API のエラーから理由を取り出す', () => {
@@ -288,5 +326,59 @@ describe('calendar-event-form', () => {
 		expect(clearChangedCalendarEventFormErrors(errors, prev, { ...prev, title: 'a' })).toEqual({ startTime: 'startTimeRequired' });
 		expect(clearChangedCalendarEventFormErrors(errors, prev, { ...prev, isAllDay: true })).toEqual({ title: 'titleRequired' });
 		expect(clearChangedCalendarEventFormErrors({ endTime: 'endNotAfterStart' }, { ...prev, startTime: '12:00' }, { ...prev, startTime: '11:00' })).toEqual({});
+		// 指定ユーザーを足すと公開範囲の欄のエラーも消える
+		expect(clearChangedCalendarEventFormErrors({ visibility: 'visibleUsersRequired' }, { ...prev, visibility: 'specified' }, { ...prev, visibility: 'specified', visibleUsers: [{ id: 'a' } as Misskey.entities.UserLite] })).toEqual({});
+	});
+
+	test('新しいフォームの公開範囲は、指定しなければ全員', () => {
+		expect(createEmptyCalendarEventForm('2026-10-20').visibility).toBe('public');
+		expect(createEmptyCalendarEventForm('2026-10-20', 'followers')).toMatchObject({ visibility: 'followers', visibleUsers: [], userListId: null });
+	});
+});
+
+describe('calendar-visibility', () => {
+	test('ノートの公開範囲に合わせた初期値', () => {
+		expect(noteVisibilityToCalendarVisibility('public')).toBe('public');
+		expect(noteVisibilityToCalendarVisibility('home')).toBe('public');
+		expect(noteVisibilityToCalendarVisibility('followers')).toBe('followers');
+	});
+
+	test('イベントの公開範囲がノートより狭いか', () => {
+		expect(isCalendarVisibilityNarrowerThanNote('public', 'public')).toBe(false);
+		expect(isCalendarVisibilityNarrowerThanNote('followers', 'public')).toBe(true);
+		expect(isCalendarVisibilityNarrowerThanNote('followers', 'home')).toBe(true);
+		expect(isCalendarVisibilityNarrowerThanNote('followers', 'followers')).toBe(false);
+		expect(isCalendarVisibilityNarrowerThanNote('public', 'followers')).toBe(false);
+		for (const visibility of ['mutual', 'specified', 'list'] as const) {
+			expect(isCalendarVisibilityNarrowerThanNote(visibility, 'followers')).toBe(true);
+		}
+	});
+
+	test('アイコンは投稿の公開範囲とそろえる', () => {
+		expect(getCalendarVisibilityIcon('public')).toBe('ti ti-world');
+		expect(getCalendarVisibilityIcon('followers')).toBe('ti ti-lock');
+		expect(getCalendarVisibilityIcon('specified')).toBe('ti ti-mail');
+	});
+});
+
+describe('buildCalendarDateGroups', () => {
+	const byDate = new Map([
+		['2026-10-21', ['c']],
+		['2026-10-02', ['a']],
+		['2026-10-19', ['b']],
+	]);
+
+	test('日付順に並べ、今日以降の最初の日の前に区切りを入れる', () => {
+		expect(buildCalendarDateGroups(byDate, '2026-10-19')).toEqual([
+			{ date: '2026-10-02', events: ['a'], isPast: true, isToday: false, todayDividerBefore: false },
+			{ date: '2026-10-19', events: ['b'], isPast: false, isToday: true, todayDividerBefore: true },
+			{ date: '2026-10-21', events: ['c'], isPast: false, isToday: false, todayDividerBefore: false },
+		]);
+	});
+
+	test('今日にイベントが無ければ次の日の前、すべて過去・すべてこれからなら区切りは無い', () => {
+		expect(buildCalendarDateGroups(byDate, '2026-10-20').map(g => g.todayDividerBefore)).toEqual([false, false, true]);
+		expect(buildCalendarDateGroups(byDate, '2026-10-31').some(g => g.todayDividerBefore)).toBe(false);
+		expect(buildCalendarDateGroups(byDate, '2026-10-01').some(g => g.todayDividerBefore)).toBe(false);
 	});
 });

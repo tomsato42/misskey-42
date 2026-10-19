@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { defineAsyncComponent } from 'vue';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
 
@@ -32,6 +33,38 @@ export async function openCalendarEventEditDialog(options: {
 			},
 		}).then((res) => {
 			dispose = res.dispose;
+		});
+	});
+}
+
+/**
+ * イベントの購読者の一覧のダイアログを開く
+ */
+export function openCalendarEventSubscribersDialog(event: Misskey.entities.CalendarEvent): void {
+	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkCalendarEventSubscribersDialog.vue')), {
+		event,
+	}, {
+		closed: () => dispose(),
+	});
+}
+
+/**
+ * イベントに招待するダイアログを開く。送ったら送った数、閉じたら null を返す
+ */
+export async function openCalendarEventInviteDialog(event: Misskey.entities.CalendarEvent): Promise<number | null> {
+	let sent: number | null = null;
+
+	return new Promise((resolve) => {
+		const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkCalendarEventInviteDialog.vue')), {
+			event,
+		}, {
+			done: (count) => {
+				sent = count;
+			},
+			closed: () => {
+				resolve(sent);
+				dispose();
+			},
 		});
 	});
 }

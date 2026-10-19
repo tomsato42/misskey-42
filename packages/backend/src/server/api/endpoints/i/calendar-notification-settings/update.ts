@@ -22,7 +22,7 @@ export const meta = {
 		max: 60,
 	},
 
-	description: 'Change which notifications you receive for the calendar events you subscribe to. Omitted items are left unchanged.',
+	description: 'Change which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations). Omitted items are left unchanged.',
 
 	res: {
 		type: 'object',
@@ -38,6 +38,7 @@ export const paramDef = {
 		day: { type: 'boolean' },
 		today: { type: 'boolean' },
 		changes: { type: 'boolean' },
+		invited: { type: 'boolean' },
 	},
 	required: [],
 } as const;

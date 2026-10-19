@@ -17,6 +17,7 @@ import { CALENDAR_EVENT_CREATE_LIMIT } from './calendar-limits.js';
 import { assertCalendarLinkableNote } from './calendar-note-link.js';
 import type { CalendarEventInput } from './calendar-event-input.js';
 import type { CalendarLinkableNoteLike } from './calendar-note-link.js';
+import type { CalendarEventVisibilityInput } from './calendar-visibility.js';
 
 type Me = { id: MiUser['id'] };
 
@@ -25,6 +26,8 @@ export type CalendarNotePostParams = {
 	calendarEventId?: MiCalendarEvent['id'] | null;
 	/** 投稿しながらイベントを作る */
 	calendarEvent?: CalendarEventInput | null;
+	/** 投稿しながら作るイベントの公開範囲。省略すると全員 */
+	calendarEventVisibility?: CalendarEventVisibilityInput | null;
 	/** 投稿するノートの内容 (notes/create のパラメータから作る) */
 	note: CalendarLinkableNoteLike;
 };
@@ -55,12 +58,12 @@ export class CalendarNotePostService {
 	 * @throws CalendarNoteNotLinkableError 紐づけられない種類のノート
 	 * @throws CalendarEventValidationError イベントの入力が仕様に合わない
 	 * @throws CalendarEventRateLimitError イベントを作る数の上限に達している
-	 * @throws CalendarEventNotFoundError 紐づけるイベントが存在しない
+	 * @throws CalendarEventNotFoundError 紐づけるイベントが存在しない、または公開範囲の外
 	 * @throws CalendarEventCanceledError 紐づけるイベントが中止されている
 	 */
 	@bindThis
 	public async prepare(me: Me, params: CalendarNotePostParams): Promise<CalendarNotePostHook | null> {
-		const { calendarEventId, calendarEvent, note } = params;
+		const { calendarEventId, calendarEvent, calendarEventVisibility, note } = params;
 		if (calendarEventId == null && calendarEvent == null) return null;
 		if (calendarEventId != null && calendarEvent != null) throw new CalendarNoteParamsConflictError();
 
@@ -73,17 +76,19 @@ export class CalendarNotePostService {
 					? calendarEvent.description
 					: (note.cw == null ? note.text ?? null : null),
 			};
+			const visibility = calendarEventVisibility ?? {};
 			// ノートを作る前に検証だけしておく (イベントは作った後のノートを告知のノートにして作る)
 			normalizeCalendarEventInput(input);
+			await this.calendarEventService.resolveVisibility(visibility, me.id);
 			await this.assertCanCreateEvent(me);
 			return async createdNote => {
 				await this.runAfterNoteCreated(createdNote, 'create', async () => {
-					await this.calendarEventService.create(me, input, { announcementNote: createdNote });
+					await this.calendarEventService.create(me, input, { announcementNote: createdNote, visibility });
 				});
 			};
 		}
 
-		const event = await this.calendarEventService.findByIdOrFail(calendarEventId!);
+		const event = await this.calendarEventService.findVisibleByIdOrFail(calendarEventId!, me);
 		if (event.canceledAt != null) throw new CalendarEventCanceledError();
 		return async createdNote => {
 			await this.runAfterNoteCreated(createdNote, 'link', async () => {

@@ -14,9 +14,11 @@ import {
 	CALENDAR_EVENT_HASHTAG_MAX_LENGTH,
 	CALENDAR_EVENT_LOCATION_MAX_LENGTH,
 	CALENDAR_EVENT_TITLE_MAX_LENGTH,
+	CALENDAR_EVENT_VISIBLE_USERS_MAX,
 	getCalendarEventValidationReason,
 } from '@/utility/calendar-event-form.js';
 import type { CalendarEventValidationReason } from '@/utility/calendar-event-form.js';
+import type { CalendarEventVisibility } from '@/utility/calendar-visibility.js';
 
 /** 曜日の短い表記 (0 = 日曜 〜 6 = 土曜) */
 export function getWeekdayShortLabel(dow: number): string {
@@ -66,6 +68,44 @@ export function getCalendarUpdateHeading(kind: 'rescheduled' | 'canceled'): stri
 	return i18n.ts._calendar._notification[kind];
 }
 
+// 本番ビルドでは i18n.ts の文言のオブジェクトがリテラルに置き換わり (frontend-builder の locale-inliner)、括弧で囲まれない。
+// 圧縮でアロー関数の式の本体になると `() => {...}[key]` がブロックとして読まれて構文エラーになるので、
+// 文言のオブジェクトに添字を付けず、文字列の項目を switch で選ぶ
+
+/** 公開範囲の名前 (「フォロワー」) */
+export function getCalendarVisibilityLabel(visibility: CalendarEventVisibility): string {
+	const t = i18n.ts._calendar._visibility;
+	switch (visibility) {
+		case 'public': return t.public;
+		case 'followers': return t.followers;
+		case 'mutual': return t.mutual;
+		case 'specified': return t.specified;
+		case 'list': return t.list;
+	}
+}
+
+/** ノートの公開範囲の名前 (「パブリック」) */
+export function getNoteVisibilityLabel(visibility: string): string {
+	switch (visibility) {
+		case 'public': return i18n.ts._visibility.public;
+		case 'home': return i18n.ts._visibility.home;
+		case 'followers': return i18n.ts._visibility.followers;
+		default: return i18n.ts._visibility.specified;
+	}
+}
+
+/** 公開範囲の説明 (「自分のフォロワーに公開」) */
+export function getCalendarVisibilityDescription(visibility: CalendarEventVisibility): string {
+	const t = i18n.ts._calendar._visibility;
+	switch (visibility) {
+		case 'public': return t.publicDescription;
+		case 'followers': return t.followersDescription;
+		case 'mutual': return t.mutualDescription;
+		case 'specified': return t.specifiedDescription;
+		case 'list': return t.listDescription;
+	}
+}
+
 /** 入力の検証エラーの理由を、欄の下に出す文言にする */
 export function getCalendarEventValidationMessage(reason: CalendarEventValidationReason): string {
 	const t = i18n.ts._calendar._errors;
@@ -83,6 +123,10 @@ export function getCalendarEventValidationMessage(reason: CalendarEventValidatio
 		case 'endNotAfterStart': return t.endNotAfterStart;
 		case 'endNotSameDay': return t.endNotSameDay;
 		case 'invalidMonth': return t.invalidMonth;
+		case 'visibleUsersRequired': return t.visibleUsersRequired;
+		case 'tooManyVisibleUsers': return i18n.tsx._calendar._errors.tooManyVisibleUsers({ max: CALENDAR_EVENT_VISIBLE_USERS_MAX });
+		case 'userListRequired': return t.userListRequired;
+		case 'invalidUserList': return t.invalidUserList;
 	}
 }
 
@@ -106,6 +150,7 @@ export function getCalendarApiErrorMessage(err: unknown): { title?: string; text
 			return { title: i18n.ts.error, text: e.message ?? i18n.ts.somethingHappened };
 		}
 		case 'ACCESS_DENIED': return { title: i18n.ts.permissionDeniedError, text: i18n.ts.permissionDeniedErrorDescription };
+		case 'NO_SUCH_LIST': return { text: i18n.ts._calendar._errors.invalidUserList };
 		case 'RATE_LIMIT_EXCEEDED': return { title: i18n.ts.cannotPerformTemporary, text: i18n.ts.cannotPerformTemporaryDescription };
 		default: return { title: i18n.ts.error, text: e.message != null ? `${e.message}\n${e.id ?? ''}` : i18n.ts.somethingHappened };
 	}
