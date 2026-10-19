@@ -771,5 +771,13 @@ describe('PairRecruitmentService', () => {
 			await expectCode(service.cancelInvitation(owner, r.id, 'alice'), 'notInvited');
 			await service.invite(owner, r.id, ['bob'], now);
 		});
+
+		test('見送られた招待は取り消せず、同じ人にもう一度送れない', async () => {
+			const r = await createRecruitment();
+			await service.invite(owner, r.id, ['bob'], now);
+			await service.decline(bob, r.id, now);
+			await expectCode(service.cancelInvitation(owner, r.id, 'bob'), 'notInvited');
+			await expectCode(service.invite(owner, r.id, ['bob'], now), 'cannotInvite');
+		});
 	});
 });

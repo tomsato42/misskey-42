@@ -770,7 +770,8 @@ export class PairRecruitmentService {
 		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
 		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
 
-		const result = await this.pairMembersRepository.delete({ recruitmentId: recruitment.id, userId, status: In(['invited', 'declined']) });
+		// 返事待ちの招待だけ取り消せる。見送られた招待は残し、同じ人にもう一度送れないようにする (招待の数にも数える)
+		const result = await this.pairMembersRepository.delete({ recruitmentId: recruitment.id, userId, status: 'invited' });
 		if (result.affected === 0) throw new PairRecruitmentError('notInvited');
 		return recruitment;
 	}
