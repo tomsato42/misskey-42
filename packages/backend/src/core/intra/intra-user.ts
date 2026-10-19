@@ -62,7 +62,7 @@ export type IntraUser = {
 export type IntraProfile = {
 	intraId: number;
 	login: string;
-	/** ピシンの年月 (YYMM)。実際に始まった月 (findPiscineStartYearMonth) を優先し、無ければ intra の名称の年月 */
+	/** ピシンの年月 (YYMM)。実際の期間の大半が入る月 (findPiscineYearMonth) を優先し、無ければ intra の名称の年月 */
 	poolYearMonth: string | null;
 	/** intra の名称 (pool_year / pool_month) のピシンの年月 (YYMM)。ユーザー名と入学時期に使う */
 	poolNameYearMonth: string | null;
@@ -84,6 +84,9 @@ const C_PISCINE_CURSUS_ID = 9;
 
 /** 日本時間の UTC からのずれ。日本に夏時間は無いので固定値でよい */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** ピシンの開始からおおよその真ん中までの長さ (4 週間の半分) */
+const PISCINE_MIDPOINT_MS = 14 * 24 * 60 * 60 * 1000;
 
 const MONTH_NAMES = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'] as const;
 
@@ -125,13 +128,14 @@ export function parsePoolYearMonth(poolYear: string | null | undefined, poolMont
 }
 
 /**
- * ピシンが実際に始まった年月 (YYMM、日本時間)。
- * intra の名称 (pool_month) は実際の時期とずれることがある (8 月の終わりに始まる 9 月のピシンなど) ので、
- * ピシンの cursus_user の begin_at から求める。名称の年月の前後 1 か月以内に始まったものだけを使い
- * (Discovery Piscine などほかのピシンを拾わないため)、複数あれば名称の年月に近いもの、同じなら早いものを選ぶ。
- * 名称の年月が無いか、当てはまるものが無ければ null
+ * ピシンの期間の大半が入る年月 (YYMM、日本時間)。
+ * intra の名称 (pool_month) は実際の時期とずれることがあるので、ピシンの cursus_user の begin_at から
+ * PISCINE_MIDPOINT_MS 後 (4 週間のピシンのおおよそ真ん中) の月を求める。8 月の終わりに始まる 9 月のピシンは 9 月、
+ * 8 月の初めに始まったのに 9 月と名付けられたピシンは 8 月になる。
+ * 名称の年月の前後 1 か月以内に当たるものだけを使い (Discovery Piscine などほかのピシンを拾わないため)、
+ * 複数あれば名称の年月に近いもの、同じなら早く始まったものを選ぶ。名称の年月が無いか、当てはまるものが無ければ null
  */
-export function findPiscineStartYearMonth(cursusUsers: IntraCursusUser[], poolNameYearMonth: string | null): string | null {
+export function findPiscineYearMonth(cursusUsers: IntraCursusUser[], poolNameYearMonth: string | null): string | null {
 	if (poolNameYearMonth == null) return null;
 	const nameIndex = toMonthIndex(poolNameYearMonth);
 
@@ -142,7 +146,7 @@ export function findPiscineStartYearMonth(cursusUsers: IntraCursusUser[], poolNa
 		if (beginAt == null) continue;
 
 		// UTC の値として読むと日本時間の年月になるよう、9 時間ずらす
-		const jst = new Date(beginAt.getTime() + JST_OFFSET_MS);
+		const jst = new Date(beginAt.getTime() + PISCINE_MIDPOINT_MS + JST_OFFSET_MS);
 		const yearMonth = toYearMonth(jst.getUTCFullYear(), jst.getUTCMonth() + 1);
 		const distance = Math.abs(toMonthIndex(yearMonth) - nameIndex);
 		if (distance > 1) continue;
@@ -221,7 +225,7 @@ export function extractIntraProfile(user: IntraUser, cursusId: number): IntraPro
 	return {
 		intraId: user.id,
 		login: user.login,
-		poolYearMonth: findPiscineStartYearMonth(user.cursus_users ?? [], poolNameYearMonth) ?? poolNameYearMonth,
+		poolYearMonth: findPiscineYearMonth(user.cursus_users ?? [], poolNameYearMonth) ?? poolNameYearMonth,
 		poolNameYearMonth,
 		blackholedAt: parseDate(cursusUser?.blackholed_at),
 		// ペース期日が 42 API のどの項目に当たるかは未確認のため、現時点では常に null を返す。

@@ -124,7 +124,7 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const pool = getPoolRoleTarget(profile.poolYearMonth);
 	if (pool != null) targets.push(pool);
 
-	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際に始まった月ではなく名称の年月から求める
+	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際の期間の月ではなく名称の年月から求める
 	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth);
 	if (cohort != null) targets.push(cohort);
 

@@ -49,7 +49,7 @@ describe('getIntraRoleTargets', () => {
 		]);
 	});
 
-	test('ピシンのロールは実際に始まった年月、入学時期は名称の年月から決める', () => {
+	test('ピシンのロールは実際の期間の年月、入学時期は名称の年月から決める', () => {
 		expect(getIntraRoleTargets({
 			...EMPTY_PROFILE,
 			poolYearMonth: '2404',
