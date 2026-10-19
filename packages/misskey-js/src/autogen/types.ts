@@ -5012,6 +5012,9 @@ export type components = {
             myReaction?: string | null;
             calendarEvent?: components['schemas']['CalendarEventLite'];
             intraProjectResult?: components['schemas']['IntraProjectNote'];
+            intraLevel?: {
+                level: number;
+            };
         };
         NoteDraft: {
             /**
@@ -32720,6 +32723,8 @@ export interface operations {
                      * @description 42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.
                      */
                     intraProjectResultId?: string | null;
+                    /** @description 42times: Attach a 42 intra level you have reached (up to your current level). The note can then have no text. */
+                    intraLevel?: number | null;
                 };
             };
         };

@@ -13,6 +13,7 @@ import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
 import { IntraProjectResultNotAttachableError, IntraProjectResultNotFoundError, IntraProjectResultService } from '@/core/intra/IntraProjectResultService.js';
+import { IntraLevelNoteService, IntraLevelNotReachedError } from '@/core/intra/IntraLevelNoteService.js';
 import { ApiError } from '../../error.js';
 import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput, toCalendarEventVisibilityInput } from '../../calendar-api.js';
 
@@ -142,6 +143,13 @@ export const meta = {
 			code: 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE',
 			id: '6c96ccd5-e908-497c-b7bb-56702aed3f80',
 		},
+
+		// 42times: レベル
+		intraLevelNotReached: {
+			message: 'You have not reached this intra level.',
+			code: 'INTRA_LEVEL_NOT_REACHED',
+			id: '8e5faa98-dd99-4979-936e-2a497b9f47ab',
+		},
 	},
 } as const;
 
@@ -208,6 +216,11 @@ export const paramDef = {
 			type: 'string', format: 'misskey:id', nullable: true,
 			description: '42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.',
 		},
+		// 42times: レベルを付ける
+		intraLevel: {
+			type: 'integer', minimum: 0, nullable: true,
+			description: '42times: Attach a 42 intra level you have reached (up to your current level). The note can then have no text.',
+		},
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -225,6 +238,9 @@ export const paramDef = {
 				type: 'null',
 			},
 			intraProjectResultId: {
+				type: 'null',
+			},
+			intraLevel: {
 				type: 'null',
 			},
 		},
@@ -249,6 +265,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private noteCreateService: NoteCreateService,
 		private calendarNotePostService: CalendarNotePostService,
 		private intraProjectResultService: IntraProjectResultService,
+		private intraLevelNoteService: IntraLevelNoteService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			// 42times: カレンダーのイベントの指定は、ノートを作る前に確かめる
@@ -281,6 +298,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw err;
 			});
 
+			const onIntraLevelNoteInserted = await this.intraLevelNoteService.prepareNote(me, ps.intraLevel, {
+				renoteId: ps.renoteId,
+				text: ps.text,
+				fileIds: ps.fileIds ?? ps.mediaIds,
+				hasPoll: ps.poll != null,
+			}).catch(err => {
+				if (err instanceof IntraLevelNotReachedError) throw new ApiError(meta.errors.intraLevelNotReached);
+				if (err instanceof IntraProjectResultNotAttachableError) throw new ApiError(meta.errors.cannotAttachIntraProjectResultToPureRenote);
+				throw err;
+			});
+
 			try {
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
@@ -302,9 +330,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
-					onInserted: onInserted == null && onIntraProjectNoteInserted == null ? null : async created => {
+					onInserted: onInserted == null && onIntraProjectNoteInserted == null && onIntraLevelNoteInserted == null ? null : async created => {
 						await onInserted?.(created);
 						await onIntraProjectNoteInserted?.(created);
+						await onIntraLevelNoteInserted?.(created);
 					},
 				});
 

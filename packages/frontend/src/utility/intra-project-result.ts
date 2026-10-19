@@ -59,8 +59,8 @@ export async function shareIntraProjectResult(resultId: string): Promise<void> {
 }
 
 /**
- * 42 intra のレベルが上がったことを書いた投稿フォームを開く
+ * 42 intra のレベルが上がったことを書き、レベルのカードを付けた投稿フォームを開く
  */
 export async function shareIntraLevelUp(level: number): Promise<void> {
-	await os.post({ initialText: i18n.tsx._notification.intraLevelUpShareText({ level }) });
+	await os.post({ initialText: i18n.tsx._notification.intraLevelUpShareText({ level }), initialIntraLevel: level });
 }

@@ -47,6 +47,7 @@ import {
 	MiIntraUserProgress,
 	MiIntraProjectResult,
 	MiIntraProjectNote,
+	MiIntraLevelNote,
 	MiPairRecruitment,
 	MiPairMember,
 	MiMeta,
@@ -623,6 +624,12 @@ const $intraProjectNotesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraLevelNotesRepository: Provider = {
+	provide: DI.intraLevelNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraLevelNote).extend(miRepository as MiRepository<MiIntraLevelNote>),
+	inject: [DI.db],
+};
+
 const $pairRecruitmentsRepository: Provider = {
 	provide: DI.pairRecruitmentsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiPairRecruitment).extend(miRepository as MiRepository<MiPairRecruitment>),
@@ -725,6 +732,7 @@ const $pairMembersRepository: Provider = {
 		$intraUserProgressesRepository,
 		$intraProjectResultsRepository,
 		$intraProjectNotesRepository,
+		$intraLevelNotesRepository,
 		$pairRecruitmentsRepository,
 		$pairMembersRepository,
 	],
@@ -816,6 +824,7 @@ const $pairMembersRepository: Provider = {
 		$intraUserProgressesRepository,
 		$intraProjectResultsRepository,
 		$intraProjectNotesRepository,
+		$intraLevelNotesRepository,
 		$pairRecruitmentsRepository,
 		$pairMembersRepository,
 	],

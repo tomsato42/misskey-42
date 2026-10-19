@@ -2967,7 +2967,7 @@ _notification:
   intraProjectsRefreshed: "課題の取得が終わりました"
   intraProjectsRefreshFailed: "課題を取得できませんでした"
   intraLevelUp: "レベルが上がりました"
-  intraLevelUpShareText: "42 intra で Lv.{level} になりました！"
+  intraLevelUpShareText: "Lv.{level} になりました！"
 
   _types:
     all: "すべて"
@@ -4090,6 +4090,12 @@ _calendar:
     tooManyVisibleUsers: "招待する人は{max}人までです。"
     userListRequired: "リストを選んでください。"
     invalidUserList: "このリストは使えません。自分のリストを選んでください。"
+_intraLevel:
+  caption: "42 intra のレベル"
+  label: "42 intra のレベル {level}"
+  remove: "レベルを外す"
+  _errors:
+    notReached: "このレベルにはまだ届いていません。"
 _intraProjectResult:
   share: "点数を共有"
   removeProject: "課題を外す"
@@ -4101,7 +4107,7 @@ _intraProjectResult:
   noResults: "点数の付いた課題がありません"
   refresh: "再取得"
   refreshing: "取得中"
-  notSavedInDraft: "課題の点数は下書きと予約投稿には保存されません。"
+  notSavedInDraft: "課題の点数とレベルは下書きと予約投稿には保存されません。"
   scoreLabel: "{project} {score}点 {result}"
   passed: "合格"
   failed: "不合格"

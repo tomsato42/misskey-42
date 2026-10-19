@@ -54,6 +54,7 @@ import { MiIntraCohort } from '@/models/IntraCohort.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiIntraProjectResult } from '@/models/IntraProjectResult.js';
 import { MiIntraProjectNote } from '@/models/IntraProjectNote.js';
+import { MiIntraLevelNote } from '@/models/IntraLevelNote.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
 import { MiPairMember } from '@/models/PairMember.js';
 import { MiMeta } from '@/models/Meta.js';
@@ -197,6 +198,7 @@ export {
 	MiIntraUserProgress,
 	MiIntraProjectResult,
 	MiIntraProjectNote,
+	MiIntraLevelNote,
 	MiPairRecruitment,
 	MiPairMember,
 };
@@ -290,5 +292,6 @@ export type IntraCohortsRepository = Repository<MiIntraCohort> & MiRepository<Mi
 export type IntraUserProgressesRepository = Repository<MiIntraUserProgress> & MiRepository<MiIntraUserProgress>;
 export type IntraProjectResultsRepository = Repository<MiIntraProjectResult> & MiRepository<MiIntraProjectResult>;
 export type IntraProjectNotesRepository = Repository<MiIntraProjectNote> & MiRepository<MiIntraProjectNote>;
+export type IntraLevelNotesRepository = Repository<MiIntraLevelNote> & MiRepository<MiIntraLevelNote>;
 export type PairRecruitmentsRepository = Repository<MiPairRecruitment> & MiRepository<MiPairRecruitment>;
 export type PairMembersRepository = Repository<MiPairMember> & MiRepository<MiPairMember>;

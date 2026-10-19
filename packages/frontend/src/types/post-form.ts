@@ -29,5 +29,7 @@ export interface PostFormProps {
 	initialCalendarEvent?: Misskey.entities.CalendarEventLite | null;
 	/** 42times: 付ける課題の結果 (点数を共有) の初期値 */
 	initialIntraProjectResult?: Misskey.entities.IntraProjectResult | null;
+	/** 42times: 付ける 42 intra のレベルの初期値 (レベルが上がった通知の「投稿する」) */
+	initialIntraLevel?: number | null;
 	instant?: boolean;
 };
