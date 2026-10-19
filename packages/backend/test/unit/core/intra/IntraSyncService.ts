@@ -61,6 +61,8 @@ describe('IntraSyncService', () => {
 	let beforeIntraRoleInsert: ((row: FakeIntraRole) => Promise<void> | void) | null;
 	let progressSyncCalls: { userId: string; intraId: number; campusId: number | null }[];
 	let progressSyncHook: (() => Promise<void> | void) | null;
+	/** `${campusId}:${poolYearMonth}` → 集計した入学時期 */
+	let cohorts: Map<string, string>;
 	let service: IntraSyncService;
 
 	function nextId(prefix: string) {
@@ -111,6 +113,7 @@ describe('IntraSyncService', () => {
 		getUserCalls = [];
 		beforeIntraRoleInsert = null;
 		progressSyncCalls = [];
+		cohorts = new Map();
 		progressSyncHook = null;
 
 		const config = {
@@ -211,6 +214,10 @@ describe('IntraSyncService', () => {
 			},
 		};
 
+		const fakeIntraCohortService = {
+			getCohortYearMonth: async (campusId: number | null, poolYearMonth: string | null) => cohorts.get(`${campusId}:${poolYearMonth}`) ?? null,
+		};
+
 		service = new IntraSyncService(
 			config as Config,
 			fakeProfilesRepository as any,
@@ -222,6 +229,7 @@ describe('IntraSyncService', () => {
 			{ gen: () => nextId('id') } as any,
 			fakeLoggerService as any,
 			fakeIntraProjectService as any,
+			fakeIntraCohortService as any,
 		);
 	});
 
@@ -294,6 +302,15 @@ describe('IntraSyncService', () => {
 		expect(intraRoles.filter(r => r.kind === 'cohort').map(r => r.key).sort()).toEqual(['2304', '2310']);
 		expect(assignments.some(a => a.roleId === cohort2304)).toBe(false);
 		expect(assignments.some(a => a.roleId === cohort2310)).toBe(true);
+	});
+
+	test('ピシンの入学時期の集計があれば、それで入学時期のロールを決める', async () => {
+		addProfile('u1', { intraId: 1000 });
+		cohorts.set('26:2307', '2309');
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/09', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
 	test('ピシンの年月が無ければピシンのロールを付けず、付いていれば外す', async () => {

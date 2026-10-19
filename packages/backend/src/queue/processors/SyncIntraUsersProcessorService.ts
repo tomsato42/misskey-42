@@ -11,6 +11,7 @@ import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IntraSyncService } from '@/core/intra/IntraSyncService.js';
 import { IntraProjectService } from '@/core/intra/IntraProjectService.js';
+import { IntraCohortService } from '@/core/intra/IntraCohortService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 /**
@@ -35,6 +36,7 @@ export class SyncIntraUsersProcessorService {
 
 		private intraSyncService: IntraSyncService,
 		private intraProjectService: IntraProjectService,
+		private intraCohortService: IntraCohortService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('sync-intra-users');
@@ -50,6 +52,14 @@ export class SyncIntraUsersProcessorService {
 		} catch (err) {
 			// レベルのロールを作れなくても、ユーザーの同期は続ける
 			this.logger.warn(`Failed to ensure level roles: ${err instanceof Error ? err.message : String(err)}`);
+		}
+
+		try {
+			// 入学時期をまだ集計していないキャンパス (初回など) の入学時期を、ユーザーのロールを決める前に集計する
+			await this.intraCohortService.syncMissingCampuses();
+		} catch (err) {
+			// 集計できなくても、ユーザーの同期は続ける (入学時期はピシンの年月を丸めて決める)
+			this.logger.warn(`Failed to sync cohorts: ${err instanceof Error ? err.message : String(err)}`);
 		}
 
 		const profiles = await this.userProfilesRepository.createQueryBuilder('profile')

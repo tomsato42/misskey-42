@@ -14,6 +14,7 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import type { IntraUser } from './intra-user.js';
 import type { IntraProjectSession, IntraQuestUser } from './intra-project.js';
+import type { IntraCursusUserWithUser } from './intra-cohort.js';
 import type { Response } from 'node-fetch';
 
 type IntraConfig = NonNullable<Config['intra']>;
@@ -49,6 +50,9 @@ const MAX_PAGES = 10;
  */
 const PROJECT_SESSIONS_PAGE_SIZE = 30;
 const PROJECT_SESSIONS_TIMEOUT = 60 * 1000;
+
+/** キャンパスの cursus_users で取得するページ数の上限。42 Tokyo・42cursus で 1720 人 (18 ページ) だった */
+const CURSUS_USERS_MAX_PAGES = 100;
 
 @Injectable()
 export class IntraApiService {
@@ -179,6 +183,20 @@ export class IntraApiService {
 	}
 
 	/**
+	 * アプリトークンで、キャンパスの cursus の在籍者 (cursus_users) をすべて取得する
+	 */
+	@bindThis
+	public async getCampusCursusUsers(campusId: number, cursusId: number): Promise<IntraCursusUserWithUser[]> {
+		const intra = this.getIntraConfig();
+		const query = new URLSearchParams({
+			'filter[campus_id]': String(campusId),
+		});
+		return await this.appGetAllPages<IntraCursusUserWithUser>(`${intra.apiBaseUrl}/v2/cursus/${encodeURIComponent(String(cursusId))}/cursus_users?${query.toString()}`, {
+			maxPages: CURSUS_USERS_MAX_PAGES,
+		});
+	}
+
+	/**
 	 * アプリトークンで、ユーザーのクエストの状態をすべて取得する。ユーザーが存在しなければ null
 	 */
 	@bindThis
@@ -194,15 +212,16 @@ export class IntraApiService {
 
 	/**
 	 * アプリトークンで一覧の API をページごとに取得して連結する。
-	 * 返ってきた件数がページの大きさより少なくなるか、MAX_PAGES に達したら止める
+	 * 返ってきた件数がページの大きさより少なくなるか、ページ数の上限 (既定は MAX_PAGES) に達したら止める
 	 */
 	@bindThis
-	private async appGetAllPages<T>(url: string, opts: { pageSize?: number; timeout?: number } = {}): Promise<T[]> {
+	private async appGetAllPages<T>(url: string, opts: { pageSize?: number; timeout?: number; maxPages?: number } = {}): Promise<T[]> {
 		const pageSize = opts.pageSize ?? PAGE_SIZE;
+		const maxPages = opts.maxPages ?? MAX_PAGES;
 		const results: T[] = [];
 		const separator = url.includes('?') ? '&' : '?';
 
-		for (let page = 1; page <= MAX_PAGES; page++) {
+		for (let page = 1; page <= maxPages; page++) {
 			const res = await this.appRequest(`${url}${separator}page[size]=${pageSize}&page[number]=${page}`, opts.timeout);
 			if (!res.ok) {
 				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
@@ -216,7 +235,7 @@ export class IntraApiService {
 			if (body.length < pageSize) return results;
 		}
 
-		this.logger.warn(`Reached the page limit (${MAX_PAGES}) while fetching ${url}`);
+		this.logger.warn(`Reached the page limit (${maxPages}) while fetching ${url}`);
 		return results;
 	}
 

@@ -85,13 +85,16 @@ export function getPoolRoleTarget(poolYearMonth: string | null): IntraRoleTarget
 
 /**
  * 本科への入学時期のロール条件。42cursus に在籍していなければ (開始日時が無ければ) null。
- * 入学時期はピシンの年月から求める (42cursus の開始日時は入学時期より後になることがあるため)。
+ * 入学時期は、同じピシンの人の集計 (intra_cohort) があればそれを使う (入学の月は年によって違うため)。
+ * 集計が無ければピシンの年月を 4 月か 10 月に丸めて求める (42cursus の開始日時は入学時期より後になることがあるため)。
  * ピシンの年月が無い人 (スタッフなど) だけ、42cursus の開始日時から求める
+ * @param intakeYearMonth 集計したそのピシンの入学時期 (YYMM)
  */
-export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: string | null = null): IntraRoleTarget | null {
+export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: string | null = null, intakeYearMonth: string | null = null): IntraRoleTarget | null {
 	if (cursusBeginAt == null) return null;
+	const fromIntake = intakeYearMonth != null && YEAR_MONTH_PATTERN.test(intakeYearMonth) ? intakeYearMonth : null;
 	const fromPool = poolYearMonth != null ? poolToCohortYearMonth(poolYearMonth) : null;
-	const yearMonth = fromPool ?? toCohortYearMonth(cursusBeginAt);
+	const yearMonth = fromIntake ?? fromPool ?? toCohortYearMonth(cursusBeginAt);
 	if (yearMonth == null) return null;
 	return { kind: 'cohort', key: yearMonth, name: `Cursus ${formatYearMonth(yearMonth)}` };
 }
@@ -109,8 +112,9 @@ export function getLevelRoleTarget(level: number): IntraRoleTarget {
 /**
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
+ * @param intakeYearMonth 集計した、そのユーザーのピシンの入学時期 (YYMM)。無ければ null
  */
-export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): IntraRoleTarget[] {
+export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, intakeYearMonth: string | null = null): IntraRoleTarget[] {
 	const targets: IntraRoleTarget[] = [];
 
 	if (profile.level != null) {
@@ -124,8 +128,8 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const pool = getPoolRoleTarget(profile.poolYearMonth);
 	if (pool != null) targets.push(pool);
 
-	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際の期間の月ではなく名称の年月から求める
-	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth);
+	// 入学時期の集計と丸めは intra の名称の月で行うので、実際の期間の月ではなく名称の年月から求める
+	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth, intakeYearMonth);
 	if (cohort != null) targets.push(cohort);
 
 	return targets;

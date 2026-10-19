@@ -79,6 +79,11 @@ export const PREF_DEF = definePreferences({
 		accountDependent: true,
 		default: false,
 	},
+	// 42times: pinnedRoles に足した入学時期のロールの ID (boot/main-boot.ts)。入学時期のロールが変わったときに差し替えるため
+	'roleTimeline.cohortRoleId': {
+		accountDependent: true,
+		default: null as string | null,
+	},
 	uploadFolder: {
 		accountDependent: true,
 		default: null as string | null,

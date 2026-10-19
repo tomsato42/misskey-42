@@ -31,7 +31,7 @@ import { unisonReload } from '@/utility/unison-reload.js';
 import { isBirthday } from '@/utility/is-birthday.js';
 import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
 import { addCalendarToMenu } from '@/utility/calendar-menu.js';
-import { addPinnedRole, findCohortRole } from '@/utility/pinned-roles.js';
+import { addPinnedRole, findCohortRole, replaceCohortRole } from '@/utility/pinned-roles.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 export async function mainBoot() {
@@ -124,15 +124,23 @@ export async function mainBoot() {
 		});
 
 		// 42times: タイムラインのタブに、同期 (入学時期) のロールを一度だけ足す。
-		// 入学時期のロールが付いていない人 (本科に入る前など) は、付いてから足す
+		// 入学時期のロールが付いていない人 (本科に入る前など) は、付いてから足す。
+		// 入学時期の決め方が変わってロールが変わったら、足した古いロールを新しいロールに差し替える (ユーザーが外していれば足さない)
 		if (instance.intraLoginEnabled) {
 			prefer.cloudReady.then(async () => {
-				if (prefer.s['roleTimeline.cohortRoleAdded']) return;
 				const cohortRole = findCohortRole(await misskeyApi('i/intra-roles'));
 				if (cohortRole == null) return;
-				const roles = addPinnedRole(prefer.s.pinnedRoles, cohortRole);
+				if (!prefer.s['roleTimeline.cohortRoleAdded']) {
+					const roles = addPinnedRole(prefer.s.pinnedRoles, cohortRole);
+					if (roles !== prefer.s.pinnedRoles) prefer.commit('pinnedRoles', [...roles]);
+					prefer.commit('roleTimeline.cohortRoleAdded', true);
+					prefer.commit('roleTimeline.cohortRoleId', cohortRole.id);
+					return;
+				}
+				if (prefer.s['roleTimeline.cohortRoleId'] === cohortRole.id) return;
+				const roles = replaceCohortRole(prefer.s.pinnedRoles, prefer.s['roleTimeline.cohortRoleId'], cohortRole);
 				if (roles !== prefer.s.pinnedRoles) prefer.commit('pinnedRoles', [...roles]);
-				prefer.commit('roleTimeline.cohortRoleAdded', true);
+				prefer.commit('roleTimeline.cohortRoleId', cohortRole.id);
 			}).catch(err => {
 				// 取得に失敗したときは次の読み込みでやり直す
 				console.error(err);
