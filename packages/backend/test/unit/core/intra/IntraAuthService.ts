@@ -32,6 +32,10 @@ class FakeRedis {
 		return 'OK';
 	}
 
+	public async get(key: string) {
+		return this.store.get(key) ?? null;
+	}
+
 	public async getdel(key: string) {
 		const value = this.store.get(key) ?? null;
 		this.store.delete(key);
@@ -395,6 +399,101 @@ describe('IntraAuthService', () => {
 		test('モデレーター以上は制限しない', async () => {
 			moderators.add('u1');
 			expect(await service.isPasswordLoginRestricted(user, { intraPasswordLoginAllowed: false })).toBe(false);
+		});
+	});
+
+	describe('isPasskeyLoginRestricted', () => {
+		const user = { id: 'u1' } as any;
+
+		test('連携が無効なら制限しない', async () => {
+			config.intra = undefined;
+			expect(await service.isPasskeyLoginRestricted(user, { intraId: null, intraPasswordLoginAllowed: false })).toBe(false);
+		});
+
+		test('intra で作ったアカウントは制限しない (ブラックホールの後もログインできるように)', async () => {
+			expect(await service.isPasskeyLoginRestricted(user, { intraId: 1000, intraPasswordLoginAllowed: false })).toBe(false);
+		});
+
+		test('intra に結び付いていないアカウントはパスワードと同じ扱い', async () => {
+			expect(await service.isPasskeyLoginRestricted(user, { intraId: null, intraPasswordLoginAllowed: false })).toBe(true);
+			expect(await service.isPasskeyLoginRestricted(user, { intraId: null, intraPasswordLoginAllowed: true })).toBe(false);
+			moderators.add('u1');
+			expect(await service.isPasskeyLoginRestricted(user, { intraId: null, intraPasswordLoginAllowed: false })).toBe(false);
+		});
+	});
+
+	describe('本人確認 (42 でのログインし直し)', () => {
+		async function startReauth(userId: string): Promise<string> {
+			const ticket = await service.createReauthTicket(userId);
+			expect(ticket).not.toBeNull();
+			const authorization = await service.createReauthAuthorizeUrl(ticket);
+			expect(authorization).not.toBeNull();
+			return authorization!.state;
+		}
+
+		test('intra で作ったアカウントだけがチケットを発行できる', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 1000 });
+			addUser('local', 'admin');
+			expect(await service.createReauthTicket('intra')).not.toBeNull();
+			expect(await service.createReauthTicket('local')).toBeNull();
+			expect(service.usesIntraReauth({ intraId: 1000 })).toBe(true);
+			expect(service.usesIntraReauth({ intraId: null })).toBe(false);
+
+			config.intra = undefined;
+			expect(await service.createReauthTicket('intra')).toBeNull();
+			expect(service.usesIntraReauth({ intraId: 1000 })).toBe(false);
+		});
+
+		test('チケットは使い捨てで、不正なチケットは null', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 1000 });
+			const ticket = await service.createReauthTicket('intra');
+			const authorization = await service.createReauthAuthorizeUrl(ticket);
+			expect(redis.store.get(`intra:state:${authorization!.state}`)).toBe('reauth:intra');
+			expect(await service.createReauthAuthorizeUrl(ticket)).toBeNull();
+			expect(await service.createReauthAuthorizeUrl('a'.repeat(43))).toBeNull();
+			expect(await service.createReauthAuthorizeUrl(undefined)).toBeNull();
+		});
+
+		test('同じ 42 のアカウントでログインしたら、しばらく本人確認済みになる', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 1000, intraLogin: 'old' });
+			expect(await service.hasRecentReauth('intra')).toBe(false);
+
+			const state = await startReauth('intra');
+			const result = await service.handleCallback('authcode', state, state);
+			expect(result).toEqual({ url: `${BASE_URL}/settings/security?intraReauth=ok`, loginCode: null });
+			expect(await service.hasRecentReauth('intra')).toBe(true);
+			// ログインではないので、ユーザーの作成・更新や同期はしない
+			expect(users.rows).toHaveLength(1);
+			expect(profiles.rows[0].intraLogin).toBe('old');
+			expect(syncCalls).toHaveLength(0);
+		});
+
+		test('別の 42 のアカウントでログインしたら mismatch', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 999 });
+			const state = await startReauth('intra');
+			expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/settings/security?intraReauth=mismatch`);
+			expect(await service.hasRecentReauth('intra')).toBe(false);
+			expect(users.rows).toHaveLength(1);
+		});
+
+		test('42 API の失敗や凍結は error', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 1000 });
+			intraApiFails = true;
+			const state = await startReauth('intra');
+			expect(await callbackUrl('authcode', state, state)).toBe(`${BASE_URL}/settings/security?intraReauth=error`);
+
+			intraApiFails = false;
+			const state2 = await startReauth('intra');
+			users.rows[0].isSuspended = true;
+			expect(await callbackUrl('authcode', state2, state2)).toBe(`${BASE_URL}/settings/security?intraReauth=error`);
+			expect(await service.hasRecentReauth('intra')).toBe(false);
+		});
+
+		test('Cookie の state と一致しなければ invalid_state', async () => {
+			addUser('intra', 'tomoki_2307', { intraId: 1000 });
+			const state = await startReauth('intra');
+			expect(await callbackUrl('authcode', state, null)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
+			expect(await service.hasRecentReauth('intra')).toBe(false);
 		});
 	});
 });

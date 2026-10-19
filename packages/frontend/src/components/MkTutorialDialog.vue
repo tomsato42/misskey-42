@@ -63,6 +63,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i class="ti ti-confetti" style="display: block; margin: auto; font-size: 3em; color: var(--MI_THEME-accent);"></i>
 							<div style="font-size: 120%;">{{ i18n.ts._initialTutorial._landing.title }}</div>
 							<div>{{ i18n.ts._initialTutorial._landing.description }}</div>
+							<MkInfo v-if="showsPasskeyNotice" warn :class="$style.passkeyNotice">
+								<div class="_gaps_s">
+									<div>{{ i18n.ts._intra.passkeyNotice }}</div>
+									<div>
+										<MkButton primary rounded small @click="openPasskeySettings"><i class="ti ti-key"></i> {{ i18n.ts._intra.createPasskey }}</MkButton>
+									</div>
+								</div>
+							</MkInfo>
 							<MkButton primary rounded gradate style="margin: 16px auto 0 auto;" @click="page++">{{ i18n.ts._initialTutorial.launchTutorial }} <i class="ti ti-arrow-right"></i></MkButton>
 							<MkButton style="margin: 0 auto;" transparent rounded @click="close(true)">{{ i18n.ts.close }}</MkButton>
 						</div>
@@ -212,6 +220,7 @@ import { ref, useTemplateRef, watch } from 'vue';
 import { host } from '@@/js/config.js';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import XNote from '@/components/MkTutorialDialog.Note.vue';
 import XTimeline from '@/components/MkTutorialDialog.Timeline.vue';
 import XPostNote from '@/components/MkTutorialDialog.PostNote.vue';
@@ -224,6 +233,8 @@ import { instance } from '@/instance.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import * as os from '@/os.js';
 import { store } from '@/store.js';
+import { $i } from '@/i.js';
+import { useRouter } from '@/router.js';
 
 const props = defineProps<{
 	initialPage?: number;
@@ -283,6 +294,15 @@ function goBack() {
 	}
 }
 
+// 42times: 42 にログインできなくなる (ブラックホール) 前に、パスキーを作っておくよう案内する。intra で作ったアカウントでまだパスキーが無い人だけ
+const showsPasskeyNotice = showsIntraPages && $i?.intra != null && ($i.securityKeysList?.length ?? 0) === 0;
+const router = useRouter();
+
+function openPasskeySettings() {
+	dialog.value?.close();
+	router.push('/settings/security');
+}
+
 const isReactionTutorialPushed = ref<boolean>(false);
 const isSensitiveTutorialSucceeded = ref<boolean>(false);
 
@@ -335,6 +355,10 @@ async function close(skip: boolean) {
 	height: 100cqh;
 	padding-bottom: 30px;
 	box-sizing: border-box;
+}
+
+.passkeyNotice {
+	text-align: start;
 }
 
 .newFeatures {

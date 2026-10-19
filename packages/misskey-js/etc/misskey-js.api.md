@@ -2101,6 +2101,7 @@ declare namespace entities {
         IImportMutingRequest,
         IImportUserListsRequest,
         IIntraRolesResponse,
+        IIntraStartReauthResponse,
         IMoveRequest,
         IMoveResponse,
         INotificationsRequest,
@@ -2709,7 +2710,7 @@ type I2faDoneResponse = operations['i___2fa___done']['responses']['200']['conten
 
 // @public (undocumented)
 type I2faKeyDoneRequest_2 = {
-    password: string;
+    password?: string;
     token?: string | null;
     name: string;
     credential: RegistrationResponseJSON;
@@ -2837,6 +2838,9 @@ type IImportUserListsRequest = operations['i___import-user-lists']['requestBody'
 
 // @public (undocumented)
 type IIntraRolesResponse = operations['i___intra-roles']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IIntraStartReauthResponse = operations['i___intra___start-reauth']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IMoveRequest = operations['i___move']['requestBody']['content']['application/json'];

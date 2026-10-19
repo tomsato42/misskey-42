@@ -2843,6 +2843,16 @@ export type paths = {
          */
         post: operations['i___intra-roles'];
     };
+    '/i/intra/start-reauth': {
+        /**
+         * i/intra/start-reauth
+         * @description Start verifying yourself by signing in to 42 intra again. Open the returned URL in the browser; after that, you can register or remove passkeys for a while.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['i___intra___start-reauth'];
+    };
     '/i/move': {
         /**
          * i/move
@@ -26605,7 +26615,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                     name: string;
                     credential: Record<string, never>;
@@ -26810,7 +26820,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                 };
             };
@@ -26876,7 +26886,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                     credentialId: string;
                 };
@@ -28828,6 +28838,75 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___intra___start-reauth': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
