@@ -27,6 +27,7 @@ GitHub (main に push / 手動実行)
 | `compose.yml` | `/home/misskey/42times/compose.yml` | サービス `web` の定義 (host ネットワーク、メモリ上限 768MB、ログのローテーション) |
 | `deploy.sh` | `/home/misskey/42times/deploy.sh` | タグを受け取って pull → 起動 → ヘルスチェック待ち。失敗したら前のタグに戻す |
 | `backup.sh` | `/home/misskey/42times/backup.sh` | 1 日 1 回のバックアップ (DB・設定・`files/`)。7 個残し、R2 にも送る ([バックアップ](#バックアップ)) |
+| `configure-backup-r2.sh` | `/home/misskey/42times/configure-backup-r2.sh` | バックアップを送る R2 の鍵 (`.config/backup-r2.env`) を対話形式で書き込む。書き込む前に R2 へのアップロードを試す |
 | `default.yml.example` | `/home/misskey/42times/.config/default.yml` (コピーして編集) | 本番用の設定の例。秘密の値はダミー |
 | `nginx/42times.kinachan.com.conf` | `/etc/nginx/conf.d/42times.kinachan.com.conf` | nginx の server ブロック |
 
@@ -37,8 +38,9 @@ VPS の `/home/misskey/42times/` は最終的に次のようになります。
 ├── compose.yml
 ├── deploy.sh
 ├── backup.sh
+├── configure-backup-r2.sh
 ├── .config/default.yml   (秘密の値を含む。グループ 991 が読める 640)
-├── .config/backup-r2.env (バックアップを送る R2 の鍵。600)
+├── .config/backup-r2.env (バックアップを送る R2 の鍵。configure-backup-r2.sh が書き込む。600)
 ├── nginx/                (nginx の設定の控え。実際に読まれるのは /etc/nginx/conf.d/ のもの)
 ├── files/                (コンテナの misskey ユーザー (UID 991) が書き込む)
 └── state/                (deploy.sh が作る。current-tag に動いているタグ、history.log に履歴。backup.log はバックアップのログ)
@@ -392,25 +394,19 @@ Cloudflare のダッシュボードで R2 を開きます。
 
 ```sh
 # ローカルの PC (リポジトリのルート) で
-scp deploy/backup.sh misskey-vps:/home/misskey/42times/
-ssh misskey-vps 'chmod 700 /home/misskey/42times/backup.sh'
+scp deploy/backup.sh deploy/configure-backup-r2.sh misskey-vps:/home/misskey/42times/
+ssh misskey-vps 'chmod 700 /home/misskey/42times/backup.sh /home/misskey/42times/configure-backup-r2.sh'
 ```
 
-VPS で鍵のファイルを作ります。`backup.sh` は bash の `source` で読むので、`=` の前後に空白を入れません。
+VPS で `configure-backup-r2.sh` を実行し、手順 1 で控えた値を入力します。アカウント ID の欄には、エンドポイントの URL をそのまま貼り付けても構いません。Secret Access Key は画面に表示されません。
 
 ```sh
-install -m 600 /dev/null ~/42times/.config/backup-r2.env
-nano ~/42times/.config/backup-r2.env
+~/42times/configure-backup-r2.sh
 ```
 
-```sh
-R2_ACCOUNT_ID=<アカウント ID>
-R2_BUCKET=42times-backups
-R2_ACCESS_KEY_ID=<Access Key ID>
-R2_SECRET_ACCESS_KEY=<Secret Access Key>
-```
+スクリプトは、小さなオブジェクトをバケットにアップロードして消し、鍵が使えることを確かめてから `~/42times/.config/backup-r2.env` (600) に書き込みます。アップロードは `backup.sh` と同じ `curl --aws-sigv4` で行います。失敗したときは R2 のエラー (`InvalidAccessKeyId` など) を表示し、書き込むかを尋ねます。値を変えるときも同じスクリプトを実行します。今の値が既定値になるので、変えない欄は Enter だけで済みます。
 
-このファイルが無いと、`backup.sh` は R2 には送らず、VPS の中にだけ残します。
+`backup-r2.env` が無いと、`backup.sh` は R2 には送らず、VPS の中にだけ残します。`backup.sh` はこのファイルを bash の `source` で読みます。手で編集するときは `=` の前後に空白を入れず、`R2_ACCOUNT_ID`・`R2_BUCKET`・`R2_ACCESS_KEY_ID`・`R2_SECRET_ACCESS_KEY` の 4 行を書きます。
 
 #### 3. 手で 1 回実行する (Claude)
 
