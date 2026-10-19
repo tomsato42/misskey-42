@@ -611,7 +611,7 @@ export class PairRecruitmentService {
 			}
 		}
 
-		await this.addChatMember(recruitment.id, me.id);
+		await this.addChatMember(recruitment.id, me.id, now);
 
 		this.notificationService.createNotification(recruitment.userId, 'pairJoinRequested', {
 			pairRecruitmentId: recruitment.id,
@@ -843,6 +843,8 @@ export class PairRecruitmentService {
 		if (countUpdate.affected === 0) {
 			await this.pairMembersRepository.update({ id: member!.id, status: 'accepted' }, { status: 'pending', updatedAt: now });
 			const latest = await this.findRecruitmentOrFail(recruitment.id);
+			// 締め切りの処理が参加の決まった人として残していたら、参加希望中に戻したのでチャットから外す
+			if (!isRecruitmentOpen(latest, now)) await this.removeChatMembers(recruitment.id, [userId]);
 			throw new PairRecruitmentError(isRecruitmentOpen(latest, now) ? 'full' : 'recruitmentClosed');
 		}
 
@@ -923,6 +925,7 @@ export class PairRecruitmentService {
 
 		const member = recruitment.userId === me.id ? null : await this.pairMembersRepository.findOneBy({ recruitmentId: recruitment.id, userId: me.id });
 		if (!canJoinPairChat({ recruitment, userId: me.id, memberStatus: member?.status ?? null, now })) throw new PairRecruitmentError('notMember');
+		if (recruitment.userId !== me.id && await this.isBlockedWith(me.id, recruitment.userId)) throw new PairRecruitmentError('blocked');
 
 		const room = (recruitment.chatRoomId != null ? await this.chatRoomsRepository.findOneBy({ id: recruitment.chatRoomId }) : null)
 			?? await this.createChatRoom(recruitment, now);
@@ -977,13 +980,18 @@ export class PairRecruitmentService {
 	}
 
 	/**
-	 * 参加希望を送った人を、チャットルームがあれば入れる。チャットの失敗で参加希望を失敗にはしない
+	 * 参加希望を送った人を、チャットルームがあれば入れる。チャットの失敗で参加希望を失敗にはしない。
+	 * 同時に締め切られたときに入れてしまわないよう、募集と参加の状態を読み直して確かめる
 	 */
 	@bindThis
-	private async addChatMember(recruitmentId: MiPairRecruitment['id'], userId: MiUser['id']): Promise<void> {
+	private async addChatMember(recruitmentId: MiPairRecruitment['id'], userId: MiUser['id'], now = new Date()): Promise<void> {
 		try {
-			const recruitment = await this.findRecruitmentOrFail(recruitmentId);
+			const [recruitment, member] = await Promise.all([
+				this.findRecruitmentOrFail(recruitmentId),
+				this.pairMembersRepository.findOneBy({ recruitmentId, userId }),
+			]);
 			if (recruitment.chatRoomId == null) return;
+			if (!canJoinPairChat({ recruitment, userId, memberStatus: member?.status ?? null, now })) return;
 			const room = await this.chatRoomsRepository.findOneBy({ id: recruitment.chatRoomId });
 			if (room != null) await this.insertChatMemberships(room, [userId]);
 		} catch (err) {

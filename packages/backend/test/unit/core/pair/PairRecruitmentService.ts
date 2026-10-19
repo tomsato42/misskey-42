@@ -806,8 +806,6 @@ describe('PairRecruitmentService', () => {
 
 		test('初めて開くとルームを作り、参加希望中と参加が決まった人を入れる。2 回目からは同じルーム', async () => {
 			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
-			progresses.push(progress('carol'));
-			users.push(localUser('carol'));
 			await service.apply(alice, r.id, undefined, now);
 			await service.apply(bob, r.id, undefined, now);
 			await service.accept(owner, r.id, 'alice', now);
