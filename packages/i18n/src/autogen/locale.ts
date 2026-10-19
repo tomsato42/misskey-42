@@ -13686,6 +13686,10 @@ export interface Locale extends ILocale {
          */
         "teamSizeAndRemaining": ParameterizedString<"n" | "m">;
         /**
+         * {current}/{n}
+         */
+        "memberFraction": ParameterizedString<"current" | "n">;
+        /**
          * あと{n}人
          */
         "remaining": ParameterizedString<"n">;

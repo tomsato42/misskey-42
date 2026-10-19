@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i class="ti ti-users" aria-hidden="true"></i>
 					<span :class="$style.slotsRow">
 						<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount" :members="acceptedUsers"/>
-						<span>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
+						<span>{{ i18n.tsx._pairRecruitment.memberFraction({ current: recruitment.acceptedCount + 1, n: recruitment.teamSize }) }}</span>
 					</span>
 					<i class="ti ti-calendar" aria-hidden="true"></i><span>{{ getStartTimingText(recruitment) }}</span>
 					<i class="ti ti-user" aria-hidden="true"></i>

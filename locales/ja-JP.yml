@@ -3663,6 +3663,7 @@ _pairRecruitment:
   close: "締め切る"
   closeConfirm: "この募集を締め切りますか？参加希望を送った人とメンバーに通知されます。"
   teamSizeAndRemaining: "{n}人 ・ あと{m}人"
+  memberFraction: "{current}/{n}"
   remaining: "あと{n}人"
   teamSizeN: "{n}人"
   groupSizeProject: "{n}人で取り組む課題"

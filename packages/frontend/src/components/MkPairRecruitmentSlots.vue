@@ -8,7 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkAvatar :class="$style.slot" :user="owner"/>
 	<MkAvatar v-for="member in shownMembers" :key="member.id" :class="$style.slot" :user="member"/>
 	<span v-for="n in unknownFilled" :key="`filled-${n}`" :class="[$style.slot, $style.filled]"><i class="ti ti-user" aria-hidden="true"></i></span>
-	<span v-for="n in remaining" :key="`empty-${n}`" :class="[$style.slot, $style.empty]"></span>
 </span>
 </template>
 
@@ -53,8 +52,4 @@ const remaining = computed(() => getRemainingSlots(props));
 	background: var(--MI_THEME-buttonHoverBg);
 }
 
-.empty {
-	border-radius: 100%;
-	box-shadow: inset 0 0 0 1.5px var(--MI_THEME-divider);
-}
 </style>
