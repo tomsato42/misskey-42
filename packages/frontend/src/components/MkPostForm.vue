@@ -91,7 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
-	<MkIntraProjectResult v-if="intraProjectResult != null" :class="$style.intraProjectResult" :result="intraProjectResult" removable @remove="intraProjectResult = null"/>
+	<MkIntraProjectResult v-if="intraProjectCard != null" :class="$style.intraProjectResult" :result="intraProjectCard" removable @remove="intraProjectResult = null"/>
 	<MkIntraLevel v-if="intraLevel != null" :class="$style.intraProjectResult" :level="intraLevel" removable @remove="intraLevel = null"/>
 	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
@@ -174,6 +174,7 @@ import { closeTip } from '@/tips.js';
 import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
 import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
 import MkIntraLevel from '@/components/MkIntraLevel.vue';
+import { toIntraProjectNote } from '@/utility/intra-project-result.js';
 import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
 import {
 	calendarEventFormToParams,
@@ -271,6 +272,9 @@ const hasCalendarEventState = computed(() => calendarEventForm.value != null || 
 
 // 42times: 付ける課題の結果 (点数を共有)。下書きと予約投稿には保存しない
 const intraProjectResult = shallowRef<Misskey.entities.IntraProjectResult | null>(props.initialIntraProjectResult ?? null);
+// 付ける提出 (チームの ID)。null なら最後の提出
+const intraProjectTeamId = props.initialIntraProjectTeamId ?? null;
+const intraProjectCard = computed(() => intraProjectResult.value != null ? toIntraProjectNote(intraProjectResult.value, intraProjectTeamId) : null);
 // 42times: 付ける 42 intra のレベル。課題の結果と同じく、下書きと予約投稿には保存しない
 const intraLevel = ref<number | null>(props.initialIntraLevel ?? null);
 
@@ -1194,7 +1198,7 @@ async function post(ev?: PointerEvent) {
 
 	let postData = {
 		...calendarParams,
-		...(intraProjectResult.value != null ? { intraProjectResultId: intraProjectResult.value.id } : {}),
+		...(intraProjectResult.value != null ? { intraProjectResultId: intraProjectResult.value.id, intraProjectTeamId: intraProjectTeamId ?? undefined } : {}),
 		...(intraLevel.value != null ? { intraLevel: intraLevel.value } : {}),
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,

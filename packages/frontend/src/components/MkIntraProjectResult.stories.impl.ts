@@ -46,6 +46,10 @@ export const Default = {
 				{ login: 'tomsato', user: userLite('9x0000000a', 'tomsato', null, 'さとう') },
 				{ login: 'hana', user: null },
 			],
+			attemptNumber: 3,
+			attemptCount: 3,
+			markedAt: '2026-10-18T10:00:00.000Z',
+			intraLogin: 'tomsato',
 		},
 	},
 	parameters: {

@@ -6,7 +6,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
-import type { IntraProjectResultMember } from '@/core/intra/intra-project-result.js';
+import type { IntraProjectResultMember, IntraProjectSubmission } from '@/core/intra/intra-project-result.js';
 
 /**
  * 42 intra のユーザーの課題の結果 (点数が付いた projects_users)。合否は問わない。
@@ -76,6 +76,18 @@ export class MiIntraProjectResult {
 		nullable: true,
 	})
 	public detailsTeamId: number | null;
+
+	/** 提出 (チーム) ごとの結果。古い順。submissionsTeamId が teamId と違えば取得し直す */
+	@Column('jsonb', {
+		default: [],
+	})
+	public submissions: IntraProjectSubmission[];
+
+	/** submissions を取得したときの最後のチームの ID */
+	@Column('integer', {
+		nullable: true,
+	})
+	public submissionsTeamId: number | null;
 
 	@Column('timestamp with time zone')
 	public updatedAt: Date;

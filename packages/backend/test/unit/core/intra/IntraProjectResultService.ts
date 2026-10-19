@@ -42,6 +42,7 @@ describe('IntraProjectResultService', () => {
 	let teams: Map<number, IntraTeam>;
 	let scaleTeams: Map<number, IntraScaleTeam[]>;
 	let apiCalls: string[];
+	let remoteProjectsUsers: IntraProjectUser[] | null;
 	let service: IntraProjectResultService;
 
 	beforeEach(() => {
@@ -53,6 +54,7 @@ describe('IntraProjectResultService', () => {
 		teams = new Map();
 		scaleTeams = new Map();
 		apiCalls = [];
+		remoteProjectsUsers = null;
 
 		const matches = (row: MiIntraProjectResult, where: Record<string, unknown>) => Object.entries(where).every(([k, v]) => {
 			if (v instanceof FindOperator) {
@@ -72,9 +74,9 @@ describe('IntraProjectResultService', () => {
 			update: async (where: { id: string }, set: Partial<MiIntraProjectResult>) => {
 				Object.assign(results.find(r => r.id === where.id)!, set);
 			},
-			insert: async (row: Omit<MiIntraProjectResult, 'members' | 'outstandingCount' | 'detailsTeamId' | 'user'>) => {
+			insert: async (row: Omit<MiIntraProjectResult, 'members' | 'outstandingCount' | 'detailsTeamId' | 'submissions' | 'submissionsTeamId' | 'user'>) => {
 				// 列の既定値を入れる
-				results.push({ members: [], outstandingCount: null, detailsTeamId: null, user: null, ...row });
+				results.push({ members: [], outstandingCount: null, detailsTeamId: null, submissions: [], submissionsTeamId: null, user: null, ...row });
 			},
 			delete: async (where: Record<string, unknown>) => {
 				results = results.filter(r => !matches(r, where));
@@ -96,6 +98,10 @@ describe('IntraProjectResultService', () => {
 			getTeamScaleTeams: async (teamId: number) => {
 				apiCalls.push(`scale_teams ${teamId}`);
 				return scaleTeams.get(teamId) ?? [];
+			},
+			getUserProjectsUsers: async (intraId: number) => {
+				apiCalls.push(`projects_users ${intraId}`);
+				return remoteProjectsUsers;
 			},
 		};
 
@@ -144,8 +150,43 @@ describe('IntraProjectResultService', () => {
 
 			expect(results).toHaveLength(1);
 			expect(notifications).toEqual([]);
-			expect(apiCalls).toEqual([]);
+			// 提出ごとの結果だけは取得する
+			expect(apiCalls).toEqual(['projects_users 1']);
 			expect(resultsSyncedAt).toEqual(expect.any(Date));
+		});
+
+		test('提出ごとの結果を保存し、最後のチームが変わるまで取得し直さない', async () => {
+			resultsSyncedAt = null;
+			remoteProjectsUsers = [{
+				...pu(1),
+				teams: [
+					{ id: 10, final_mark: 125, 'validated?': true, closed_at: '2026-10-18T10:00:00.000Z', users: [{ id: 1, login: 'tomsato' }] },
+					{ id: 9, final_mark: 0, 'validated?': false, closed_at: '2026-09-12T10:00:00.000Z', users: [{ id: 1, login: 'tomsato' }, { id: 2, login: 'hana' }] },
+					{ id: 11, final_mark: null, 'validated?': null, users: [] },
+				],
+			}];
+
+			await service.syncResults('u1', [pu(1)]);
+
+			expect(results[0].submissionsTeamId).toBe(10);
+			expect(results[0].submissions).toEqual([
+				{ teamId: 9, finalMark: 0, validated: false, markedAt: '2026-09-12T10:00:00.000Z', members: [{ intraId: 1, login: 'tomsato' }, { intraId: 2, login: 'hana' }], outstandingCount: null },
+				{ teamId: 10, finalMark: 125, validated: true, markedAt: '2026-10-18T10:00:00.000Z', members: [{ intraId: 1, login: 'tomsato' }], outstandingCount: null },
+			]);
+
+			apiCalls = [];
+			await service.syncResults('u1', [pu(1)]);
+			expect(apiCalls).toEqual([]);
+		});
+
+		test('提出ごとの結果を取得できなくても、課題の結果は保存する', async () => {
+			resultsSyncedAt = null;
+			remoteProjectsUsers = [{ ...pu(1) }];
+
+			await service.syncResults('u1', [pu(1)]);
+
+			expect(results).toHaveLength(1);
+			expect(results[0]).toMatchObject({ submissions: [], submissionsTeamId: null });
 		});
 
 		test('結果が変わらなければ通知せず、intra から消えた結果は消す', async () => {
@@ -165,6 +206,11 @@ describe('IntraProjectResultService', () => {
 				id: 'r1', userId: 'u1', user: null, projectsUserId: 1, projectSlug: 'webserv', projectName: 'webserv',
 				finalMark: 125, validated: true, markedAt: NOW, teamId: 10,
 				members: [], outstandingCount: null, detailsTeamId: null, updatedAt: NOW,
+				submissions: [
+					{ teamId: 9, finalMark: 80, validated: false, markedAt: '2026-10-02T10:00:00.000Z', members: [{ intraId: 1, login: 'tomsato' }, { intraId: 3, login: 'ken' }], outstandingCount: null },
+					{ teamId: 10, finalMark: 125, validated: true, markedAt: '2026-10-18T10:00:00.000Z', members: [], outstandingCount: null },
+				],
+				submissionsTeamId: 10,
 			});
 		});
 
@@ -189,7 +235,36 @@ describe('IntraProjectResultService', () => {
 				validated: true,
 				outstandingCount: 1,
 				members: [{ intraId: 1, login: 'tomsato' }, { intraId: 2, login: 'hana' }],
+				attemptNumber: 2,
+				attemptCount: 2,
+				markedAt: NOW,
+				intraLogin: 'tomsato',
 			}]);
+		});
+
+		test('前の提出を選ぶと、その提出の点数・メンバーと outstanding を付ける', async () => {
+			scaleTeams.set(9, [{ flag: { name: 'Outstanding project' } }]);
+
+			const onInserted = await service.prepareNote({ id: 'u1' }, 'r1', { text: null, hasPoll: false }, 9);
+			await onInserted!({ id: 'n1' } as MiNote);
+
+			expect(apiCalls).toEqual(['scale_teams 9']);
+			expect(notes[0]).toMatchObject({
+				finalMark: 80,
+				validated: false,
+				outstandingCount: 1,
+				members: [{ intraId: 1, login: 'tomsato' }, { intraId: 3, login: 'ken' }],
+				attemptNumber: 1,
+				attemptCount: 2,
+				markedAt: new Date('2026-10-02T10:00:00.000Z'),
+				intraLogin: 'tomsato',
+			});
+			// 取得した outstanding の数は保存して、次は取得しない
+			expect(results[0].submissions[0].outstandingCount).toBe(1);
+		});
+
+		test('提出の一覧に無いチームは付けられない', async () => {
+			await expect(service.prepareNote({ id: 'u1' }, 'r1', { hasPoll: false }, 999)).rejects.toBeInstanceOf(IntraProjectResultNotFoundError);
 		});
 
 		test('チームを取得できなければ、自分だけをメンバーにして outstanding は不明にする', async () => {

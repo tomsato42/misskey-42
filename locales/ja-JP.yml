@@ -4111,6 +4111,9 @@ _intraProjectResult:
   scoreLabel: "{project} {score}点 {result}"
   passed: "合格"
   failed: "不合格"
+  attempt: "{n}回目の提出"
+  latest: "最新"
+  submission: "共有する提出"
   _errors:
     noSuchResult: "この課題の結果が見つかりません。"
     cannotAttachToPureRenote: "本文の無いリノートには課題を付けられません。"

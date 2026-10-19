@@ -51,6 +51,33 @@ const resultProperties = {
 	},
 } as const;
 
+/** 提出 (チーム) ごとの結果 */
+const submissionSchema = {
+	type: 'object',
+	optional: false, nullable: false,
+	properties: {
+		teamId: {
+			type: 'integer',
+			optional: false, nullable: false,
+			description: 'The intra team ID. Pass it as intraProjectTeamId to notes/create.',
+		},
+		attemptNumber: {
+			type: 'integer',
+			optional: false, nullable: false,
+			description: '1 for the first submission.',
+		},
+		finalMark: resultProperties.finalMark,
+		validated: resultProperties.validated,
+		outstandingCount: resultProperties.outstandingCount,
+		members: resultProperties.members,
+		markedAt: {
+			type: 'string',
+			optional: false, nullable: true,
+			format: 'date-time',
+		},
+	},
+} as const;
+
 /** 自分の課題の結果 (点数を共有するときに選ぶ) */
 export const packedIntraProjectResultSchema = {
 	type: 'object',
@@ -66,6 +93,17 @@ export const packedIntraProjectResultSchema = {
 			optional: false, nullable: true,
 			format: 'date-time',
 		},
+		teamId: {
+			type: 'integer',
+			optional: false, nullable: true,
+			description: 'The intra team ID of the latest submission.',
+		},
+		submissions: {
+			type: 'array',
+			optional: false, nullable: false,
+			description: 'The submissions with a final mark, newest first. Empty if not fetched yet.',
+			items: submissionSchema,
+		},
 	},
 } as const;
 
@@ -74,5 +112,25 @@ export const packedIntraProjectNoteSchema = {
 	type: 'object',
 	properties: {
 		...resultProperties,
+		attemptNumber: {
+			type: 'integer',
+			optional: false, nullable: true,
+			description: 'Which submission it was (1 for the first). null if unknown.',
+		},
+		attemptCount: {
+			type: 'integer',
+			optional: false, nullable: true,
+			description: 'The number of submissions when it was posted. null if unknown.',
+		},
+		markedAt: {
+			type: 'string',
+			optional: false, nullable: true,
+			format: 'date-time',
+		},
+		intraLogin: {
+			type: 'string',
+			optional: false, nullable: true,
+			description: 'The intra login of the note author, for linking to their project page on intra.',
+		},
 	},
 } as const;

@@ -61,4 +61,28 @@ export class MiIntraProjectNote {
 		default: [],
 	})
 	public members: IntraProjectResultMember[];
+
+	/** 何回目の提出か。分からなければ null */
+	@Column('integer', {
+		nullable: true,
+	})
+	public attemptNumber: number | null;
+
+	/** 投稿した時点の提出の数。分からなければ null */
+	@Column('integer', {
+		nullable: true,
+	})
+	public attemptCount: number | null;
+
+	/** 提出の点数が付いた日時 */
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public markedAt: Date | null;
+
+	/** 投稿した人の intra のログイン名 (intra のその人の課題のページに飛ぶため) */
+	@Column('varchar', {
+		length: 64, nullable: true,
+	})
+	public intraLogin: string | null;
 }

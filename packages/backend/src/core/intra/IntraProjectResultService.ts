@@ -17,8 +17,8 @@ import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
-import { countOutstandingFlags, extractProjectResults, extractTeamMembers, findNewlyMarkedResults } from './intra-project-result.js';
-import type { IntraProjectResultMember, IntraProjectResultValues } from './intra-project-result.js';
+import { countOutstandingFlags, extractProjectResults, extractSubmissions, extractTeamMembers, findNewlyMarkedResults, getAttemptNumber } from './intra-project-result.js';
+import type { IntraProjectResultMember, IntraProjectResultValues, IntraProjectSubmission } from './intra-project-result.js';
 import type { IntraProjectUser } from './intra-project.js';
 
 /** 付けようとした課題の結果が無い (自分のものではない) */
@@ -132,6 +132,38 @@ export class IntraProjectResultService {
 				this.logger.warn(`Failed to fetch details of intra project result ${saved.id}: ${err instanceof Error ? err.message : String(err)}`);
 			});
 		}
+
+		await this.syncSubmissions(userId).catch(err => {
+			// 提出ごとの結果が取れなくても、最後の提出の結果は共有できる
+			this.logger.warn(`Failed to sync submissions of user ${userId}: ${err instanceof Error ? err.message : String(err)}`);
+		});
+	}
+
+	/**
+	 * 提出 (チーム) ごとの結果を、最後のチームが変わった課題の分だけ取得し直す。
+	 * 取得し直す課題があるときだけ、42 API の projects_users を 1 回 (ページ分) 呼ぶ
+	 */
+	@bindThis
+	public async syncSubmissions(userId: MiUser['id']): Promise<void> {
+		const stale = (await this.intraProjectResultsRepository.findBy({ userId }))
+			.filter(r => r.teamId != null && r.submissionsTeamId !== r.teamId);
+		if (stale.length === 0) return;
+
+		const profile = await this.userProfilesRepository.findOne({ where: { userId }, select: { userId: true, intraId: true } });
+		if (profile?.intraId == null) return;
+
+		const projectsUsers = await this.intraApiService.getUserProjectsUsers(profile.intraId);
+		if (projectsUsers == null) return;
+		const byId = new Map(projectsUsers.filter(pu => typeof pu.id === 'number').map(pu => [pu.id, pu]));
+
+		for (const result of stale) {
+			const teams = byId.get(result.projectsUserId)?.teams;
+			if (!Array.isArray(teams)) continue;
+			await this.intraProjectResultsRepository.update({ id: result.id }, {
+				submissions: extractSubmissions(teams, result.submissions),
+				submissionsTeamId: result.teamId,
+			});
+		}
 	}
 
 	/**
@@ -175,7 +207,7 @@ export class IntraProjectResultService {
 	 * @throws IntraProjectResultNotFoundError 結果が無い、または自分のものではない
 	 */
 	@bindThis
-	public async prepareNote(me: { id: MiUser['id'] }, resultId: MiIntraProjectResult['id'] | null | undefined, note: IntraProjectNoteLike): Promise<((note: MiNote) => Promise<void>) | null> {
+	public async prepareNote(me: { id: MiUser['id'] }, resultId: MiIntraProjectResult['id'] | null | undefined, note: IntraProjectNoteLike, teamId?: number | null): Promise<((note: MiNote) => Promise<void>) | null> {
 		if (resultId == null) return null;
 
 		const isPureRenote = note.renoteId != null && note.text == null && (note.fileIds ?? []).length === 0 && !note.hasPoll;
@@ -183,6 +215,41 @@ export class IntraProjectResultService {
 
 		let result = await this.intraProjectResultsRepository.findOneBy({ id: resultId, userId: me.id });
 		if (result == null) throw new IntraProjectResultNotFoundError();
+
+		const ownMember = await this.getOwnMember(me.id);
+		const attemptCount = result.submissions.length > 0 ? result.submissions.length : null;
+		const base = {
+			userId: me.id,
+			projectSlug: result.projectSlug,
+			projectName: result.projectName,
+			attemptCount,
+			intraLogin: ownMember[0]?.login ?? null,
+		};
+
+		// 最後の提出以外を選んだとき
+		if (teamId != null && teamId !== result.teamId) {
+			let submission = result.submissions.find(s => s.teamId === teamId);
+			if (submission == null) throw new IntraProjectResultNotFoundError();
+			try {
+				submission = await this.ensureSubmissionOutstanding(result, submission);
+			} catch (err) {
+				this.logger.warn(`Failed to fetch evaluations of intra team ${teamId}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+			const picked = submission;
+			const attemptNumber = getAttemptNumber(result.submissions, picked.teamId);
+			return async (created: MiNote) => {
+				await this.intraProjectNotesRepository.insert({
+					...base,
+					noteId: created.id,
+					finalMark: picked.finalMark,
+					validated: picked.validated,
+					outstandingCount: picked.outstandingCount,
+					members: picked.members.length > 0 ? picked.members : ownMember,
+					attemptNumber,
+					markedAt: picked.markedAt != null ? new Date(picked.markedAt) : null,
+				});
+			};
+		}
 
 		try {
 			result = await this.ensureDetails(result);
@@ -193,21 +260,41 @@ export class IntraProjectResultService {
 
 		const members = result.detailsTeamId != null && result.members.length > 0
 			? result.members
-			: await this.getOwnMember(me.id);
+			: ownMember;
 		const snapshot = result;
 
 		return async (created: MiNote) => {
 			await this.intraProjectNotesRepository.insert({
+				...base,
 				noteId: created.id,
-				userId: me.id,
-				projectSlug: snapshot.projectSlug,
-				projectName: snapshot.projectName,
 				finalMark: snapshot.finalMark,
 				validated: snapshot.validated,
 				outstandingCount: snapshot.detailsTeamId != null ? snapshot.outstandingCount : null,
 				members,
+				attemptNumber: getAttemptNumber(snapshot.submissions, snapshot.teamId),
+				markedAt: snapshot.markedAt,
 			});
 		};
+	}
+
+	/**
+	 * 最後以外の提出の outstanding の数を、まだ取得していなければ 42 API から取得して保存する
+	 */
+	@bindThis
+	private async ensureSubmissionOutstanding(result: MiIntraProjectResult, submission: IntraProjectSubmission): Promise<IntraProjectSubmission> {
+		if (submission.outstandingCount != null) return submission;
+		const scaleTeams = await this.intraApiService.getTeamScaleTeams(submission.teamId);
+		if (scaleTeams == null) return submission;
+
+		const updated = { ...submission, outstandingCount: countOutstandingFlags(scaleTeams) };
+		// 保存の間に取得し直された一覧を上書きしないよう、今の一覧を読み直して差し替える
+		const latest = await this.intraProjectResultsRepository.findOneBy({ id: result.id });
+		if (latest != null) {
+			await this.intraProjectResultsRepository.update({ id: result.id }, {
+				submissions: latest.submissions.map(s => s.teamId === updated.teamId ? { ...s, outstandingCount: updated.outstandingCount } : s),
+			});
+		}
+		return updated;
 	}
 
 	/** チームのメンバーが分からないときに使う、自分だけのメンバー */

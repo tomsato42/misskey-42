@@ -15419,6 +15419,18 @@ export interface Locale extends ILocale {
          * 不合格
          */
         "failed": string;
+        /**
+         * {n}回目の提出
+         */
+        "attempt": ParameterizedString<"n">;
+        /**
+         * 最新
+         */
+        "latest": string;
+        /**
+         * 共有する提出
+         */
+        "submission": string;
         "_errors": {
             /**
              * この課題の結果が見つかりません。

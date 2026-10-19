@@ -55,12 +55,27 @@ export type IntraProjectUser = {
 	marked_at?: string | null;
 	/** 最後に組んだチームの ID */
 	current_team_id?: number | null;
+	/** 提出 (チーム) の一覧。GET /v2/users/:id/projects_users に含まれ、GET /v2/users/:id には無い */
+	teams?: IntraProjectTeam[];
 	cursus_ids?: number[];
 	project: {
 		id: number;
 		slug: string;
 		name?: string;
 	};
+};
+
+/**
+ * 42 API の projects_users の teams の要素 (使う項目だけ)
+ */
+export type IntraProjectTeam = {
+	id: number;
+	/** 点数。評価がまだ無ければ null */
+	final_mark?: number | null;
+	'validated?'?: boolean | null;
+	closed_at?: string | null;
+	updated_at?: string | null;
+	users?: { id: number; login: string }[];
 };
 
 /**

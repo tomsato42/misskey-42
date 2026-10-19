@@ -16,6 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-x"></i>
 			</button>
 		</div>
+		<a v-if="submissionLabel != null" :href="projectUrl" target="_blank" rel="noopener" :class="$style.submission">{{ submissionLabel }}</a>
 		<div v-if="result.members.length > 0" :class="$style.members">
 			<template v-for="member in result.members" :key="member.login">
 				<MkAvatar v-if="member.user != null" :class="$style.avatar" :user="member.user" link preview/>
@@ -29,14 +30,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 // 42 intra の課題の結果のカード (ノートの本文の下と投稿フォーム)。
 // 左に intra と同じ点数のタイル、右に課題の名前・outstanding の星・チームのメンバー。
-// 点数と課題の名前は intra の課題のページに飛ぶ。
+// 点数と課題の名前は intra の課題のページ (投稿した人が分かればその人の提出の一覧) に飛ぶ。
+// 何回目の提出か・日付が分かれば、名前の下に出す。
 // メンバーのアイコンはプロフィールに飛ぶ。このサーバーにアカウントが無いメンバーは intra のログイン名の頭文字で出す
 import { computed } from 'vue';
 import type * as Misskey from 'misskey-js';
 import MkIntraProjectResultTile from '@/components/MkIntraProjectResultTile.vue';
 import MkIntraProjectResultStars from '@/components/MkIntraProjectResultStars.vue';
 import { i18n } from '@/i18n.js';
-import { getIntraProjectResultLabel, getIntraProjectUrl } from '@/utility/intra-project-result.js';
+import { getIntraProjectResultLabel, getIntraProjectUrl, getIntraSubmissionLabel } from '@/utility/intra-project-result.js';
 
 const props = defineProps<{
 	result: Misskey.entities.IntraProjectNote;
@@ -48,7 +50,8 @@ const emit = defineEmits<{
 }>();
 
 const label = computed(() => getIntraProjectResultLabel(props.result));
-const projectUrl = computed(() => getIntraProjectUrl(props.result.projectSlug));
+const projectUrl = computed(() => getIntraProjectUrl(props.result.projectSlug, props.result.intraLogin));
+const submissionLabel = computed(() => getIntraSubmissionLabel(props.result.attemptNumber, props.result.attemptCount, props.result.markedAt));
 </script>
 
 <style lang="scss" module>
@@ -66,7 +69,7 @@ const projectUrl = computed(() => getIntraProjectUrl(props.result.projectSlug));
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	gap: 8px;
+	gap: 6px;
 	padding: 12px 14px;
 }
 
@@ -90,6 +93,18 @@ const projectUrl = computed(() => getIntraProjectUrl(props.result.projectSlug));
 	color: #00898b;
 	font-size: 15px;
 	font-weight: bold;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+.submission {
+	align-self: flex-start;
+	font-size: 0.85em;
+	color: var(--MI_THEME-fg);
+	opacity: 0.75;
 	text-decoration: none;
 
 	&:hover {
