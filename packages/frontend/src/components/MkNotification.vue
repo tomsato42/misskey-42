@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
 				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited',
-				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed',
+				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled',
 			}]"
 		>
 			<i v-if="notification.type === 'follow'" class="ti ti-plus"></i>
@@ -58,6 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'pairJoinRequested'" class="ti ti-hand-stop"></i>
 			<i v-else-if="notification.type === 'pairAccepted'" class="ti ti-check"></i>
 			<i v-else-if="notification.type === 'pairClosed'" class="ti ti-users-group"></i>
+			<i v-else-if="notification.type === 'pairInvited'" class="ti ti-user-plus"></i>
+			<i v-else-if="notification.type === 'pairApplicationCancelled'" class="ti ti-arrow-back-up"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -86,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
 			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
 			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
-			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
+			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
@@ -172,6 +174,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkA>
 			<MkA v-else-if="notification.type === 'pairAccepted'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
 				{{ i18n.tsx._notification.pairAcceptedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairInvited'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairInvitedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairApplicationCancelled'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairApplicationCancelledText({ project: notification.pairRecruitment.projectName }) }}
 			</MkA>
 			<MkA v-else-if="notification.type === 'pairClosed'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
 				{{ i18n.tsx._notification.pairClosedText({ project: notification.pairRecruitment.projectName, reason: i18n.ts._pairRecruitment._closedNotification[notification.reason] }) }}

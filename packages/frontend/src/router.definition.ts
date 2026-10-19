@@ -93,6 +93,10 @@ export const ROUTE_DEF = [{
 	component: intraPage(() => import('@/pages/pair/new.vue')),
 	loginRequired: true,
 }, {
+	path: '/pair/:id/edit',
+	component: intraPage(() => import('@/pages/pair/new.vue')),
+	loginRequired: true,
+}, {
 	path: '/pair/:id',
 	component: intraPage(() => import('@/pages/pair/recruitment.vue')),
 	loginRequired: true,

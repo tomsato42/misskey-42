@@ -190,6 +190,8 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 							case 'pairJoinRequested':
 							case 'pairAccepted':
 							case 'pairClosed':
+							case 'pairInvited':
+							case 'pairApplicationCancelled':
 								// ペア募集の通知は募集のページを開く
 								client = await swos.openClient('push', `/pair/${data.body.pairRecruitment.id}`, loginId);
 								break;

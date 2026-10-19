@@ -523,6 +523,11 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		pairInvitationsEnabled: {
+			type: 'boolean',
+			nullable: false, optional: false,
+			description: 'ペア募集の招待を受け取るか (42times)',
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,
@@ -656,6 +661,8 @@ export const packedMeDetailedOnlySchema = {
 				pairJoinRequested: { optional: true, ...notificationRecieveConfig },
 				pairAccepted: { optional: true, ...notificationRecieveConfig },
 				pairClosed: { optional: true, ...notificationRecieveConfig },
+				pairInvited: { optional: true, ...notificationRecieveConfig },
+				pairApplicationCancelled: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

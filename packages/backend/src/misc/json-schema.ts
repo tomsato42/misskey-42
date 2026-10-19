@@ -84,6 +84,7 @@ import {
 } from '@/models/json-schema/calendar-event.js';
 import {
 	packedPairMemberSchema,
+	packedPairInviteCandidateSchema,
 	packedPairRecruitmentDetailedSchema,
 	packedPairRecruitmentProjectSchema,
 	packedPairRecruitmentSchema,
@@ -169,6 +170,7 @@ export const refs = {
 	PairRecruitment: packedPairRecruitmentSchema,
 	PairRecruitmentDetailed: packedPairRecruitmentDetailedSchema,
 	PairMember: packedPairMemberSchema,
+	PairInviteCandidate: packedPairInviteCandidateSchema,
 };
 
 export type Packed<x extends keyof typeof refs> = SchemaType<typeof refs[x]>;

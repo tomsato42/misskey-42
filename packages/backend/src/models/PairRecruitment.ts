@@ -9,13 +9,23 @@ import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
 import type { PairClosedReason, PairRecruitmentStatus, PairStartTiming } from '@/core/pair/pair-recruitment.js';
 
+/** 募集にまとめた課題の 1 つ (作成時・編集時の値) */
+export type PairRecruitmentProjectEntry = {
+	slug: string;
+	name: string;
+	/** その課題のグループの人数の下限 (ルールが無ければ 2) */
+	minGroupSize: number;
+	maxGroupSize: number;
+};
+
 /**
- * 42 の課題のペア募集。募集はキャンパス単位で、作成者のキャンパスの課題 (intra_project) から選ぶ。
+ * 42 の課題のペア募集。募集はキャンパス単位で、作成者のキャンパスの課題 (intra_project) から 1 つ以上選ぶ。
  * intra_project の行は課題が登録できなくなると消えるため、外部キーにはせず、課題の名前と人数を作成時の値で持つ
  */
 @Entity('pair_recruitment')
 @Index(['campusId', 'projectSlug'])
 @Index(['status', 'expiresAt'])
+@Index('IDX_PAIR_RECRUITMENT_PROJECT_SLUGS', { synchronize: false }) // GIN for projectSlugs
 export class MiPairRecruitment {
 	@PrimaryColumn(id())
 	public id: string;
@@ -37,24 +47,37 @@ export class MiPairRecruitment {
 	@Column('integer')
 	public campusId: number;
 
+	/** 最初の課題の slug */
 	@Column('varchar', {
 		length: 128,
 	})
 	public projectSlug: string;
 
-	/** 課題の名前 (作成時の値) */
+	/** 募集の表示名 (課題の名前を / でつないだもの) */
 	@Column('varchar', {
 		length: 256,
 	})
 	public projectName: string;
 
-	/** 課題のグループの人数の下限 (作成時の値。ルールが無ければ 2) */
+	/** まとめた課題のどれでも組める人数の下限 */
 	@Column('integer')
 	public minGroupSize: number;
 
-	/** 課題のグループの人数の上限 (作成時の値) */
+	/** まとめた課題のどれでも組める人数の上限 */
 	@Column('integer')
 	public maxGroupSize: number;
+
+	/** まとめた課題 (並び順どおり) */
+	@Column('jsonb', {
+		default: [],
+	})
+	public projects: PairRecruitmentProjectEntry[];
+
+	/** まとめた課題の slug (課題での絞り込み用) */
+	@Column('varchar', {
+		length: 128, array: true, default: '{}',
+	})
+	public projectSlugs: string[];
 
 	/** 作成者を含むチームの人数 */
 	@Column('integer')

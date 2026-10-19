@@ -189,6 +189,24 @@ export type MiNotification = {
 	projectSlug: string;
 	projectName: string;
 	reason: PairClosedReason;
+} | {
+	/** ペア募集に招待された。notifierId は募集の作成者 */
+	type: 'pairInvited';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+	pairRecruitmentId: MiPairRecruitment['id'];
+	projectSlug: string;
+	projectName: string;
+} | {
+	/** 募集の作成者が課題を外したので、参加希望が取り下げになった。notifierId は募集の作成者 */
+	type: 'pairApplicationCancelled';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+	pairRecruitmentId: MiPairRecruitment['id'];
+	projectSlug: string;
+	projectName: string;
 };
 
 export type MiGroupedNotification = MiNotification | {

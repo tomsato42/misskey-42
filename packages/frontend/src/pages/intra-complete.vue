@@ -40,7 +40,7 @@ import { onMounted, ref } from 'vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { login } from '@/accounts.js';
-import { exchangeIntraLoginCode, IntraExchangeError, startIntraLogin } from '@/utility/intra-login.js';
+import { exchangeIntraLoginCode, IntraExchangeError, startIntraLogin, takeIntraLoginReturnPath } from '@/utility/intra-login.js';
 
 const props = defineProps<{
 	code: string;
@@ -80,8 +80,8 @@ async function exchange() {
 	}
 
 	try {
-		// このページを再読み込みすると使用済みのコードで再び交換しようとするので、トップページへ移動する
-		await login(token, '/');
+		// このページを再読み込みすると使用済みのコードで再び交換しようとするので、ログインする前にいたページ (無ければトップページ) へ移動する
+		await login(token, takeIntraLoginReturnPath());
 	} catch {
 		errorMessage.value = i18n.ts._intra.unknownError;
 	}
