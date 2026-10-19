@@ -798,6 +798,15 @@ function clear() {
 	uploader.reset();
 }
 
+/**
+ * 42times: 「#」の欄で付けたハッシュタグを、投稿した後に外す。
+ * upstream では欄の中身とオン・オフが端末に保存され、次の投稿にも付いたままになる
+ */
+function resetHashtags() {
+	withHashtags.value = false;
+	hashtags.value = '';
+}
+
 //#region 42times: カレンダーのイベントの告知・紐づけ
 function clearCalendarEvent() {
 	calendarEventForm.value = null;
@@ -1122,6 +1131,7 @@ async function post(ev?: PointerEvent) {
 
 		await postAsScheduled();
 		clear();
+		resetHashtags();
 		return;
 	}
 
@@ -1249,6 +1259,7 @@ async function post(ev?: PointerEvent) {
 
 	posting.value = true;
 	misskeyApi('notes/create', postData, token).then((res) => {
+		resetHashtags();
 		if (props.freezeAfterPosted) {
 			posted.value = true;
 		} else {
