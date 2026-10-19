@@ -31,6 +31,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - Node / pnpm は PATH に無い。`export PATH="/c/Users/windows11/AppData/Local/misskey-42-tools/node-v26.4.0-win-x64:/c/Users/windows11/AppData/Local/misskey-42-tools/pnpm:$PATH"`
 - Docker・PostgreSQL・Redis は無い。e2e と check-migrations は検証用 PR (tomsato42/misskey-42#1、main → ci-base、マージしない) の GitHub Actions で確認する
 - 新しい worktree では `pnpm install --frozen-lockfile` の後に `pnpm --filter misskey-js --filter misskey-reversi --filter i18n --filter misskey-bubble-game build` が必要 (無いと typecheck が通らない)
+- Git Bash の grep に `$'\r'` を渡すと全行に一致する (CR が数えられない)。改行の確認は `git ls-files --eol <file>` か VPS 側で行う (`.gitattributes` が `eol=lf` なので、scp で送るスクリプトは LF のまま)
 - `pnpm build-misskey-js-with-types` には `.config/default.yml` が必要。`cp .config/example.yml .config/default.yml` で用意し、コミットしない
 - DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
 
