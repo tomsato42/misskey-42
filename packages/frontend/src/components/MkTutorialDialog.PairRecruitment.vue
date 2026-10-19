@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.card">
 			<div :class="$style.row1">
 				<b :class="$style.project">{{ exampleProjectName }}</b>
-				<MkPairProjectStateBadge :class="$style.state" state="available" variant="viewer"/>
+				<span v-if="!joined" :class="[$style.state, $style.joinable]"><i class="ti ti-circle-check" aria-hidden="true"></i>{{ i18n.ts._pairRecruitment.joinable }}</span>
 			</div>
 			<div :class="$style.who">
 				<MkAvatar :class="$style.avatar" :user="exampleUser"/>
@@ -55,7 +55,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import MkButton from '@/components/MkButton.vue';
-import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import { i18n } from '@/i18n.js';
 
@@ -105,6 +104,20 @@ const joined = ref(false);
 
 .state {
 	margin-left: auto;
+}
+
+// MkPairRecruitmentCard の参加可能と同じ見た目
+.joinable {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 0.85em;
+	white-space: nowrap;
+	background: var(--MI_THEME-accent);
+	color: var(--MI_THEME-fgOnAccent);
+	font-weight: bold;
 }
 
 .who {
