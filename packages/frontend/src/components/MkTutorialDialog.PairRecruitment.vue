@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.comment">{{ i18n.ts._initialTutorial._pairRecruitment._exampleRecruitment.comment }}</div>
 			<div :class="$style.row3">
 				<MkPairRecruitmentSlots :owner="exampleUser" :teamSize="3" :acceptedCount="0"/>
-				<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: 3, m: 2 }) }}</span>
+				<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.memberFraction({ current: 1, n: 3 }) }}</span>
 				<span :class="$style.meta"><i class="ti ti-calendar" aria-hidden="true"></i>{{ i18n.ts._pairRecruitment._startTiming.now }}</span>
 				<div :class="$style.action">
 					<span v-if="joined" :class="$style.myStatus">{{ i18n.ts._pairRecruitment._myStatus.pending }}</span>

@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<div :class="$style.row3">
 		<MkPairRecruitmentSlots :owner="recruitment.user" :teamSize="recruitment.teamSize" :acceptedCount="recruitment.acceptedCount"/>
-		<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
+		<span :class="$style.meta"><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.memberFraction({ current: recruitment.acceptedCount + 1, n: recruitment.teamSize }) }}</span>
 		<span :class="$style.meta"><i class="ti ti-calendar" aria-hidden="true"></i>{{ startText }}</span>
 		<div v-if="action != null" :class="[$style.action, $style.raised]">
 			<MkButton v-if="action === 'pendingCount'" type="routerLink" :to="detailPath" small rounded primary>
@@ -51,7 +51,7 @@ import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { useRouter } from '@/router.js';
-import { canApply, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
+import { canApply, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
 import { applyToPairRecruitment } from '@/utility/pair-recruitment-dialog.js';
 
 const props = defineProps<{
@@ -71,7 +71,6 @@ const closedText = computed(() => {
 	const reason = props.recruitment.closedReason;
 	return i18n.tsx._pairRecruitment.closedWithReason({ reason: i18n.ts._pairRecruitment._closedReason[reason ?? 'manual'] });
 });
-const remaining = computed(() => getRemainingSlots(props.recruitment));
 const startText = computed(() => getStartTimingText(props.recruitment));
 const applicable = computed(() => canApply(props.recruitment));
 const canChat = computed(() => $i != null && $i.policies.chatAvailability === 'available');

@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkA :to="detailPath" :class="[$style.title, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
 		<div :class="$style.meta">
 			<span v-if="isMultiProject(recruitment)"><i class="ti ti-list-check" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.fromNProjects({ n: recruitment.projects.length }) }}</span>
-			<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
+			<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.memberFraction({ current: recruitment.acceptedCount + 1, n: recruitment.teamSize }) }}</span>
 			<span><i class="ti ti-calendar" aria-hidden="true"></i>{{ getStartTimingText(recruitment) }}</span>
 			<span v-if="recruitment.status !== 'open'"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
 		</div>
@@ -33,7 +33,7 @@ import MkButton from '@/components/MkButton.vue';
 import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { canApply, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
+import { canApply, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
 import { applyToPairRecruitment } from '@/utility/pair-recruitment-dialog.js';
 
 const props = withDefaults(defineProps<{
@@ -52,7 +52,6 @@ const emit = defineEmits<{
 const recruitment = ref<Misskey.entities.PairRecruitment | null>(null);
 
 const detailPath = computed(() => `/pair/${props.recruitmentId}`);
-const remaining = computed(() => recruitment.value == null ? 0 : getRemainingSlots(recruitment.value));
 const applicable = computed(() => recruitment.value != null && canApply(recruitment.value));
 const closedText = computed(() => {
 	const reason = recruitment.value?.closedReason ?? 'manual';
