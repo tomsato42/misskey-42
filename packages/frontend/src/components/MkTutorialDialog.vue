@@ -296,6 +296,10 @@ function goBack() {
 
 // 42times: 42 にログインできなくなる (ブラックホール) 前に、パスキーを作っておくよう案内する。intra で作ったアカウントでまだパスキーが無い人だけ
 const showsPasskeyNotice = showsIntraPages && $i?.intra != null && ($i.securityKeysList?.length ?? 0) === 0;
+// ここで案内したら、読み込み時の案内 (boot/main-boot.ts) は出さない
+if (showsPasskeyNotice && page.value === 0 && !props.newFeatures && !store.s.passkeyNoticeShown) {
+	store.set('passkeyNoticeShown', true);
+}
 const router = useRouter();
 
 function openPasskeySettings() {

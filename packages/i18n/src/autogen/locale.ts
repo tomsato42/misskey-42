@@ -11846,6 +11846,10 @@ export interface Locale extends ILocale {
          * パスワードログインの例外許可を変更
          */
         "updateIntraPasswordLoginAllowed": string;
+        /**
+         * パスキーの登録リンクを発行
+         */
+        "issueIntraPasskeySetup": string;
     };
     "_fileViewer": {
         /**
@@ -14105,6 +14109,94 @@ export interface Locale extends ILocale {
          * 本人確認ができませんでした。もう一度お試しください。
          */
         "reauthFailed": string;
+        /**
+         * 42 のログイン名
+         */
+        "intraLogin": string;
+        /**
+         * アカウントを作成
+         */
+        "accountCreated": string;
+        /**
+         * 42 のアカウントに結び付けていない
+         */
+        "accountNotLinked": string;
+        /**
+         * 管理者が手動で確認
+         */
+        "manuallyVerified": string;
+        /**
+         * 42 のログイン名から作成
+         */
+        "createAccountFromIntra": string;
+        /**
+         * 42 にログインできない人 (ブラックホールなど) のアカウントを用意し、パスキーの登録リンクを発行します。アカウントが既にあれば、リンクだけを発行します。本人であることを確かめてから発行してください。
+         */
+        "createAccountFromIntraDescription": string;
+        /**
+         * 42 の API に問い合わせられませんでした。
+         */
+        "verifyIntraError": string;
+        /**
+         * このログイン名の 42 のユーザーが見つかりませんでした。
+         */
+        "verifyNotFound": string;
+        /**
+         * このユーザーには 42cursus の在籍記録がありません。
+         */
+        "verifyNotEligible": string;
+        /**
+         * 別の方法で在籍を確かめた場合は、このまま作成できます。42 のユーザーが取れないときは、42 のアカウントに結び付けずに (ロールの同期なしで) 作成します。
+         */
+        "manualVerifyConfirm": string;
+        /**
+         * 手動で確認して作成
+         */
+        "manualVerifyOk": string;
+        /**
+         * このログイン名のユーザー名は既に使われています。既存のアカウントなら、そのユーザーの管理画面からリンクを発行してください。
+         */
+        "manualUsernameTaken": string;
+        /**
+         * パスキーの登録リンクを発行
+         */
+        "issuePasskeySetup": string;
+        /**
+         * このアカウントにパスキーを登録できるリンクを発行しますか？リンクを知っている人は、このアカウントにログインできるようになります。
+         */
+        "issuePasskeySetupConfirm": string;
+        /**
+         * パスキーの登録リンクを発行しました
+         */
+        "passkeySetupLinkIssued": string;
+        /**
+         * @{username} のリンクです。{date} まで、1 回だけ使えます。本人だけに渡してください。(クリップボードにコピーしました)
+         */
+        "passkeySetupLinkDescription": ParameterizedString<"username" | "date">;
+        /**
+         * パスキーを作成
+         */
+        "passkeySetupTitle": string;
+        /**
+         * アカウント: @{username}
+         */
+        "passkeySetupFor": ParameterizedString<"username">;
+        /**
+         * このアカウントで使うパスキーを作成します。作成すると、42 にログインできなくても、ログイン画面の「パスキーでログイン」からログインできます。
+         */
+        "passkeySetupDescription": string;
+        /**
+         * リンクが無効か、有効期限が切れています。管理者に新しいリンクを発行してもらってください。
+         */
+        "passkeySetupInvalid": string;
+        /**
+         * パスキーを作成できませんでした。もう一度お試しください。
+         */
+        "passkeySetupFailed": string;
+        /**
+         * パスキー
+         */
+        "passkeyDefaultName": string;
     };
     "_roleTimeline": {
         /**

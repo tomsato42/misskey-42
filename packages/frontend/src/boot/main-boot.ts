@@ -152,6 +152,17 @@ export async function mainBoot() {
 				}, {
 					closed: () => dispose(),
 				});
+			} else if (instance.intraLoginEnabled === true && !store.s.passkeyNoticeShown && $i?.intra != null && ($i.securityKeysList?.length ?? 0) === 0) {
+				// 42times: 42 にログインできなくなる (ブラックホール) 前にパスキーを作るよう、今いる人にも一度だけ案内する。
+				// チュートリアルの最初のページで案内を見た人には出さない
+				store.set('passkeyNoticeShown', true);
+				const { canceled } = await confirm({
+					type: 'warning',
+					text: i18n.ts._intra.passkeyNotice,
+					okText: i18n.ts._intra.createPasskey,
+					cancelText: i18n.ts.later,
+				});
+				if (!canceled) mainRouter.push('/settings/security');
 			}
 		});
 

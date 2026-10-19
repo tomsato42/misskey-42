@@ -46,7 +46,7 @@ const MAX_AUTHORIZATION_CODE_LENGTH = 1024;
 const LOGIN_STATE_VALUE = '1';
 const REAUTH_STATE_PREFIX = 'reauth:';
 
-class IntraAuthError extends Error {
+export class IntraAuthError extends Error {
 	constructor(public reason: IntraAuthFailureReason, message: string) {
 		super(message);
 	}
@@ -434,6 +434,22 @@ export class IntraAuthService {
 
 		await this.onLoggedIn({ user, intraUser, profile, created: true });
 		return user;
+	}
+
+	/**
+	 * intra のユーザーに結び付いたアカウントを返す。無ければ作る。どちらの場合もロールとプロフィールを同期する。
+	 * 管理者が 42 のログイン名からアカウントを用意するときに使う (本人のログインではないので、在籍の判定は呼び出し側で行う)
+	 */
+	@bindThis
+	public async findOrCreateUser(intraUser: IntraUser): Promise<{ user: MiLocalUser; created: boolean }> {
+		const intra = this.getIntraConfig();
+		const profile = extractIntraProfile(intraUser, intra.cursusId);
+
+		const existing = await this.findUserByIntraId(profile.intraId);
+		if (existing != null) {
+			return { user: await this.loginExistingUser(existing, intraUser, profile), created: false };
+		}
+		return { user: await this.createUser(intraUser, profile), created: true };
 	}
 
 	/**

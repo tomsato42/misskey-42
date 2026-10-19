@@ -9,6 +9,7 @@ import type { Config } from '@/config.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
 import { bindThis } from '@/decorators.js';
 import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
+import { IntraAccountService } from '@/core/intra/IntraAccountService.js';
 import {
 	INTRA_LOGIN_CODE_TTL_SEC,
 	INTRA_LOGIN_COOKIE_NAME,
@@ -25,6 +26,7 @@ import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { IEndpointMeta } from './endpoints.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 
 type Limit = IEndpointMeta['limit'] & { key: string };
 
@@ -32,12 +34,25 @@ type Limit = IEndpointMeta['limit'] & { key: string };
 const authorizeLimit: Limit = { key: 'intra-authorize', duration: 1000 * 60 * 10, max: 300 };
 const callbackLimit: Limit = { key: 'intra-callback', duration: 1000 * 60 * 10, max: 300 };
 const exchangeLimit: Limit = { key: 'intra-exchange', duration: 1000 * 60 * 10, max: 300 };
+const passkeySetupLimit: Limit = { key: 'intra-passkey-setup', duration: 1000 * 60 * 10, max: 60 };
 
 // ApiCallService のレート制限エラーと同じ識別子を使う
 const rateLimitExceededError = {
 	message: 'Rate limit exceeded. Please try again later.',
 	code: 'RATE_LIMIT_EXCEEDED',
 	id: 'd5826d14-3982-4d2e-8011-b9e9f02499ef',
+};
+
+const invalidPasskeySetupTokenError = {
+	message: 'Invalid or expired passkey setup link.',
+	code: 'INVALID_PASSKEY_SETUP_TOKEN',
+	id: '5b1d7d8e-0e57-4b8e-9d6c-6a1f7f0c2d41',
+};
+
+const passkeyVerificationFailedError = {
+	message: 'Failed to verify the passkey.',
+	code: 'PASSKEY_VERIFICATION_FAILED',
+	id: 'a3c0f6b2-5d0e-4a64-9f59-2b6d8f1e7c90',
 };
 
 /**
@@ -50,6 +65,7 @@ export class IntraAuthApiService {
 		private config: Config,
 
 		private intraAuthService: IntraAuthService,
+		private intraAccountService: IntraAccountService,
 		private rateLimiterService: RateLimiterService,
 		private signinService: SigninService,
 	) {
@@ -141,6 +157,59 @@ export class IntraAuthApiService {
 					id: '0eaa8405-5151-496b-9b12-148cc4872353',
 				},
 			};
+		}
+
+		return this.signinService.signin(request, reply, user);
+	}
+
+	/**
+	 * POST /api/intra/passkey-setup/options
+	 * 管理者が発行した登録リンクから、パスキーの登録を始める
+	 */
+	@bindThis
+	public async passkeySetupOptions(request: FastifyRequest<{ Body: { token?: string; } | undefined }>, reply: FastifyReply) {
+		if (await this.isRateLimited(request, passkeySetupLimit)) {
+			reply.code(429);
+			return { error: rateLimitExceededError };
+		}
+
+		const result = await this.intraAccountService.beginPasskeySetup(request.body?.token);
+		if (result == null) {
+			reply.code(400);
+			return { error: invalidPasskeySetupTokenError };
+		}
+		return result;
+	}
+
+	/**
+	 * POST /api/intra/passkey-setup/complete
+	 * 管理者が発行した登録リンクからパスキーを登録し、ログインする
+	 */
+	@bindThis
+	public async passkeySetupComplete(request: FastifyRequest<{ Body: { token?: string; name?: string; credential?: unknown; } | undefined }>, reply: FastifyReply) {
+		if (await this.isRateLimited(request, passkeySetupLimit)) {
+			reply.code(429);
+			return { error: rateLimitExceededError };
+		}
+
+		const name = request.body?.name;
+		const credential = request.body?.credential;
+		if (typeof name !== 'string' || name.length < 1 || name.length > 30 || credential == null || typeof credential !== 'object') {
+			reply.code(400);
+			return { error: invalidPasskeySetupTokenError };
+		}
+
+		let user;
+		try {
+			user = await this.intraAccountService.completePasskeySetup(request.body?.token, name, credential as RegistrationResponseJSON);
+		} catch {
+			// パスキーの検証に失敗した (別の端末で始めた登録、改ざんなど)
+			reply.code(400);
+			return { error: passkeyVerificationFailedError };
+		}
+		if (user == null) {
+			reply.code(400);
+			return { error: invalidPasskeySetupTokenError };
 		}
 
 		return this.signinService.signin(request, reply, user);
