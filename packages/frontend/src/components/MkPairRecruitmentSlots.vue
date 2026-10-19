@@ -5,8 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <span :class="$style.root" :aria-label="i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: teamSize, m: remaining })" role="img">
-	<MkAvatar :class="$style.slot" :user="owner"/>
-	<MkAvatar v-for="member in shownMembers" :key="member.id" :class="$style.slot" :user="member"/>
+	<MkAvatar :class="$style.slot" :user="owner" :link="link" :preview="link"/>
+	<MkAvatar v-for="member in shownMembers" :key="member.id" :class="$style.slot" :user="member" :link="link" :preview="link"/>
 	<span v-for="n in unknownFilled" :key="`filled-${n}`" :class="[$style.slot, $style.filled]"><i class="ti ti-user" aria-hidden="true"></i></span>
 </span>
 </template>
@@ -24,6 +24,8 @@ const props = defineProps<{
 	acceptedCount: number;
 	/** 承認済みのメンバー。分かるときだけ渡す (無ければ人数だけを塗りつぶして表示する) */
 	members?: Misskey.entities.UserLite[];
+	/** アイコンを押すとプロフィールに移る (ホバーでプレビューも出す) */
+	link?: boolean;
 }>();
 
 const shownMembers = computed(() => (props.members ?? []).slice(0, props.acceptedCount));

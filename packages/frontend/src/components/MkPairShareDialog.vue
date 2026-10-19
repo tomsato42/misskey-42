@@ -15,7 +15,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div class="_spacer" style="--MI_SPACER-min: 16px; --MI_SPACER-max: 20px;">
 		<div class="_gaps_s">
-			<div :class="$style.description">{{ i18n.ts._pairRecruitment.shareDescription }}</div>
 			<MkTextarea v-model="text" tall/>
 		</div>
 	</div>
@@ -65,10 +64,6 @@ function copyLink() {
 </script>
 
 <style lang="scss" module>
-.description {
-	font-size: 0.85em;
-	opacity: 0.75;
-}
 
 .footer {
 	justify-content: flex-end;
