@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { buildCohortTable } from '@/core/intra/intra-cohort.js';
+import { buildCohortTable, findNearestIntake, getIntakeYearMonths } from '@/core/intra/intra-cohort.js';
 import type { IntraCursusUserWithUser } from '@/core/intra/intra-cohort.js';
 
 function users(poolYear: string | null, poolMonth: string | null, beginAt: string | null, count = 1): IntraCursusUserWithUser[] {
@@ -69,5 +69,46 @@ describe('buildCohortTable', () => {
 			...users(null, null, '2025-05-19T00:00:00.000Z', 3),
 			...users('2025', 'march', null, 3),
 		])).toEqual([]);
+	});
+});
+
+describe('getIntakeYearMonths', () => {
+	test('3 人以上が入学した月だけを、重なりを除いて並べる', () => {
+		expect(getIntakeYearMonths([
+			{ cohortYearMonth: '2309', userCount: 88 },
+			{ cohortYearMonth: '2305', userCount: 61 },
+			{ cohortYearMonth: '2305', userCount: 26 },
+			{ cohortYearMonth: '2211', userCount: 1 },
+		])).toEqual(['2305', '2309']);
+	});
+});
+
+describe('findNearestIntake', () => {
+	const intakes = ['2210', '2301', '2305', '2309', '2404', '2410'];
+
+	test.each([
+		// 普通に入学した人
+		['2023-05-16T00:00:00.000Z', '2305'],
+		// 高校生などで、同じピシンの人より後に入学した人
+		['2024-04-15T00:00:00.000Z', '2404'],
+		// 入学の月から少しずれて始めた人
+		['2023-04-26T00:00:00.000Z', '2305'],
+		['2024-02-14T00:00:00.000Z', '2404'],
+		['2023-11-13T00:00:00.000Z', '2309'],
+		// 同じだけ離れていれば早い月 (2023-07 は 2305 と 2309 の真ん中)
+		['2023-07-21T00:00:00.000Z', '2305'],
+	])('%s → %s', (beginAt, expected) => {
+		expect(findNearestIntake(new Date(beginAt), intakes)).toBe(expected);
+	});
+
+	test('月は日本時間で決める', () => {
+		// 日本時間では 2024-10-01
+		expect(findNearestIntake(new Date('2024-09-30T15:00:00.000Z'), ['2404', '2410'])).toBe('2410');
+	});
+
+	test('3 か月より離れているか、入学の月が無ければ null', () => {
+		expect(findNearestIntake(new Date('2016-11-02T00:00:00.000Z'), intakes)).toBeNull();
+		expect(findNearestIntake(new Date('2023-05-16T00:00:00.000Z'), [])).toBeNull();
+		expect(findNearestIntake(new Date('invalid'), intakes)).toBeNull();
 	});
 });

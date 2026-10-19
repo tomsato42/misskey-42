@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// ピシンごとの本科 (42cursus) への入学時期を、キャンパスの 42cursus の在籍者から集計する純粋関数群。
+// 本科 (42cursus) への入学時期を、キャンパスの 42cursus の在籍者から集計して決める純粋関数群。
 // DI に依存しないので、ユニットテストから直接呼び出せる。
 
 import { parsePoolYearMonth } from './intra-user.js';
@@ -31,10 +31,13 @@ export type IntraCohortEntry = {
 /** 日本時間の UTC からのずれ。日本に夏時間は無いので固定値でよい */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
-/** 人数がこれ以上なら、半分に満たなくてもその月を入学時期にする */
+/** 人数がこれ以上なら、半分に満たなくてもその月を入学時期にする。入学の月とみなすのもこの人数以上のものだけ */
 const MIN_COHORT_USERS = 3;
 
-function toJstYearMonth(value: string | null): string | null {
+/** 本人が 42cursus を始めた月を入学の月に寄せるとき、何か月まで離れていてよいか */
+const MAX_INTAKE_DISTANCE = 3;
+
+function toJstYearMonth(value: string | Date | null): string | null {
 	if (value == null) return null;
 	const time = new Date(value).getTime();
 	if (isNaN(time)) return null;
@@ -83,4 +86,34 @@ export function buildCohortTable(cursusUsers: readonly IntraCursusUserWithUser[]
 	}
 
 	return entries.sort((a, b) => a.poolYearMonth.localeCompare(b.poolYearMonth));
+}
+
+/**
+ * キャンパスの入学の月 (YYMM) の一覧。buildCohortTable の結果のうち、MIN_COHORT_USERS 人以上が入学した月だけを使う
+ * (1〜2 人だけのピシンの月を入学の月とみなさないため)
+ */
+export function getIntakeYearMonths(entries: readonly Pick<IntraCohortEntry, 'cohortYearMonth' | 'userCount'>[]): string[] {
+	const months = new Set(entries.filter(e => e.userCount >= MIN_COHORT_USERS).map(e => e.cohortYearMonth));
+	return [...months].sort();
+}
+
+/**
+ * 本人が 42cursus を始めた月 (日本時間) に最も近い入学の月 (YYMM)。
+ * 高校生などで同じピシンの人と違う時期に入学した人も、実際に入学した時期に寄せる。
+ * 同じだけ離れていれば早い月 (入学の後から始めた人が多いため)。MAX_INTAKE_DISTANCE か月より離れているか、入学の月が無ければ null
+ */
+export function findNearestIntake(cursusBeginAt: Date, intakeYearMonths: readonly string[]): string | null {
+	const begin = toJstYearMonth(cursusBeginAt);
+	if (begin == null) return null;
+	const beginIndex = toMonthIndex(begin);
+
+	let best: { yearMonth: string; distance: number } | null = null;
+	for (const yearMonth of intakeYearMonths) {
+		const distance = Math.abs(toMonthIndex(yearMonth) - beginIndex);
+		if (distance > MAX_INTAKE_DISTANCE) continue;
+		if (best == null || distance < best.distance || (distance === best.distance && toMonthIndex(yearMonth) < toMonthIndex(best.yearMonth))) {
+			best = { yearMonth, distance };
+		}
+	}
+	return best?.yearMonth ?? null;
 }

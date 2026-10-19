@@ -15,12 +15,13 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
 import { IntraProjectService } from './IntraProjectService.js';
-import { buildCohortTable } from './intra-cohort.js';
+import { buildCohortTable, findNearestIntake, getIntakeYearMonths } from './intra-cohort.js';
 
 type IntraConfig = NonNullable<Config['intra']>;
 
 /**
- * キャンパス・ピシンごとの本科への入学時期 (intra_cohort) を、42 API の 42cursus の在籍者から集計して保存する
+ * キャンパス・ピシンごとの本科への入学時期 (intra_cohort) を、42 API の 42cursus の在籍者から集計して保存し、
+ * それをもとにユーザーの入学時期を決める
  */
 @Injectable()
 export class IntraCohortService {
@@ -50,13 +51,16 @@ export class IntraCohortService {
 	}
 
 	/**
-	 * ピシン (intra の名称の年月) の入学時期 (YYMM)。集計が無ければ null
+	 * 本人が 42cursus を始めた月に最も近い、キャンパスの入学の月 (YYMM)。集計が無いか、近い入学の月が無ければ null
 	 */
 	@bindThis
-	public async getCohortYearMonth(campusId: number | null, poolYearMonth: string | null): Promise<string | null> {
-		if (campusId == null || poolYearMonth == null) return null;
-		const cohort = await this.intraCohortsRepository.findOneBy({ campusId, poolYearMonth });
-		return cohort?.cohortYearMonth ?? null;
+	public async getIntakeYearMonth(campusId: number | null, cursusBeginAt: Date | null): Promise<string | null> {
+		if (campusId == null || cursusBeginAt == null) return null;
+		const entries = await this.intraCohortsRepository.find({
+			select: { cohortYearMonth: true, userCount: true },
+			where: { campusId },
+		});
+		return findNearestIntake(cursusBeginAt, getIntakeYearMonths(entries));
 	}
 
 	/**

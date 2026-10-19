@@ -140,7 +140,7 @@ export class IntraSyncService {
 	 */
 	@bindThis
 	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
-		const intakeYearMonth = await this.intraCohortService.getCohortYearMonth(profile.campus?.id ?? null, profile.poolNameYearMonth);
+		const intakeYearMonth = await this.intraCohortService.getIntakeYearMonth(profile.campus?.id ?? null, profile.cursusBeginAt);
 		const desiredRoleIds: MiRole['id'][] = [];
 		for (const target of getIntraRoleTargets(profile, intakeYearMonth)) {
 			desiredRoleIds.push(await this.ensureRole(target));

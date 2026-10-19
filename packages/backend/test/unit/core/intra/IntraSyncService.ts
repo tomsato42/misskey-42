@@ -8,6 +8,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { QueryFailedError } from 'typeorm';
 import { IntraSyncService } from '@/core/intra/IntraSyncService.js';
+import { findNearestIntake } from '@/core/intra/intra-cohort.js';
 import { RoleService } from '@/core/RoleService.js';
 import type { IntraUser } from '@/core/intra/intra-user.js';
 import type { IntraRoleKind } from '@/models/IntraRole.js';
@@ -61,8 +62,8 @@ describe('IntraSyncService', () => {
 	let beforeIntraRoleInsert: ((row: FakeIntraRole) => Promise<void> | void) | null;
 	let progressSyncCalls: { userId: string; intraId: number; campusId: number | null }[];
 	let progressSyncHook: (() => Promise<void> | void) | null;
-	/** `${campusId}:${poolYearMonth}` → 集計した入学時期 */
-	let cohorts: Map<string, string>;
+	/** キャンパス ID → 入学の月の一覧 */
+	let intakes: Map<number, string[]>;
 	let service: IntraSyncService;
 
 	function nextId(prefix: string) {
@@ -113,7 +114,7 @@ describe('IntraSyncService', () => {
 		getUserCalls = [];
 		beforeIntraRoleInsert = null;
 		progressSyncCalls = [];
-		cohorts = new Map();
+		intakes = new Map();
 		progressSyncHook = null;
 
 		const config = {
@@ -215,7 +216,8 @@ describe('IntraSyncService', () => {
 		};
 
 		const fakeIntraCohortService = {
-			getCohortYearMonth: async (campusId: number | null, poolYearMonth: string | null) => cohorts.get(`${campusId}:${poolYearMonth}`) ?? null,
+			getIntakeYearMonth: async (campusId: number | null, cursusBeginAt: Date | null) =>
+				campusId != null && cursusBeginAt != null ? findNearestIntake(cursusBeginAt, intakes.get(campusId) ?? []) : null,
 		};
 
 		service = new IntraSyncService(
@@ -304,10 +306,11 @@ describe('IntraSyncService', () => {
 		expect(assignments.some(a => a.roleId === cohort2310)).toBe(true);
 	});
 
-	test('ピシンの入学時期の集計があれば、それで入学時期のロールを決める', async () => {
+	test('入学の月の集計があれば、42cursus を始めた月に最も近い入学の月で入学時期のロールを決める', async () => {
 		addProfile('u1', { intraId: 1000 });
-		cohorts.set('26:2307', '2309');
+		intakes.set(26, ['2305', '2309', '2404']);
 
+		// 42cursus の開始は 2023-10-02
 		await service.syncUser('u1', createIntraUser());
 
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/09', 'Lv.5', 'Piscine 23/07', 'Tokyo']);

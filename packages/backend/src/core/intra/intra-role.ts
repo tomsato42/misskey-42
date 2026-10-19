@@ -85,10 +85,9 @@ export function getPoolRoleTarget(poolYearMonth: string | null): IntraRoleTarget
 
 /**
  * 本科への入学時期のロール条件。42cursus に在籍していなければ (開始日時が無ければ) null。
- * 入学時期は、同じピシンの人の集計 (intra_cohort) があればそれを使う (入学の月は年によって違うため)。
- * 集計が無ければピシンの年月を 4 月か 10 月に丸めて求める (42cursus の開始日時は入学時期より後になることがあるため)。
- * ピシンの年月が無い人 (スタッフなど) だけ、42cursus の開始日時から求める
- * @param intakeYearMonth 集計したそのピシンの入学時期 (YYMM)
+ * 入学時期は、本人が 42cursus を始めた月に最も近いキャンパスの入学の月 (intra_cohort から求める) があればそれを使う (入学の月は年によって違うため)。
+ * 無ければピシンの年月を 4 月か 10 月に丸めて求め、ピシンの年月も無い人 (スタッフなど) は 42cursus の開始日時を丸めて求める
+ * @param intakeYearMonth 本人が 42cursus を始めた月に最も近い入学の月 (YYMM)。intra-cohort.ts の findNearestIntake
  */
 export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: string | null = null, intakeYearMonth: string | null = null): IntraRoleTarget | null {
 	if (cursusBeginAt == null) return null;
@@ -112,7 +111,7 @@ export function getLevelRoleTarget(level: number): IntraRoleTarget {
 /**
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
- * @param intakeYearMonth 集計した、そのユーザーのピシンの入学時期 (YYMM)。無ければ null
+ * @param intakeYearMonth 本人が 42cursus を始めた月に最も近い入学の月 (YYMM)。無ければ null
  */
 export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, intakeYearMonth: string | null = null): IntraRoleTarget[] {
 	const targets: IntraRoleTarget[] = [];
@@ -128,7 +127,7 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	const pool = getPoolRoleTarget(profile.poolYearMonth);
 	if (pool != null) targets.push(pool);
 
-	// 入学時期の集計と丸めは intra の名称の月で行うので、実際の期間の月ではなく名称の年月から求める
+	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際の期間の月ではなく名称の年月から求める
 	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth, intakeYearMonth);
 	if (cohort != null) targets.push(cohort);
 
