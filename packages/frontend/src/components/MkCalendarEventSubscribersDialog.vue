@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:width="400"
 	:height="600"
 	@close="dialog?.close()"
+	@click="dialog?.close()"
 	@closed="emit('closed')"
 >
 	<template #header>{{ i18n.tsx._calendar.subscribersWithCount({ n: event.subscribersCount }) }}</template>
