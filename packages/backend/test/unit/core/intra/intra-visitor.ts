@@ -31,7 +31,7 @@ const intraConfig = {
 		clientSecret: 'secret',
 		cursusId: 21,
 		apiBaseUrl: 'https://api.intra.42.fr',
-		levelBadgeUrl: null,
+		levelBadgeUrl: null, coalitionIconUrl: null,
 	},
 } satisfies Pick<Config, 'intra'>;
 

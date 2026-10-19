@@ -85,6 +85,8 @@ intra:
   #apiBaseUrl: https://api.intra.42.fr
   # レベルのロールのアイコン (今は使っていない)。{level} がレベルの整数に置き換わる (deploy/badges/generate-level-badges.cjs で作り、nginx の /instance-assets/ から配信する)
   #levelBadgeUrl: 'https://42times.kinachan.com/instance-assets/badges/lv-{level}.svg'
+  # コアリションのロールのアイコン。{id} が intra のコアリション ID に置き換わる (画像の置き方は deploy/README.md の「コアリションのアイコン」)
+  #coalitionIconUrl: 'https://42times.kinachan.com/instance-assets/coalitions/{id}.svg'
 
 #   ┌──────────────────────────────┐
 #───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────

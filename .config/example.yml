@@ -356,6 +356,8 @@ id: 'aidx'
 #  #apiBaseUrl: https://api.intra.42.fr
 #  # レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (省略時はアイコンなし)
 #  #levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg'
+#  # コアリションのロールのアイコンの URL。{id} が intra のコアリション ID に置き換わる (省略時はアイコンなし)
+#  #coalitionIconUrl: 'https://example.com/coalitions/{id}.svg'
 
 #   ┌──────────────────────────────┐
 #───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────

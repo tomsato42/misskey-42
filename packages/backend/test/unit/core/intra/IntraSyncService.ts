@@ -124,7 +124,7 @@ describe('IntraSyncService', () => {
 		progressSyncHook = null;
 
 		const config = {
-			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg' },
+			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: CURSUS_42, apiBaseUrl: 'https://api.intra.42.fr', levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg', coalitionIconUrl: 'https://example.com/coalitions/{id}.svg' },
 		} as Partial<Config>;
 
 		const fakeProfilesRepository = {
@@ -147,7 +147,7 @@ describe('IntraSyncService', () => {
 				if (found == null) throw new Error('not found');
 				return found;
 			},
-			find: async () => intraRoles.map(r => ({ roleId: r.roleId, kind: r.kind })),
+			find: async () => intraRoles.map(r => ({ roleId: r.roleId, kind: r.kind, key: r.key })),
 			insert: async (row: FakeIntraRole) => {
 				await beforeIntraRoleInsert?.(row);
 				if (intraRoles.some(r => r.kind === row.kind && r.key === row.key)) throw duplicateKeyError();
@@ -344,6 +344,7 @@ describe('IntraSyncService', () => {
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 		expect(roles.find(r => r.name === 'Fuji')).toMatchObject({
 			color: '#FF6950',
+			iconUrl: 'https://example.com/coalitions/301.svg',
 			isExplorable: true,
 			description: '42 intra のコアリションに応じて自動で付与されます',
 		});
@@ -426,6 +427,21 @@ describe('IntraSyncService', () => {
 
 		expect(roles.find(r => r.id === lv5)?.iconUrl).toBe('https://example.com/badges/lv-5.svg');
 		expect(roles.find(r => r.id === lv7)?.iconUrl).toBe('https://example.com/custom.png');
+	});
+
+	test('作成済みのロールのアイコンを、ひな形があって未設定のものだけ設定する', async () => {
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		const kaze = addManagedRole('coalition', '302', 'Kaze');
+		const lv3 = addManagedRole('level', '3', 'Lv.3');
+		const tokyo = addManagedRole('campus', '26', 'Tokyo');
+		Object.assign(roles.find(r => r.id === kaze)!, { iconUrl: 'https://example.com/custom.png' });
+
+		await service.ensureRoleIcons();
+
+		expect(roles.find(r => r.id === fuji)?.iconUrl).toBe('https://example.com/coalitions/301.svg');
+		expect(roles.find(r => r.id === kaze)?.iconUrl).toBe('https://example.com/custom.png');
+		expect(roles.find(r => r.id === lv3)?.iconUrl).toBe('https://example.com/badges/lv-3.svg');
+		expect(roles.find(r => r.id === tokyo)?.iconUrl).toBeUndefined();
 	});
 
 	test('Lv.0 から Lv.21 までのロールを先に作り、2 回目は作らない', async () => {
