@@ -5,10 +5,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="$style.root" role="group" :aria-label="label">
-	<MkIntraProjectResultTile :finalMark="result.finalMark" :validated="result.validated"/>
+	<a :href="projectUrl" target="_blank" rel="noopener" :class="$style.tileLink" :title="result.projectName" tabindex="-1" aria-hidden="true">
+		<MkIntraProjectResultTile :finalMark="result.finalMark" :validated="result.validated"/>
+	</a>
 	<div :class="$style.body">
 		<div :class="$style.row">
-			<b :class="$style.name">{{ result.projectName }}</b>
+			<a :href="projectUrl" target="_blank" rel="noopener" :class="$style.name">{{ result.projectName }}</a>
 			<MkIntraProjectResultStars v-if="result.outstandingCount != null" :count="result.outstandingCount"/>
 			<button v-if="removable" v-tooltip="i18n.ts._intraProjectResult.removeProject" class="_button" :class="$style.remove" :aria-label="i18n.ts._intraProjectResult.removeProject" @click="emit('remove')">
 				<i class="ti ti-x"></i>
@@ -27,13 +29,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 // 42 intra の課題の結果のカード (ノートの本文の下と投稿フォーム)。
 // 左に intra と同じ点数のタイル、右に課題の名前・outstanding の星・チームのメンバー。
+// 点数と課題の名前は intra の課題のページに飛ぶ。
 // メンバーのアイコンはプロフィールに飛ぶ。このサーバーにアカウントが無いメンバーは intra のログイン名の頭文字で出す
 import { computed } from 'vue';
 import type * as Misskey from 'misskey-js';
 import MkIntraProjectResultTile from '@/components/MkIntraProjectResultTile.vue';
 import MkIntraProjectResultStars from '@/components/MkIntraProjectResultStars.vue';
 import { i18n } from '@/i18n.js';
-import { getIntraProjectResultLabel } from '@/utility/intra-project-result.js';
+import { getIntraProjectResultLabel, getIntraProjectUrl } from '@/utility/intra-project-result.js';
 
 const props = defineProps<{
 	result: Misskey.entities.IntraProjectNote;
@@ -45,6 +48,7 @@ const emit = defineEmits<{
 }>();
 
 const label = computed(() => getIntraProjectResultLabel(props.result));
+const projectUrl = computed(() => getIntraProjectUrl(props.result.projectSlug));
 </script>
 
 <style lang="scss" module>
@@ -72,6 +76,10 @@ const label = computed(() => getIntraProjectResultLabel(props.result));
 	gap: 8px;
 }
 
+.tileLink {
+	display: flex;
+}
+
 .name {
 	flex: 1;
 	min-width: 0;
@@ -81,6 +89,12 @@ const label = computed(() => getIntraProjectResultLabel(props.result));
 	// intra の課題の名前の色
 	color: #00898b;
 	font-size: 15px;
+	font-weight: bold;
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 .remove {

@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-else-if="page === 5" #header><i class="ti ti-eye-exclamation"></i> {{ i18n.ts._initialTutorial._howToMakeAttachmentsSensitive.title }}</template>
 	<template v-else-if="page === CALENDAR_PAGE" #header><i class="ti ti-calendar"></i> {{ i18n.ts._initialTutorial._calendar.title }}</template>
 	<template v-else-if="page === PAIR_RECRUITMENT_PAGE" #header><i class="ti ti-users-group"></i> {{ i18n.ts._initialTutorial._pairRecruitment.title }}</template>
+	<template v-else-if="page === PROJECT_SHARE_PAGE" #header><i class="ti ti-trophy"></i> {{ i18n.ts._initialTutorial._projectShare.title }}</template>
 	<template v-else-if="page === 0 && newFeatures" #header>{{ i18n.ts._initialTutorial._newFeatures.title }}</template>
 	<template v-else #header>{{ i18n.ts._initialTutorial.title }}</template>
 
@@ -47,6 +48,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<i class="ti ti-users-group" :class="$style.newFeatureIcon"></i>
 									<b>{{ i18n.ts._initialTutorial._pairRecruitment.title }}</b>
 									<span :class="$style.newFeatureDescription">{{ i18n.ts._initialTutorial._newFeatures.pairRecruitmentDescription }}</span>
+								</div>
+								<div :class="$style.newFeature">
+									<i class="ti ti-trophy" :class="$style.newFeatureIcon"></i>
+									<b>{{ i18n.ts._initialTutorial._projectShare.title }}</b>
+									<span :class="$style.newFeatureDescription">{{ i18n.ts._initialTutorial._newFeatures.projectShareDescription }}</span>
 								</div>
 							</div>
 							<MkButton primary rounded gradate style="margin: 16px auto 0 auto;" @click="page = CALENDAR_PAGE">{{ i18n.ts._initialTutorial._newFeatures.showMe }} <i class="ti ti-arrow-right"></i></MkButton>
@@ -182,7 +188,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div :class="$style.pageFooter">
 							<div class="_buttonsCenter">
 								<MkButton rounded @click="goBack()"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
-								<MkButton v-if="newFeatures" primary rounded gradate @click="close(false)">{{ i18n.ts.close }}</MkButton>
+								<MkButton primary rounded gradate @click="goNext()">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
+			<template v-else-if="page === PROJECT_SHARE_PAGE">
+				<div style="height: 100cqh; overflow: auto;">
+					<div :class="$style.pageRoot">
+						<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;" :class="$style.pageMain">
+							<XProjectShare/>
+						</div>
+						<div :class="$style.pageFooter">
+							<div class="_buttonsCenter">
+								<MkButton v-if="!projectShareOnly" rounded @click="goBack()"><i class="ti ti-arrow-left"></i> {{ i18n.ts.goBack }}</MkButton>
+								<MkButton v-if="newFeatures || projectShareOnly" primary rounded gradate @click="close(false)">{{ i18n.ts.close }}</MkButton>
 								<MkButton v-else primary rounded gradate @click="goNext()">{{ i18n.ts.continue }} <i class="ti ti-arrow-right"></i></MkButton>
 							</div>
 						</div>
@@ -227,6 +248,7 @@ import XPostNote from '@/components/MkTutorialDialog.PostNote.vue';
 import XSensitive from '@/components/MkTutorialDialog.Sensitive.vue';
 import XCalendar from '@/components/MkTutorialDialog.Calendar.vue';
 import XPairRecruitment from '@/components/MkTutorialDialog.PairRecruitment.vue';
+import XProjectShare from '@/components/MkTutorialDialog.ProjectShare.vue';
 import MkAnimBg from '@/components/MkAnimBg.vue';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
@@ -238,8 +260,10 @@ import { useRouter } from '@/router.js';
 
 const props = defineProps<{
 	initialPage?: number;
-	/** 42times: カレンダーとペア募集の紹介だけを見せる (チュートリアルを見る前から使っている人向け) */
+	/** 42times: カレンダー・ペア募集・点数を共有の紹介だけを見せる (チュートリアルを見る前から使っている人向け) */
 	newFeatures?: boolean;
+	/** 42times: 点数を共有の紹介だけを見せる (カレンダーとペア募集の紹介を見た後に加わったため) */
+	projectShareOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -248,13 +272,14 @@ const emit = defineEmits<{
 
 const dialog = useTemplateRef('dialog');
 
-// eslint-disable-next-line vue/no-setup-props-reactivity-loss
-const page = ref(props.initialPage ?? 0);
-
-// 42times: カレンダーとペア募集のページ。学内SNSモードでだけ出す (それ以外では upstream と同じ 6 ページ)
+// 42times: カレンダー・ペア募集・点数を共有のページ。学内SNSモードでだけ出す (それ以外では upstream と同じ 6 ページ)
 const CALENDAR_PAGE = 6;
 const PAIR_RECRUITMENT_PAGE = 7;
-const DONE_PAGE = 8;
+const PROJECT_SHARE_PAGE = 8;
+const DONE_PAGE = 9;
+
+// eslint-disable-next-line vue/no-setup-props-reactivity-loss
+const page = ref(props.projectShareOnly ? PROJECT_SHARE_PAGE : props.initialPage ?? 0);
 const showsIntraPages = instance.intraLoginEnabled === true;
 
 watch(page, (to) => {
@@ -265,15 +290,23 @@ watch(page, (to) => {
 	if (to === CALENDAR_PAGE) {
 		markFeatureTutorialShown();
 	}
-});
+	if (to === PROJECT_SHARE_PAGE) {
+		markProjectShareTutorialShown();
+	}
+}, { immediate: true });
 
 // 紹介を開いたら、閉じ方によらず次からは出さない (boot/main-boot.ts)
 if (props.newFeatures) {
 	markFeatureTutorialShown();
+	markProjectShareTutorialShown();
 }
 
 function markFeatureTutorialShown() {
 	if (!store.s.featureTutorialShown) store.set('featureTutorialShown', true);
+}
+
+function markProjectShareTutorialShown() {
+	if (!store.s.projectShareTutorialShown) store.set('projectShareTutorialShown', true);
 }
 
 function goNext() {
@@ -311,7 +344,7 @@ const isReactionTutorialPushed = ref<boolean>(false);
 const isSensitiveTutorialSucceeded = ref<boolean>(false);
 
 async function close(skip: boolean) {
-	if (skip && !props.newFeatures) {
+	if (skip && !props.newFeatures && !props.projectShareOnly) {
 		const { canceled } = await os.confirm({
 			type: 'warning',
 			text: i18n.ts._initialTutorial.skipAreYouSure,

@@ -115,4 +115,10 @@ describe('42 intra の課題の結果', () => {
 		const res = await api('notes/create', {}, alice);
 		assert.strictEqual(res.status, 400);
 	});
+
+	test('intra と連携していなければ再取得できない', async () => {
+		await failedApiCall({ endpoint: 'i/intra/refresh-project-results', parameters: {}, user: carol }, {
+			status: 400, code: 'NOT_LINKED_WITH_INTRA', id: 'fefe5dd9-090f-47fc-ba47-184420934d3f',
+		});
+	});
 });

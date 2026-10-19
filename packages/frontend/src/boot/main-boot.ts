@@ -173,6 +173,13 @@ export async function mainBoot() {
 				}, {
 					closed: () => dispose(),
 				});
+			} else if (instance.intraLoginEnabled === true && !store.s.projectShareTutorialShown) {
+				// 42times: カレンダーとペア募集の紹介の後に加わった「点数を共有」の紹介を、紹介を見た人にも一度だけ出す
+				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkTutorialDialog.vue')), {
+					projectShareOnly: true,
+				}, {
+					closed: () => dispose(),
+				});
 			} else if (instance.intraLoginEnabled === true && !store.s.passkeyNoticeShown && $i?.intra != null && ($i.securityKeysList?.length ?? 0) === 0) {
 				// 42times: 42 にログインできなくなる (ブラックホール) 前にパスキーを作るよう、今いる人にも一度だけ案内する。
 				// チュートリアルの最初のページで案内を見た人には出さない

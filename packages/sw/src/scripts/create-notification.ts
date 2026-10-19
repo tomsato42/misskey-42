@@ -284,6 +284,12 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'intraProjectsRefreshed':
+					return [data.body.failed ? i18n.ts._notification.intraProjectsRefreshFailed : i18n.ts._notification.intraProjectsRefreshed, {
+						badge: iconUrl('medal'),
+						data,
+					}];
+
 				case 'pairJoinRequested':
 					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
 						body: getUserName(data.body.user),

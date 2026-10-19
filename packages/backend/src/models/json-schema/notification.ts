@@ -717,5 +717,20 @@ export const packedNotificationSchema = {
 				},
 			},
 		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['intraProjectsRefreshed'],
+			},
+			failed: {
+				type: 'boolean',
+				optional: false, nullable: false,
+				description: 'Whether fetching from 42 intra failed.',
+			},
+		},
 	}],
 } as const;

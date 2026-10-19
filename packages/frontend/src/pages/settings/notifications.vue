@@ -173,11 +173,11 @@ const notifyUserPaginator = markRaw(new Paginator('following/list', {
 const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited'] as const satisfies (typeof notificationTypes[number])[];
 
 // ペア募集の通知は学内SNSモード (42 intra ログイン) でだけ届くので、それ以外では設定に出さない
-const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed', 'pairInvited', 'pairApplicationCancelled', 'intraProjectFinished'] satisfies (typeof notificationTypes[number])[];
+const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed', 'pairInvited', 'pairApplicationCancelled', 'intraProjectFinished', 'intraProjectsRefreshed'] satisfies (typeof notificationTypes[number])[];
 
 const configurableNotificationTypes = notificationTypes.filter(type => !nonConfigurableNotificationTypes.includes(type as any) && (instance.intraLoginEnabled === true || !intraOnlyNotificationTypes.includes(type))) as Exclude<typeof notificationTypes[number], typeof nonConfigurableNotificationTypes[number]>[];
 
-const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectFinished'] as const satisfies (typeof notificationTypes[number])[];
+const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectFinished', 'intraProjectsRefreshed'] as const satisfies (typeof notificationTypes[number])[];
 
 const allowButton = useTemplateRef('allowButton');
 const pushRegistrationInServer = computed(() => allowButton.value?.pushRegistrationInServer);

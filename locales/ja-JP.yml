@@ -1746,7 +1746,7 @@ _initialTutorial:
     trySubscribing: "試しに「購読」を押してみましょう(練習なので実際には購読されません)"
     subscribed: "これで、イベントの1週間前・前日・当日に通知が届きます"
     create: "イベントを作る"
-    createDescription: "カレンダーの日付を押すか、投稿フォームの「イベントを告知」から作れます"
+    createDescription: "カレンダーの日付を押すと作れます"
     subscribe: "購読する"
     subscribeDescription: "どの通知を受け取るかは、設定の「カレンダー」で選べます"
     feed: "カレンダー連携"
@@ -1769,12 +1769,25 @@ _initialTutorial:
     whereToOpen: "メニューの「ペア募集」から募集の一覧を開けます。"
     _exampleRecruitment:
       comment: "サーバー側を一緒に作れる人を探しています。平日の夜に進めたいです。"
+  _projectShare:
+    title: "点数を共有"
+    description: "終わった課題の点数を、intra と同じ見た目のカードにして投稿できます。合否に関係なく、一度取り組んだ課題なら投稿できます。"
+    tryPosting: "試しに「投稿する」を押してみましょう(練習なので実際には投稿されません)"
+    posted: "点数・outstanding の星・チームのメンバーが付いたノートになります"
+    step1: "課題が終わる"
+    step1Description: "点数が付くと通知が届く"
+    step2: "投稿する"
+    step2Description: "通知か「点数を共有」から投稿"
+    step3: "再取得"
+    step3Description: "すぐ反映したいときは「再取得」を押す"
+    whereToOpen: "メニューの「点数を共有」から終わった課題の一覧を開けます。"
   _newFeatures:
     title: "新しい機能"
     heading: "新しい機能が使えるようになりました"
-    description: "{name} に「カレンダー」と「ペア募集」が加わりました。1分ほどで使い方を紹介します。"
+    description: "{name} に「カレンダー」「ペア募集」「点数を共有」が加わりました。1分ほどで使い方を紹介します。"
     calendarDescription: "学内のイベントを共有して、購読すると通知が届く"
     pairRecruitmentDescription: "2人以上で取り組む課題の仲間を探せる"
+    projectShareDescription: "終わった課題の点数を投稿できる"
     showMe: "使い方を見る"
   _done:
     title: "チュートリアルは終了です🎉"
@@ -2951,6 +2964,8 @@ _notification:
   pairInvitedText: "{project} のペア募集に招待されました"
   pairApplicationCancelledText: "{project} のペア募集の課題が変わり、参加希望が取り下げになりました"
   intraProjectFinished: "課題が終わりました"
+  intraProjectsRefreshed: "課題の取得が終わりました"
+  intraProjectsRefreshFailed: "課題を取得できませんでした"
 
   _types:
     all: "すべて"
@@ -2983,6 +2998,7 @@ _notification:
     pairInvited: "ペア募集への招待"
     pairApplicationCancelled: "ペア募集の参加希望の取り下げ(課題の変更)"
     intraProjectFinished: "課題の結果"
+    intraProjectsRefreshed: "課題の再取得"
 
   _actions:
     followBack: "フォローバック"
@@ -4070,8 +4086,6 @@ _calendar:
     invalidUserList: "このリストは使えません。自分のリストを選んでください。"
 _intraProjectResult:
   share: "点数を共有"
-  selectProject: "課題を選択"
-  project: "課題"
   removeProject: "課題を外す"
   post: "投稿する"
   success: "success"
@@ -4079,6 +4093,8 @@ _intraProjectResult:
   outOf: "/100"
   outstanding: "outstanding {n}"
   noResults: "点数の付いた課題がありません"
+  refresh: "再取得"
+  refreshing: "取得中"
   notSavedInDraft: "課題の点数は下書きと予約投稿には保存されません。"
   scoreLabel: "{project} {score}点 {result}"
   passed: "合格"
@@ -4086,3 +4102,6 @@ _intraProjectResult:
   _errors:
     noSuchResult: "この課題の結果が見つかりません。"
     cannotAttachToPureRenote: "本文の無いリノートには課題を付けられません。"
+    notLinked: "42 intra と連携していません。"
+    refreshInProgress: "取得中です。終わったら通知が届きます。"
+    refreshTooSoon: "少し待ってからもう一度押してください。"

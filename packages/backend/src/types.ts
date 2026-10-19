@@ -33,6 +33,7 @@
  * pairInvited - ペア募集に招待された
  * pairApplicationCancelled - ペア募集が編集され、やりたい課題が外れたので参加希望が取り下げになった
  * intraProjectFinished - 42 intra の課題の結果が出た (42times)
+ * intraProjectsRefreshed - 自分で頼んだ 42 intra の課題の再取得が終わった (42times)
  */
 export const notificationTypes = [
 	'note',
@@ -64,6 +65,7 @@ export const notificationTypes = [
 	'pairInvited',
 	'pairApplicationCancelled',
 	'intraProjectFinished',
+	'intraProjectsRefreshed',
 ] as const;
 
 export const groupedNotificationTypes = [

@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// 42times: 42 intra の課題の結果 (点数) の共有。課題を選んで、結果のカードを付けた投稿フォームを開く
+// 42times: 42 intra の課題の結果 (点数) の共有
 
-import { defineAsyncComponent } from 'vue';
 import type * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
@@ -20,45 +19,41 @@ export function getIntraProjectResultLabel(result: Pick<Misskey.entities.IntraPr
 	});
 }
 
-/**
- * 課題を選ぶダイアログを開く。選んだらその結果、閉じたら null を返す
- */
-export function openIntraProjectResultPicker(): Promise<Misskey.entities.IntraProjectResult | null> {
-	let selected: Misskey.entities.IntraProjectResult | null = null;
-	return new Promise((resolve) => {
-		const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkIntraProjectResultPickerDialog.vue')), {}, {
-			done: (result) => {
-				selected = result;
-			},
-			closed: () => {
-				resolve(selected);
-				dispose();
-			},
-		});
-	});
+/** intra の課題のページの URL */
+export function getIntraProjectUrl(projectSlug: string): string {
+	return `https://projects.intra.42.fr/projects/${encodeURIComponent(projectSlug)}`;
+}
+
+/** i/intra/refresh-project-results のエラーの文言 */
+export function getIntraRefreshErrorMessage(err: unknown): string {
+	const e = err as Partial<Misskey.api.APIError> | null;
+	switch (e?.code) {
+		case 'NOT_LINKED_WITH_INTRA':
+			return i18n.ts._intraProjectResult._errors.notLinked;
+		case 'INTRA_REFRESH_IN_PROGRESS':
+			return i18n.ts._intraProjectResult._errors.refreshInProgress;
+		case 'RATE_LIMIT_EXCEEDED':
+			return i18n.ts._intraProjectResult._errors.refreshTooSoon;
+		default:
+			return e?.message ?? String(err);
+	}
 }
 
 /**
- * 課題の結果を付けた投稿フォームを開く。結果の ID を渡せばその結果 (通知から)、渡さなければ課題を選んでもらう (ナビから)
+ * 課題の結果 (通知に付いている ID の結果) のカードを付けた投稿フォームを開く
  */
-export async function shareIntraProjectResult(resultId?: string): Promise<void> {
-	let result: Misskey.entities.IntraProjectResult | null;
-	if (resultId != null) {
-		let results: Misskey.entities.IntraProjectResult[];
-		try {
-			results = await misskeyApi('i/intra/project-results');
-		} catch (err) {
-			os.alert({ type: 'error', text: (err as Partial<Misskey.api.APIError>).message ?? String(err) });
-			return;
-		}
-		result = results.find(r => r.id === resultId) ?? null;
-		if (result == null) {
-			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.noSuchResult });
-			return;
-		}
-	} else {
-		result = await openIntraProjectResultPicker();
-		if (result == null) return;
+export async function shareIntraProjectResult(resultId: string): Promise<void> {
+	let results: Misskey.entities.IntraProjectResult[];
+	try {
+		results = await misskeyApi('i/intra/project-results');
+	} catch (err) {
+		os.alert({ type: 'error', text: (err as Partial<Misskey.api.APIError>).message ?? String(err) });
+		return;
+	}
+	const result = results.find(r => r.id === resultId);
+	if (result == null) {
+		os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.noSuchResult });
+		return;
 	}
 	await os.post({ initialIntraProjectResult: result });
 }
