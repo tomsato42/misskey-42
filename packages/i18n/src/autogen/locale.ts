@@ -14094,6 +14094,10 @@ export interface Locale extends ILocale {
          */
         "reauthDone": string;
         /**
+         * 本人確認ができました。10 分以内に、もう一度操作してください。
+         */
+        "reauthDoneRetry": string;
+        /**
          * このアカウントとは別の 42 のアカウントでログインされました。このアカウントの 42 のアカウントでログインし直してください。
          */
         "reauthMismatch": string;

@@ -143,7 +143,7 @@ async function callKeyApi<E extends KeyEndpoint>(endpoint: E, data: Misskey.Endp
 		return await os.promiseDialog(misskeyApi(endpoint, data), null, () => {}) as Misskey.Endpoints[E]['res'];
 	} catch (err) {
 		if ((err as Misskey.api.APIError).code === 'INTRA_REAUTH_REQUIRED') {
-			await requestIntraReauth();
+			await requestIntraReauth(endpoint === 'i/2fa/remove-key' ? 'remove' : 'register');
 		} else {
 			os.alert({ type: 'error', text: (err as Misskey.api.APIError).message });
 		}
@@ -151,13 +151,34 @@ async function callKeyApi<E extends KeyEndpoint>(endpoint: E, data: Misskey.Endp
 	}
 }
 
-async function requestIntraReauth(): Promise<void> {
+// 本人確認から戻ってきたときに、登録を続けるかを決めるために、始めた操作を覚えておく
+const INTRA_REAUTH_ACTION_KEY = 'intraReauthAction';
+
+async function requestIntraReauth(action: 'register' | 'remove'): Promise<void> {
 	const { canceled } = await os.confirm({
 		type: 'info',
 		text: i18n.ts._intra.reauthRequired,
 	});
 	if (canceled) return;
-	await os.promiseDialog(startIntraReauth());
+
+	try {
+		window.sessionStorage.setItem(INTRA_REAUTH_ACTION_KEY, action);
+	} catch {
+		// 保存できなくても、戻ってきたときに操作をやり直してもらうだけ
+	}
+	await os.promiseDialog(startIntraReauth(), null, (err) => {
+		os.alert({ type: 'error', text: err.message });
+	});
+}
+
+function popIntraReauthAction(): string | null {
+	try {
+		const action = window.sessionStorage.getItem(INTRA_REAUTH_ACTION_KEY);
+		window.sessionStorage.removeItem(INTRA_REAUTH_ACTION_KEY);
+		return action;
+	} catch {
+		return null;
+	}
 }
 
 // 本人確認から戻ってきたときは、クエリの intraReauth に結果が入っている
@@ -177,12 +198,15 @@ onMounted(() => {
 });
 
 async function showIntraReauthResult(result: string): Promise<void> {
-	if (result === 'ok') {
+	const action = popIntraReauthAction();
+	if (result === 'ok' && action === 'register') {
 		const { canceled } = await os.confirm({
 			type: 'success',
 			text: i18n.ts._intra.reauthDone,
 		});
 		if (!canceled) addSecurityKey();
+	} else if (result === 'ok') {
+		os.alert({ type: 'success', text: i18n.ts._intra.reauthDoneRetry });
 	} else if (result === 'mismatch') {
 		os.alert({ type: 'error', text: i18n.ts._intra.reauthMismatch });
 	} else {
