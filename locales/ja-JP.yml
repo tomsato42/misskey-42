@@ -3766,6 +3766,14 @@ _intra:
   serverUseLocked: "42 intra 連携が有効なため、利用形態は「グループサーバー」に固定されています。新しいアカウントは、42 のアカウントで初めてログインしたときにだけ作成されます。"
   ugcVisibilityLocked: "42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。"
 
+_roleTimeline:
+  pinnedRoles: "タイムラインに表示するロール"
+  pinnedRolesDescription: "選んだロールのタイムラインを、タイムラインの上のタブに表示します。"
+  selectRole: "ロールを選択"
+  noRolesToAdd: "追加できるロールがありません"
+  addToTimelineTabs: "タイムラインのタブに追加"
+  removeFromTimelineTabs: "タイムラインのタブから外す"
+
 _calendar:
   calendar: "カレンダー"
   backToCalendar: "カレンダーに戻る"

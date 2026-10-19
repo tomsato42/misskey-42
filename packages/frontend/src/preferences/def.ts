@@ -15,6 +15,7 @@ import type { DeviceKind } from '@/utility/device-kind.js';
 import type { DeckProfile } from '@/deck.js';
 import type { WatermarkPreset } from '@/utility/watermark/WatermarkRenderer.js';
 import type { ImageFramePreset } from '@/utility/image-frame-renderer/ImageFrameRenderer.js';
+import type { PinnedRole } from '@/utility/pinned-roles.js';
 import { genId } from '@/utility/id.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 import { deepEqual } from '@/utility/deep-equal.js';
@@ -67,6 +68,16 @@ export const PREF_DEF = definePreferences({
 	pinnedUserLists: {
 		accountDependent: true,
 		default: [] as Misskey.entities.UserList[],
+	},
+	// 42times: タイムラインのタブに出すロール
+	pinnedRoles: {
+		accountDependent: true,
+		default: [] as PinnedRole[],
+	},
+	// 42times: pinnedRoles に入学時期のロールを一度だけ足したか (boot/main-boot.ts)。ユーザーが後で外したら足し直さないための印
+	'roleTimeline.cohortRoleAdded': {
+		accountDependent: true,
+		default: false,
 	},
 	uploadFolder: {
 		accountDependent: true,
