@@ -25,12 +25,13 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - 学内SNSモードでは `federation` と `ugcVisibilityForVisitor` を `'none'` に固定 (`intra-visitor.ts` の `INTRA_FIXED_META`、update-meta でも拒否)。未ログインの API は許可リスト (`INTRA_VISITOR_ALLOWED_ENDPOINTS`) 以外 401。フロントは「連合なし」(localOnly) の切り替えを投稿フォームと設定から外し、投稿 (`MkPostForm.vue`) とリノート (`get-note-menu.ts`) では常に false を送る
 - 画像の保護は `config.mediaGate` (署名付き Cookie)。backend は `src/core/media-gate/` と `src/server/media-gate-hooks.ts`、R2 からの配信は `cloudflare/media-worker/` (ルートとは別の pnpm workspace。トークン形式を変えるときは backend・Worker・`test/token-vectors.json` を同時に更新)
 - `/api/intra/exchange` と `/api/media-session` は Cookie を使うので、フロントは misskeyApi (credentials: 'omit') ではなく `fetch(..., { credentials: 'same-origin' })` で呼ぶ
-- 本番デプロイは `.github/workflows/fork-deploy.yml` と `deploy/` (手順は `deploy/README.md`)
+- 本番デプロイは `.github/workflows/fork-deploy.yml` と `deploy/` (手順は `deploy/README.md`)。バックアップは `deploy/backup.sh` (misskey ユーザーの cron で毎日、DB の pg_dump・default.yml・files/ を 7 個残し、R2 の `42times-backups` にも送る)。`deploy/` のスクリプトは VPS に手で置き直さないと反映されない
 
 ### ローカル環境 (Windows)
 - Node / pnpm は PATH に無い。`export PATH="/c/Users/windows11/AppData/Local/misskey-42-tools/node-v26.4.0-win-x64:/c/Users/windows11/AppData/Local/misskey-42-tools/pnpm:$PATH"`
 - Docker・PostgreSQL・Redis は無い。e2e と check-migrations は検証用 PR (tomsato42/misskey-42#1、main → ci-base、マージしない) の GitHub Actions で確認する
 - 新しい worktree では `pnpm install --frozen-lockfile` の後に `pnpm --filter misskey-js --filter misskey-reversi --filter i18n --filter misskey-bubble-game build` が必要 (無いと typecheck が通らない)
+- Git Bash の grep に `$'\r'` を渡すと全行に一致する (CR が数えられない)。改行の確認は `git ls-files --eol <file>` か VPS 側で行う (`.gitattributes` が `eol=lf` なので、scp で送るスクリプトは LF のまま)
 - `pnpm build-misskey-js-with-types` には `.config/default.yml` が必要。`cp .config/example.yml .config/default.yml` で用意し、コミットしない
 - DB 不要のユニットテスト: backend は `packages/backend` で `pnpm exec vitest run --config vitest.config.unit.ts <file>`、frontend は `packages/frontend` で `pnpm exec vitest --run --globals --config vitest.config.unit.ts <file>` (`--config` が無いと `window is not defined`)
 

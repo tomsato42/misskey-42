@@ -26,6 +26,7 @@ GitHub (main に push / 手動実行)
 | --- | --- | --- |
 | `compose.yml` | `/home/misskey/42times/compose.yml` | サービス `web` の定義 (host ネットワーク、メモリ上限 768MB、ログのローテーション) |
 | `deploy.sh` | `/home/misskey/42times/deploy.sh` | タグを受け取って pull → 起動 → ヘルスチェック待ち。失敗したら前のタグに戻す |
+| `backup.sh` | `/home/misskey/42times/backup.sh` | 1 日 1 回のバックアップ (DB・設定・`files/`)。7 個残し、R2 にも送る ([バックアップ](#バックアップ)) |
 | `default.yml.example` | `/home/misskey/42times/.config/default.yml` (コピーして編集) | 本番用の設定の例。秘密の値はダミー |
 | `nginx/42times.kinachan.com.conf` | `/etc/nginx/conf.d/42times.kinachan.com.conf` | nginx の server ブロック |
 
@@ -35,13 +36,17 @@ VPS の `/home/misskey/42times/` は最終的に次のようになります。
 /home/misskey/42times/
 ├── compose.yml
 ├── deploy.sh
+├── backup.sh
 ├── .config/default.yml   (秘密の値を含む。グループ 991 が読める 640)
+├── .config/backup-r2.env (バックアップを送る R2 の鍵。600)
 ├── nginx/                (nginx の設定の控え。実際に読まれるのは /etc/nginx/conf.d/ のもの)
 ├── files/                (コンテナの misskey ユーザー (UID 991) が書き込む)
-└── state/                (deploy.sh が作る。current-tag に動いているタグ、history.log に履歴)
+└── state/                (deploy.sh が作る。current-tag に動いているタグ、history.log に履歴。backup.log はバックアップのログ)
+
+/home/misskey/42times-backups/   (backup.sh が作る。42times-<日時>.tar を新しい 7 個だけ残す)
 ```
 
-このディレクトリのファイルは、リポジトリを更新しても自動では VPS に反映されません。`compose.yml`・`deploy.sh` を変えたときは、手順 3 と同じ方法で置き直してください。ワークフローは `deploy/` だけの変更では走りません。
+このディレクトリのファイルは、リポジトリを更新しても自動では VPS に反映されません。`compose.yml`・`deploy.sh`・`backup.sh` を変えたときは、手順 3 と同じ方法で置き直してください。ワークフローは `deploy/` だけの変更では走りません。
 
 ## 初回セットアップ
 
@@ -346,8 +351,138 @@ GitHub のドキュメントでは、Free プランの private リポジトリ�
   IMAGE_TAG=$(cat state/current-tag) docker compose logs --tail 200 -f web
   ```
 
+## バックアップ
+
+misskey ユーザーの crontab から、毎日 3:15 (日本時間。VPS のタイムゾーンは JST) に `backup.sh` を実行します。1 回の実行で `42times-<日本時間の YYYYmmdd-HHMMSS>.tar` を 1 つ作り、VPS の `/home/misskey/42times-backups/` と R2 のバケット `42times-backups` の両方に置きます。どちらも 7 日分を残します。
+
+| tar の中のファイル | 内容 |
+| --- | --- |
+| `misskey42.dump` | DB `misskey42` の `pg_dump` (カスタム形式)。作った直後に `pg_restore --list` で読めることを確かめている |
+| `default.yml` | `.config/default.yml` (秘密の値を含む) |
+| `files.tar.zst` | `files/` (R2 を設定する前にアップロードされたファイル)。`files/` は UID 991 しか読めないので、動いているイメージのコンテナで読み取り専用にマウントして tar にする |
+| `SHA256SUMS` | 上のファイルの SHA-256 |
+
+含めないもの:
+
+- R2 のバケット `42times-files` のファイル (ドライブの画像など)。R2 のファイルは消されない限り残るので、DB を戻せば表示できます。バックアップの後に消されたファイルは戻りません。
+- Redis。通知は Redis に入っているので、DB を戻しても通知の一覧は戻りません。
+- PostgreSQL のロール `misskey42` (初回セットアップの手順 2 で作ります)。
+
+動きの細かいところ:
+
+- 空き容量が 5GB を切っているときは、何もせずに終わります。DB と同じディスクに書くためです。
+- DB のダンプに失敗したときは tar を作らず、古いバックアップも消しません。`files/` や R2 へのアップロードに失敗したときは、残りを続けてから終了コード 1 で終わります。
+- VPS の側は、新しいものから 7 個を残して古いものを消します (日数ではなく個数で数えるので、失敗が続いても成功した 7 個は残ります)。R2 の側は、バケットのライフサイクルルールで 7 日たったものを消します。
+- R2 へは `curl --aws-sigv4` で送ります。VPS に新しいソフトは入れません。
+- 失敗しても通知は来ません。ときどき `tail ~/42times/state/backup.log` で確かめてください。
+- VPS には既存の Misskey 用に pgBackRest もあり、PostgreSQL のクラスタ全体 (`misskey42` も含む) の WAL を R2 に送っています (`postgresql.conf` の `archive_command`)。フルバックアップを定期的に取っているかは未確認です。`backup.sh` はそれとは別に、`misskey42` だけを取ります。
+
+### 設定の手順
+
+#### 1. R2 のバケットと API トークン (ユーザー)
+
+Cloudflare のダッシュボードで R2 を開きます。
+
+1. バケット `42times-backups` を作ります。公開はしません (r2.dev の URL もカスタムドメインも無効のまま)。
+2. バケットの Settings → Object lifecycle rules で、アップロードから 7 日たったオブジェクトを削除するルールを追加します。
+3. API トークンを作ります。権限は「オブジェクトの読み取りと書き込み」(Object Read & Write)、対象のバケットは `42times-backups` だけにします。`42times-files` 用のトークンは使い回しません。
+4. Access Key ID と Secret Access Key、S3 API のエンドポイント `https://{アカウントID}.r2.cloudflarestorage.com` のアカウント ID を控えます。
+
+#### 2. VPS にスクリプトと鍵を置く (スクリプトは Claude、鍵はユーザー)
+
+```sh
+# ローカルの PC (リポジトリのルート) で
+scp deploy/backup.sh misskey-vps:/home/misskey/42times/
+ssh misskey-vps 'chmod 700 /home/misskey/42times/backup.sh'
+```
+
+VPS で鍵のファイルを作ります。`backup.sh` は bash の `source` で読むので、`=` の前後に空白を入れません。
+
+```sh
+install -m 600 /dev/null ~/42times/.config/backup-r2.env
+nano ~/42times/.config/backup-r2.env
+```
+
+```sh
+R2_ACCOUNT_ID=<アカウント ID>
+R2_BUCKET=42times-backups
+R2_ACCESS_KEY_ID=<Access Key ID>
+R2_SECRET_ACCESS_KEY=<Secret Access Key>
+```
+
+このファイルが無いと、`backup.sh` は R2 には送らず、VPS の中にだけ残します。
+
+#### 3. 手で 1 回実行する (Claude)
+
+```sh
+~/42times/backup.sh
+ls -lh ~/42times-backups/
+```
+
+最後に「完了しました」と出て、R2 のダッシュボードのバケットに同じ名前のオブジェクトがあれば成功です。
+
+#### 4. cron に登録する (Claude)
+
+```sh
+( crontab -l 2>/dev/null; echo '15 3 * * * /home/misskey/42times/backup.sh >> /home/misskey/42times/state/backup.log 2>&1' ) | crontab -
+crontab -l
+```
+
+### 戻し方
+
+1. 戻す tar を選びます。VPS が無事なら `~/42times-backups/` から、VPS ごと失ったときは R2 のダッシュボードからダウンロードして VPS に置きます。
+
+   ```sh
+   mkdir -m 700 ~/42times-restore && cd ~/42times-restore
+   tar -xf ~/42times-backups/42times-YYYYmmdd-HHMMSS.tar
+   sha256sum -c SHA256SUMS
+   ```
+
+2. Misskey を止めます。
+
+   ```sh
+   cd ~/42times && IMAGE_TAG=$(cat state/current-tag) docker compose stop web
+   ```
+
+3. 今の DB を別の名前に変えて残し、空の DB を作ります (ユーザー、sudo)。
+
+   ```sh
+   sudo -u postgres psql -c 'ALTER DATABASE misskey42 RENAME TO misskey42_old' -c "CREATE DATABASE misskey42 OWNER misskey42 ENCODING 'UTF8' TEMPLATE template0"
+   ```
+
+4. ダンプを戻します。パスワードは `default.yml` の `db.pass` です。
+
+   ```sh
+   pg_restore --host=localhost --username=misskey42 --dbname=misskey42 --no-owner --single-transaction ~/42times-restore/misskey42.dump
+   ```
+
+5. `files/` も戻すときは、コンテナの中で展開します。
+
+   ```sh
+   zstd -dc ~/42times-restore/files.tar.zst | docker run --rm -i --network none --user 991:991 \
+     -v /home/misskey/42times/files:/files --entrypoint tar \
+     "ghcr.io/tomsato42/misskey-42:$(cat ~/42times/state/current-tag)" -C /files -xf -
+   ```
+
+6. `default.yml` を失ったときは、`~/42times-restore/default.yml` を `~/42times/.config/default.yml` に置き、初回セットアップの手順 10 と同じ権限 (`misskey:991`、640) にします。
+7. Misskey を起動します。ダンプが今のイメージより古いバージョンのものなら、起動時にマイグレーションが走ります。
+
+   ```sh
+   ~/42times/deploy.sh "$(cat ~/42times/state/current-tag)"
+   ```
+
+8. 動作を確かめたら、秘密の値を含む作業用のディレクトリと、古い DB を消します。
+
+   ```sh
+   rm -rf ~/42times-restore
+   sudo -u postgres psql -c 'DROP DATABASE misskey42_old'
+   ```
+
 ## 検討したほかの方法
 
 - **bridge ネットワーク + `ports: 127.0.0.1:3001:3001`**: 3001 をループバックだけで待ち受けられますが、コンテナから VPS の PostgreSQL・Redis に接続するには、両方の待ち受けアドレス (今は 127.0.0.1) と PostgreSQL の `pg_hba.conf` を変える必要があります。既存の Misskey と共有しているので、今回は host ネットワークにしました。
 - **UNIX ドメインソケット (`socket:`)**: TCP のポートを使わずに済みますが、`healthcheck.sh` がポートを前提にしていることと、nginx からソケットを読めるようにする権限の調整が必要になるため、採りませんでした。
 - **Tailscale の OIDC (workload identity federation)**: `tailscale/github-action` の `audience` を使うと、OAuth クライアントの secret を GitHub に保存せずに済みます。今回は指定どおり OAuth クライアント方式にしました。
+- **バックアップに既存の pgBackRest を使う**: クラスタ単位の物理バックアップなので、`misskey42` だけを戻すにはクラスタごと別の場所に戻す必要があります。設定も既存の Misskey と共有で sudo が要るため、`misskey42` だけを `pg_dump` で取る方式にしました。
+- **R2 の古いバックアップを backup.sh で消す**: 一覧の取得と削除を curl で書く必要があり、ライフサイクルルールなら設定 1 つで済むため、R2 側はライフサイクルルールにしました。
+- **バックアップの暗号化**: R2 に送る前に gpg などで暗号化すると、R2 の鍵が漏れても中身は読まれません。代わりに復号の鍵を VPS の外で保管する必要があり、無くすと戻せなくなるので、今は暗号化していません (既存の pgBackRest も暗号化していません)。
