@@ -15,7 +15,7 @@ import {
 	toCohortYearMonth,
 } from '@/core/intra/intra-role.js';
 
-const EMPTY_PROFILE = { level: null, campus: null, poolYearMonth: null, cursusBeginAt: null };
+const EMPTY_PROFILE = { level: null, campus: null, poolYearMonth: null, poolNameYearMonth: null, cursusBeginAt: null };
 
 describe('getIntraRoleTargets', () => {
 	test('レベル・キャンパス・ピシン・入学時期のロール条件を返す', () => {
@@ -23,6 +23,7 @@ describe('getIntraRoleTargets', () => {
 			level: 5,
 			campus: { id: 26, name: 'Tokyo' },
 			poolYearMonth: '2408',
+			poolNameYearMonth: '2408',
 			cursusBeginAt: new Date('2024-10-01T00:00:00.000Z'),
 		})).toEqual([
 			{ kind: 'level', key: '5', name: 'Lv.5' },
@@ -48,8 +49,20 @@ describe('getIntraRoleTargets', () => {
 		]);
 	});
 
+	test('ピシンのロールは実際の期間の年月、入学時期は名称の年月から決める', () => {
+		expect(getIntraRoleTargets({
+			...EMPTY_PROFILE,
+			poolYearMonth: '2404',
+			poolNameYearMonth: '2405',
+			cursusBeginAt: new Date('2024-06-01T00:00:00.000Z'),
+		})).toEqual([
+			{ kind: 'pool', key: '2404', name: 'Piscine 24/04' },
+			{ kind: 'cohort', key: '2410', name: 'Cursus 24/10' },
+		]);
+	});
+
 	test('42cursus の開始日時が無ければ入学時期のロールを含めない', () => {
-		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, poolYearMonth: '2307' })).toEqual([
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, poolYearMonth: '2307', poolNameYearMonth: '2307' })).toEqual([
 			{ kind: 'pool', key: '2307', name: 'Piscine 23/07' },
 		]);
 	});

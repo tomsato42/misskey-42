@@ -69,6 +69,10 @@ import type {
 	AdminGetTableStatsResponse,
 	AdminGetUserIpsRequest,
 	AdminGetUserIpsResponse,
+	AdminIntraCreateAccountRequest,
+	AdminIntraCreateAccountResponse,
+	AdminIntraIssuePasskeySetupRequest,
+	AdminIntraIssuePasskeySetupResponse,
 	AdminIntraSetPasswordLoginAllowedRequest,
 	AdminInviteCreateRequest,
 	AdminInviteCreateResponse,
@@ -780,6 +784,8 @@ export type Endpoints = {
 	'admin/get-index-stats': { req: EmptyRequest; res: AdminGetIndexStatsResponse };
 	'admin/get-table-stats': { req: EmptyRequest; res: AdminGetTableStatsResponse };
 	'admin/get-user-ips': { req: AdminGetUserIpsRequest; res: AdminGetUserIpsResponse };
+	'admin/intra/create-account': { req: AdminIntraCreateAccountRequest; res: AdminIntraCreateAccountResponse };
+	'admin/intra/issue-passkey-setup': { req: AdminIntraIssuePasskeySetupRequest; res: AdminIntraIssuePasskeySetupResponse };
 	'admin/intra/set-password-login-allowed': { req: AdminIntraSetPasswordLoginAllowedRequest; res: EmptyResponse };
 	'admin/invite/create': { req: AdminInviteCreateRequest; res: AdminInviteCreateResponse };
 	'admin/invite/list': { req: AdminInviteListRequest; res: AdminInviteListResponse };

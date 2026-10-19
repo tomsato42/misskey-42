@@ -25,6 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'unsetMfa',
 					'suspendRemoteInstance',
 					'updateIntraPasswordLoginAllowed',
+					'issueIntraPasskeySetup',
 				].includes(log.type),
 				[$style.logRed]: [
 					'suspend',
@@ -86,6 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'deleteGalleryPost'">: @{{ log.info.postUserUsername }}</span>
 		<span v-else-if="log.type === 'deleteChatRoom'">: @{{ log.info.room.name }}</span>
 		<span v-else-if="log.type === 'updateIntraPasswordLoginAllowed'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
+		<span v-else-if="log.type === 'issueIntraPasskeySetup'">: @{{ log.info.userUsername }}</span>
 	</template>
 	<template #icon>
 		<i v-if="log.type === 'updateServerSettings'" class="ti ti-settings"></i>
@@ -132,6 +134,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<i v-else-if="log.type === 'deleteGalleryPost'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'deleteChatRoom'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'updateIntraPasswordLoginAllowed'" class="ti ti-password"></i>
+		<i v-else-if="log.type === 'issueIntraPasskeySetup'" class="ti ti-key"></i>
 	</template>
 	<template #suffix>
 		<MkTime :time="log.createdAt"/>
@@ -222,6 +225,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template v-else-if="log.type === 'updateIntraPasswordLoginAllowed'">
 			<div>{{ i18n.ts.user }}: <MkA :to="`/admin/user/${log.info.userId}`" class="_link">@{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</MkA></div>
 			<div>{{ i18n.ts._intra.passwordLoginAllowed }}: {{ log.info.before ? i18n.ts.yes : i18n.ts.no }} <i class="ti ti-arrow-right"></i> {{ log.info.after ? i18n.ts.yes : i18n.ts.no }}</div>
+		</template>
+		<template v-else-if="log.type === 'issueIntraPasskeySetup'">
+			<div>{{ i18n.ts.user }}: <MkA :to="`/admin/user/${log.info.userId}`" class="_link">@{{ log.info.userUsername }}</MkA></div>
+			<div v-if="log.info.intraLogin != null">{{ i18n.ts._intra.intraLogin }}: {{ log.info.intraLogin }}</div>
+			<div v-if="log.info.created">{{ i18n.ts._intra.accountCreated }}</div>
+			<div v-if="log.info.linked === false">{{ i18n.ts._intra.accountNotLinked }}</div>
+			<div v-if="log.info.manuallyVerified">{{ i18n.ts._intra.manuallyVerified }}</div>
 		</template>
 		<template v-else-if="log.type === 'updateProxyAccountDescription'">
 			<div :class="$style.diff">

@@ -153,6 +153,7 @@ import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { IntraApiService } from './intra/IntraApiService.js';
 import { IntraAuthService } from './intra/IntraAuthService.js';
+import { IntraAccountService } from './intra/IntraAccountService.js';
 import { IntraSyncService } from './intra/IntraSyncService.js';
 import { CalendarEventService } from './calendar/CalendarEventService.js';
 import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
@@ -320,6 +321,7 @@ const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: Ap
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
 const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: IntraApiService };
 const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
+const $IntraAccountService: Provider = { provide: 'IntraAccountService', useExisting: IntraAccountService };
 const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
 const $CalendarEventService: Provider = { provide: 'CalendarEventService', useExisting: CalendarEventService };
 const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService', useExisting: CalendarNotePostService };
@@ -487,6 +489,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		ApQuestionService,
 		IntraApiService,
 		IntraAuthService,
+		IntraAccountService,
 		IntraSyncService,
 		CalendarEventService,
 		CalendarNotePostService,
@@ -650,6 +653,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$ApQuestionService,
 		$IntraApiService,
 		$IntraAuthService,
+		$IntraAccountService,
 		$IntraSyncService,
 		$CalendarEventService,
 		$CalendarNotePostService,
@@ -814,6 +818,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		ApQuestionService,
 		IntraApiService,
 		IntraAuthService,
+		IntraAccountService,
 		IntraSyncService,
 		CalendarEventService,
 		CalendarNotePostService,
@@ -975,6 +980,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$ApQuestionService,
 		$IntraApiService,
 		$IntraAuthService,
+		$IntraAccountService,
 		$IntraSyncService,
 		$CalendarEventService,
 		$CalendarNotePostService,

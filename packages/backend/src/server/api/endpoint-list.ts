@@ -60,6 +60,8 @@ export * as 'admin/forward-abuse-user-report' from './endpoints/admin/forward-ab
 export * as 'admin/get-index-stats' from './endpoints/admin/get-index-stats.js';
 export * as 'admin/get-table-stats' from './endpoints/admin/get-table-stats.js';
 export * as 'admin/get-user-ips' from './endpoints/admin/get-user-ips.js';
+export * as 'admin/intra/create-account' from './endpoints/admin/intra/create-account.js';
+export * as 'admin/intra/issue-passkey-setup' from './endpoints/admin/intra/issue-passkey-setup.js';
 export * as 'admin/intra/set-password-login-allowed' from './endpoints/admin/intra/set-password-login-allowed.js';
 export * as 'admin/invite/create' from './endpoints/admin/invite/create.js';
 export * as 'admin/invite/list' from './endpoints/admin/invite/list.js';

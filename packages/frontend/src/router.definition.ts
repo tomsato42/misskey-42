@@ -251,6 +251,10 @@ export const ROUTE_DEF = [{
 		reason: 'reason',
 	},
 }, {
+	// 管理者が発行したパスキーの登録リンク (42 にログインできない人のため)
+	path: '/intra-passkey-setup/:token',
+	component: intraPage(() => import('@/pages/intra-passkey-setup.vue')),
+}, {
 	path: '/verify-email/:code',
 	component: page(() => import('@/pages/verify-email.vue')),
 }, {

@@ -31,6 +31,9 @@ export const INTRA_REAUTH_TICKET_TTL_SEC = 60;
 /** 本人確認が済んでから、パスキーの登録・削除ができる期間 (秒) */
 export const INTRA_REAUTH_TTL_SEC = 60 * 10;
 
+/** 管理者が発行するパスキーの登録リンクの有効期間 (秒) */
+export const INTRA_PASSKEY_SETUP_TTL_SEC = 60 * 60 * 24 * 3;
+
 /**
  * 本人確認の結果。フロントエンドの設定画面へ渡す
  * - ok: 確認できた
@@ -149,6 +152,24 @@ export function buildIntraErrorUrl(baseUrl: string, reason: IntraAuthFailureReas
  */
 export function buildIntraReauthResultUrl(baseUrl: string, result: IntraReauthResult): string {
 	return `${baseUrl}/settings/security?intraReauth=${encodeURIComponent(result)}`;
+}
+
+/**
+ * パスキーの登録リンク (管理者が発行し、本人に渡す)
+ */
+export function buildIntraPasskeySetupUrl(baseUrl: string, token: string): string {
+	return `${baseUrl}/intra-passkey-setup/${encodeURIComponent(token)}`;
+}
+
+/** 42 のログイン名として受け付ける形式 */
+export const INTRA_LOGIN_PATTERN = /^[a-zA-Z0-9-]{1,32}$/;
+
+/**
+ * 42 のユーザーに結び付けずに作るアカウントのユーザー名。
+ * 42 の記録 (ピシンの年月など) が取れないので、ログイン名だけを使う (`\w` 以外の文字は `_`、20 文字まで)
+ */
+export function buildIntraManualUsername(login: string): string {
+	return login.replace(/\W/g, '_').slice(0, 20);
 }
 
 /**

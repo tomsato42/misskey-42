@@ -137,7 +137,7 @@ export class IntraSyncService {
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる
 	 */
 	@bindThis
-	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'cursusBeginAt'>): Promise<void> {
+	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
 		const desiredRoleIds: MiRole['id'][] = [];
 		for (const target of getIntraRoleTargets(profile)) {
 			desiredRoleIds.push(await this.ensureRole(target));

@@ -160,6 +160,15 @@ export class ApiServerService {
 			fastify.post<{
 				Body: { code?: string; } | undefined;
 			}>('/intra/exchange', (request, reply) => this.intraAuthApiService.exchange(request, reply));
+
+			// 管理者が発行したパスキーの登録リンク (42 にログインできない人のため)
+			fastify.post<{
+				Body: { token?: string; } | undefined;
+			}>('/intra/passkey-setup/options', (request, reply) => this.intraAuthApiService.passkeySetupOptions(request, reply));
+
+			fastify.post<{
+				Body: { token?: string; name?: string; credential?: unknown; } | undefined;
+			}>('/intra/passkey-setup/complete', (request, reply) => this.intraAuthApiService.passkeySetupComplete(request, reply));
 		}
 
 		// 画像・添付ファイルを見るための Cookie。mediaGate が無効なら登録せず、upstream と同じく 404 にする
