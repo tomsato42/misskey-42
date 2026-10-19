@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
 		<MkA :to="calendarUrl" :class="$style.back"><i class="ti ti-arrow-left" aria-hidden="true"></i>{{ i18n.ts._calendar.backToCalendar }}</MkA>
 		<div v-if="event" class="_gaps">
+			<MkInfo v-if="event.isOutsideVisibility" warn>{{ i18n.ts._calendar.outsideVisibilityNotice }}</MkInfo>
 			<MkInfo v-if="event.isCanceled" warn>{{ i18n.ts._calendar.eventCanceled }}</MkInfo>
 			<MkInfo v-else-if="showInvitation && event.invitedBy != null">
 				<span :class="$style.invited">
@@ -78,14 +79,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i class="ti ti-bell-ringing"></i> {{ i18n.ts._calendar.subscribed }}
 						</MkButton>
 					</template>
-					<MkButton v-else-if="!event.isCanceled && !showInvitation" rounded :disabled="subscribing" @click="subscribe">
+					<!-- 公開範囲の外 (管理人ビュー) では購読できない -->
+					<MkButton v-else-if="!event.isCanceled && !showInvitation && !event.isOutsideVisibility" rounded :disabled="subscribing" @click="subscribe">
 						<i class="ti ti-bell"></i> {{ i18n.ts._calendar.subscribe }}
 					</MkButton>
 					<!-- 招待を送れるのは購読している人と、管理できる人 -->
 					<MkButton v-if="canInvite" rounded @click="invite">
 						<i class="ti ti-user-plus"></i> {{ i18n.ts._calendar.invite }}
 					</MkButton>
-					<MkButton v-if="event.hashtag && !event.isCanceled" gradate rounded @click="postWithHashtag">
+					<MkButton v-if="event.hashtag && !event.isCanceled && !event.isOutsideVisibility" gradate rounded @click="postWithHashtag">
 						<i class="ti ti-pencil"></i> {{ i18n.tsx._calendar.postWithHashtag({ tag: event.hashtag }) }}
 					</MkButton>
 					<button type="button" class="_button" :class="$style.subscribers" :aria-label="subscribersButtonLabel" @click="openSubscribers">
@@ -105,7 +107,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.sectionLabel"><i class="ti ti-messages"></i> {{ i18n.ts._calendar.notesOfEvent }}</div>
 			<MkNotesTimeline :paginator="paginator"/>
 		</div>
-		<MkResult v-else-if="notFound" type="notFound"/>
+		<div v-else-if="notFound" :class="$style.notFound">
+			<MkResult type="notFound"/>
+			<!-- モデレーター以上には、公開範囲の外のイベントを開き直す手段を出す -->
+			<MkButton v-if="iAmModerator && !moderatorView" rounded @click="setCalendarModeratorView(true)"><i class="ti ti-shield"></i> {{ i18n.ts._calendar.openInModeratorView }}</MkButton>
+		</div>
 		<MkError v-else-if="error" @retry="fetchEvent()"/>
 		<MkLoading v-else/>
 	</div>
@@ -122,7 +128,7 @@ import MkButton from '@/components/MkButton.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
 import * as os from '@/os.js';
-import { $i } from '@/i.js';
+import { $i, iAmModerator } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useRouter } from '@/router.js';
@@ -135,6 +141,7 @@ import { buildCalendarEventIcs, getCalendarEventIcsFileName } from '@/utility/ca
 import { formatCalendarDay, formatCalendarEventTime, getCalendarApiErrorMessage, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
 import { openCalendarEventEditDialog, openCalendarEventInviteDialog, openCalendarEventSubscribersDialog } from '@/utility/calendar-event-dialog.js';
 import { getCalendarVisibilityIcon } from '@/utility/calendar-visibility.js';
+import { calendarModeratorView as moderatorView, setCalendarModeratorView } from '@/utility/calendar-moderator-view.js';
 
 const props = defineProps<{
 	eventId: string;
@@ -151,6 +158,7 @@ const paginator = markRaw(new Paginator('calendar/events/notes', {
 	limit: 10,
 	computedParams: computed(() => ({
 		eventId: props.eventId,
+		moderatorView: moderatorView.value,
 	})),
 }));
 
@@ -215,7 +223,7 @@ async function fetchEvent() {
 	error.value = false;
 	notFound.value = false;
 	try {
-		event.value = await misskeyApi('calendar/events/show', { eventId: props.eventId });
+		event.value = await showEvent(props.eventId);
 	} catch (err) {
 		if ((err as Partial<Misskey.api.APIError> | null)?.code === 'NO_SUCH_CALENDAR_EVENT') {
 			notFound.value = true;
@@ -225,7 +233,12 @@ async function fetchEvent() {
 	}
 }
 
-watch(() => props.eventId, fetchEvent, { immediate: true });
+/** イベントを引く。管理人ビューなら公開範囲の外のイベントも引く */
+function showEvent(eventId: string): Promise<Misskey.entities.CalendarEvent> {
+	return misskeyApi('calendar/events/show', { eventId, moderatorView: moderatorView.value });
+}
+
+watch([() => props.eventId, moderatorView], fetchEvent, { immediate: true });
 
 function showError(err: unknown) {
 	os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
@@ -239,7 +252,7 @@ async function applySubscription(updated: Misskey.entities.CalendarEvent) {
 	if (event.value == null) return;
 	event.value = { ...event.value, ...updated };
 	try {
-		event.value = await misskeyApi('calendar/events/show', { eventId: updated.id });
+		event.value = await showEvent(updated.id);
 	} catch {
 		// 購読はできているので、読み直せなくてもそのままにする
 	}
@@ -394,6 +407,13 @@ definePage(() => ({
 </script>
 
 <style lang="scss" module>
+.notFound {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+}
+
 .back {
 	display: inline-flex;
 	align-items: center;

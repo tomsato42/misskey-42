@@ -1480,7 +1480,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found.
+     * Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found, except for moderators with moderatorView.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */

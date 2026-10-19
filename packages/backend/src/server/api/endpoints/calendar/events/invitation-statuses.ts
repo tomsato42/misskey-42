@@ -75,7 +75,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
-				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me);
+				// 管理の操作なので、モデレーター以上は公開範囲に関係なくできる
+				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me, { moderatorView: true });
 				// 誰が招待されているかを、招待できない人には見せない
 				if (!await this.calendarInvitationService.canInvite(event, me)) throw new CalendarEventPermissionError();
 

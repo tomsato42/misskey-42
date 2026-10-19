@@ -57,6 +57,7 @@ export class CalendarEventEntityService {
 
 	/**
 	 * @param opts.detail イベントのページ用の項目 (購読者のアバター・フォローしている購読者の数・招待した人・招待できるか) も付ける
+	 * @param opts.moderatorView 管理人ビューで引いたイベント。公開範囲の外か (isOutsideVisibility) も付ける
 	 */
 	@bindThis
 	public async pack(
@@ -67,17 +68,21 @@ export class CalendarEventEntityService {
 			subscribersCount?: number;
 			isSubscribed?: boolean;
 			canManage?: boolean;
+			isOutsideVisibility?: boolean;
 		},
-		opts?: { detail?: boolean },
+		opts?: { detail?: boolean; moderatorView?: boolean },
 	): Promise<Packed<'CalendarEvent'>> {
 		const event = typeof src === 'object' ? src : await this.calendarEventService.findByIdOrFail(src);
 
-		const [user, subscribersCount, isSubscribed, canManage, detail] = await Promise.all([
+		const [user, subscribersCount, isSubscribed, canManage, detail, isOutsideVisibility] = await Promise.all([
 			hint?.packedUser ?? this.userEntityService.pack(event.user ?? event.userId, me),
 			hint?.subscribersCount ?? this.calendarEventService.countSubscribers(event),
 			me == null ? undefined : (hint?.isSubscribed ?? this.calendarEventService.isSubscribed(event, me)),
 			me == null ? undefined : (hint?.canManage ?? this.calendarEventService.canManage(event, me)),
 			opts?.detail === true && me != null ? this.packDetail(event, me) : undefined,
+			opts?.moderatorView === true && me != null
+				? (hint?.isOutsideVisibility ?? this.calendarVisibilityService.canView(event, me).then(visible => !visible))
+				: undefined,
 		]);
 
 		return {
@@ -94,6 +99,7 @@ export class CalendarEventEntityService {
 			// 指定ユーザーとリストは、管理できる人 (編集する人) にだけ返す
 			...(canManage === true ? { visibleUserIds: event.visibleUserIds, userListId: event.userListId } : {}),
 			...(detail ?? {}),
+			...(isOutsideVisibility !== undefined ? { isOutsideVisibility } : {}),
 		};
 	}
 
@@ -117,19 +123,23 @@ export class CalendarEventEntityService {
 	}
 
 	/**
-	 * 作成者・購読者数・購読状態・編集できるかをまとめて引いて pack する
+	 * 作成者・購読者数・購読状態・編集できるか (管理人ビューでは公開範囲の外か) をまとめて引いて pack する
+	 * @param opts.moderatorView 管理人ビューで引いたイベント。公開範囲の外か (isOutsideVisibility) も付ける
 	 */
 	@bindThis
-	public async packMany(events: MiCalendarEvent[], me?: Me): Promise<Packed<'CalendarEvent'>[]> {
+	public async packMany(events: MiCalendarEvent[], me?: Me, opts?: { moderatorView?: boolean }): Promise<Packed<'CalendarEvent'>[]> {
 		if (events.length === 0) return [];
 		const eventIds = events.map(e => e.id);
+		const moderatorView = opts?.moderatorView === true && me != null;
 
-		const [packedUsers, counts, subscribed, canManage] = await Promise.all([
+		const [packedUsers, counts, subscribed, canManage, visible] = await Promise.all([
 			this.userEntityService.packMany(events.map(e => e.user ?? e.userId), me)
 				.then(users => new Map(users.map(u => [u.id, u]))),
 			this.calendarEventService.countSubscribersOfEvents(eventIds),
 			me == null ? null : this.calendarEventService.getSubscribedEventIds(me, eventIds),
 			me == null ? null : this.calendarEventService.createManageChecker(me, events),
+			// 管理人ビューでなければ見られるものを、公開範囲の内とする
+			moderatorView ? this.calendarVisibilityService.filterVisible(events, me).then(list => new Set(list.map(e => e.id))) : null,
 		]);
 
 		return await Promise.all(events.map(event => this.pack(event, me, {
@@ -137,7 +147,8 @@ export class CalendarEventEntityService {
 			subscribersCount: counts.get(event.id) ?? 0,
 			isSubscribed: subscribed?.has(event.id),
 			canManage: canManage?.(event),
-		})));
+			isOutsideVisibility: visible != null ? !visible.has(event.id) : undefined,
+		}, { moderatorView })));
 	}
 
 	/**

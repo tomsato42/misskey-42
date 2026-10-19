@@ -11,6 +11,7 @@ import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { ApiError } from '@/server/api/error.js';
+import { calendarModeratorViewParam } from '@/server/api/calendar-api.js';
 import { DI } from '@/di-symbols.js';
 
 export const meta = {
@@ -76,6 +77,7 @@ export const paramDef = {
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 30 },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
+		moderatorView: calendarModeratorViewParam,
 	},
 	required: ['eventId'],
 } as const;
@@ -92,7 +94,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const event = await this.calendarEventService.findById(ps.eventId);
-			if (event == null || !await this.calendarEventService.canView(event, me)) throw new ApiError(meta.errors.noSuchEvent);
+			if (event == null || !await this.calendarEventService.canView(event, me, { moderatorView: ps.moderatorView })) throw new ApiError(meta.errors.noSuchEvent);
 
 			const subscriptions = await this.calendarEventService.listSubscribers(event, me, {
 				filter: ps.filter,

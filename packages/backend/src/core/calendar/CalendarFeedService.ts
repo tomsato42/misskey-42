@@ -175,7 +175,7 @@ export class CalendarFeedService {
 			query.innerJoin(MiCalendarEventSubscription, 'subscription', 'subscription.eventId = event.id AND subscription.userId = :userId', { userId: user.id });
 		}
 		// 鍵の持ち主が見られるイベントだけを配信する
-		await this.calendarVisibilityService.applyVisibleFilter(query, 'event', user);
+		this.calendarVisibilityService.applyVisibleFilter(query, 'event', user);
 
 		const events = await query.getMany();
 		const instanceName = this.meta.name ?? this.config.host;

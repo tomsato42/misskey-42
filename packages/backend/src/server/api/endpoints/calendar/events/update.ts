@@ -74,7 +74,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			try {
 				// 公開範囲の外のイベントは、存在しないのと同じエラーにする (権限のエラーで存在が分からないように)
-				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me);
+				// 管理の操作なので、モデレーター以上は公開範囲に関係なくできる
+				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me, { moderatorView: true });
 				const { event: updated } = await this.calendarEventService.update(event, {
 					title: ps.title,
 					date: ps.date,

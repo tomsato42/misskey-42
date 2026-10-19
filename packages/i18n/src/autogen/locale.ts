@@ -14342,6 +14342,30 @@ export interface Locale extends ILocale {
          */
         "restrictedVisibility": string;
         /**
+         * 管理人ビューにする
+         */
+        "moderatorViewTurnOn": string;
+        /**
+         * 管理人ビューをやめる
+         */
+        "moderatorViewTurnOff": string;
+        /**
+         * 管理人ビューです。公開範囲の外のイベントも表示しています
+         */
+        "moderatorViewNotice": string;
+        /**
+         * 公開範囲の外
+         */
+        "outsideVisibility": string;
+        /**
+         * 公開範囲の外のイベントを管理人ビューで表示しています。購読とノートの紐づけはできません
+         */
+        "outsideVisibilityNotice": string;
+        /**
+         * 管理人ビューで開く
+         */
+        "openInModeratorView": string;
+        /**
          * 公開範囲
          */
         "visibility": string;

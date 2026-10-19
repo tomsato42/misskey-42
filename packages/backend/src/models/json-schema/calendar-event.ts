@@ -173,6 +173,11 @@ export const packedCalendarEventSchema = {
 			optional: true, nullable: false,
 			description: 'Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show.',
 		},
+		isOutsideVisibility: {
+			type: 'boolean',
+			optional: true, nullable: false,
+			description: 'Whether the event is outside your visibility, i.e. you see it only because you are a moderator and requested moderatorView. Only present when moderatorView is requested.',
+		},
 	},
 } as const;
 

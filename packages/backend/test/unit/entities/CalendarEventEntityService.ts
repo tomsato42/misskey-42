@@ -68,6 +68,7 @@ describe('CalendarEventEntityService', () => {
 		};
 		calendarVisibilityService = {
 			filterVisible: vi.fn(async (events: unknown[]) => events),
+			canView: vi.fn(async () => true),
 		};
 		userEntityService = {
 			pack: vi.fn(async (u: string | { id: string }) => ({ id: typeof u === 'string' ? u : u.id })),
@@ -168,6 +169,13 @@ describe('CalendarEventEntityService', () => {
 			expect(calendarInvitationService.getInviterId).not.toHaveBeenCalled();
 			expect(packed).not.toHaveProperty('canInvite');
 		});
+
+		test('管理人ビューでは、公開範囲の外かを付ける', async () => {
+			calendarVisibilityService.canView.mockResolvedValueOnce(false);
+			const packed = await service.pack(event({ visibility: 'followers' }), BOB, undefined, { moderatorView: true });
+			expect(packed.isOutsideVisibility).toBe(true);
+			expect(calendarVisibilityService.canView).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB);
+		});
 	});
 
 	describe('packMany', () => {
@@ -190,6 +198,21 @@ describe('CalendarEventEntityService', () => {
 			expect(calendarEventService.countSubscribers).not.toHaveBeenCalled();
 			expect(calendarEventService.isSubscribed).not.toHaveBeenCalled();
 			expect(calendarEventService.canManage).not.toHaveBeenCalled();
+			// 管理人ビューでなければ、公開範囲の外かは付けない
+			expect(packed[0]).not.toHaveProperty('isOutsideVisibility');
+			expect(calendarVisibilityService.filterVisible).not.toHaveBeenCalled();
+		});
+
+		test('管理人ビューでは、公開範囲の外か (管理人ビューでなければ見られないか) をまとめて付ける', async () => {
+			const events = [event({ id: 'e1' }), event({ id: 'e2', visibility: 'followers' })];
+			calendarVisibilityService.filterVisible.mockImplementationOnce(async (list: MiCalendarEvent[]) => list.filter(e => e.visibility === 'public'));
+
+			const packed = await service.packMany(events, BOB, { moderatorView: true });
+
+			expect(packed.map(p => [p.id, p.isOutsideVisibility])).toEqual([['e1', false], ['e2', true]]);
+			// 管理人ビューのオプションを付けずに (普段の見え方で) 絞る
+			expect(calendarVisibilityService.filterVisible).toHaveBeenCalledWith(events, BOB);
+			expect(calendarVisibilityService.canView).not.toHaveBeenCalled();
 		});
 
 		test('空なら何も引かない', async () => {

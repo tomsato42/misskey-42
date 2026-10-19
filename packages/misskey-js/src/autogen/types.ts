@@ -1215,7 +1215,7 @@ export type paths = {
     '/calendar/events/show': {
         /**
          * calendar/events/show
-         * @description Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found.
+         * @description Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found, except for moderators with moderatorView.
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -6257,6 +6257,8 @@ export type components = {
             invitedBy?: components['schemas']['UserLite'] | null;
             /** @description Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show. */
             canInvite?: boolean;
+            /** @description Whether the event is outside your visibility, i.e. you see it only because you are a moderator and requested moderatorView. Only present when moderatorView is requested. */
+            isOutsideVisibility?: boolean;
         };
         CalendarEventSchedule: {
             /**
@@ -16112,6 +16114,11 @@ export interface operations {
                      * @enum {string}
                      */
                     filter?: 'all' | 'subscribed' | 'mine';
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
                 };
             };
         };
@@ -16184,6 +16191,11 @@ export interface operations {
                     sinceId?: string;
                     /** Format: misskey:id */
                     untilId?: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
                 };
             };
         };
@@ -16250,6 +16262,11 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     eventId: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
                 };
             };
         };
@@ -16403,6 +16420,11 @@ export interface operations {
                     sinceId?: string;
                     /** Format: misskey:id */
                     untilId?: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
                 };
             };
         };

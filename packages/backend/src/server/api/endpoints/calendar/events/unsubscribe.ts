@@ -66,7 +66,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const event = await this.calendarEventService.findByIdOrFail(ps.eventId);
 				// 公開範囲の外になった人も購読を外せるようにするが、イベントの中身は返さない (存在しないのと同じエラーにする)
 				await this.calendarEventService.unsubscribe(event, me);
-				if (!await this.calendarEventService.canView(event, me)) throw new CalendarEventNotFoundError();
+				if (!await this.calendarEventService.canView(event, me, { moderatorView: true })) throw new CalendarEventNotFoundError();
 				return await this.calendarEventEntityService.pack(event, me, { isSubscribed: false });
 			} catch (err) {
 				throw toCalendarApiError(err, {

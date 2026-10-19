@@ -11,6 +11,7 @@ import { QueryService } from '@/core/QueryService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { ApiError } from '@/server/api/error.js';
+import { calendarModeratorViewParam } from '@/server/api/calendar-api.js';
 import { DI } from '@/di-symbols.js';
 
 export const meta = {
@@ -48,6 +49,7 @@ export const paramDef = {
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
+		moderatorView: calendarModeratorViewParam,
 	},
 	required: ['eventId'],
 } as const;
@@ -64,7 +66,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const event = await this.calendarEventService.findById(ps.eventId);
-			if (event == null || !await this.calendarEventService.canView(event, me)) throw new ApiError(meta.errors.noSuchEvent);
+			if (event == null || !await this.calendarEventService.canView(event, me, { moderatorView: ps.moderatorView })) throw new ApiError(meta.errors.noSuchEvent);
 
 			// 紐づけの表は公開範囲を見ていないので、タイムラインと同じ条件で閲覧者が見てよいノートに絞る (notes/search-by-tag と同じ)
 			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)

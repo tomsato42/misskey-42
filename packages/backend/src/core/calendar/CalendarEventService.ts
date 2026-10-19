@@ -25,6 +25,7 @@ import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js
 import { bindThis } from '@/decorators.js';
 import { CalendarNotificationService } from './CalendarNotificationService.js';
 import { CalendarVisibilityService } from './CalendarVisibilityService.js';
+import type { CalendarViewOptions } from './CalendarVisibilityService.js';
 import { CalendarInvitationService } from './CalendarInvitationService.js';
 import {
 	CalendarEventCanceledError,
@@ -603,21 +604,22 @@ export class CalendarEventService {
 
 	/**
 	 * me が見られるイベントを引く。公開範囲の外なら、存在しないときと同じエラーにする
+	 * @param opts.moderatorView モデレーター以上なら公開範囲の外のイベントも引く (管理人ビューと、管理の操作)
 	 * @throws CalendarEventNotFoundError イベントが存在しない、または公開範囲の外
 	 */
 	@bindThis
-	public async findVisibleByIdOrFail(id: MiCalendarEvent['id'], me: Me | null | undefined): Promise<MiCalendarEvent> {
+	public async findVisibleByIdOrFail(id: MiCalendarEvent['id'], me: Me | null | undefined, opts?: CalendarViewOptions): Promise<MiCalendarEvent> {
 		const event = await this.findByIdOrFail(id);
-		if (!await this.canView(event, me)) throw new CalendarEventNotFoundError();
+		if (!await this.canView(event, me, opts)) throw new CalendarEventNotFoundError();
 		return event;
 	}
 
 	/**
-	 * me がイベントを見られるか (作成者とモデレーター以上は常に見られる)
+	 * me がイベントを見られるか (作成者は常に見られる。モデレーター以上は moderatorView のときだけ公開範囲に関係なく見られる)
 	 */
 	@bindThis
-	public async canView(event: MiCalendarEvent, me: Me | null | undefined): Promise<boolean> {
-		return await this.calendarVisibilityService.canView(event, me);
+	public async canView(event: MiCalendarEvent, me: Me | null | undefined, opts?: CalendarViewOptions): Promise<boolean> {
+		return await this.calendarVisibilityService.canView(event, me, opts);
 	}
 
 	/**
@@ -647,7 +649,7 @@ export class CalendarEventService {
 	 * 月の表示では getJstMonthRange の範囲を渡す
 	 */
 	@bindThis
-	public async listInRange(from: Date, to: Date, filter: CalendarEventFilter, me: Me): Promise<MiCalendarEvent[]> {
+	public async listInRange(from: Date, to: Date, filter: CalendarEventFilter, me: Me, opts?: CalendarViewOptions): Promise<MiCalendarEvent[]> {
 		const where: FindOptionsWhere<MiCalendarEvent> = {
 			startsAt: And(MoreThanOrEqual(from), LessThan(to)),
 		};
@@ -656,7 +658,7 @@ export class CalendarEventService {
 		const events = await this.calendarVisibilityService.filterVisible(await this.calendarEventsRepository.find({
 			where,
 			order: { startsAt: 'ASC', id: 'ASC' },
-		}), me);
+		}), me, opts);
 		if (filter !== 'subscribed') return events;
 
 		// 範囲内のイベントは多くないので、購読の有無はまとめて引いて絞り込む
@@ -685,7 +687,7 @@ export class CalendarEventService {
 		} else if (filter === 'subscribed') {
 			query.innerJoin(MiCalendarEventSubscription, 'subscription', 'subscription.eventId = event.id AND subscription.userId = :meId', { meId: me.id });
 		}
-		await this.calendarVisibilityService.applyVisibleFilter(query, 'event', me);
+		this.calendarVisibilityService.applyVisibleFilter(query, 'event', me);
 
 		return await query.getMany();
 	}

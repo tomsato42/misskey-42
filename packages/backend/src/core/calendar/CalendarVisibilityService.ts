@@ -26,8 +26,14 @@ type Me = { id: MiUser['id'] };
 
 type VisibilityFields = Pick<MiCalendarEvent, 'id' | 'userId' | 'visibility' | 'visibleUserIds' | 'userListId'>;
 
+export type CalendarViewOptions = {
+	/** モデレーター以上なら公開範囲の外のイベントも見る (管理人ビューと、管理の操作)。ほかの人には効かない */
+	moderatorView?: boolean;
+};
+
 /**
- * イベントの公開範囲の検証と判定。作成者とモデレーター以上は公開範囲に関係なく見られる
+ * イベントの公開範囲の検証と判定。作成者は常に見られる。
+ * モデレーター以上も普段はほかの人と同じで、moderatorView を付けたときだけ公開範囲に関係なく見られる
  */
 @Injectable()
 export class CalendarVisibilityService {
@@ -87,13 +93,13 @@ export class CalendarVisibilityService {
 	 * viewer がイベントを見られるか。viewer が null (未ログイン) なら全員向けのイベントだけ
 	 */
 	@bindThis
-	public async canView(event: VisibilityFields, viewer: Me | null | undefined): Promise<boolean> {
+	public async canView(event: VisibilityFields, viewer: Me | null | undefined, opts?: CalendarViewOptions): Promise<boolean> {
 		if (event.visibility === 'public') return true;
 		if (viewer == null) return false;
 		if (event.userId === viewer.id) return true;
 
 		if (isCalendarEventVisibleTo(event, viewer, await this.getRelation(event, viewer))) return true;
-		return await this.roleService.isModerator(viewer);
+		return opts?.moderatorView === true && await this.roleService.isModerator(viewer);
 	}
 
 	/** 判定に要る、閲覧者と作成者の関係だけを引く */
@@ -127,11 +133,11 @@ export class CalendarVisibilityService {
 	 * イベントの一覧を、me が見られるものだけに絞る (並びは変えない)
 	 */
 	@bindThis
-	public async filterVisible<T extends VisibilityFields>(events: T[], me: Me | null | undefined): Promise<T[]> {
+	public async filterVisible<T extends VisibilityFields>(events: T[], me: Me | null | undefined, opts?: CalendarViewOptions): Promise<T[]> {
 		const restricted = events.filter(e => e.visibility !== 'public' && e.userId !== me?.id);
 		if (restricted.length === 0) return events;
 		if (me == null) return events.filter(e => e.visibility === 'public');
-		if (await this.roleService.isModerator(me)) return events;
+		if (opts?.moderatorView === true && await this.roleService.isModerator(me)) return events;
 
 		const rows = await this.calendarEventsRepository.createQueryBuilder('event')
 			.select('event.id', 'id')
@@ -143,16 +149,15 @@ export class CalendarVisibilityService {
 	}
 
 	/**
-	 * イベントを引くクエリに、me が見られるものだけに絞る条件を足す (モデレーター以上は絞らない)
+	 * イベントを引くクエリに、me が見られるものだけに絞る条件を足す (モデレーター以上も絞る。ウィジェットと配信用)
 	 * @param eventAlias クエリでのイベントの表の別名
 	 */
 	@bindThis
-	public async applyVisibleFilter(query: SelectQueryBuilder<any>, eventAlias: string, me: Me | null | undefined): Promise<void> {
+	public applyVisibleFilter(query: SelectQueryBuilder<any>, eventAlias: string, me: Me | null | undefined): void {
 		if (me == null) {
 			query.andWhere(`"${eventAlias}"."visibility" = 'public'`);
 			return;
 		}
-		if (await this.roleService.isModerator(me)) return;
 		query.andWhere(calendarEventVisibleSql(eventAlias, ':calendarViewerId'), { calendarViewerId: me.id });
 	}
 

@@ -10,6 +10,7 @@ import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityS
 import { getJstMonthRange } from '@/core/calendar/calendar-time.js';
 import { CalendarEventValidationError } from '@/core/calendar/calendar-errors.js';
 import { ApiError } from '@/server/api/error.js';
+import { calendarModeratorViewParam } from '@/server/api/calendar-api.js';
 
 export const meta = {
 	tags: ['calendar'],
@@ -49,6 +50,7 @@ export const paramDef = {
 			default: 'all',
 			description: 'all: every event, subscribed: events you subscribe to (including your own), mine: events you created.',
 		},
+		moderatorView: calendarModeratorViewParam,
 	},
 	required: ['month'],
 } as const;
@@ -68,8 +70,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw err;
 			}
 
-			const events = await this.calendarEventService.listInRange(range.from, range.to, ps.filter, me);
-			return await this.calendarEventEntityService.packMany(events, me);
+			const events = await this.calendarEventService.listInRange(range.from, range.to, ps.filter, me, { moderatorView: ps.moderatorView });
+			return await this.calendarEventEntityService.packMany(events, me, { moderatorView: ps.moderatorView });
 		});
 	}
 }

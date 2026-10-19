@@ -15,6 +15,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkButton primary rounded :class="$style.create" @click="createEvent()"><i class="ti ti-plus"></i> {{ i18n.ts._calendar.createEvent }}</MkButton>
 		</div>
 
+		<MkInfo v-if="moderatorView" warn :class="$style.moderatorNotice">
+			<span :class="$style.moderatorNoticeBody">
+				<span>{{ i18n.ts._calendar.moderatorViewNotice }}</span>
+				<MkButton small rounded @click="setCalendarModeratorView(false)">{{ i18n.ts._calendar.moderatorViewTurnOff }}</MkButton>
+			</span>
+		</MkInfo>
+
 		<MkError v-if="error" @retry="fetchEvents()"/>
 
 		<div class="_panel" :class="[$style.panel, { [$style.fetching]: fetching }]">
@@ -51,7 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 						@click.stop
 					>
 						<span :class="$style.chipTime">{{ event.isAllDay ? i18n.ts._calendar.allDay : event.startTime }}</span>
-						<i v-if="event.visibility !== 'public'" class="ti ti-lock" :class="$style.chipVisibility" aria-hidden="true"></i>
+						<i v-if="event.isOutsideVisibility" class="ti ti-shield-lock" :class="$style.chipVisibility" aria-hidden="true"></i>
+						<i v-else-if="event.visibility !== 'public'" class="ti ti-lock" :class="$style.chipVisibility" aria-hidden="true"></i>
 						<span>{{ event.title }}</span>
 					</MkA>
 					<button
@@ -71,6 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span><i :class="$style.legendMark"></i>{{ i18n.ts._calendar.notSubscribed }}</span>
 			<span><i :class="[$style.legendMark, $style.canceled]"></i><s>{{ i18n.ts._calendar.canceled }}</s></span>
 			<span><i class="ti ti-lock" aria-hidden="true"></i>{{ i18n.ts._calendar.restrictedVisibility }}</span>
+			<span v-if="moderatorView"><i class="ti ti-shield-lock" aria-hidden="true"></i>{{ i18n.ts._calendar.outsideVisibility }}</span>
 		</div>
 
 		<!-- 表示している月のイベントを日付ごとに並べる。カレンダーと同じタブで絞り込む (スマホではこちらで中身を見る) -->
@@ -105,6 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<small :class="$style.eventMeta">
 										<span v-if="event.location"><i class="ti ti-map-pin" aria-hidden="true"></i>{{ event.location }}</span>
 										<span v-if="event.visibility !== 'public'"><i :class="getCalendarVisibilityIcon(event.visibility)" aria-hidden="true"></i>{{ getCalendarVisibilityLabel(event.visibility) }}</span>
+										<span v-if="event.isOutsideVisibility" :class="$style.outside"><i class="ti ti-shield-lock" aria-hidden="true"></i>{{ i18n.ts._calendar.outsideVisibility }}</span>
 										<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._calendar.subscribersShort({ n: event.subscribersCount }) }}</span>
 									</small>
 								</span>
@@ -128,12 +138,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onActivated, ref, useId } from 'vue';
+import { computed, onActivated, ref, useId, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MenuItem } from '@/types/menu.js';
 import type { PageHeaderItem } from '@/types/page-header.js';
 import MkButton from '@/components/MkButton.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import * as os from '@/os.js';
+import { iAmModerator } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useRouter } from '@/router.js';
@@ -154,6 +166,7 @@ import type { CalendarFilter } from '@/utility/calendar.js';
 import { formatCalendarDay, formatCalendarEventTime, formatCalendarYearMonth, getCalendarVisibilityLabel, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';
 import { getCalendarVisibilityIcon } from '@/utility/calendar-visibility.js';
 import { openCalendarEventEditDialog } from '@/utility/calendar-event-dialog.js';
+import { calendarModeratorView as moderatorView, setCalendarModeratorView } from '@/utility/calendar-moderator-view.js';
 
 /** セルに出すイベントの数。これより多い日は「他 N 件」にまとめる */
 const MAX_CHIPS_PER_DAY = 3;
@@ -208,6 +221,7 @@ async function fetchEvents() {
 		const res = await misskeyApi('calendar/events/list', {
 			month: currentMonth.value,
 			filter: currentFilter.value,
+			moderatorView: moderatorView.value,
 		});
 		if (id !== fetchCount) return;
 		events.value = res;
@@ -220,6 +234,8 @@ async function fetchEvents() {
 }
 
 fetchEvents();
+
+watch(moderatorView, () => fetchEvents());
 
 // ページのキャッシュから戻ったとき (イベントページで購読したあとなど) は読み直す。最初の表示では setup で読んでいるので読まない
 let activatedOnce = false;
@@ -243,6 +259,7 @@ function eventRowLabel(event: Misskey.entities.CalendarEvent): string {
 		formatCalendarEventTime(event),
 		event.location,
 		event.visibility !== 'public' ? getCalendarVisibilityLabel(event.visibility) : null,
+		event.isOutsideVisibility === true ? i18n.ts._calendar.outsideVisibility : null,
 		event.isSubscribed === true && !event.isCanceled ? i18n.ts._calendar.subscribed : null,
 	].filter(x => x != null && x !== '').join(' ');
 }
@@ -264,6 +281,7 @@ function chipTitle(event: Misskey.entities.CalendarEvent): string {
 	// 全員以外に公開しているイベントは、カレンダーでは鍵の印だけなので、公開範囲を添える
 	const notes = [
 		event.visibility !== 'public' ? getCalendarVisibilityLabel(event.visibility) : null,
+		event.isOutsideVisibility === true ? i18n.ts._calendar.outsideVisibility : null,
 		event.isCanceled ? i18n.ts._calendar.canceled : null,
 	].filter(x => x != null);
 	return notes.length > 0 ? `${text} (${notes.join(', ')})` : text;
@@ -319,7 +337,15 @@ const headerTabs = computed(() => [{
 	icon: 'ti ti-user',
 }]);
 
-const headerActions = computed<PageHeaderItem[]>(() => [{
+const headerActions = computed<PageHeaderItem[]>(() => [...(iAmModerator ? [{
+	// 管理人ビューの切り替え (モデレーター以上だけ)
+	icon: moderatorView.value ? 'ti ti-shield-check' : 'ti ti-shield',
+	text: moderatorView.value ? i18n.ts._calendar.moderatorViewTurnOff : i18n.ts._calendar.moderatorViewTurnOn,
+	highlighted: moderatorView.value,
+	handler: () => {
+		setCalendarModeratorView(!moderatorView.value);
+	},
+}] : []), {
 	icon: 'ti ti-rss',
 	text: i18n.ts._calendar.feed,
 	handler: () => {
@@ -356,6 +382,22 @@ definePage(() => ({
 
 .grow {
 	flex: 1;
+}
+
+.moderatorNotice {
+	margin-bottom: 12px;
+}
+
+.moderatorNoticeBody {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+}
+
+/* 管理人ビューで出している、公開範囲の外のイベントの印 */
+.outside {
+	color: var(--MI_THEME-warn);
 }
 
 .panel {

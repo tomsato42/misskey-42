@@ -218,6 +218,10 @@ export const PREF_DEF = definePreferences({
 	'calendar.menuItemAdded': {
 		default: false,
 	},
+	// 42times: カレンダーを管理人ビュー (公開範囲の外のイベントも出す) で見るか。モデレーター以上にだけ効く
+	'calendar.moderatorView': {
+		default: false,
+	},
 	statusbars: {
 		default: [] as StatusbarStore[],
 	},

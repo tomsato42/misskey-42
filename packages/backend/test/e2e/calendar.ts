@@ -639,7 +639,7 @@ describe('カレンダー', () => {
 			assert.strictEqual(shown.visibleUserIds, undefined);
 		});
 
-		test('フォロワー限定は、作成者のフォロワーとモデレーターだけが見られる', async () => {
+		test('フォロワー限定は、作成者のフォロワーだけが見られる', async () => {
 			followersEvent = await successfulApiCall({
 				endpoint: 'calendar/events/create',
 				parameters: { title: 'フォロワー限定', date, startTime: '10:00', visibility: 'followers' },
@@ -648,13 +648,45 @@ describe('カレンダー', () => {
 			assert.strictEqual(followersEvent.visibility, 'followers');
 
 			assert.ok(await canShow(followersEvent.id, frank));
-			assert.ok(await canShow(followersEvent.id, carol));
 			assert.ok(!await canShow(followersEvent.id, grace));
 			assert.ok((await monthIds(frank)).includes(followersEvent.id));
 			assert.ok(!(await monthIds(grace)).includes(followersEvent.id));
 
 			// 見られない人は購読もできない (存在しないのと同じエラー)
 			await failedApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: followersEvent.id }, user: grace }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '7ca24a7a-de71-4aa9-84da-160776c9a929' });
+		});
+
+		test('モデレーターも普段はほかの人と同じで、管理人ビュー (moderatorView) のときだけ公開範囲の外も見られる', async () => {
+			const hidden = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: '管理人ビュー', date, startTime: '10:30', visibility: 'followers' },
+				user: alice,
+			});
+			assert.ok(!await canShow(hidden.id, carol));
+			assert.ok(!(await monthIds(carol)).includes(hidden.id));
+
+			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: hidden.id, moderatorView: true }, user: carol });
+			assert.strictEqual(shown.isOutsideVisibility, true);
+			const list = await successfulApiCall({ endpoint: 'calendar/events/list', parameters: { month, moderatorView: true }, user: carol });
+			assert.strictEqual(list.find(e => e.id === hidden.id)?.isOutsideVisibility, true);
+			// 公開範囲の内のイベントは false
+			assert.ok(list.filter(e => e.visibility === 'public').every(e => e.isOutsideVisibility === false));
+			await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: hidden.id, moderatorView: true }, user: carol });
+			await successfulApiCall({ endpoint: 'calendar/events/notes', parameters: { eventId: hidden.id, moderatorView: true }, user: carol });
+
+			// モデレーターでなければ効かない
+			await failedApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: hidden.id, moderatorView: true }, user: grace }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '14d2357d-a3a3-4f49-b23a-ca7c0d19fe31' });
+			const graceList = await successfulApiCall({ endpoint: 'calendar/events/list', parameters: { month, moderatorView: true }, user: grace });
+			assert.ok(!graceList.some(e => e.id === hidden.id));
+
+			// 購読は公開範囲の内の人だけ (リマインドや配信の対象にならないので)
+			await failedApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: hidden.id }, user: carol }, { status: 400, code: 'NO_SUCH_CALENDAR_EVENT', id: '7ca24a7a-de71-4aa9-84da-160776c9a929' });
+
+			// 管理の操作は、管理人ビューでなくてもできる
+			const updated = await successfulApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: hidden.id, title: '管理人ビュー (編集済み)' }, user: carol });
+			assert.strictEqual(updated.title, '管理人ビュー (編集済み)');
+			await successfulApiCall({ endpoint: 'calendar/events/cancel', parameters: { eventId: hidden.id }, user: carol });
+			await successfulApiCall({ endpoint: 'calendar/events/delete', parameters: { eventId: hidden.id }, user: carol });
 		});
 
 		test('相互フォローは、作成者もフォローし返すと見られる', async () => {

@@ -77,6 +77,16 @@ type CalendarEventCreateParams = {
 	hashtag?: string | null;
 };
 
+/**
+ * 管理人ビューのパラメータ。モデレーター以上が true にすると、公開範囲の外のイベントも見られる (ほかの人には効かない)。
+ * 編集・中止・削除・招待などの管理の操作は、これが無くてもモデレーター以上なら公開範囲に関係なくできる
+ */
+export const calendarModeratorViewParam = {
+	type: 'boolean',
+	default: false,
+	description: 'Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.',
+} as const;
+
 /** API のパラメータから公開範囲の入力を取り出す。省略 (undefined) は「変えない」なので、そのまま渡す */
 export function toCalendarEventVisibilityInput(ps: {
 	visibility?: CalendarEventVisibility;

@@ -91,14 +91,16 @@ const tabs: Tab<'all' | 'following'>[] = [{
 	label: i18n.ts._calendar.followingUsers,
 }];
 
+// 管理人ビューで開いた公開範囲の外のイベントは、管理人ビューで引く
+const moderatorView = props.event.isOutsideVisibility === true;
 const allPaginator = markRaw(new Paginator('calendar/events/subscribers', {
 	limit: 30,
-	params: { eventId: props.event.id, filter: 'all' },
+	params: { eventId: props.event.id, filter: 'all', moderatorView },
 }));
 
 const followingPaginator = markRaw(new Paginator('calendar/events/subscribers', {
 	limit: 30,
-	params: { eventId: props.event.id, filter: 'following' },
+	params: { eventId: props.event.id, filter: 'following', moderatorView },
 }));
 </script>
 
