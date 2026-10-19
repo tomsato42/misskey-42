@@ -19,10 +19,12 @@ import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
 import { IntraProjectService } from './IntraProjectService.js';
 import { IntraCohortService } from './IntraCohortService.js';
+import { IntraCoalitionService } from './IntraCoalitionService.js';
 import { extractIntraProfile } from './intra-user.js';
 import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLevelRoleTarget } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
+import type { IntraCoalition } from './intra-coalition.js';
 
 type IntraConfig = NonNullable<Config['intra']>;
 
@@ -31,6 +33,7 @@ const ROLE_DESCRIPTIONS: Record<IntraRoleTarget['kind'], string> = {
 	campus: '42 intra のキャンパスに応じて自動で付与されます',
 	pool: '42 intra のピシンの時期に応じて自動で付与されます',
 	cohort: '42 intra の本科 (42cursus) への入学時期に応じて自動で付与されます',
+	coalition: '42 intra のコアリションに応じて自動で付与されます',
 };
 
 /**
@@ -62,6 +65,7 @@ export class IntraSyncService {
 		private loggerService: LoggerService,
 		private intraProjectService: IntraProjectService,
 		private intraCohortService: IntraCohortService,
+		private intraCoalitionService: IntraCoalitionService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-sync');
 	}
@@ -114,7 +118,7 @@ export class IntraSyncService {
 		const updatedProfile = await this.userProfilesRepository.findOneByOrFail({ userId });
 		await this.cacheService.userProfileCache.set(userId, updatedProfile);
 
-		await this.syncRoles(userId, extracted);
+		await this.syncRoles(userId, intraUser.id, extracted);
 
 		try {
 			await this.intraProjectService.syncUserProgress(userId, intraUser, extracted.campus?.id ?? null);
@@ -139,24 +143,38 @@ export class IntraSyncService {
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる
 	 */
 	@bindThis
-	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
+	private async syncRoles(userId: MiUser['id'], intraId: number, profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
 		const intakeYearMonth = await this.intraCohortService.getIntakeYearMonth(profile.campus?.id ?? null, profile.cursusBeginAt);
+
+		let coalition: IntraCoalition | null = null;
+		let coalitionKnown = true;
+		try {
+			coalition = await this.intraCoalitionService.getUserCoalition(intraId, profile.campus?.id ?? null);
+		} catch (err) {
+			// 所属が分からないときは、コアリションのロールを付けも外しもしない
+			coalitionKnown = false;
+			this.logger.warn(`Failed to get the coalition of intra user ${intraId} (user ${userId}): ${err instanceof Error ? err.message : String(err)}`);
+		}
+
 		const desiredRoleIds: MiRole['id'][] = [];
-		for (const target of getIntraRoleTargets(profile, intakeYearMonth)) {
+		for (const target of getIntraRoleTargets(profile, intakeYearMonth, coalition)) {
 			desiredRoleIds.push(await this.ensureRole(target));
 		}
 
 		const now = Date.now();
 		// RoleService のキャッシュはプロセス間で遅れて更新されるため、DB から直接読む
 		const [managed, assigns] = await Promise.all([
-			this.intraRolesRepository.find({ select: { roleId: true } }),
+			this.intraRolesRepository.find({ select: { roleId: true, kind: true } }),
 			this.roleAssignmentsRepository.findBy({ userId }),
 		]);
 		const assignedRoleIds = assigns
 			.filter(a => a.expiresAt == null || a.expiresAt.getTime() > now)
 			.map(a => a.roleId);
+		const managedRoleIds = managed
+			.filter(r => coalitionKnown || r.kind !== 'coalition')
+			.map(r => r.roleId);
 
-		const { toAssign, toUnassign } = diffIntraRoleAssignments(managed.map(r => r.roleId), desiredRoleIds, assignedRoleIds);
+		const { toAssign, toUnassign } = diffIntraRoleAssignments(managedRoleIds, desiredRoleIds, assignedRoleIds);
 
 		for (const roleId of toUnassign) {
 			try {
@@ -191,7 +209,7 @@ export class IntraSyncService {
 		const role = await this.roleService.create({
 			name: target.name,
 			description: ROLE_DESCRIPTIONS[target.kind],
-			color: null,
+			color: target.color ?? null,
 			iconUrl,
 			target: 'manual',
 			isPublic: true,

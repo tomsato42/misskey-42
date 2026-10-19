@@ -15,6 +15,7 @@ import type Logger from '@/logger.js';
 import type { IntraUser } from './intra-user.js';
 import type { IntraProjectSession, IntraQuestUser } from './intra-project.js';
 import type { IntraCursusUserWithUser } from './intra-cohort.js';
+import type { IntraBloc, IntraCoalitionUser } from './intra-coalition.js';
 import type { Response } from 'node-fetch';
 
 type IntraConfig = NonNullable<Config['intra']>;
@@ -204,6 +205,32 @@ export class IntraApiService {
 		const intra = this.getIntraConfig();
 		try {
 			return await this.appGetAllPages<IntraQuestUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/quests_users`);
+		} catch (err) {
+			if (err instanceof StatusError && err.statusCode === 404) return null;
+			throw err;
+		}
+	}
+
+	/**
+	 * アプリトークンで、キャンパスの bloc (cursus ごとのコアリションのまとまり) をすべて取得する
+	 */
+	@bindThis
+	public async getCampusBlocs(campusId: number): Promise<IntraBloc[]> {
+		const intra = this.getIntraConfig();
+		const query = new URLSearchParams({
+			'filter[campus_id]': String(campusId),
+		});
+		return await this.appGetAllPages<IntraBloc>(`${intra.apiBaseUrl}/v2/blocs?${query.toString()}`);
+	}
+
+	/**
+	 * アプリトークンで、ユーザーのコアリションへの所属をすべて取得する。ユーザーが存在しなければ null
+	 */
+	@bindThis
+	public async getCoalitionsUsers(intraId: number): Promise<IntraCoalitionUser[] | null> {
+		const intra = this.getIntraConfig();
+		try {
+			return await this.appGetAllPages<IntraCoalitionUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/coalitions_users`);
 		} catch (err) {
 			if (err instanceof StatusError && err.statusCode === 404) return null;
 			throw err;

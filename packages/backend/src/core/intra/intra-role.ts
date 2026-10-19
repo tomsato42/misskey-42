@@ -8,6 +8,8 @@
 
 import type { IntraRoleKind } from '@/models/IntraRole.js';
 import type { IntraProfile } from './intra-user.js';
+import { toCoalitionRoleColor } from './intra-coalition.js';
+import type { IntraCoalition } from './intra-coalition.js';
 
 /**
  * ユーザーに付けるべきロールの条件と、ロールを新しく作る場合の名前
@@ -18,6 +20,8 @@ export type IntraRoleTarget = {
 	key: string;
 	/** ロールを作成するときだけ使う。既存のロールの名前は変えない */
 	name: string;
+	/** ロールを作成するときだけ使う色 (#RRGGBB)。無ければ色を付けない */
+	color?: string | null;
 };
 
 /** 日本時間の UTC からのずれ。日本に夏時間は無いので固定値でよい */
@@ -98,6 +102,14 @@ export function getCohortRoleTarget(cursusBeginAt: Date | null, poolYearMonth: s
 	return { kind: 'cohort', key: yearMonth, name: `Cursus ${formatYearMonth(yearMonth)}` };
 }
 
+/**
+ * コアリションのロール条件。コアリションに所属していなければ null
+ */
+export function getCoalitionRoleTarget(coalition: IntraCoalition | null): IntraRoleTarget | null {
+	if (coalition == null) return null;
+	return { kind: 'coalition', key: String(coalition.id), name: coalition.name, color: toCoalitionRoleColor(coalition.color) };
+}
+
 /** 先に作っておくレベルのロールの最大値 (42cursus の Common Core を終えるあたりまで) */
 export const PRECREATED_MAX_LEVEL = 21;
 
@@ -112,8 +124,9 @@ export function getLevelRoleTarget(level: number): IntraRoleTarget {
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
  * @param intakeYearMonth 本人が 42cursus を始めた月に最も近い入学の月 (YYMM)。無ければ null
+ * @param coalition 本人の主キャンパス・42cursus のコアリション (IntraCoalitionService の getUserCoalition)。無ければ null
  */
-export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, intakeYearMonth: string | null = null): IntraRoleTarget[] {
+export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, intakeYearMonth: string | null = null, coalition: IntraCoalition | null = null): IntraRoleTarget[] {
 	const targets: IntraRoleTarget[] = [];
 
 	if (profile.level != null) {
@@ -130,6 +143,9 @@ export function getIntraRoleTargets(profile: Pick<IntraProfile, 'level' | 'campu
 	// 入学時期の丸めは intra の名称の月に合わせて決めているので、実際の期間の月ではなく名称の年月から求める
 	const cohort = getCohortRoleTarget(profile.cursusBeginAt, profile.poolNameYearMonth, intakeYearMonth);
 	if (cohort != null) targets.push(cohort);
+
+	const coalitionTarget = getCoalitionRoleTarget(coalition);
+	if (coalitionTarget != null) targets.push(coalitionTarget);
 
 	return targets;
 }

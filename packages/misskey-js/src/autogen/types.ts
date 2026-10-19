@@ -29120,7 +29120,7 @@ export interface operations {
                 content: {
                     'application/json': {
                         /** @enum {string} */
-                        kind: 'level' | 'campus' | 'pool' | 'cohort';
+                        kind: 'level' | 'campus' | 'pool' | 'cohort' | 'coalition';
                         /** Format: id */
                         roleId: string;
                         name: string;
