@@ -95,21 +95,8 @@ export class CalendarInvitationService {
 		if (event.userId === me.id) return true;
 		if (await this.roleService.isModerator(me)) return true;
 		if (event.visibility === 'specified' || event.visibility === 'list') return false;
-		if (await this.hidesAudienceRelations(event)) return false;
+		if (await this.calendarVisibilityService.hidesAudienceRelations(event)) return false;
 		return await this.calendarEventSubscriptionsRepository.exists({ where: { eventId: event.id, userId: me.id } });
-	}
-
-	/**
-	 * イベントを見られるかで分かる作成者との関係を、作成者が非公開にしているか。
-	 * フォロワーのイベントはフォロワー一覧、相互フォローのイベントはフォロワーとフォローの一覧を見る。
-	 * イベントを見られる人は作成者をフォローしているので、「フォロワーだけに公開」なら見えている (users/followers・users/following と同じ)
-	 */
-	@bindThis
-	private async hidesAudienceRelations(event: Pick<MiCalendarEvent, 'userId' | 'visibility'>): Promise<boolean> {
-		if (event.visibility !== 'followers' && event.visibility !== 'mutual') return false;
-		const profile = await this.cacheService.userProfileCache.fetch(event.userId);
-		if (profile.followersVisibility === 'private') return true;
-		return event.visibility === 'mutual' && profile.followingVisibility === 'private';
 	}
 
 	/**

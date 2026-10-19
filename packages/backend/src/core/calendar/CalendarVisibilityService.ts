@@ -16,6 +16,7 @@ import type {
 } from '@/models/_.js';
 import { MiCalendarEvent } from '@/models/CalendarEvent.js';
 import type { MiUser } from '@/models/User.js';
+import { CacheService } from '@/core/CacheService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { bindThis } from '@/decorators.js';
 import { CalendarEventValidationError } from './calendar-errors.js';
@@ -50,6 +51,7 @@ export class CalendarVisibilityService {
 		@Inject(DI.calendarEventsRepository)
 		private calendarEventsRepository: CalendarEventsRepository,
 
+		private cacheService: CacheService,
 		private roleService: RoleService,
 	) {
 	}
@@ -94,6 +96,30 @@ export class CalendarVisibilityService {
 
 		if (isCalendarEventVisibleTo(event, viewer, await this.getRelation(event, viewer))) return true;
 		return await this.roleService.isModerator(viewer);
+	}
+
+	/**
+	 * イベントを見られるかで分かる作成者との関係を、作成者が非公開にしているか。
+	 * フォロワーのイベントはフォロワー一覧、相互フォローのイベントはフォロワーとフォローの一覧を見る。
+	 * イベントを見られる人は作成者をフォローしているので、「フォロワーだけに公開」なら見えている (users/followers・users/following と同じ)
+	 */
+	@bindThis
+	public async hidesAudienceRelations(event: Pick<MiCalendarEvent, 'userId' | 'visibility'>): Promise<boolean> {
+		if (event.visibility !== 'followers' && event.visibility !== 'mutual') return false;
+		const profile = await this.cacheService.userProfileCache.fetch(event.userId);
+		if (profile.followersVisibility === 'private') return true;
+		return event.visibility === 'mutual' && profile.followingVisibility === 'private';
+	}
+
+	/**
+	 * me がイベントの購読者 (アバターの並びを含む) を見られるか。購読者はイベントを見られる人、つまり作成者のフォロワー (相互フォローならフォローも) なので、
+	 * 作成者がその関係を非公開にしていたら、作成者とモデレーター以上だけにする。me がイベントを見られることは呼ぶ側で確かめておく
+	 */
+	@bindThis
+	public async canViewSubscribers(event: Pick<MiCalendarEvent, 'userId' | 'visibility'>, me: Me): Promise<boolean> {
+		if (event.userId === me.id) return true;
+		if (!await this.hidesAudienceRelations(event)) return true;
+		return await this.roleService.isModerator(me);
 	}
 
 	/** 判定に要る、閲覧者と作成者の関係だけを引く */

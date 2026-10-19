@@ -68,6 +68,7 @@ describe('CalendarEventEntityService', () => {
 		};
 		calendarVisibilityService = {
 			filterVisible: vi.fn(async (events: unknown[]) => events),
+			canViewSubscribers: vi.fn(async () => true),
 		};
 		userEntityService = {
 			pack: vi.fn(async (u: string | { id: string }) => ({ id: typeof u === 'string' ? u : u.id })),
@@ -159,6 +160,15 @@ describe('CalendarEventEntityService', () => {
 			expect(calendarEventService.getSubscriberPreviewUserIds).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB, 5);
 			// アバターと招待した人はまとめて引く
 			expect(userEntityService.packMany).toHaveBeenCalledOnce();
+		});
+
+		test('detail でも、購読者を見られなければアバターを空、フォローしている購読者の数を 0 にする', async () => {
+			calendarVisibilityService.canViewSubscribers.mockResolvedValueOnce(false);
+			const packed = await service.pack(event({ visibility: 'followers' }), BOB, undefined, { detail: true });
+			expect(packed).toMatchObject({ subscribersPreview: [], followingSubscribersCount: 0 });
+			expect(calendarVisibilityService.canViewSubscribers).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB);
+			expect(calendarEventService.getSubscriberPreviewUserIds).not.toHaveBeenCalled();
+			expect(calendarEventService.countFollowingSubscribers).not.toHaveBeenCalled();
 		});
 
 		test('detail を付けなければ、ページ用の項目は引かない', async () => {

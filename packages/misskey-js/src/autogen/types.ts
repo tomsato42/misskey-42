@@ -1233,7 +1233,7 @@ export type paths = {
     '/calendar/events/subscribers': {
         /**
          * calendar/events/subscribers
-         * @description List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.
+         * @description List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded. The subscribers of a followers (or mutual) event are followers (and followees) of the creator, so only the creator and moderators can list them when the creator hides their followers (or following) list.
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -6240,9 +6240,9 @@ export type components = {
              * @description The list whose members can see the event when visibility is list. null if visibility is not list or the list has been deleted. Only present when the viewer can manage the event.
              */
             userListId?: string | null;
-            /** @description Up to 5 subscribers, the users you follow first. Only present in calendar/events/show. */
+            /** @description Up to 5 subscribers, the users you follow first. Empty when the creator hides the relations the subscribers reveal (see calendar/events/subscribers). Only present in calendar/events/show. */
             subscribersPreview?: components['schemas']['UserLite'][];
-            /** @description The number of subscribers you follow (excluding the creator). Only present in calendar/events/show. */
+            /** @description The number of subscribers you follow (excluding the creator). 0 when the creator hides the relations the subscribers reveal (see calendar/events/subscribers). Only present in calendar/events/show. */
             followingSubscribersCount?: number;
             /** @description The user who invited you to the event. null if you are not invited. Only present in calendar/events/show. */
             invitedBy?: components['schemas']['UserLite'] | null;

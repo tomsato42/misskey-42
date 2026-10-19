@@ -960,5 +960,46 @@ describe('カレンダー', () => {
 			assert.strictEqual(await canInvite(mutualOnly, leo), false);
 			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: mutualOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
 		});
+
+		test('作成者がフォロワー (相互フォローならフォローも) を非公開にしているイベントの購読者は、作成者とモデレーターにだけ見せる', async () => {
+			const mia = await signup({ username: 'mia' });
+			const ned = await signup({ username: 'ned' });
+			await api('following/create', { userId: mia.id }, ned);
+			await api('following/create', { userId: ned.id }, mia);
+			await api('following/create', { userId: mia.id }, carol);
+			const followersOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: 'フォロワー限定の購読者', date, startTime: '21:00', visibility: 'followers' }, user: mia });
+			const mutualOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '相互フォロー限定の購読者', date, startTime: '22:00', visibility: 'mutual' }, user: mia });
+			for (const event of [followersOnly, mutualOnly]) {
+				await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: event.id }, user: ned });
+			}
+			const subscriberIds = async (event: misskey.entities.CalendarEvent, user: misskey.entities.SignupResponse) =>
+				(await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: event.id }, user })).map(s => s.user.id);
+			const shown = async (event: misskey.entities.CalendarEvent, user: misskey.entities.SignupResponse) =>
+				await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: event.id }, user });
+			const denied = { status: 400, code: 'ACCESS_DENIED', id: '29512b09-ecf2-4195-bf36-122d3990f83a' };
+
+			assert.deepStrictEqual(await subscriberIds(followersOnly, ned), [ned.id]);
+			assert.deepStrictEqual(await subscriberIds(mutualOnly, ned), [ned.id]);
+
+			// 購読者はフォロワーなので、一覧からフォロワーが分かってしまう
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'private' }, user: mia });
+			await failedApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: followersOnly.id }, user: ned }, denied);
+			await failedApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: followersOnly.id, filter: 'following' }, user: ned }, denied);
+			const hidden = await shown(followersOnly, ned);
+			assert.deepStrictEqual(hidden.subscribersPreview, []);
+			assert.strictEqual(hidden.followingSubscribersCount, 0);
+			assert.strictEqual(hidden.subscribersCount, 2);
+			// 作成者とモデレーターは見られる
+			assert.deepStrictEqual(await subscriberIds(followersOnly, mia), [ned.id]);
+			assert.deepStrictEqual(await subscriberIds(followersOnly, carol), [ned.id]);
+			assert.ok((await shown(followersOnly, carol)).subscribersPreview?.some(u => u.id === ned.id));
+
+			// 相互フォローは、フォローの一覧を非公開にしていても見せない
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'followers', followingVisibility: 'private' }, user: mia });
+			assert.deepStrictEqual(await subscriberIds(followersOnly, ned), [ned.id]);
+			await failedApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: mutualOnly.id }, user: ned }, denied);
+			assert.deepStrictEqual((await shown(mutualOnly, ned)).subscribersPreview, []);
+			assert.deepStrictEqual(await subscriberIds(mutualOnly, mia), [ned.id]);
+		});
 	});
 });

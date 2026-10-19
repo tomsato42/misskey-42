@@ -97,11 +97,15 @@ export class CalendarEventEntityService {
 		};
 	}
 
+	/**
+	 * 購読者を見られない (作成者がフォロワーなどを非公開にしている) ときは、アバターを空、フォローしている購読者の数を 0 にする
+	 */
 	@bindThis
 	private async packDetail(event: MiCalendarEvent, me: { id: MiUser['id'] }) {
+		const canViewSubscribers = await this.calendarVisibilityService.canViewSubscribers(event, me);
 		const [previewIds, followingSubscribersCount, inviterId, canInvite] = await Promise.all([
-			this.calendarEventService.getSubscriberPreviewUserIds(event, me, SUBSCRIBERS_PREVIEW_LIMIT),
-			this.calendarEventService.countFollowingSubscribers(event, me),
+			canViewSubscribers ? this.calendarEventService.getSubscriberPreviewUserIds(event, me, SUBSCRIBERS_PREVIEW_LIMIT) : [],
+			canViewSubscribers ? this.calendarEventService.countFollowingSubscribers(event, me) : 0,
 			this.calendarInvitationService.getInviterId(event, me),
 			this.calendarInvitationService.canInvite(event, me),
 		]);

@@ -1502,7 +1502,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.
+     * List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded. The subscribers of a followers (or mutual) event are followers (and followees) of the creator, so only the creator and moderators can list them when the creator hides their followers (or following) list.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */

@@ -8,6 +8,7 @@ import { In } from 'typeorm';
 import type { FollowingsRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
+import { CalendarVisibilityService } from '@/core/calendar/CalendarVisibilityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { ApiError } from '@/server/api/error.js';
@@ -20,7 +21,7 @@ export const meta = {
 
 	kind: 'read:account',
 
-	description: 'List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.',
+	description: 'List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded. The subscribers of a followers (or mutual) event are followers (and followees) of the creator, so only the creator and moderators can list them when the creator hides their followers (or following) list.',
 
 	res: {
 		type: 'array',
@@ -60,6 +61,12 @@ export const meta = {
 			code: 'NO_SUCH_CALENDAR_EVENT',
 			id: '66935c2f-b273-477d-94ef-0e3358048e32',
 		},
+
+		accessDenied: {
+			message: 'The creator of the event hides the subscribers.',
+			code: 'ACCESS_DENIED',
+			id: '29512b09-ecf2-4195-bf36-122d3990f83a',
+		},
 	},
 } as const;
 
@@ -87,12 +94,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private followingsRepository: FollowingsRepository,
 
 		private calendarEventService: CalendarEventService,
+		private calendarVisibilityService: CalendarVisibilityService,
 		private userEntityService: UserEntityService,
 		private idService: IdService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const event = await this.calendarEventService.findById(ps.eventId);
 			if (event == null || !await this.calendarEventService.canView(event, me)) throw new ApiError(meta.errors.noSuchEvent);
+			if (!await this.calendarVisibilityService.canViewSubscribers(event, me)) throw new ApiError(meta.errors.accessDenied);
 
 			const subscriptions = await this.calendarEventService.listSubscribers(event, me, {
 				filter: ps.filter,
