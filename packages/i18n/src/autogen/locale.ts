@@ -13790,22 +13790,6 @@ export interface Locale extends ILocale {
          */
         "wantedProjects": string;
         /**
-         * やる課題
-         */
-        "decideProject": string;
-        /**
-         * {name} に決める
-         */
-        "decideProjectAs": ParameterizedString<"name">;
-        /**
-         * {name} に決めますか？ほかの課題だけを希望している人の参加希望は取り下げになります。
-         */
-        "decideProjectConfirm": ParameterizedString<"name">;
-        /**
-         * まだ決めない
-         */
-        "notDecidedYet": string;
-        /**
          * 編集
          */
         "edit": string;

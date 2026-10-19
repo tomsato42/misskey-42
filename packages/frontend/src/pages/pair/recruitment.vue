@@ -47,12 +47,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #user><MkUserName :user="recruitment.user"/></template>
 				</I18n>
 				<div v-else-if="myStatusText != null" :class="$style.myStatus">{{ myStatusText }}</div>
-				<div v-if="showJoin || showDecline || showWithdraw || showInvite || showMessage" class="_buttons">
+				<div class="_buttons">
 					<MkButton v-if="showJoin" primary rounded :disabled="!applicable" @click="apply"><i class="ti ti-hand-stop"></i> {{ i18n.ts._pairRecruitment.join }}</MkButton>
 					<MkButton v-if="showDecline" rounded @click="decline"><i class="ti ti-x"></i> {{ i18n.ts._pairRecruitment.declineInvitation }}</MkButton>
 					<MkButton v-if="showWithdraw" rounded @click="withdraw"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts._pairRecruitment.withdraw }}</MkButton>
 					<MkButton v-if="showInvite" primary rounded @click="invite"><i class="ti ti-user-plus"></i> {{ i18n.ts._pairRecruitment.invite }}</MkButton>
 					<MkButton v-if="showMessage" rounded @click="sendMessage"><i class="ti ti-message"></i> {{ i18n.ts._pairRecruitment.sendMessage }}</MkButton>
+					<MkButton rounded @click="share"><i class="ti ti-share"></i> {{ i18n.ts._pairRecruitment.share }}</MkButton>
+					<MkButton rounded @click="copyLink"><i class="ti ti-link"></i> {{ i18n.ts.copyLink }}</MkButton>
 				</div>
 			</div>
 
@@ -64,12 +66,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div :class="$style.bar" aria-hidden="true"><div :class="$style.barIn" :style="{ width: `${getBarWidth(project.wantedCount)}%` }"></div></div>
 						<span :class="$style.projectCount">{{ i18n.tsx._pairRecruitment.teamSizeN({ n: project.wantedCount }) }}</span>
 						<MkPairProjectStateBadge v-if="!isOwner && project.myState != null" :state="project.myState" variant="viewer"/>
-					</div>
-					<div v-if="isOwner && isOpen" :class="$style.decide">
-						<div :class="$style.decideLabel">{{ i18n.ts._pairRecruitment.decideProject }}</div>
-						<div class="_buttons">
-							<MkButton v-for="project in recruitment.projects" :key="project.slug" small rounded @click="decideProject(project)">{{ i18n.tsx._pairRecruitment.decideProjectAs({ name: project.name }) }}</MkButton>
-						</div>
 					</div>
 				</div>
 			</template>
@@ -272,17 +268,6 @@ async function cancelInvitation(invitation: Misskey.entities.PairMember) {
 	update(await pairRecruitmentAction('pair-recruitments/cancel-invitation', { recruitmentId: recruitment.value.id, userId: invitation.userId }));
 }
 
-/** やる課題を 1 つに決める (募集をその課題だけにする) */
-async function decideProject(project: Misskey.entities.PairRecruitmentDetailed['projects'][number]) {
-	if (recruitment.value == null) return;
-	const { canceled } = await os.confirm({
-		type: 'warning',
-		text: i18n.tsx._pairRecruitment.decideProjectConfirm({ name: project.name }),
-	});
-	if (canceled) return;
-	update(await pairRecruitmentAction('pair-recruitments/update', { recruitmentId: recruitment.value.id, projectSlugs: [project.slug] }));
-}
-
 async function withdraw() {
 	if (recruitment.value == null) return;
 	const { canceled } = await os.confirm({
@@ -323,25 +308,22 @@ function sendMessage() {
 	router.push('/chat/user/:userId', { params: { userId: recruitment.value.userId } });
 }
 
-const headerActions = computed<PageHeaderItem[]>(() => recruitment.value == null ? [] : [{
-	icon: 'ti ti-share',
-	text: i18n.ts._pairRecruitment.share,
-	handler: () => {
-		if (recruitment.value != null) openPairShareDialog(recruitment.value);
-	},
-}, {
+function share() {
+	if (recruitment.value != null) openPairShareDialog(recruitment.value);
+}
+
+function copyLink() {
+	copyToClipboard(getPairRecruitmentUrl(url, props.id));
+}
+
+// 共有とリンクのコピーは本文のボタンに置き、メニューには作成者の操作 (編集・締め切り) だけを出す
+const headerActions = computed<PageHeaderItem[]>(() => recruitment.value == null || !isOwner.value || !isOpen.value ? [] : [{
 	icon: 'ti ti-dots',
 	text: i18n.ts.menu,
 	handler: (ev) => {
-		const items: MenuItem[] = [{
-			icon: 'ti ti-link',
-			text: i18n.ts.copyLink,
-			action: () => {
-				copyToClipboard(getPairRecruitmentUrl(url, props.id));
-			},
-		}];
+		const items: MenuItem[] = [];
 		if (isOwner.value && isOpen.value) {
-			items.push({ type: 'divider' }, {
+			items.push({
 				icon: 'ti ti-pencil',
 				text: i18n.ts._pairRecruitment.edit,
 				action: () => {
@@ -499,19 +481,6 @@ definePage(() => ({
 	flex: none;
 	min-width: 2.5em;
 	text-align: right;
-}
-
-.decide {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding-top: 12px;
-	border-top: 0.5px solid var(--MI_THEME-divider);
-}
-
-.decideLabel {
-	font-weight: bold;
-	font-size: 0.9em;
 }
 
 .wanted {
