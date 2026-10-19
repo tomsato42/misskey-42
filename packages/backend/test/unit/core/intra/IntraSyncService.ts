@@ -11,6 +11,7 @@ import { IntraSyncService } from '@/core/intra/IntraSyncService.js';
 import { findNearestIntake } from '@/core/intra/intra-cohort.js';
 import { RoleService } from '@/core/RoleService.js';
 import type { IntraUser } from '@/core/intra/intra-user.js';
+import type { IntraCoalition } from '@/core/intra/intra-coalition.js';
 import type { IntraRoleKind } from '@/models/IntraRole.js';
 import type { Config } from '@/config.js';
 
@@ -64,6 +65,9 @@ describe('IntraSyncService', () => {
 	let progressSyncHook: (() => Promise<void> | void) | null;
 	/** キャンパス ID → 入学の月の一覧 */
 	let intakes: Map<number, string[]>;
+	/** intra のユーザー ID → コアリション。Error なら取得に失敗する */
+	let coalitions: Map<number, IntraCoalition | Error>;
+	let coalitionCalls: number[];
 	let service: IntraSyncService;
 
 	function nextId(prefix: string) {
@@ -115,6 +119,8 @@ describe('IntraSyncService', () => {
 		beforeIntraRoleInsert = null;
 		progressSyncCalls = [];
 		intakes = new Map();
+		coalitions = new Map();
+		coalitionCalls = [];
 		progressSyncHook = null;
 
 		const config = {
@@ -141,7 +147,7 @@ describe('IntraSyncService', () => {
 				if (found == null) throw new Error('not found');
 				return found;
 			},
-			find: async () => intraRoles.map(r => ({ roleId: r.roleId })),
+			find: async () => intraRoles.map(r => ({ roleId: r.roleId, kind: r.kind })),
 			insert: async (row: FakeIntraRole) => {
 				await beforeIntraRoleInsert?.(row);
 				if (intraRoles.some(r => r.kind === row.kind && r.key === row.key)) throw duplicateKeyError();
@@ -220,6 +226,16 @@ describe('IntraSyncService', () => {
 				campusId != null && cursusBeginAt != null ? findNearestIntake(cursusBeginAt, intakes.get(campusId) ?? []) : null,
 		};
 
+		const fakeIntraCoalitionService = {
+			getUserCoalition: async (intraId: number, campusId: number | null) => {
+				coalitionCalls.push(intraId);
+				if (campusId == null) return null;
+				const coalition = coalitions.get(intraId) ?? null;
+				if (coalition instanceof Error) throw coalition;
+				return coalition;
+			},
+		};
+
 		service = new IntraSyncService(
 			config as Config,
 			fakeProfilesRepository as any,
@@ -232,6 +248,7 @@ describe('IntraSyncService', () => {
 			fakeLoggerService as any,
 			fakeIntraProjectService as any,
 			fakeIntraCohortService as any,
+			fakeIntraCoalitionService as any,
 		);
 	});
 
@@ -314,6 +331,76 @@ describe('IntraSyncService', () => {
 		await service.syncUser('u1', createIntraUser());
 
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/09', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
+	test('コアリションのロールを色付きで作成して付与し、ほかのコアリションのロールは外す', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const old = addManagedRole('coalition', '302', 'Kaze');
+		assign('u1', old);
+		coalitions.set(1000, { id: 301, name: 'Fuji', color: '#FF6950' });
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+		expect(roles.find(r => r.name === 'Fuji')).toMatchObject({
+			color: '#FF6950',
+			isExplorable: true,
+			description: '42 intra のコアリションに応じて自動で付与されます',
+		});
+		expect(intraRoles.find(r => r.kind === 'coalition' && r.key === '301')).toBeDefined();
+	});
+
+	test('コアリションに所属していなければコアリションのロールを外す', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		assign('u1', fuji);
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
+	test('コアリションを取得できなければ、コアリションのロールは付けも外しもせず、ほかのロールは同期する', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		const lv4 = addManagedRole('level', '4', 'Lv.4');
+		assign('u1', fuji);
+		assign('u1', lv4);
+		coalitions.set(1000, new Error('42 API is down'));
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
+	test('毎時の同期では、コアリションのロールが付いていれば所属を取り直さない', async () => {
+		addProfile('u1', { intraId: 1000 });
+		addProfile('u2', { intraId: 2000 });
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		assign('u1', fuji);
+		remoteUsers.set(1000, createIntraUser());
+		remoteUsers.set(2000, createIntraUser({ id: 2000, login: 'other' }));
+		coalitions.set(1000, { id: 302, name: 'Kaze', color: null });
+		coalitions.set(2000, { id: 301, name: 'Fuji', color: null });
+
+		await service.syncUser('u1');
+		await service.syncUser('u2');
+
+		expect(coalitionCalls).toEqual([2000]);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+		expect(roleNamesOf('u2')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
+	test('ログインのときは、コアリションのロールが付いていても所属を取り直す', async () => {
+		addProfile('u1', { intraId: 1000 });
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		assign('u1', fuji);
+		coalitions.set(1000, { id: 302, name: 'Kaze', color: null });
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(coalitionCalls).toEqual([1000]);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Kaze', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
 	test('ピシンの年月が無ければピシンのロールを付けず、付いていれば外す', async () => {

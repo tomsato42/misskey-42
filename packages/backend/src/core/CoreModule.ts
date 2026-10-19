@@ -164,6 +164,7 @@ import { CalendarInvitationService } from './calendar/CalendarInvitationService.
 import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
 import { IntraProjectService } from './intra/IntraProjectService.js';
 import { IntraCohortService } from './intra/IntraCohortService.js';
+import { IntraCoalitionService } from './intra/IntraCoalitionService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
 import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
 import { QueueModule } from './QueueModule.js';
@@ -333,6 +334,7 @@ const $CalendarInvitationService: Provider = { provide: 'CalendarInvitationServi
 const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
 const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
 const $IntraCohortService: Provider = { provide: 'IntraCohortService', useExisting: IntraCohortService };
+const $IntraCoalitionService: Provider = { provide: 'IntraCoalitionService', useExisting: IntraCoalitionService };
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
 const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
 //#endregion
@@ -502,6 +504,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		CalendarEventEntityService,
 		IntraProjectService,
 		IntraCohortService,
+		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		QueueService,
@@ -667,6 +670,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$CalendarEventEntityService,
 		$IntraProjectService,
 		$IntraCohortService,
+		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$TelemetryService,
@@ -833,6 +837,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		CalendarEventEntityService,
 		IntraProjectService,
 		IntraCohortService,
+		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		QueueService,
@@ -996,6 +1001,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$CalendarEventEntityService,
 		$IntraProjectService,
 		$IntraCohortService,
+		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$TelemetryService,
