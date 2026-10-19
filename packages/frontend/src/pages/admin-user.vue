@@ -114,6 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div>
 						<MkButton v-if="user.host == null" inline style="margin-right: 8px;" @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
 						<MkButton v-if="user.host == null" inline @click="unsetMfa"><i class="ti ti-shield"></i> {{ i18n.ts.unsetMfa }}</MkButton>
+						<MkButton v-if="instance.intraLoginEnabled && user.host == null && iAmAdmin" inline style="margin-left: 8px;" @click="issueIntraPasskeySetup(user)"><i class="ti ti-key"></i> {{ i18n.ts._intra.issuePasskeySetup }}</MkButton>
 					</div>
 
 					<MkFolder>
@@ -246,6 +247,7 @@ import { i18n } from '@/i18n.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { ensureSignin, iAmAdmin, iAmModerator } from '@/i.js';
 import { instance } from '@/instance.js';
+import { issueIntraPasskeySetup } from '@/utility/admin-intra-account.js';
 import { getIntraProfileUrl } from '@/utility/intra-login.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
 import MkPagination from '@/components/MkPagination.vue';

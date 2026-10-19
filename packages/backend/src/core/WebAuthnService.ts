@@ -72,7 +72,8 @@ export class WebAuthnService {
 			})),
 			authenticatorSelection: {
 				residentKey: 'required',
-				userVerification: 'preferred',
+				// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+				userVerification: 'required',
 			},
 		});
 
@@ -155,7 +156,8 @@ export class WebAuthnService {
 				id: key.id,
 				transports: key.transports ?? undefined,
 			})),
-			userVerification: 'preferred',
+			// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+			userVerification: 'required',
 		});
 
 		await this.redisClient.setex(`webauthn:authenticationChallenge:${userId}`, 90, authenticationOptions.challenge);
@@ -173,7 +175,8 @@ export class WebAuthnService {
 
 		const authenticationOptions = await generateAuthenticationOptions({
 			rpID: relyingParty.rpId,
-			userVerification: 'preferred',
+			// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+			userVerification: 'required',
 		});
 
 		await this.redisClient.setex(`webauthn:passkeyChallenge:${context}`, 90, authenticationOptions.challenge);

@@ -143,6 +143,25 @@ export class IntraApiService {
 	}
 
 	/**
+	 * アプリトークンで、ログイン名から intra のユーザー情報を取得する。ユーザーが存在しなければ null。
+	 * /v2/users/:id はログイン名も受け付ける (数字だけならユーザー ID として扱われる)
+	 */
+	@bindThis
+	public async getUserByLogin(login: string): Promise<IntraUser | null> {
+		const intra = this.getIntraConfig();
+
+		const res = await this.appRequest(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(login)}`);
+		if (res.status === 404) return null;
+		if (!res.ok) {
+			throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
+		}
+
+		// /v2/users/:id は数字なら 42 のユーザー ID として扱うので、ログイン名が一致しなければ別人として見つからない扱いにする
+		const user = await res.json() as IntraUser;
+		return user.login.toLowerCase() === login.toLowerCase() ? user : null;
+	}
+
+	/**
 	 * アプリトークンで、キャンパス・cursus の課題のセッション (登録の条件を含む) をすべて取得する。
 	 * 42 Tokyo・42cursus では 161 件 (100 件で約 600KB) だった
 	 */

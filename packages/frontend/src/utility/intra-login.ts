@@ -5,6 +5,7 @@
 
 import { apiUrl } from '@@/js/config.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import type { PublicKeyCredentialCreationOptionsJSON, RegistrationResponseJSON } from '@simplewebauthn/browser';
 
 /**
  * 42 intra の認可画面へページ遷移する。
@@ -59,5 +60,42 @@ export class IntraExchangeError extends Error {
 		public readonly code: string | null,
 	) {
 		super(`intra exchange failed: ${status} ${code ?? ''}`);
+	}
+}
+
+/**
+ * 管理者が発行したパスキーの登録リンクの API を呼ぶ。ログインしていない人が使うので misskeyApi は使わない
+ */
+async function postPasskeySetup<T>(path: 'options' | 'complete', body: Record<string, unknown>): Promise<T> {
+	const res = await window.fetch(`${apiUrl}/intra/passkey-setup/${path}`, {
+		method: 'POST',
+		credentials: 'omit',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(body),
+	});
+
+	const json = await res.json().catch(() => null);
+	if (!res.ok || json == null) {
+		throw new IntraPasskeySetupError(res.status, json?.error?.code ?? null);
+	}
+	return json as T;
+}
+
+export function beginIntraPasskeySetup(token: string): Promise<{ username: string; options: PublicKeyCredentialCreationOptionsJSON; }> {
+	return postPasskeySetup('options', { token });
+}
+
+export function completeIntraPasskeySetup(token: string, name: string, credential: RegistrationResponseJSON): Promise<{ id: string; i: string; }> {
+	return postPasskeySetup('complete', { token, name, credential });
+}
+
+export class IntraPasskeySetupError extends Error {
+	constructor(
+		public readonly status: number,
+		public readonly code: string | null,
+	) {
+		super(`intra passkey setup failed: ${status} ${code ?? ''}`);
 	}
 }

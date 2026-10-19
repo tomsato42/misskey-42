@@ -197,6 +197,7 @@ export const moderationLogTypes = [
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
 	'updateIntraPasswordLoginAllowed',
+	'issueIntraPasskeySetup',
 ] as const;
 
 export const rolePolicies = [
@@ -551,5 +552,13 @@ export type ModerationLogPayloads = {
 		userHost: string | null;
 		before: boolean;
 		after: boolean;
+	};
+	issueIntraPasskeySetup: {
+		userId: string;
+		userUsername: string;
+		intraLogin: string | null;
+		created: boolean;
+		linked: boolean | null;
+		manuallyVerified: boolean | null;
 	};
 };

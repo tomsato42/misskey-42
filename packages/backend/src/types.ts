@@ -148,6 +148,7 @@ export const moderationLogTypes = [
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
 	'updateIntraPasswordLoginAllowed',
+	'issueIntraPasskeySetup',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -421,6 +422,15 @@ export type ModerationLogPayloads = {
 		userHost: string | null;
 		before: boolean;
 		after: boolean;
+	};
+	issueIntraPasskeySetup: {
+		userId: string;
+		userUsername: string;
+		/** 42 のログイン名から用意したときのログイン名。既存のアカウントに発行したときは null */
+		intraLogin: string | null;
+		created: boolean;
+		linked: boolean | null;
+		manuallyVerified: boolean | null;
 	};
 };
 

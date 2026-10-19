@@ -54,6 +54,9 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import * as os from '@/os.js';
 import { lookupUser } from '@/utility/admin-lookup.js';
+import { createIntraAccount } from '@/utility/admin-intra-account.js';
+import { instance } from '@/instance.js';
+import { iAmAdmin } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
@@ -173,7 +176,14 @@ const headerActions = computed(() => [{
 	icon: 'ti ti-search',
 	text: i18n.ts.lookup,
 	handler: lookupUser,
-}]);
+},
+// 42times: 42 にログインできない人 (ブラックホールなど) のアカウントを、42 のログイン名から用意する
+...(instance.intraLoginEnabled === true && iAmAdmin ? [{
+	asFullButton: true,
+	icon: 'ti ti-school',
+	text: i18n.ts._intra.createAccountFromIntra,
+	handler: createIntraAccount,
+}] : [])]);
 
 const headerTabs = computed(() => []);
 
