@@ -111,40 +111,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
 			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
 			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
-			<button
-				v-tooltip="i18n.ts._calendar.announceEvent"
-				class="_button"
-				:class="[$style.footerButton, { [$style.footerButtonActive]: calendarEventForm != null }]"
-				:aria-label="i18n.ts._calendar.announceEvent"
-				:aria-pressed="calendarEventForm != null"
-				:disabled="calendarUnavailableReason != null && calendarEventForm == null"
-				@click="toggleAnnounceCalendarEvent"
-			>
-				<i class="ti ti-speakerphone"></i>
-			</button>
-			<button
-				v-tooltip="i18n.ts._calendar.linkEvent"
-				class="_button"
-				:class="[$style.footerButton, { [$style.footerButtonActive]: linkedCalendarEvent != null }]"
-				:aria-label="i18n.ts._calendar.linkEvent"
-				aria-haspopup="menu"
-				:disabled="calendarUnavailableReason != null"
-				@click="pickLinkedCalendarEvent"
-			>
-				<i class="ti ti-calendar-event"></i>
-			</button>
-			<button
-				v-if="instance.intraLoginEnabled"
-				v-tooltip="i18n.ts._intraProjectResult.project"
-				class="_button"
-				:class="[$style.footerButton, { [$style.footerButtonActive]: intraProjectResult != null }]"
-				:aria-label="i18n.ts._intraProjectResult.project"
-				aria-haspopup="dialog"
-				:disabled="scheduledAt != null"
-				@click="pickIntraProjectResult"
-			>
-				<i class="ti ti-trophy"></i>
-			</button>
 			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
@@ -206,19 +172,15 @@ import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
 import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
 import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
-import { openIntraProjectResultPicker } from '@/utility/intra-project-result.js';
 import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
 import {
 	calendarEventFormToParams,
 	calendarEventReasonToField,
-	createEmptyCalendarEventForm,
 	getCalendarEventValidationReason,
 	validateCalendarEventForm,
 } from '@/utility/calendar-event-form.js';
 import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js';
-import { pickCalendarEventForNote } from '@/utility/calendar-event-picker.js';
 import { buildCalendarNoteParams, getCalendarNoteFormUnavailableReason, getCalendarNoteUnlinkableReason } from '@/utility/calendar-note.js';
-import { toJstDateString } from '@/utility/calendar.js';
 import { noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
 
 const $i = ensureSignin();
@@ -849,34 +811,12 @@ function stopAnnouncingCalendarEvent() {
 	calendarEventFormErrors.value = {};
 }
 
-function toggleAnnounceCalendarEvent() {
-	if (props.mock) return;
-	if (calendarEventForm.value != null) {
-		stopAnnouncingCalendarEvent();
-		return;
-	}
-	if (calendarUnavailableReason.value != null) return;
-	// イベントの公開範囲は、ノートの公開範囲に合わせて始める
-	calendarEventForm.value = createEmptyCalendarEventForm(toJstDateString(new Date()), noteVisibilityToCalendarVisibility(visibility.value));
-	calendarEventFormErrors.value = {};
-	linkedCalendarEvent.value = null;
-}
-
 // ノートの公開範囲を変えたとき、イベントの公開範囲をノートに合わせたままなら一緒に変える
 watch(visibility, (next, prev) => {
 	if (calendarEventForm.value == null) return;
 	if (calendarEventForm.value.visibility !== noteVisibilityToCalendarVisibility(prev)) return;
 	calendarEventForm.value = { ...calendarEventForm.value, visibility: noteVisibilityToCalendarVisibility(next) };
 });
-
-async function pickLinkedCalendarEvent(ev: PointerEvent) {
-	if (props.mock) return;
-	if (calendarUnavailableReason.value != null) return;
-	const event = await pickCalendarEventForNote(ev.currentTarget ?? ev.target, linkedCalendarEvent.value?.id);
-	if (event == null) return;
-	linkedCalendarEvent.value = event;
-	stopAnnouncingCalendarEvent();
-}
 
 /**
  * notes/create のカレンダーに関するエラーを、告知の欄やダイアログに出す。扱ったら true
@@ -912,12 +852,6 @@ function handleCalendarPostError(err: unknown, sent: boolean): boolean {
 	}
 }
 //#endregion
-
-async function pickIntraProjectResult() {
-	if (props.mock) return;
-	const result = await openIntraProjectResultPicker();
-	if (result != null) intraProjectResult.value = result;
-}
 
 /** notes/create の課題の結果に関するエラーをダイアログに出す。扱ったら true */
 function handleIntraProjectResultPostError(err: unknown): boolean {

@@ -105,6 +105,10 @@ export const ROUTE_DEF = [{
 	component: intraPage(() => import('@/pages/pair/index.vue')),
 	loginRequired: true,
 }, {
+	path: '/projects',
+	component: intraPage(() => import('@/pages/intra-projects.vue')),
+	loginRequired: true,
+}, {
 	path: '/instance-info/:host',
 	component: page(() => import('@/pages/instance-info.vue')),
 }, {

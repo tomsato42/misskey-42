@@ -6862,7 +6862,7 @@ export interface Locale extends ILocale {
              */
             "create": string;
             /**
-             * カレンダーの日付を押すか、投稿フォームの「イベントを告知」から作れます
+             * カレンダーの日付を押すと作れます
              */
             "createDescription": string;
             /**
@@ -6948,6 +6948,52 @@ export interface Locale extends ILocale {
                 "comment": string;
             };
         };
+        "_projectShare": {
+            /**
+             * 点数を共有
+             */
+            "title": string;
+            /**
+             * 終わった課題の点数を、intra と同じ見た目のカードにして投稿できます。合否に関係なく、一度取り組んだ課題なら投稿できます。
+             */
+            "description": string;
+            /**
+             * 試しに「投稿する」を押してみましょう(練習なので実際には投稿されません)
+             */
+            "tryPosting": string;
+            /**
+             * 点数・outstanding の星・チームのメンバーが付いたノートになります
+             */
+            "posted": string;
+            /**
+             * 課題が終わる
+             */
+            "step1": string;
+            /**
+             * 点数が付くと通知が届く
+             */
+            "step1Description": string;
+            /**
+             * 投稿する
+             */
+            "step2": string;
+            /**
+             * 通知か「点数を共有」から投稿
+             */
+            "step2Description": string;
+            /**
+             * 再取得
+             */
+            "step3": string;
+            /**
+             * すぐ反映したいときは「再取得」を押す
+             */
+            "step3Description": string;
+            /**
+             * メニューの「点数を共有」から終わった課題の一覧を開けます。
+             */
+            "whereToOpen": string;
+        };
         "_newFeatures": {
             /**
              * 新しい機能
@@ -6958,7 +7004,7 @@ export interface Locale extends ILocale {
              */
             "heading": string;
             /**
-             * {name} に「カレンダー」と「ペア募集」が加わりました。1分ほどで使い方を紹介します。
+             * {name} に「カレンダー」「ペア募集」「点数を共有」が加わりました。1分ほどで使い方を紹介します。
              */
             "description": ParameterizedString<"name">;
             /**
@@ -6969,6 +7015,10 @@ export interface Locale extends ILocale {
              * 2人以上で取り組む課題の仲間を探せる
              */
             "pairRecruitmentDescription": string;
+            /**
+             * 終わった課題の点数を投稿できる
+             */
+            "projectShareDescription": string;
             /**
              * 使い方を見る
              */
@@ -11170,6 +11220,14 @@ export interface Locale extends ILocale {
          * 課題が終わりました
          */
         "intraProjectFinished": string;
+        /**
+         * 課題の取得が終わりました
+         */
+        "intraProjectsRefreshed": string;
+        /**
+         * 課題を取得できませんでした
+         */
+        "intraProjectsRefreshFailed": string;
         "_types": {
             /**
              * すべて
@@ -11291,6 +11349,10 @@ export interface Locale extends ILocale {
              * 課題の結果
              */
             "intraProjectFinished": string;
+            /**
+             * 課題の再取得
+             */
+            "intraProjectsRefreshed": string;
         };
         "_actions": {
             /**
@@ -15262,14 +15324,6 @@ export interface Locale extends ILocale {
          */
         "share": string;
         /**
-         * 課題を選択
-         */
-        "selectProject": string;
-        /**
-         * 課題
-         */
-        "project": string;
-        /**
          * 課題を外す
          */
         "removeProject": string;
@@ -15298,6 +15352,14 @@ export interface Locale extends ILocale {
          */
         "noResults": string;
         /**
+         * 再取得
+         */
+        "refresh": string;
+        /**
+         * 取得中
+         */
+        "refreshing": string;
+        /**
          * 課題の点数は下書きと予約投稿には保存されません。
          */
         "notSavedInDraft": string;
@@ -15322,6 +15384,18 @@ export interface Locale extends ILocale {
              * 本文の無いリノートには課題を付けられません。
              */
             "cannotAttachToPureRenote": string;
+            /**
+             * 42 intra と連携していません。
+             */
+            "notLinked": string;
+            /**
+             * 取得中です。終わったら通知が届きます。
+             */
+            "refreshInProgress": string;
+            /**
+             * 少し待ってからもう一度押してください。
+             */
+            "refreshTooSoon": string;
         };
     };
 }

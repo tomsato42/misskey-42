@@ -3502,6 +3502,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * 42times: Fetch your 42 intra information (including project results) now instead of waiting for the hourly sync. It returns immediately, and an intraProjectsRefreshed notification arrives when fetching finishes.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'i/intra/refresh-project-results', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * Start verifying yourself by signing in to 42 intra again. Open the returned URL in the browser; after that, you can register or remove passkeys for a while.
      * 
      * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.

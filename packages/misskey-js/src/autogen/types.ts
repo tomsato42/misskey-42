@@ -2872,6 +2872,15 @@ export type paths = {
          */
         post: operations['i___intra___project-results'];
     };
+    '/i/intra/refresh-project-results': {
+        /**
+         * i/intra/refresh-project-results
+         * @description 42times: Fetch your 42 intra information (including project results) now instead of waiting for the hourly sync. It returns immediately, and an intraProjectsRefreshed notification arrives when fetching finishes.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___intra___refresh-project-results'];
+    };
     '/i/intra/start-reauth': {
         /**
          * i/intra/start-reauth
@@ -4800,6 +4809,15 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                intraProjectsRefreshed?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -5399,6 +5417,15 @@ export type components = {
                 finalMark: number;
                 validated: boolean;
             };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'intraProjectsRefreshed';
+            /** @description Whether fetching from 42 intra failed. */
+            failed: boolean;
         };
         DriveFile: {
             /**
@@ -13177,6 +13204,15 @@ export interface operations {
                                 userListId: string;
                             };
                             intraProjectFinished?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            intraProjectsRefreshed?: {
                                 /** @enum {string} */
                                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                             } | {
@@ -29314,6 +29350,70 @@ export interface operations {
             };
         };
     };
+    'i___intra___refresh-project-results': {
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'i___intra___start-reauth': {
         responses: {
             /** @description OK (with results) */
@@ -29471,8 +29571,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -29556,8 +29656,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -30959,6 +31059,15 @@ export interface operations {
                             userListId: string;
                         };
                         intraProjectFinished?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        intraProjectsRefreshed?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {

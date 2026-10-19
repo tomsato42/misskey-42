@@ -25,6 +25,11 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'account',
 		default: false,
 	},
+	// 42times: 点数を共有のチュートリアルを見たか。カレンダーとペア募集の紹介を見た人にも、見ていなければ一度だけ出す (boot/main-boot.ts)
+	projectShareTutorialShown: {
+		where: 'account',
+		default: false,
+	},
 	// 42times: ブラックホールの前にパスキーを作るよう案内したか。していなければ読み込み時に一度だけ出す (boot/main-boot.ts)
 	passkeyNoticeShown: {
 		where: 'account',

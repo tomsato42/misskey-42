@@ -231,6 +231,9 @@ export class NotificationEntityService implements OnModuleInit {
 					validated: notification.validated,
 				},
 			} : {}),
+			...(notification.type === 'intraProjectsRefreshed' ? {
+				failed: notification.failed,
+			} : {}),
 		});
 	}
 

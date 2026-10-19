@@ -219,6 +219,13 @@ export type MiNotification = {
 	projectName: string;
 	finalMark: number;
 	validated: boolean;
+} | {
+	/** 42times: 自分で頼んだ 42 intra の課題の再取得が終わった */
+	type: 'intraProjectsRefreshed';
+	id: string;
+	createdAt: string;
+	/** 42 API から取得できなかった */
+	failed: boolean;
 };
 
 export type MiGroupedNotification = MiNotification | {
