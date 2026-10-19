@@ -16,6 +16,7 @@ import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
+import { IntraProjectResultService } from './IntraProjectResultService.js';
 import { extractProjectStatuses, extractValidatedQuests, selectProjectSessions, toProjectDefinition } from './intra-project.js';
 import type { IntraProjectDefinition } from './intra-project.js';
 import type { IntraUser } from './intra-user.js';
@@ -40,6 +41,7 @@ export class IntraProjectService {
 		private intraUserProgressesRepository: IntraUserProgressesRepository,
 
 		private intraApiService: IntraApiService,
+		private intraProjectResultService: IntraProjectResultService,
 		private idService: IdService,
 		private loggerService: LoggerService,
 	) {
@@ -55,7 +57,7 @@ export class IntraProjectService {
 	}
 
 	/**
-	 * ユーザーの課題の状態と達成したクエストを保存する。
+	 * ユーザーの課題の状態と達成したクエスト、課題の結果を保存する。
 	 * 課題の状態は intraUser の projects_users から取り (追加のリクエストは無い)、クエストは 42 API に 1 回問い合わせる。
 	 * クエストの取得に失敗した場合は、保存済みのクエストを残して課題の状態だけ更新する
 	 * @param campusId ユーザーの主キャンパスの intra のキャンパス ID
@@ -82,6 +84,15 @@ export class IntraProjectService {
 
 		// 値を入れた列だけが更新される
 		await this.intraUserProgressesRepository.upsert(values, ['userId']);
+
+		if (intraUser.projects_users != null) {
+			try {
+				await this.intraProjectResultService.syncResults(userId, intraUser.projects_users);
+			} catch (err) {
+				// 課題の結果を保存できなくても、課題の状態の同期は失敗にしない
+				this.logger.warn(`Failed to sync project results of user ${userId}: ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
 	}
 
 	/**

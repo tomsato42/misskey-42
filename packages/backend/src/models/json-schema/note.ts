@@ -272,5 +272,12 @@ export const packedNoteSchema = {
 			optional: true, nullable: false,
 			ref: 'CalendarEventLite',
 		},
+
+		// 42times: ノートに付けた 42 intra の課題の結果。付いていなければ無い
+		intraProjectResult: {
+			type: 'object',
+			optional: true, nullable: false,
+			ref: 'IntraProjectNote',
+		},
 	},
 } as const;

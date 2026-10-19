@@ -64,6 +64,7 @@ describe('IntraProjectService', () => {
 	let remoteSessions: Map<number, IntraProjectSession[]>;
 	let remoteQuests: IntraQuestUser[] | null | Error;
 	let sessionCalls: [number, number][];
+	let resultSyncCalls: [string, number][];
 	let service: IntraProjectService;
 
 	beforeEach(() => {
@@ -73,6 +74,7 @@ describe('IntraProjectService', () => {
 		remoteSessions = new Map();
 		remoteQuests = [];
 		sessionCalls = [];
+		resultSyncCalls = [];
 
 		const config = {
 			intra: { clientId: 'cid', clientSecret: 'csecret', cursusId: 21, apiBaseUrl: 'https://api.intra.42.fr' },
@@ -139,6 +141,11 @@ describe('IntraProjectService', () => {
 			fakeProjectsRepository as any,
 			fakeProgressesRepository as any,
 			fakeIntraApiService as any,
+			{
+				syncResults: async (userId: string, projectsUsers: unknown[]) => {
+					resultSyncCalls.push([userId, projectsUsers.length]);
+				},
+			} as any,
 			{ gen: () => `id${++seq}` } as any,
 			fakeLoggerService as any,
 		);
@@ -221,6 +228,7 @@ describe('IntraProjectService', () => {
 				projectsSyncedAt: expect.any(Date),
 				questsSyncedAt: expect.any(Date),
 			}]);
+			expect(resultSyncCalls).toEqual([['u1', 2]]);
 		});
 
 		test('クエストの取得に失敗したら、保存済みのクエストを残して課題の状態だけ更新する', async () => {

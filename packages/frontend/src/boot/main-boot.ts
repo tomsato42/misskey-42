@@ -31,6 +31,7 @@ import { unisonReload } from '@/utility/unison-reload.js';
 import { isBirthday } from '@/utility/is-birthday.js';
 import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
 import { addCalendarToMenu } from '@/utility/calendar-menu.js';
+import { addProjectShareToMenu } from '@/utility/intra-project-result-menu.js';
 import { addPinnedRole, findCohortRole, replaceCohortRole } from '@/utility/pinned-roles.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
@@ -122,6 +123,18 @@ export async function mainBoot() {
 			// 取得に失敗したときは次の読み込みでやり直す
 			console.error(err);
 		});
+
+		// 42times: 点数を共有する前から使っている人のメニューにも、「点数を共有」を一度だけ足す (カレンダーと同じ理由でクラウドの値を待つ)
+		if (instance.intraLoginEnabled) {
+			prefer.cloudReady.then(() => {
+				if (prefer.s['intraProjectResult.menuItemAdded']) return;
+				const menu = addProjectShareToMenu(prefer.s.menu);
+				if (menu !== prefer.s.menu) prefer.commit('menu', [...menu]);
+				prefer.commit('intraProjectResult.menuItemAdded', true);
+			}).catch(err => {
+				console.error(err);
+			});
+		}
 
 		// 42times: タイムラインのタブに、同期 (入学時期) のロールを一度だけ足す。
 		// 入学時期のロールが付いていない人 (本科に入る前など) は、付いてから足す。

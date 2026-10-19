@@ -53,6 +53,7 @@ import { NotificationService } from '@/core/NotificationService.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { ChatService } from '@/core/ChatService.js';
 import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
+import { IntraProjectNoteEntityService } from '@/core/entities/IntraProjectNoteEntityService.js';
 
 process.env.NODE_ENV = 'test';
 
@@ -177,6 +178,7 @@ describe('UserEntityService', () => {
 				NotificationService,
 				ChatService,
 				CalendarEventEntityService,
+				IntraProjectNoteEntityService,
 			];
 
 			app = await Test.createTestingModule({

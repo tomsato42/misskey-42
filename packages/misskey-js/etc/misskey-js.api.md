@@ -2117,6 +2117,7 @@ declare namespace entities {
         IImportMutingRequest,
         IImportUserListsRequest,
         IIntraRolesResponse,
+        IIntraProjectResultsResponse,
         IIntraStartReauthResponse,
         IMoveRequest,
         IMoveResponse,
@@ -2455,7 +2456,9 @@ declare namespace entities {
         PairRecruitment,
         PairRecruitmentDetailed,
         PairMember,
-        PairInviteCandidate
+        PairInviteCandidate,
+        IntraProjectResult,
+        IntraProjectNote
     }
 }
 export { entities }
@@ -2864,6 +2867,9 @@ type IImportMutingRequest = operations['i___import-muting']['requestBody']['cont
 type IImportUserListsRequest = operations['i___import-user-lists']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type IIntraProjectResultsResponse = operations['i___intra___project-results']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type IIntraRolesResponse = operations['i___intra-roles']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -2886,6 +2892,12 @@ type INotificationsRequest = operations['i___notifications']['requestBody']['con
 
 // @public (undocumented)
 type INotificationsResponse = operations['i___notifications']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IntraProjectNote = components['schemas']['IntraProjectNote'];
+
+// @public (undocumented)
+type IntraProjectResult = components['schemas']['IntraProjectResult'];
 
 // @public (undocumented)
 type InviteCode = components['schemas']['InviteCode'];
@@ -3349,7 +3361,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed", "pairInvited", "pairApplicationCancelled"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed", "pairInvited", "pairApplicationCancelled", "intraProjectFinished"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;

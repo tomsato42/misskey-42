@@ -3491,6 +3491,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * 42times: Get your 42 intra project results (projects with a final mark, passed or not), newest first. They are synced when you log in and every hour.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'i/intra/project-results', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * Start verifying yourself by signing in to 42 intra again. Open the returned URL in the browser; after that, you can register or remove passkeys for a while.
      * 
      * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.

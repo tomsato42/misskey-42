@@ -2863,6 +2863,15 @@ export type paths = {
          */
         post: operations['i___intra-roles'];
     };
+    '/i/intra/project-results': {
+        /**
+         * i/intra/project-results
+         * @description 42times: Get your 42 intra project results (projects with a final mark, passed or not), newest first. They are synced when you log in and every hour.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___intra___project-results'];
+    };
     '/i/intra/start-reauth': {
         /**
          * i/intra/start-reauth
@@ -4782,6 +4791,15 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                intraProjectFinished?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -4957,6 +4975,7 @@ export type components = {
             hasPoll?: boolean;
             myReaction?: string | null;
             calendarEvent?: components['schemas']['CalendarEventLite'];
+            intraProjectResult?: components['schemas']['IntraProjectNote'];
         };
         NoteDraft: {
             /**
@@ -5363,6 +5382,22 @@ export type components = {
                 id: string;
                 projectSlug: string;
                 projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'intraProjectFinished';
+            /** @description The project result at the time of the notification. */
+            intraProjectResult: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+                finalMark: number;
+                validated: boolean;
             };
         };
         DriveFile: {
@@ -6570,6 +6605,44 @@ export type components = {
             user: components['schemas']['UserLite'];
             /** @description その人が取り組める、募集の課題の slug */
             projectSlugs: string[];
+        };
+        IntraProjectResult: {
+            /** Format: id */
+            id: string;
+            /** @example webserv */
+            projectSlug: string;
+            /** @example webserv */
+            projectName: string;
+            /** @example 125 */
+            finalMark: number;
+            validated: boolean;
+            /** @description The number of evaluations flagged as outstanding. null if unknown. */
+            outstandingCount: number | null;
+            /** @description The team members (including yourself). Empty if unknown. */
+            members: {
+                login: string;
+                /** @description null if the member has no account on this server. */
+                user: components['schemas']['UserLite'] | null;
+            }[];
+            /** Format: date-time */
+            markedAt: string | null;
+        };
+        IntraProjectNote: {
+            /** @example webserv */
+            projectSlug: string;
+            /** @example webserv */
+            projectName: string;
+            /** @example 125 */
+            finalMark: number;
+            validated: boolean;
+            /** @description The number of evaluations flagged as outstanding. null if unknown. */
+            outstandingCount: number | null;
+            /** @description The team members (including yourself). Empty if unknown. */
+            members: {
+                login: string;
+                /** @description null if the member has no account on this server. */
+                user: components['schemas']['UserLite'] | null;
+            }[];
         };
     };
     responses: never;
@@ -13095,6 +13168,15 @@ export interface operations {
                                 userListId: string;
                             };
                             pairApplicationCancelled?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            intraProjectFinished?: {
                                 /** @enum {string} */
                                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                             } | {
@@ -29174,6 +29256,64 @@ export interface operations {
             };
         };
     };
+    'i___intra___project-results': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['IntraProjectResult'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'i___intra___start-reauth': {
         responses: {
             /** @description OK (with results) */
@@ -29331,8 +29471,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -29416,8 +29556,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -30810,6 +30950,15 @@ export interface operations {
                             userListId: string;
                         };
                         pairApplicationCancelled?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        intraProjectFinished?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {
@@ -32412,6 +32561,11 @@ export interface operations {
                          */
                         userListId?: string | null;
                     } | null;
+                    /**
+                     * Format: misskey:id
+                     * @description 42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.
+                     */
+                    intraProjectResultId?: string | null;
                 };
             };
         };

@@ -187,6 +187,10 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 								// 42times: カレンダーの通知はイベントのページを開く
 								client = await swos.openClient('push', `/calendar/events/${data.body.event.id}`, loginId);
 								break;
+							case 'intraProjectFinished':
+								// 42times: 課題の結果の通知は、投稿するボタンのある通知の一覧を開く
+								client = await swos.openClient('push', '/my/notifications', loginId);
+								break;
 							case 'pairJoinRequested':
 							case 'pairAccepted':
 							case 'pairClosed':

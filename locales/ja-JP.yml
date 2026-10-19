@@ -2950,6 +2950,7 @@ _notification:
   pairClosedText: "{project} のペア募集: {reason}"
   pairInvitedText: "{project} のペア募集に招待されました"
   pairApplicationCancelledText: "{project} のペア募集の課題が変わり、参加希望が取り下げになりました"
+  intraProjectFinished: "課題が終わりました"
 
   _types:
     all: "すべて"
@@ -2981,6 +2982,7 @@ _notification:
     pairClosed: "ペア募集の締め切り"
     pairInvited: "ペア募集への招待"
     pairApplicationCancelled: "ペア募集の参加希望の取り下げ(課題の変更)"
+    intraProjectFinished: "課題の結果"
 
   _actions:
     followBack: "フォローバック"
@@ -4066,3 +4068,21 @@ _calendar:
     tooManyVisibleUsers: "招待する人は{max}人までです。"
     userListRequired: "リストを選んでください。"
     invalidUserList: "このリストは使えません。自分のリストを選んでください。"
+_intraProjectResult:
+  share: "点数を共有"
+  selectProject: "課題を選択"
+  project: "課題"
+  removeProject: "課題を外す"
+  post: "投稿する"
+  success: "success"
+  fail: "fail"
+  outOf: "/100"
+  outstanding: "outstanding {n}"
+  noResults: "点数の付いた課題がありません"
+  notSavedInDraft: "課題の点数は下書きと予約投稿には保存されません。"
+  scoreLabel: "{project} {score}点 {result}"
+  passed: "合格"
+  failed: "不合格"
+  _errors:
+    noSuchResult: "この課題の結果が見つかりません。"
+    cannotAttachToPureRenote: "本文の無いリノートには課題を付けられません。"

@@ -12,6 +12,7 @@ import { MiDriveFile } from './DriveFile.js';
 import { MiNoteDraft } from './NoteDraft.js';
 import type { CalendarEventInvitedNotificationData, CalendarEventReminderNotificationData, CalendarEventUpdatedNotificationData } from '@/core/calendar/calendar-notification.js';
 import { MiPairRecruitment } from './PairRecruitment.js';
+import type { MiIntraProjectResult } from './IntraProjectResult.js';
 import type { PairClosedReason } from '@/core/pair/pair-recruitment.js';
 
 // misskey-js の notificationTypes と同期すべし
@@ -207,6 +208,17 @@ export type MiNotification = {
 	pairRecruitmentId: MiPairRecruitment['id'];
 	projectSlug: string;
 	projectName: string;
+} | {
+	/** 42times: 42 intra の課題の結果が出た (合否は問わない) */
+	type: 'intraProjectFinished';
+	id: string;
+	createdAt: string;
+	intraProjectResultId: MiIntraProjectResult['id'];
+	/** 通知を作った時点の課題の slug・名前・点数・合否 */
+	projectSlug: string;
+	projectName: string;
+	finalMark: number;
+	validated: boolean;
 };
 
 export type MiGroupedNotification = MiNotification | {

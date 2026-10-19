@@ -45,6 +45,7 @@ export const notificationTypes = [
 	'pairClosed',
 	'pairInvited',
 	'pairApplicationCancelled',
+	'intraProjectFinished',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;

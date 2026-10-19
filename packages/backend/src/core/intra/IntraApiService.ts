@@ -15,6 +15,7 @@ import type Logger from '@/logger.js';
 import type { IntraUser } from './intra-user.js';
 import type { IntraProjectSession, IntraQuestUser } from './intra-project.js';
 import type { IntraCursusUserWithUser } from './intra-cohort.js';
+import type { IntraScaleTeam, IntraTeam } from './intra-project-result.js';
 import type { IntraBloc, IntraCoalitionUser } from './intra-coalition.js';
 import type { Response } from 'node-fetch';
 
@@ -205,6 +206,36 @@ export class IntraApiService {
 		const intra = this.getIntraConfig();
 		try {
 			return await this.appGetAllPages<IntraQuestUser>(`${intra.apiBaseUrl}/v2/users/${encodeURIComponent(String(intraId))}/quests_users`);
+		} catch (err) {
+			if (err instanceof StatusError && err.statusCode === 404) return null;
+			throw err;
+		}
+	}
+
+	/**
+	 * アプリトークンで、チーム (メンバーを含む) を取得する。チームが存在しなければ null
+	 */
+	@bindThis
+	public async getTeam(teamId: number): Promise<IntraTeam | null> {
+		const intra = this.getIntraConfig();
+
+		const res = await this.appRequest(`${intra.apiBaseUrl}/v2/teams/${encodeURIComponent(String(teamId))}`);
+		if (res.status === 404) return null;
+		if (!res.ok) {
+			throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
+		}
+
+		return await res.json() as IntraTeam;
+	}
+
+	/**
+	 * アプリトークンで、チームが受けた評価 (scale_teams) をすべて取得する。チームが存在しなければ null
+	 */
+	@bindThis
+	public async getTeamScaleTeams(teamId: number): Promise<IntraScaleTeam[] | null> {
+		const intra = this.getIntraConfig();
+		try {
+			return await this.appGetAllPages<IntraScaleTeam>(`${intra.apiBaseUrl}/v2/teams/${encodeURIComponent(String(teamId))}/scale_teams`);
 		} catch (err) {
 			if (err instanceof StatusError && err.statusCode === 404) return null;
 			throw err;

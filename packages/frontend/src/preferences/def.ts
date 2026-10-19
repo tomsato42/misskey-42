@@ -210,6 +210,7 @@ export const PREF_DEF = definePreferences({
 			'followRequests',
 			'chat',
 			'pair',
+			'projectShare',
 			'-',
 			'explore',
 			'announcements',
@@ -221,6 +222,10 @@ export const PREF_DEF = definePreferences({
 	},
 	// 42times: 既存の menu に calendar を一度だけ足したか (boot/main-boot.ts)。ユーザーが後で消したら足し直さないための印
 	'calendar.menuItemAdded': {
+		default: false,
+	},
+	// 42times: 既存の menu に projectShare (点数を共有) を一度だけ足したか (boot/main-boot.ts)
+	'intraProjectResult.menuItemAdded': {
 		default: false,
 	},
 	// 42times: カレンダーを管理人ビュー (公開範囲の外のイベントも出す) で見るか。モデレーター以上にだけ効く
