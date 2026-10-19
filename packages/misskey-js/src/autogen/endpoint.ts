@@ -461,6 +461,7 @@ import type {
 	IImportFollowingRequest,
 	IImportMutingRequest,
 	IImportUserListsRequest,
+	IIntraRolesResponse,
 	IMoveRequest,
 	IMoveResponse,
 	INotificationsRequest,
@@ -1019,6 +1020,7 @@ export type Endpoints = {
 	'i/import-following': { req: IImportFollowingRequest; res: EmptyResponse };
 	'i/import-muting': { req: IImportMutingRequest; res: EmptyResponse };
 	'i/import-user-lists': { req: IImportUserListsRequest; res: EmptyResponse };
+	'i/intra-roles': { req: EmptyRequest; res: IIntraRolesResponse };
 	'i/move': { req: IMoveRequest; res: IMoveResponse };
 	'i/notifications': { req: INotificationsRequest; res: INotificationsResponse };
 	'i/notifications-grouped': { req: INotificationsGroupedRequest; res: INotificationsGroupedResponse };

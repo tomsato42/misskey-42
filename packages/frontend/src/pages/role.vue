@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader v-model:tab="tab" :tabs="headerTabs">
+<PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs">
 	<div v-if="error != null" class="_spacer" style="--MI_SPACER-w: 1200px;">
 		<MkResult type="error" :text="error"/>
 	</div>
@@ -31,6 +31,10 @@ import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import { Paginator } from '@/utility/paginator.js';
+import { $i } from '@/i.js';
+import { prefer } from '@/preferences.js';
+import { addPinnedRole, removePinnedRole } from '@/utility/pinned-roles.js';
+import type { PageHeaderItem } from '@/types/page-header.js';
 
 const props = withDefaults(defineProps<{
 	roleId: string;
@@ -67,6 +71,27 @@ const usersPaginator = markRaw(new Paginator('roles/users', {
 		roleId: props.roleId,
 	})),
 }));
+
+const isPinned = computed(() => prefer.r.pinnedRoles.value.some(r => r.id === props.roleId));
+
+// タイムラインのタブに足せるのは、タイムラインを見られるロール (公開かつ見つけやすくする) だけ
+const headerActions = computed<PageHeaderItem[]>(() => {
+	if ($i == null || role.value == null || !visible.value) return [];
+	const currentRole = role.value;
+	return [isPinned.value ? {
+		icon: 'ti ti-pinned-off',
+		text: i18n.ts._roleTimeline.removeFromTimelineTabs,
+		handler: () => {
+			prefer.commit('pinnedRoles', [...removePinnedRole(prefer.s.pinnedRoles, currentRole.id)]);
+		},
+	} : {
+		icon: 'ti ti-pin',
+		text: i18n.ts._roleTimeline.addToTimelineTabs,
+		handler: () => {
+			prefer.commit('pinnedRoles', [...addPinnedRole(prefer.s.pinnedRoles, currentRole)]);
+		},
+	}];
+});
 
 const headerTabs = computed(() => [{
 	key: 'users',

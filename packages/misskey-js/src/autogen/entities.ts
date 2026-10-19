@@ -464,6 +464,7 @@ export type IImportBlockingRequest = operations['i___import-blocking']['requestB
 export type IImportFollowingRequest = operations['i___import-following']['requestBody']['content']['application/json'];
 export type IImportMutingRequest = operations['i___import-muting']['requestBody']['content']['application/json'];
 export type IImportUserListsRequest = operations['i___import-user-lists']['requestBody']['content']['application/json'];
+export type IIntraRolesResponse = operations['i___intra-roles']['responses']['200']['content']['application/json'];
 export type IMoveRequest = operations['i___move']['requestBody']['content']['application/json'];
 export type IMoveResponse = operations['i___move']['responses']['200']['content']['application/json'];
 export type INotificationsRequest = operations['i___notifications']['requestBody']['content']['application/json'];

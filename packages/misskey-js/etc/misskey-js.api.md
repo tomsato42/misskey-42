@@ -2076,6 +2076,7 @@ declare namespace entities {
         IImportFollowingRequest,
         IImportMutingRequest,
         IImportUserListsRequest,
+        IIntraRolesResponse,
         IMoveRequest,
         IMoveResponse,
         INotificationsRequest,
@@ -2809,6 +2810,9 @@ type IImportMutingRequest = operations['i___import-muting']['requestBody']['cont
 
 // @public (undocumented)
 type IImportUserListsRequest = operations['i___import-user-lists']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type IIntraRolesResponse = operations['i___intra-roles']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IMoveRequest = operations['i___move']['requestBody']['content']['application/json'];

@@ -13928,6 +13928,32 @@ export interface Locale extends ILocale {
          */
         "ugcVisibilityLocked": string;
     };
+    "_roleTimeline": {
+        /**
+         * タイムラインに表示するロール
+         */
+        "pinnedRoles": string;
+        /**
+         * 選んだロールのタイムラインを、タイムラインの上のタブに表示します。
+         */
+        "pinnedRolesDescription": string;
+        /**
+         * ロールを選択
+         */
+        "selectRole": string;
+        /**
+         * 追加できるロールがありません
+         */
+        "noRolesToAdd": string;
+        /**
+         * タイムラインのタブに追加
+         */
+        "addToTimelineTabs": string;
+        /**
+         * タイムラインのタブから外す
+         */
+        "removeFromTimelineTabs": string;
+    };
     "_calendar": {
         /**
          * カレンダー
