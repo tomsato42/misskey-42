@@ -157,11 +157,6 @@ export const packedCalendarEventSchema = {
 			},
 			description: 'Up to 5 subscribers, the users you follow first. Only present in calendar/events/show.',
 		},
-		followingSubscribersCount: {
-			type: 'integer',
-			optional: true, nullable: false,
-			description: 'The number of subscribers you follow (excluding the creator). Only present in calendar/events/show.',
-		},
 		invitedBy: {
 			type: 'object',
 			ref: 'UserLite',

@@ -94,10 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span v-if="(event.subscribersPreview ?? []).length > 0" :class="$style.subscriberAvatars" aria-hidden="true">
 							<MkAvatar v-for="user in event.subscribersPreview" :key="user.id" :user="user" :class="$style.subscriberAvatar"/>
 						</span>
-						<span :class="$style.subscribersText">
-							<span>{{ i18n.tsx._calendar.subscribersCount({ n: event.subscribersCount }) }}</span>
-							<small v-if="(event.followingSubscribersCount ?? 0) > 0">{{ i18n.tsx._calendar.includesFollowing({ n: event.followingSubscribersCount ?? 0 }) }}</small>
-						</span>
+						<span :class="$style.subscribersText">{{ i18n.tsx._calendar.subscribersCount({ n: event.subscribersCount }) }}</span>
 						<i class="ti ti-chevron-right" :class="$style.subscribersChevron" aria-hidden="true"></i>
 					</button>
 				</div>
@@ -174,12 +171,7 @@ const showInvitation = computed(() => event.value != null && !event.value.isCanc
 
 const subscribersButtonLabel = computed(() => {
 	if (event.value == null) return '';
-	const following = event.value.followingSubscribersCount ?? 0;
-	return [
-		i18n.tsx._calendar.subscribersCount({ n: event.value.subscribersCount }),
-		following > 0 ? i18n.tsx._calendar.includesFollowing({ n: following }) : null,
-		i18n.ts._calendar.openSubscribers,
-	].filter(x => x != null).join(' ');
+	return `${i18n.tsx._calendar.subscribersCount({ n: event.value.subscribersCount })} ${i18n.ts._calendar.openSubscribers}`;
 });
 
 /** リストに公開しているイベントのリストの名前 (管理できる人にだけ出す) */
@@ -548,16 +540,9 @@ definePage(() => ({
 }
 
 .subscribersText {
-	display: flex;
-	flex-direction: column;
 	line-height: 1.25;
 	font-size: 0.9em;
 	text-align: left;
-
-	> small {
-		font-size: 0.85em;
-		opacity: 0.75;
-	}
 }
 
 .subscribersChevron {

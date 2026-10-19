@@ -3866,7 +3866,6 @@ _calendar:
   visibleToList: "リストのメンバーに公開"
   visibleToNamedList: "リスト「{name}」のメンバーに公開"
   subscribersWithCount: "購読者 {n}人"
-  includesFollowing: "フォロー中の{n}人を含む"
   openSubscribers: "購読者の一覧を開く"
   creator: "作成者"
   followingUsers: "フォロー中"

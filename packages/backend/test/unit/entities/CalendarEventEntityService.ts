@@ -60,7 +60,6 @@ describe('CalendarEventEntityService', () => {
 			createManageChecker: vi.fn(async (me: { id: string }) => (e: { userId: string }) => e.userId === me.id),
 			getEventsOfNotes: vi.fn(async () => new Map()),
 			getSubscriberPreviewUserIds: vi.fn(async () => ['carol', 'alice']),
-			countFollowingSubscribers: vi.fn(async () => 1),
 		};
 		calendarInvitationService = {
 			getInviterId: vi.fn(async () => null),
@@ -146,13 +145,12 @@ describe('CalendarEventEntityService', () => {
 			expect(forBob).not.toHaveProperty('userListId');
 		});
 
-		test('detail では購読者のアバター・フォローしている購読者の数・招待した人・招待できるかを付ける', async () => {
+		test('detail では購読者のアバター・招待した人・招待できるかを付ける', async () => {
 			calendarInvitationService.getInviterId.mockResolvedValueOnce('carol');
 			calendarInvitationService.canInvite.mockResolvedValueOnce(true);
 			const packed = await service.pack(event(), BOB, undefined, { detail: true });
 			expect(packed).toMatchObject({
 				subscribersPreview: [{ id: 'carol' }, { id: 'alice' }],
-				followingSubscribersCount: 1,
 				invitedBy: { id: 'carol' },
 				canInvite: true,
 			});

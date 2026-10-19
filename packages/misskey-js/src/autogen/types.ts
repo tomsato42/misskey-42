@@ -6251,8 +6251,6 @@ export type components = {
             userListId?: string | null;
             /** @description Up to 5 subscribers, the users you follow first. Only present in calendar/events/show. */
             subscribersPreview?: components['schemas']['UserLite'][];
-            /** @description The number of subscribers you follow (excluding the creator). Only present in calendar/events/show. */
-            followingSubscribersCount?: number;
             /** @description The user who invited you to the event. null if you are not invited. Only present in calendar/events/show. */
             invitedBy?: components['schemas']['UserLite'] | null;
             /** @description Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show. */

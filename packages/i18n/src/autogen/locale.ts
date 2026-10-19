@@ -14462,10 +14462,6 @@ export interface Locale extends ILocale {
          */
         "subscribersWithCount": ParameterizedString<"n">;
         /**
-         * フォロー中の{n}人を含む
-         */
-        "includesFollowing": ParameterizedString<"n">;
-        /**
          * 購読者の一覧を開く
          */
         "openSubscribers": string;

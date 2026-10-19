@@ -413,21 +413,6 @@ export class CalendarEventService {
 	}
 
 	/**
-	 * 作成者以外の購読者のうち、me がフォローしている人の数 (凍結・削除済みを除く)
-	 */
-	@bindThis
-	public async countFollowingSubscribers(event: Pick<MiCalendarEvent, 'id' | 'userId'>, me: Me): Promise<number> {
-		return await this.calendarEventSubscriptionsRepository.createQueryBuilder('subscription')
-			.innerJoin('subscription.user', 'user')
-			.innerJoin(MiFollowing, 'following', 'following.followeeId = subscription.userId AND following.followerId = :meId', { meId: me.id })
-			.where('subscription.eventId = :eventId', { eventId: event.id })
-			.andWhere('subscription.userId != :ownerId', { ownerId: event.userId })
-			.andWhere('user.isDeleted = FALSE')
-			.andWhere('user.isSuspended = FALSE')
-			.getCount();
-	}
-
-	/**
 	 * 購読者のアバターに並べる人の ID (イベントのページ用)。me がフォローしている人を先に、新しく購読した順に limit 人まで
 	 */
 	@bindThis

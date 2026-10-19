@@ -872,7 +872,6 @@ describe('カレンダー', () => {
 
 			// イベントのページでは、フォローしている人を先にアバターを並べる
 			const shown = await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: target.id }, user: ivy });
-			assert.strictEqual(shown.followingSubscribersCount, 1);
 			assert.strictEqual(shown.subscribersPreview?.[0].id, jack.id);
 			assert.strictEqual(shown.subscribersPreview?.length, 4);
 			assert.strictEqual(shown.invitedBy, null);
