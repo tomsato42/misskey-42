@@ -166,6 +166,7 @@ import { IntraProjectService } from './intra/IntraProjectService.js';
 import { IntraCohortService } from './intra/IntraCohortService.js';
 import { IntraProjectResultService } from './intra/IntraProjectResultService.js';
 import { IntraProjectNoteEntityService } from './entities/IntraProjectNoteEntityService.js';
+import { IntraCoalitionService } from './intra/IntraCoalitionService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
 import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
 import { QueueModule } from './QueueModule.js';
@@ -337,6 +338,7 @@ const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExis
 const $IntraCohortService: Provider = { provide: 'IntraCohortService', useExisting: IntraCohortService };
 const $IntraProjectResultService: Provider = { provide: 'IntraProjectResultService', useExisting: IntraProjectResultService };
 const $IntraProjectNoteEntityService: Provider = { provide: 'IntraProjectNoteEntityService', useExisting: IntraProjectNoteEntityService };
+const $IntraCoalitionService: Provider = { provide: 'IntraCoalitionService', useExisting: IntraCoalitionService };
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
 const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
 //#endregion
@@ -508,6 +510,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraCohortService,
 		IntraProjectResultService,
 		IntraProjectNoteEntityService,
+		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		QueueService,
@@ -675,6 +678,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraCohortService,
 		$IntraProjectResultService,
 		$IntraProjectNoteEntityService,
+		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$TelemetryService,
@@ -843,6 +847,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraCohortService,
 		IntraProjectResultService,
 		IntraProjectNoteEntityService,
+		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		QueueService,
@@ -1008,6 +1013,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraCohortService,
 		$IntraProjectResultService,
 		$IntraProjectNoteEntityService,
+		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$TelemetryService,

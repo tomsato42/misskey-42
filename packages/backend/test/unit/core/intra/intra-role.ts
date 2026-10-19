@@ -66,6 +66,19 @@ describe('getIntraRoleTargets', () => {
 			{ kind: 'pool', key: '2307', name: 'Piscine 23/07' },
 		]);
 	});
+
+	test('コアリションに所属していればコアリションのロール条件を最後に含め、色を付ける', () => {
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, level: 3 }, null, { id: 301, name: 'Fuji', color: '#FF6950' })).toEqual([
+			{ kind: 'level', key: '3', name: 'Lv.3' },
+			{ kind: 'coalition', key: '301', name: 'Fuji', color: '#FF6950' },
+		]);
+	});
+
+	test('コアリションの色が #RRGGBB でなければ色を付けない', () => {
+		expect(getIntraRoleTargets(EMPTY_PROFILE, null, { id: 302, name: 'Kaze', color: 'red' })).toEqual([
+			{ kind: 'coalition', key: '302', name: 'Kaze', color: null },
+		]);
+	});
 });
 
 describe('formatYearMonth', () => {

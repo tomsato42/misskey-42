@@ -7,7 +7,7 @@ import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryColumn } from 'type
 import { id } from './util/id.js';
 import { MiRole } from './Role.js';
 
-export const intraRoleKinds = ['level', 'campus', 'pool', 'cohort'] as const;
+export const intraRoleKinds = ['level', 'campus', 'pool', 'cohort', 'coalition'] as const;
 export type IntraRoleKind = typeof intraRoleKinds[number];
 
 /**
@@ -33,6 +33,7 @@ export class MiIntraRole {
 	 * campus: 主キャンパスごとのロール
 	 * pool: ピシンの時期 (年月) ごとのロール
 	 * cohort: 本科 (42cursus) への入学時期ごとのロール。42cursus を始めた月に最も近い入学の月 (intra_cohort から求める) にまとめる
+	 * coalition: 主キャンパス・42cursus のコアリションごとのロール
 	 */
 	@Column('varchar', {
 		length: 16,
@@ -41,7 +42,7 @@ export class MiIntraRole {
 
 	/**
 	 * kind が level ならレベルの整数 (例: '5')、campus なら intra のキャンパス ID (例: '26')、
-	 * pool ならピシンの年月 (YYMM、例: '2408')、cohort なら入学時期 (YYMM、例: '2410')
+	 * pool ならピシンの年月 (YYMM、例: '2408')、cohort なら入学時期 (YYMM、例: '2410')、coalition なら intra のコアリション ID (例: '301')
 	 */
 	@Column('varchar', {
 		length: 64,
