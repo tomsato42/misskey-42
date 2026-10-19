@@ -56,7 +56,7 @@ export class CalendarEventEntityService {
 	}
 
 	/**
-	 * @param opts.detail イベントのページ用の項目 (購読者のアバター・フォローしている購読者の数・招待した人) も付ける
+	 * @param opts.detail イベントのページ用の項目 (購読者のアバター・フォローしている購読者の数・招待した人・招待できるか) も付ける
 	 */
 	@bindThis
 	public async pack(
@@ -99,10 +99,11 @@ export class CalendarEventEntityService {
 
 	@bindThis
 	private async packDetail(event: MiCalendarEvent, me: { id: MiUser['id'] }) {
-		const [previewIds, followingSubscribersCount, inviterId] = await Promise.all([
+		const [previewIds, followingSubscribersCount, inviterId, canInvite] = await Promise.all([
 			this.calendarEventService.getSubscriberPreviewUserIds(event, me, SUBSCRIBERS_PREVIEW_LIMIT),
 			this.calendarEventService.countFollowingSubscribers(event, me),
 			this.calendarInvitationService.getInviterId(event, me),
+			this.calendarInvitationService.canInvite(event, me),
 		]);
 		const users = await this.userEntityService.packMany([...new Set([...previewIds, ...(inviterId != null ? [inviterId] : [])])], me);
 		const usersById = new Map(users.map(u => [u.id, u]));
@@ -111,6 +112,7 @@ export class CalendarEventEntityService {
 			subscribersPreview: previewIds.map(id => usersById.get(id)).filter(u => u != null),
 			followingSubscribersCount,
 			invitedBy: inviterId != null ? usersById.get(inviterId) ?? null : null,
+			canInvite,
 		};
 	}
 

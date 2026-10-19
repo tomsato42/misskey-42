@@ -158,12 +158,8 @@ const eventUrl = computed(() => `${url}/calendar/events/${props.eventId}`);
 /** イベントの月のカレンダー。読み込む前は今月 */
 const calendarUrl = computed(() => event.value != null ? `/calendar?month=${event.value.date.slice(0, 7)}` : '/calendar');
 const isOwner = computed(() => event.value != null && $i != null && event.value.userId === $i.id);
-// 招待を送れるのは管理できる人と、購読している人 (指定ユーザー・リストのイベントは管理できる人だけ。backend の CalendarInvitationService.canInvite と同じ)
-const canInvite = computed(() => {
-	if (event.value == null || event.value.isCanceled) return false;
-	if (event.value.canManage === true) return true;
-	return event.value.isSubscribed === true && event.value.visibility !== 'specified' && event.value.visibility !== 'list';
-});
+// 招待を送れるかは backend (CalendarInvitationService.canInvite) が決める。中止したイベントには送れない
+const canInvite = computed(() => event.value != null && !event.value.isCanceled && event.value.canInvite === true);
 
 /** 招待されていて、まだ購読していないときに案内を出す (そのときは購読のボタンを案内の中だけにする) */
 const showInvitation = computed(() => event.value != null && !event.value.isCanceled && event.value.invitedBy != null && event.value.isSubscribed !== true);

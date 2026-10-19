@@ -64,6 +64,7 @@ describe('CalendarEventEntityService', () => {
 		};
 		calendarInvitationService = {
 			getInviterId: vi.fn(async () => null),
+			canInvite: vi.fn(async () => false),
 		};
 		calendarVisibilityService = {
 			filterVisible: vi.fn(async (events: unknown[]) => events),
@@ -144,14 +145,17 @@ describe('CalendarEventEntityService', () => {
 			expect(forBob).not.toHaveProperty('userListId');
 		});
 
-		test('detail では購読者のアバター・フォローしている購読者の数・招待した人を付ける', async () => {
+		test('detail では購読者のアバター・フォローしている購読者の数・招待した人・招待できるかを付ける', async () => {
 			calendarInvitationService.getInviterId.mockResolvedValueOnce('carol');
+			calendarInvitationService.canInvite.mockResolvedValueOnce(true);
 			const packed = await service.pack(event(), BOB, undefined, { detail: true });
 			expect(packed).toMatchObject({
 				subscribersPreview: [{ id: 'carol' }, { id: 'alice' }],
 				followingSubscribersCount: 1,
 				invitedBy: { id: 'carol' },
+				canInvite: true,
 			});
+			expect(calendarInvitationService.canInvite).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB);
 			expect(calendarEventService.getSubscriberPreviewUserIds).toHaveBeenCalledWith(expect.objectContaining({ id: 'event1' }), BOB, 5);
 			// アバターと招待した人はまとめて引く
 			expect(userEntityService.packMany).toHaveBeenCalledOnce();
@@ -162,6 +166,7 @@ describe('CalendarEventEntityService', () => {
 			expect(packed).not.toHaveProperty('subscribersPreview');
 			expect(calendarEventService.getSubscriberPreviewUserIds).not.toHaveBeenCalled();
 			expect(calendarInvitationService.getInviterId).not.toHaveBeenCalled();
+			expect(packed).not.toHaveProperty('canInvite');
 		});
 	});
 

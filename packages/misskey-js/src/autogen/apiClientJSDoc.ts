@@ -1436,7 +1436,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * Invite users and/or the members of one of your lists to a calendar event. Subscribers can invite to public, followers and mutual events; the creator and moderators can invite to any event. Each user is invited only once (by whoever invites first) and gets a calendarEventInvited notification. Subscribed users and users who cannot see the event are skipped. Up to 200 users (including the list members) are processed per call. With dryRun, nothing is saved and the counts are returned.
+     * Invite users and/or the members of one of your lists to a calendar event. Subscribers can invite to public, followers and mutual events, except followers (mutual) events whose creator hides their followers (or following) list; the creator and moderators can invite to any event. Each user is invited only once (by whoever invites first) and gets a calendarEventInvited notification. Subscribed users and users who cannot see the event are skipped. Up to 200 users (including the list members) are processed per call. With dryRun, nothing is saved and the counts are returned.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */

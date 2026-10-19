@@ -928,5 +928,37 @@ describe('カレンダー', () => {
 			await successfulApiCall({ endpoint: 'calendar/events/cancel', parameters: { eventId: followersOnly.id }, user: hank });
 			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: hank }, { status: 400, code: 'CALENDAR_EVENT_CANCELED', id: '8873aebe-3ee9-4ce7-83df-d20af01cd98d' });
 		});
+
+		test('作成者がフォロワー (相互フォローならフォローも) を非公開にしているイベントには、購読者は招待できない', async () => {
+			const kate = await signup({ username: 'kate' });
+			const leo = await signup({ username: 'leo' });
+			await api('following/create', { userId: kate.id }, leo);
+			await api('following/create', { userId: leo.id }, kate);
+			const followersOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: 'フォロワー限定', date, startTime: '19:00', visibility: 'followers' }, user: kate });
+			const mutualOnly = await successfulApiCall({ endpoint: 'calendar/events/create', parameters: { title: '相互フォロー限定', date, startTime: '20:00', visibility: 'mutual' }, user: kate });
+			for (const event of [followersOnly, mutualOnly]) {
+				await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: event.id }, user: leo });
+			}
+			const canInvite = async (event: misskey.entities.CalendarEvent, user: misskey.entities.SignupResponse) =>
+				(await successfulApiCall({ endpoint: 'calendar/events/show', parameters: { eventId: event.id }, user })).canInvite;
+
+			assert.strictEqual(await canInvite(followersOnly, leo), true);
+			assert.strictEqual(await canInvite(mutualOnly, leo), true);
+
+			// 招待できるかの状態から、作成者をフォローしているかが分かってしまう
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'private' }, user: kate });
+			assert.strictEqual(await canInvite(followersOnly, leo), false);
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
+			await failedApiCall({ endpoint: 'calendar/events/invite', parameters: { eventId: followersOnly.id, userIds: [ivy.id], dryRun: true }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'ffe95d7b-cf6b-4975-8d4c-d2d9443e3bf8' });
+			// 作成者は自分で送れる
+			assert.strictEqual(await canInvite(followersOnly, kate), true);
+			await successfulApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: followersOnly.id, userIds: [ivy.id] }, user: kate });
+
+			// 相互フォローは、フォローの一覧を非公開にしていても送れない
+			await successfulApiCall({ endpoint: 'i/update', parameters: { followersVisibility: 'followers', followingVisibility: 'private' }, user: kate });
+			assert.strictEqual(await canInvite(followersOnly, leo), true);
+			assert.strictEqual(await canInvite(mutualOnly, leo), false);
+			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: mutualOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
+		});
 	});
 });

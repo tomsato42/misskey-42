@@ -168,6 +168,11 @@ export const packedCalendarEventSchema = {
 			optional: true, nullable: true,
 			description: 'The user who invited you to the event. null if you are not invited. Only present in calendar/events/show.',
 		},
+		canInvite: {
+			type: 'boolean',
+			optional: true, nullable: false,
+			description: 'Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show.',
+		},
 	},
 } as const;
 

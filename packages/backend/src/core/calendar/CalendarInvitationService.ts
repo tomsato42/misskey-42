@@ -85,15 +85,31 @@ export class CalendarInvitationService {
 
 	/**
 	 * me がイベントに招待を送れるか。作成者とモデレーター以上はいつでも、購読している人は全員・フォロワー・相互フォローのイベントなら送れる。
-	 * 指定ユーザー・リストのイベントは見られる人を作成者が決めている (作ったときに招待している) ので、
-	 * 招待の状態から誰が見られるかを購読者に探らせないよう、管理できる人だけにする
+	 * 招待の状態 (unavailable) からは、その人がイベントを見られるか、つまり作成者との関係が分かる。
+	 * 指定ユーザー・リストのイベントは見られる人を作成者が決めている (作ったときに招待している) ので、管理できる人だけにする。
+	 * フォロワー・相互フォローのイベントは、作成者がその関係 (フォロワー・フォロー) を非公開にしていたら購読者には送らせない。
+	 * me がイベントを見られること (作成者をフォローしていること) は呼ぶ側で確かめておく
 	 */
 	@bindThis
 	public async canInvite(event: Pick<MiCalendarEvent, 'id' | 'userId' | 'visibility'>, me: Me): Promise<boolean> {
 		if (event.userId === me.id) return true;
 		if (await this.roleService.isModerator(me)) return true;
 		if (event.visibility === 'specified' || event.visibility === 'list') return false;
+		if (await this.hidesAudienceRelations(event)) return false;
 		return await this.calendarEventSubscriptionsRepository.exists({ where: { eventId: event.id, userId: me.id } });
+	}
+
+	/**
+	 * イベントを見られるかで分かる作成者との関係を、作成者が非公開にしているか。
+	 * フォロワーのイベントはフォロワー一覧、相互フォローのイベントはフォロワーとフォローの一覧を見る。
+	 * イベントを見られる人は作成者をフォローしているので、「フォロワーだけに公開」なら見えている (users/followers・users/following と同じ)
+	 */
+	@bindThis
+	private async hidesAudienceRelations(event: Pick<MiCalendarEvent, 'userId' | 'visibility'>): Promise<boolean> {
+		if (event.visibility !== 'followers' && event.visibility !== 'mutual') return false;
+		const profile = await this.cacheService.userProfileCache.fetch(event.userId);
+		if (profile.followersVisibility === 'private') return true;
+		return event.visibility === 'mutual' && profile.followingVisibility === 'private';
 	}
 
 	/**
