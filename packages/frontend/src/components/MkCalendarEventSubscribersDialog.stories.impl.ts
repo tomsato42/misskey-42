@@ -42,9 +42,9 @@ function calendarEvent(overrides: Partial<entities.CalendarEvent> = {}): entitie
 }
 
 const subscribers = [
-	{ id: 'sub3', createdAt: '2026-10-19T00:00:00.000Z', user: userLite('user3', 'snakamura', null, 'なかむー'), isFollowing: true },
-	{ id: 'sub2', createdAt: '2026-10-18T12:00:00.000Z', user: userLite('user2', 'aoki', null, 'あおき'), isFollowing: false },
-	{ id: 'sub1', createdAt: '2026-10-18T06:00:00.000Z', user: userLite('user1', 'mhayashi', null, 'はやし'), isFollowing: true },
+	{ id: 'sub3', createdAt: '2026-10-19T00:00:00.000Z', user: userLite('user3', 'snakamura', null, 'なかむー') },
+	{ id: 'sub2', createdAt: '2026-10-18T12:00:00.000Z', user: userLite('user2', 'aoki', null, 'あおき') },
+	{ id: 'sub1', createdAt: '2026-10-18T06:00:00.000Z', user: userLite('user1', 'mhayashi', null, 'はやし') },
 ];
 
 export const Default = {
@@ -82,9 +82,9 @@ export const Default = {
 			handlers: [
 				...commonHandlers,
 				http.post('/api/calendar/events/subscribers', async ({ request }) => {
-					const body = await request.json() as { filter?: string; untilId?: string };
+					const body = await request.json() as { untilId?: string };
 					if (body.untilId != null) return HttpResponse.json([]);
-					return HttpResponse.json(body.filter === 'following' ? subscribers.filter(s => s.isFollowing) : subscribers);
+					return HttpResponse.json(subscribers);
 				}),
 			],
 		},

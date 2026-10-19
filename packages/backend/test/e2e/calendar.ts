@@ -858,17 +858,13 @@ describe('カレンダー', () => {
 			await api('following/create', { userId: jack.id }, ivy);
 		}, 1000 * 60);
 
-		test('購読者の一覧は作成者を除き、新しく購読した順。フォローしている人に絞れる', async () => {
+		test('購読者の一覧は作成者を除き、新しく購読した順', async () => {
 			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: alice });
 			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: jack });
 			await successfulApiCall({ endpoint: 'calendar/events/subscribe', parameters: { eventId: target.id }, user: bob });
 
 			const all = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id }, user: ivy });
 			assert.deepStrictEqual(all.map(s => s.user.id), [bob.id, jack.id, alice.id]);
-			assert.deepStrictEqual(all.map(s => s.isFollowing), [false, true, false]);
-
-			const following = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, filter: 'following' }, user: ivy });
-			assert.deepStrictEqual(following.map(s => s.user.id), [jack.id]);
 
 			const page = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, limit: 2 }, user: ivy });
 			const next = await successfulApiCall({ endpoint: 'calendar/events/subscribers', parameters: { eventId: target.id, untilId: page.at(-1)!.id }, user: ivy });

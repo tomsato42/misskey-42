@@ -16408,12 +16408,6 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     eventId: string;
-                    /**
-                     * @description all: every subscriber, following: subscribers you follow.
-                     * @default all
-                     * @enum {string}
-                     */
-                    filter?: 'all' | 'following';
                     /** @default 30 */
                     limit?: number;
                     /** Format: misskey:id */
@@ -16444,8 +16438,6 @@ export interface operations {
                         /** Format: date-time */
                         createdAt: string;
                         user: components['schemas']['UserLite'];
-                        /** @description Whether you follow the user. */
-                        isFollowing: boolean;
                     }[];
                 };
             };

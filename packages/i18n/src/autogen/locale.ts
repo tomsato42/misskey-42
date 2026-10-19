@@ -14482,10 +14482,6 @@ export interface Locale extends ILocale {
          */
         "noSubscribers": string;
         /**
-         * フォローしている人は購読していません
-         */
-        "noFollowingSubscribers": string;
-        /**
          * 招待
          */
         "invite": string;

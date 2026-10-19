@@ -3,16 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
-import type { FollowingsRepository } from '@/models/_.js';
+import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { CalendarEventService } from '@/core/calendar/CalendarEventService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { ApiError } from '@/server/api/error.js';
 import { calendarModeratorViewParam } from '@/server/api/calendar-api.js';
-import { DI } from '@/di-symbols.js';
 
 export const meta = {
 	tags: ['calendar'],
@@ -46,11 +43,6 @@ export const meta = {
 					optional: false, nullable: false,
 					ref: 'UserLite',
 				},
-				isFollowing: {
-					type: 'boolean',
-					optional: false, nullable: false,
-					description: 'Whether you follow the user.',
-				},
 			},
 		},
 	},
@@ -68,12 +60,6 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		eventId: { type: 'string', format: 'misskey:id' },
-		filter: {
-			type: 'string',
-			enum: ['all', 'following'],
-			default: 'all',
-			description: 'all: every subscriber, following: subscribers you follow.',
-		},
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 30 },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
@@ -85,9 +71,6 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.followingsRepository)
-		private followingsRepository: FollowingsRepository,
-
 		private calendarEventService: CalendarEventService,
 		private userEntityService: UserEntityService,
 		private idService: IdService,
@@ -96,29 +79,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const event = await this.calendarEventService.findById(ps.eventId);
 			if (event == null || !await this.calendarEventService.canView(event, me, { moderatorView: ps.moderatorView })) throw new ApiError(meta.errors.noSuchEvent);
 
-			const subscriptions = await this.calendarEventService.listSubscribers(event, me, {
-				filter: ps.filter,
+			const subscriptions = await this.calendarEventService.listSubscribers(event, {
 				limit: ps.limit,
 				sinceId: ps.sinceId,
 				untilId: ps.untilId,
 			});
 			if (subscriptions.length === 0) return [];
 
-			const userIds = subscriptions.map(s => s.userId);
-			const [users, followings] = await Promise.all([
-				this.userEntityService.packMany(subscriptions.map(s => s.user ?? s.userId), me)
-					.then(packed => new Map(packed.map(u => [u.id, u]))),
-				ps.filter === 'following'
-					? Promise.resolve(null)
-					: this.followingsRepository.find({ where: { followerId: me.id, followeeId: In(userIds) }, select: { followeeId: true } })
-						.then(rows => new Set(rows.map(r => r.followeeId))),
-			]);
+			const users = new Map((await this.userEntityService.packMany(subscriptions.map(s => s.user ?? s.userId), me)).map(u => [u.id, u]));
 
 			return subscriptions.map(s => ({
 				id: s.id,
 				createdAt: this.idService.parse(s.id).date.toISOString(),
 				user: users.get(s.userId)!,
-				isFollowing: followings == null || followings.has(s.userId),
 			}));
 		});
 	}

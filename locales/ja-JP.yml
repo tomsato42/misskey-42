@@ -3871,7 +3871,6 @@ _calendar:
   creator: "作成者"
   followingUsers: "フォロー中"
   noSubscribers: "作成者のほかに購読している人はいません"
-  noFollowingSubscribers: "フォローしている人は購読していません"
   invite: "招待"
   inviteToEvent: "イベントに招待"
   inviteUsers: "ユーザー"

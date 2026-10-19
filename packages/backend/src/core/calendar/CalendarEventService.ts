@@ -62,11 +62,6 @@ export type CalendarEventUpdateResult = {
 	visibilityChanged: boolean;
 };
 
-/**
- * 購読者の一覧の絞り込み。all: すべて、following: me がフォローしている人
- */
-export type CalendarEventSubscriberFilter = 'all' | 'following';
-
 function hasVisibilityInput(input: CalendarEventVisibilityInput | undefined): input is CalendarEventVisibilityInput {
 	return input != null && (input.visibility !== undefined || input.visibleUserIds !== undefined || input.userListId !== undefined);
 }
@@ -400,8 +395,7 @@ export class CalendarEventService {
 	@bindThis
 	public async listSubscribers(
 		event: Pick<MiCalendarEvent, 'id' | 'userId'>,
-		me: Me,
-		opts: { filter: CalendarEventSubscriberFilter; limit: number; sinceId?: string; untilId?: string },
+		opts: { limit: number; sinceId?: string; untilId?: string },
 	): Promise<MiCalendarEventSubscription[]> {
 		const query = this.calendarEventSubscriptionsRepository.createQueryBuilder('subscription')
 			.innerJoinAndSelect('subscription.user', 'user')
@@ -414,9 +408,6 @@ export class CalendarEventService {
 
 		if (opts.sinceId != null) query.andWhere('subscription.id > :sinceId', { sinceId: opts.sinceId });
 		if (opts.untilId != null) query.andWhere('subscription.id < :untilId', { untilId: opts.untilId });
-		if (opts.filter === 'following') {
-			query.innerJoin(MiFollowing, 'following', 'following.followeeId = subscription.userId AND following.followerId = :meId', { meId: me.id });
-		}
 
 		return await query.getMany();
 	}

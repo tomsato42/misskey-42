@@ -16,9 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div class="_spacer" style="--MI_SPACER-min: 16px; --MI_SPACER-max: 20px;">
 		<div class="_gaps_s">
-			<MkTab v-model="tab" :tabs="tabs"/>
-
-			<MkA v-if="tab === 'all'" v-user-preview="event.user.id" :to="userPage(event.user)" :class="$style.user">
+			<MkA v-user-preview="event.user.id" :to="userPage(event.user)" :class="$style.user">
 				<MkUserCardMini :user="event.user" :withChart="false">
 					<template #sub>
 						<span class="_monospace">@{{ acct(event.user) }}</span>
@@ -27,9 +25,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkUserCardMini>
 			</MkA>
 
-			<MkPagination :key="tab" :paginator="tab === 'following' ? followingPaginator : allPaginator">
+			<MkPagination :paginator="paginator">
 				<template #empty>
-					<MkResult type="empty" :text="tab === 'following' ? i18n.ts._calendar.noFollowingSubscribers : i18n.ts._calendar.noSubscribers"/>
+					<MkResult type="empty" :text="i18n.ts._calendar.noSubscribers"/>
 				</template>
 
 				<template #default="{ items }">
@@ -44,7 +42,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkUserCardMini :user="subscriber.user" :withChart="false">
 								<template #sub>
 									<span class="_monospace">@{{ acct(subscriber.user) }}</span>
-									<span v-if="tab === 'all' && subscriber.isFollowing" :class="$style.badge">{{ i18n.ts._calendar.followingUsers }}</span>
 								</template>
 							</MkUserCardMini>
 						</MkA>
@@ -59,12 +56,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 // イベントの購読者の一覧。作成者を先頭に出し、そのあとは新しく購読した順。
 // 開くときは utility/calendar-event-dialog.ts の openCalendarEventSubscribersDialog を使う
-import { markRaw, ref, useTemplateRef } from 'vue';
+import { markRaw, useTemplateRef } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkPagination from '@/components/MkPagination.vue';
-import MkTab from '@/components/MkTab.vue';
-import type { Tab } from '@/components/MkTab.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import { i18n } from '@/i18n.js';
 import { acct, userPage } from '@/filters/user.js';
@@ -82,26 +77,11 @@ const emit = defineEmits<{
 
 const dialog = useTemplateRef('dialog');
 
-const tab = ref<'all' | 'following'>('all');
-
-const tabs: Tab<'all' | 'following'>[] = [{
-	key: 'all',
-	label: i18n.ts._calendar.all,
-}, {
-	key: 'following',
-	label: i18n.ts._calendar.followingUsers,
-}];
-
 // 管理人ビューで開いた公開範囲の外のイベントは、管理人ビューで引く
 const moderatorView = props.event.isOutsideVisibility === true;
-const allPaginator = markRaw(new Paginator('calendar/events/subscribers', {
+const paginator = markRaw(new Paginator('calendar/events/subscribers', {
 	limit: 30,
-	params: { eventId: props.event.id, filter: 'all', moderatorView },
-}));
-
-const followingPaginator = markRaw(new Paginator('calendar/events/subscribers', {
-	limit: 30,
-	params: { eventId: props.event.id, filter: 'following', moderatorView },
+	params: { eventId: props.event.id, moderatorView },
 }));
 </script>
 
