@@ -16,7 +16,7 @@ import components from '@/components/index.js';
 import { themeManager } from '@/theme.js';
 import { isDeviceDarkmode } from '@/utility/is-device-darkmode.js';
 import { i18n } from '@/i18n.js';
-import { refreshCurrentAccount, login } from '@/accounts.js';
+import { refreshCurrentAccount, login, ensureCurrentAccountListed } from '@/accounts.js';
 import { store } from '@/store.js';
 import { fetchInstance, instance } from '@/instance.js';
 import { updateDeviceKind } from '@/utility/device-kind.js';
@@ -246,6 +246,7 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		}
 
 		refreshCurrentAccount();
+		ensureCurrentAccountListed();
 
 		// 画像・添付ファイル用の Cookie (backend の mediaGate)。切れている可能性が高いときだけ、画像を読み込む前に更新を待つ
 		await setupMediaSession($i);

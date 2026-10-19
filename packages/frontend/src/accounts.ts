@@ -49,6 +49,15 @@ async function addAccount(host: string, user: Misskey.entities.MeDetailed, token
 	}
 }
 
+/**
+ * 42times: ログイン中のアカウントがアカウントの一覧に無ければ足す。
+ * 一覧に無いままほかのアカウントに切り替えると、元のアカウントに戻れなくなるため
+ */
+export async function ensureCurrentAccountListed() {
+	if ($i == null) return;
+	await addAccount(host, $i, $i.token);
+}
+
 export async function removeAccount(host: string, id: AccountWithToken['id']) {
 	const tokens = JSON.parse(JSON.stringify(store.s.accountTokens));
 	delete tokens[host + '/' + id];
