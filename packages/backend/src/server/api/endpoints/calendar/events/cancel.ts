@@ -65,7 +65,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
-				const event = await this.calendarEventService.findByIdOrFail(ps.eventId);
+				// 公開範囲の外のイベントは、存在しないのと同じエラーにする (権限のエラーで存在が分からないように)
+				const event = await this.calendarEventService.findVisibleByIdOrFail(ps.eventId, me);
 				const canceled = await this.calendarEventService.cancel(event, me);
 				return await this.calendarEventEntityService.pack(canceled, me);
 			} catch (err) {

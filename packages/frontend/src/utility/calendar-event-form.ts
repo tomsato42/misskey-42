@@ -7,6 +7,7 @@
 
 import * as Misskey from 'misskey-js';
 import { parseCalendarDate } from '@/utility/calendar.js';
+import type { CalendarEventVisibility } from '@/utility/calendar-visibility.js';
 
 /** フォームの値。入力欄に合わせて、空の欄は空文字にする */
 export type CalendarEventFormValue = {
@@ -22,9 +23,14 @@ export type CalendarEventFormValue = {
 	/** 先頭の # は付けない */
 	hashtag: string;
 	description: string;
+	visibility: CalendarEventVisibility;
+	/** 公開範囲が指定ユーザーのときに見られる人 (作成者を除く) */
+	visibleUsers: Misskey.entities.UserLite[];
+	/** 公開範囲がリストのときのリスト */
+	userListId: string | null;
 };
 
-export type CalendarEventFormField = 'title' | 'date' | 'startTime' | 'endTime' | 'location' | 'hashtag' | 'description';
+export type CalendarEventFormField = 'title' | 'date' | 'startTime' | 'endTime' | 'location' | 'hashtag' | 'description' | 'visibility';
 
 // backend の core/calendar/calendar-errors.ts の calendarEventValidationReasons と同じ
 export const calendarEventValidationReasons = [
@@ -41,6 +47,10 @@ export const calendarEventValidationReasons = [
 	'endNotAfterStart',
 	'endNotSameDay',
 	'invalidMonth',
+	'visibleUsersRequired',
+	'tooManyVisibleUsers',
+	'userListRequired',
+	'invalidUserList',
 ] as const;
 export type CalendarEventValidationReason = typeof calendarEventValidationReasons[number];
 
@@ -52,6 +62,8 @@ export const CALENDAR_EVENT_TITLE_MAX_LENGTH = 100;
 export const CALENDAR_EVENT_LOCATION_MAX_LENGTH = 128;
 export const CALENDAR_EVENT_DESCRIPTION_MAX_LENGTH = 3000;
 export const CALENDAR_EVENT_HASHTAG_MAX_LENGTH = 128;
+// backend の core/calendar/calendar-visibility.ts と同じ上限
+export const CALENDAR_EVENT_VISIBLE_USERS_MAX = 100;
 
 const reasonFields: Record<CalendarEventValidationReason, CalendarEventFormField | null> = {
 	titleRequired: 'title',
@@ -67,6 +79,10 @@ const reasonFields: Record<CalendarEventValidationReason, CalendarEventFormField
 	endNotAfterStart: 'endTime',
 	endNotSameDay: 'endTime',
 	invalidMonth: null,
+	visibleUsersRequired: 'visibility',
+	tooManyVisibleUsers: 'visibility',
+	userListRequired: 'visibility',
+	invalidUserList: 'visibility',
 };
 
 /** 検証エラーの理由を、エラーを出す欄にする。欄に対応しないものは null */
@@ -90,7 +106,10 @@ export function getCalendarEventValidationReason(err: unknown): CalendarEventVal
 	return isValidationReason(reason) ? reason : null;
 }
 
-export function createEmptyCalendarEventForm(date: string): CalendarEventFormValue {
+/**
+ * @param visibility 公開範囲の初期値 (投稿フォームではノートの公開範囲に合わせる)
+ */
+export function createEmptyCalendarEventForm(date: string, visibility: CalendarEventVisibility = 'public'): CalendarEventFormValue {
 	return {
 		title: '',
 		date,
@@ -100,10 +119,16 @@ export function createEmptyCalendarEventForm(date: string): CalendarEventFormVal
 		location: '',
 		hashtag: '',
 		description: '',
+		visibility,
+		visibleUsers: [],
+		userListId: null,
 	};
 }
 
-export function calendarEventToForm(event: Misskey.entities.CalendarEvent): CalendarEventFormValue {
+/**
+ * @param visibleUsers 指定ユーザー (イベントには ID しか無いので、使う側で引いて渡す)
+ */
+export function calendarEventToForm(event: Misskey.entities.CalendarEvent, visibleUsers: Misskey.entities.UserLite[] = []): CalendarEventFormValue {
 	return {
 		title: event.title,
 		date: event.date,
@@ -113,6 +138,9 @@ export function calendarEventToForm(event: Misskey.entities.CalendarEvent): Cale
 		location: event.location ?? '',
 		hashtag: event.hashtag ?? '',
 		description: event.description ?? '',
+		visibility: event.visibility,
+		visibleUsers,
+		userListId: event.userListId ?? null,
 	};
 }
 
@@ -167,6 +195,16 @@ export function validateCalendarEventForm(form: CalendarEventFormValue, options:
 		errors.description = 'descriptionTooLong';
 	}
 
+	if (form.visibility === 'specified') {
+		if (form.visibleUsers.length === 0) {
+			errors.visibility = 'visibleUsersRequired';
+		} else if (form.visibleUsers.length > CALENDAR_EVENT_VISIBLE_USERS_MAX) {
+			errors.visibility = 'tooManyVisibleUsers';
+		}
+	} else if (form.visibility === 'list' && form.userListId == null) {
+		errors.visibility = 'userListRequired';
+	}
+
 	return errors;
 }
 
@@ -185,6 +223,8 @@ export function clearChangedCalendarEventFormErrors(errors: CalendarEventFormErr
 	}
 	// 開始時刻を直すと「終了時刻は開始時刻より後に」も解消しうる
 	if (prev.startTime !== next.startTime && result.endTime === 'endNotAfterStart') delete result.endTime;
+	// 公開範囲の欄は、指定ユーザーやリストを選び直したときも直したとみなす
+	if (prev.visibleUsers !== next.visibleUsers || prev.userListId !== next.userListId) delete result.visibility;
 	return result;
 }
 
@@ -197,7 +237,18 @@ export type CalendarEventParams = {
 	location: string | null;
 	hashtag: string | null;
 	description?: string | null;
+	visibility: CalendarEventVisibility;
+	/** 公開範囲が指定ユーザーのときだけ入れる */
+	visibleUserIds?: string[];
+	/** 公開範囲がリストのときだけ入れる */
+	userListId?: string;
 };
+
+function visibilityParams(form: CalendarEventFormValue): Pick<CalendarEventParams, 'visibility' | 'visibleUserIds' | 'userListId'> {
+	if (form.visibility === 'specified') return { visibility: 'specified', visibleUserIds: form.visibleUsers.map(u => u.id) };
+	if (form.visibility === 'list' && form.userListId != null) return { visibility: 'list', userListId: form.userListId };
+	return { visibility: form.visibility };
+}
 
 /**
  * フォームの値を calendar/events/create (と notes/create の calendarEvent) のパラメータにする。
@@ -212,9 +263,24 @@ export function calendarEventFormToParams(form: CalendarEventFormValue, options:
 		isAllDay: form.isAllDay,
 		location: emptyToNull(form.location),
 		hashtag: emptyToNull(stripHash(form.hashtag)),
+		...visibilityParams(form),
 	};
 	if (options.withDescription !== false) params.description = emptyToNull(form.description);
 	return params;
+}
+
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+	if (a.length !== b.length) return false;
+	const set = new Set(a);
+	return b.every(id => set.has(id));
+}
+
+/** 公開範囲 (種類・指定ユーザー・リスト) を元のイベントから変えたか */
+export function isCalendarEventVisibilityChanged(event: Misskey.entities.CalendarEvent, form: CalendarEventFormValue): boolean {
+	if (form.visibility !== event.visibility) return true;
+	if (form.visibility === 'specified') return !sameIds(form.visibleUsers.map(u => u.id), event.visibleUserIds ?? []);
+	if (form.visibility === 'list') return form.userListId !== (event.userListId ?? null);
+	return false;
 }
 
 /**
@@ -240,6 +306,11 @@ export function calendarEventFormToUpdateParams(event: Misskey.entities.Calendar
 		changed.startTime = next.startTime;
 		changed.endTime = next.endTime;
 		changed.isAllDay = next.isAllDay;
+	}
+
+	// 公開範囲は 1 つでも変わったら、種類と指定ユーザー・リストをまとめて送る
+	if (isCalendarEventVisibilityChanged(event, form)) {
+		Object.assign(changed, visibilityParams(form));
 	}
 
 	return changed;

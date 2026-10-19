@@ -266,6 +266,17 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'calendarEventInvited': {
+					const location = data.body.event.location;
+					return [`${i18n.ts._calendar._notification.invited}: ${data.body.event.title}`, {
+						body: `${getUserName(data.body.user)} ・ ${formatCalendarSchedule(i18n, data.body.event)}${location != null && location !== '' ? ` ・ ${location}` : ''}`,
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('bell'),
+						data,
+						tag: `calendarEventInvited:${data.body.event.id}`,
+					}];
+				}
+
 				case 'pairJoinRequested':
 					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
 						body: getUserName(data.body.user),

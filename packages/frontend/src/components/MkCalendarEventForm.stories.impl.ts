@@ -7,6 +7,7 @@
 /* eslint-disable import/no-default-export */
 import { ref } from 'vue';
 import { action } from 'storybook/actions';
+import { userLite } from '../../.storybook/fakes.js';
 import MkCalendarEventForm from './MkCalendarEventForm.vue';
 import type { StoryObj } from '@storybook/vue3';
 export const Default = {
@@ -46,6 +47,9 @@ export const Default = {
 			location: 'c3',
 			hashtag: 'mokumoku',
 			description: 'みんなで黙々と課題を進める会です。途中参加・途中退出OK。',
+			visibility: 'public',
+			visibleUsers: [],
+			userListId: null,
 		},
 	},
 	parameters: {
@@ -90,5 +94,29 @@ export const WithoutDescription = {
 	args: {
 		...Default.args,
 		withDescription: false,
+	},
+} satisfies StoryObj<typeof MkCalendarEventForm>;
+export const SpecifiedUsers = {
+	...Default,
+	args: {
+		...Default.args,
+		modelValue: {
+			...Default.args.modelValue,
+			visibility: 'specified',
+			visibleUsers: [userLite('user1', 'alice', null, 'Alice'), userLite('user2', 'bob', null, 'Bob')],
+		},
+	},
+} satisfies StoryObj<typeof MkCalendarEventForm>;
+export const SpecifiedUsersRequired = {
+	...Default,
+	args: {
+		...Default.args,
+		modelValue: {
+			...Default.args.modelValue,
+			visibility: 'specified',
+		},
+		errors: {
+			visibility: 'visibleUsersRequired',
+		},
 	},
 } satisfies StoryObj<typeof MkCalendarEventForm>;

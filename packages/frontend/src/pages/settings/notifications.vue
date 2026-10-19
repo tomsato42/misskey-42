@@ -38,13 +38,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</FormSection>
 
 		<FormSection>
-			<SearchMarker :keywords="['calendar', 'event', 'reminder', 'notification']">
+			<SearchMarker :keywords="['calendar', 'event', 'reminder', 'invite', 'notification']">
 				<MkFolder>
 					<template #icon><SearchIcon><i class="ti ti-calendar-event"></i></SearchIcon></template>
 					<template #label><SearchLabel>{{ i18n.ts._calendar._notificationSettings.title }}</SearchLabel></template>
 					<template #caption><SearchText>{{ i18n.ts._calendar._notificationSettings.caption }}</SearchText></template>
 
 					<div v-if="calendarNotificationSettings != null" class="_gaps_m">
+						<MkSwitch :modelValue="calendarNotificationSettings.invited" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('invited', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.invited }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.invitedCaption }}</template>
+						</MkSwitch>
 						<MkSwitch :modelValue="calendarNotificationSettings.week" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('week', v)">
 							<template #label>{{ i18n.ts._calendar._notificationSettings.week }}</template>
 							<template #caption>{{ i18n.ts._calendar._notificationSettings.weekCaption }}</template>
@@ -165,8 +169,8 @@ const notifyUserPaginator = markRaw(new Paginator('following/list', {
 	},
 }));
 
-// 42times: カレンダーの通知は送り手のユーザーがいないので、受け取る相手を選ぶ設定には出さない (オン・オフは下の「イベント」で切り替える)
-const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated'] as const satisfies (typeof notificationTypes[number])[];
+// 42times: カレンダーの通知は calendarNotificationSettings (下の「イベント」) で切り替えるので、ここには出さない
+const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited'] as const satisfies (typeof notificationTypes[number])[];
 
 // ペア募集の通知は学内SNSモード (42 intra ログイン) でだけ届くので、それ以外では設定に出さない
 const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed'] satisfies (typeof notificationTypes[number])[];

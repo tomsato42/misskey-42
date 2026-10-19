@@ -21,6 +21,7 @@ const announce: CalendarEventParams = {
 	isAllDay: false,
 	location: null,
 	hashtag: null,
+	visibility: 'public',
 };
 
 describe('投稿フォームのイベントを扱えない理由', () => {

@@ -32,6 +32,7 @@ export const Default = {
 			startsAt: '2026-10-20T10:00:00.000Z',
 			endsAt: '2026-10-20T12:00:00.000Z',
 			location: '1F イベントスペース',
+			visibility: 'public',
 			isCanceled: false,
 			subscribersCount: 21,
 			isSubscribed: false,
@@ -72,6 +73,16 @@ export const AllDay = {
 			endTime: null,
 			isAllDay: true,
 			location: null,
+		},
+	},
+} satisfies StoryObj<typeof MkNoteCalendarEvent>;
+export const FollowersOnly = {
+	...Default,
+	args: {
+		...Default.args,
+		event: {
+			...Default.args.event,
+			visibility: 'followers',
 		},
 	},
 } satisfies StoryObj<typeof MkNoteCalendarEvent>;

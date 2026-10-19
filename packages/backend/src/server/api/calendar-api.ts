@@ -17,8 +17,11 @@ import {
 	CalendarEventValidationError,
 	CalendarNoteNotLinkableError,
 	CalendarNoteParamsConflictError,
+	CalendarUserListNotFoundError,
 } from '@/core/calendar/calendar-errors.js';
+import { CALENDAR_EVENT_VISIBLE_USERS_MAX, calendarEventVisibilities } from '@/core/calendar/calendar-visibility.js';
 import type { CalendarEventInput } from '@/core/calendar/calendar-event-input.js';
+import type { CalendarEventVisibility, CalendarEventVisibilityInput } from '@/core/calendar/calendar-visibility.js';
 import { ApiError } from './error.js';
 
 // 文字数などの細かい検証は core/calendar/calendar-event-input.ts で行い、理由 (reason) 付きのエラーにする。
@@ -33,16 +36,34 @@ const calendarEventFieldProperties = {
 	hashtag: { type: 'string', nullable: true, maxLength: 1024, description: 'A single hashtag. The leading # is optional.' },
 } as const;
 
+const calendarEventVisibilityFieldProperties = {
+	visibleUserIds: {
+		type: 'array', nullable: true, uniqueItems: true, maxItems: CALENDAR_EVENT_VISIBLE_USERS_MAX,
+		items: { type: 'string', format: 'misskey:id' },
+		description: 'Required when visibility is specified. Local users other than the creator. The users are invited to the event.',
+	},
+	userListId: {
+		type: 'string', format: 'misskey:id', nullable: true,
+		description: 'Required when visibility is list. One of the creator\'s lists. The members are invited to the event.',
+	},
+} as const;
+
+const calendarEventVisibilityDescription = 'public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId.';
+
 /** イベントを作るときのパラメータ (calendar/events/create と notes/create の calendarEvent) */
 export const calendarEventCreateProperties = {
 	...calendarEventFieldProperties,
 	isAllDay: { type: 'boolean', default: false },
+	visibility: { type: 'string', enum: calendarEventVisibilities, default: 'public', description: calendarEventVisibilityDescription },
+	...calendarEventVisibilityFieldProperties,
 } as const;
 
 /** イベントを編集するときのパラメータ。省略した項目は変えない */
 export const calendarEventUpdateProperties = {
 	...calendarEventFieldProperties,
 	isAllDay: { type: 'boolean' },
+	visibility: { type: 'string', enum: calendarEventVisibilities, description: `${calendarEventVisibilityDescription} Narrowing it unsubscribes the users who can no longer see the event.` },
+	...calendarEventVisibilityFieldProperties,
 } as const;
 
 type CalendarEventCreateParams = {
@@ -55,6 +76,19 @@ type CalendarEventCreateParams = {
 	description?: string | null;
 	hashtag?: string | null;
 };
+
+/** API のパラメータから公開範囲の入力を取り出す。省略 (undefined) は「変えない」なので、そのまま渡す */
+export function toCalendarEventVisibilityInput(ps: {
+	visibility?: CalendarEventVisibility;
+	visibleUserIds?: string[] | null;
+	userListId?: string | null;
+}): CalendarEventVisibilityInput {
+	return {
+		visibility: ps.visibility,
+		visibleUserIds: ps.visibleUserIds,
+		userListId: ps.userListId,
+	};
+}
 
 /** API のパラメータを CalendarEventInput にする。description は省略 (undefined) を区別するため、そのまま渡す */
 export function toCalendarEventInput(ps: CalendarEventCreateParams): CalendarEventInput {
@@ -83,6 +117,7 @@ export type CalendarApiErrorMap = {
 	validation?: ApiErrorDefinition;
 	paramsConflict?: ApiErrorDefinition;
 	rateLimit?: ApiErrorDefinition;
+	userListNotFound?: ApiErrorDefinition;
 };
 
 /**
@@ -104,6 +139,7 @@ export function toCalendarApiError(err: unknown, map: CalendarApiErrorMap): unkn
 	if (err instanceof CalendarNoteParamsConflictError && map.paramsConflict) return new ApiError(map.paramsConflict);
 	// ApiCallService のレート制限と同じく、info.resetMs から Retry-After ヘッダーが付く
 	if (err instanceof CalendarEventRateLimitError && map.rateLimit) return new ApiError(map.rateLimit, { resetMs: err.resetMs, reset: Math.ceil(err.resetMs / 1000) });
+	if (err instanceof CalendarUserListNotFoundError && map.userListNotFound) return new ApiError(map.userListNotFound);
 
 	return err;
 }

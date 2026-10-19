@@ -554,6 +554,32 @@ export const packedNotificationSchema = {
 			},
 		},
 	}, {
+		// 42times: イベントに招待された。user は招待した人
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['calendarEventInvited'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			event: {
+				type: 'object',
+				ref: 'CalendarEventLite',
+				optional: false, nullable: false,
+			},
+		},
+	}, {
 		type: 'object',
 		properties: {
 			...baseSchema.properties,

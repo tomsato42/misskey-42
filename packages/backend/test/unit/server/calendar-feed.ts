@@ -62,6 +62,7 @@ describe('CalendarFeedService の鍵の管理', () => {
 			{} as never,
 			{} as never,
 			{ userProfileCache: { delete: cacheDelete } } as never,
+			{} as never,
 		);
 	});
 

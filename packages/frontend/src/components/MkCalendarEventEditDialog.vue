@@ -14,12 +14,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #header>{{ event ? i18n.ts._calendar.editEvent : i18n.ts._calendar.createEvent }}</template>
 
 	<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 28px;">
-		<MkCalendarEventForm v-model="form" :errors="errors" :disabled="submitting" :autofocus="event == null"/>
+		<MkCalendarEventForm v-model="form" :errors="errors" :editing="event != null" :disabled="submitting || loadingVisibleUsers" :autofocus="event == null"/>
 	</div>
 
 	<template #footer>
 		<div :class="$style.footer">
-			<MkButton primary rounded :wait="submitting" :disabled="submitting" @click="submit">
+			<MkButton primary rounded :wait="submitting" :disabled="submitting || loadingVisibleUsers" @click="submit">
 				<i class="ti ti-check"></i> {{ event ? i18n.ts.save : i18n.ts.create }}
 			</MkButton>
 		</div>
@@ -72,6 +72,22 @@ const form = ref<CalendarEventFormValue>(props.event
 const errors = ref<CalendarEventFormErrors>({});
 const submitting = ref(false);
 
+// 指定ユーザーに公開しているイベントには ID しか無いので、編集するときにユーザーを引く (引き終わるまでは送らせない)
+const visibleUserIds = props.event?.visibility === 'specified' ? props.event.visibleUserIds ?? [] : [];
+const loadingVisibleUsers = ref(visibleUserIds.length > 0);
+if (visibleUserIds.length > 0) {
+	misskeyApi('users/show', { userIds: visibleUserIds }).then(users => {
+		// 引いているあいだに公開範囲を変えていたら、そのままにする
+		if (form.value.visibility === 'specified' && form.value.visibleUsers.length === 0) {
+			form.value = { ...form.value, visibleUsers: users };
+		}
+	}).catch(err => {
+		os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+	}).finally(() => {
+		loadingVisibleUsers.value = false;
+	});
+}
+
 watch(form, (next, prev) => {
 	errors.value = clearChangedCalendarEventFormErrors(errors.value, prev, next);
 });
@@ -87,7 +103,7 @@ async function save(): Promise<Misskey.entities.CalendarEvent> {
 }
 
 async function submit() {
-	if (submitting.value) return;
+	if (submitting.value || loadingVisibleUsers.value) return;
 
 	const clientErrors = validateCalendarEventForm(form.value);
 	if (Object.keys(clientErrors).length > 0) {

@@ -76,6 +76,13 @@ export const calendarEventValidationReasons = [
 	'endNotAfterStart',
 	'endNotSameDay',
 	'invalidMonth',
+	/** 公開範囲が指定ユーザーなのに、(作成者以外の) 実在するユーザーが 1 人もいない */
+	'visibleUsersRequired',
+	'tooManyVisibleUsers',
+	/** 公開範囲がリストなのにリストが無い */
+	'userListRequired',
+	/** 作成者のリストではない、または存在しない */
+	'invalidUserList',
 ] as const;
 export type CalendarEventValidationReason = typeof calendarEventValidationReasons[number];
 
@@ -88,3 +95,6 @@ export class CalendarEventValidationError extends CalendarError {
 		this.reason = reason;
 	}
 }
+
+/** 招待に使うリストが無い、または自分のリストではない */
+export class CalendarUserListNotFoundError extends CalendarError {}
