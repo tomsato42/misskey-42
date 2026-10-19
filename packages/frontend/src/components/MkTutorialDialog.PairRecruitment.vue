@@ -46,7 +46,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span>{{ i18n.ts._initialTutorial._pairRecruitment.step3Description }}</span>
 		</div>
 	</div>
-	<div><i class="ti ti-message"></i> {{ i18n.ts._initialTutorial._pairRecruitment.advise }}</div>
 	<div :class="$style.divider"></div>
 	<div style="text-align: center; padding: 0 16px;"><i class="ti ti-users-group"></i> {{ i18n.ts._initialTutorial._pairRecruitment.whereToOpen }}</div>
 </div>

@@ -1766,7 +1766,6 @@ _initialTutorial:
     step2Description: "気になる募集に参加希望を送る"
     step3: "承認"
     step3Description: "募集した人が承認してメンバーが決まる"
-    advise: "課題を終えた人は「アドバイスする」から、募集した人にチャットで相談に乗れます"
     whereToOpen: "メニューの「ペア募集」から募集の一覧を開けます。"
     _exampleRecruitment:
       comment: "サーバー側を一緒に作れる人を探しています。平日の夜に進めたいです。"
@@ -3655,7 +3654,6 @@ _pairRecruitment:
   join: "参加したい"
   withdraw: "取り下げる"
   withdrawConfirm: "参加希望を取り下げますか？"
-  advise: "アドバイスする"
   sendMessage: "メッセージを送る"
   accept: "承認"
   reject: "見送る"

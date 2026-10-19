@@ -31,9 +31,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				{{ i18n.tsx._pairRecruitment.pendingCount({ n: recruitment.pendingCount ?? 0 }) }}
 			</MkButton>
 			<span v-else-if="action === 'myStatus' && myStatusText != null" :class="$style.myStatus">{{ myStatusText }}</span>
-			<MkButton v-else-if="action === 'advise'" small rounded @click="advise">
-				<i class="ti ti-message"></i> {{ i18n.ts._pairRecruitment.advise }}
-			</MkButton>
 			<MkButton v-else-if="action === 'join'" small rounded primary :disabled="!applicable" @click="apply">
 				{{ i18n.ts._pairRecruitment.join }}
 			</MkButton>
@@ -49,8 +46,6 @@ import MkButton from '@/components/MkButton.vue';
 import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import MkPairRecruitmentSlots from '@/components/MkPairRecruitmentSlots.vue';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/i.js';
-import { useRouter } from '@/router.js';
 import { canApply, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
 import { applyToPairRecruitment } from '@/utility/pair-recruitment-dialog.js';
 
@@ -62,8 +57,6 @@ const emit = defineEmits<{
 	(ev: 'updated', recruitment: Misskey.entities.PairRecruitment): void;
 }>();
 
-const router = useRouter();
-
 const detailPath = computed(() => `/pair/${props.recruitment.id}`);
 const multi = computed(() => isMultiProject(props.recruitment));
 const isClosed = computed(() => props.recruitment.status !== 'open');
@@ -73,18 +66,17 @@ const closedText = computed(() => {
 });
 const startText = computed(() => getStartTimingText(props.recruitment));
 const applicable = computed(() => canApply(props.recruitment));
-const canChat = computed(() => $i != null && $i.policies.chatAvailability === 'available');
 
 /**
  * カードの右下に出すもの。締め切った募集では出さない。
- * 作成者には参加希望の件数、参加希望を送った人にはその状態、完了済みの人にはアドバイス (作成者とのチャット)、それ以外には参加したい
+ * 作成者には参加希望の件数、参加希望を送った人にはその状態、完了済みの人には何も出さず、それ以外には参加したい
  */
-const action = computed<'pendingCount' | 'myStatus' | 'advise' | 'join' | null>(() => {
+const action = computed<'pendingCount' | 'myStatus' | 'join' | null>(() => {
 	const r = props.recruitment;
 	if (r.status !== 'open') return null;
 	if (r.myStatus === 'owner') return (r.pendingCount ?? 0) > 0 ? 'pendingCount' : null;
 	if (r.myStatus === 'pending' || r.myStatus === 'accepted' || r.myStatus === 'rejected') return 'myStatus';
-	if (r.myProjectState === 'finished') return canChat.value ? 'advise' : null;
+	if (r.myProjectState === 'finished') return null;
 	return 'join';
 });
 
@@ -98,10 +90,6 @@ async function apply() {
 	if (!applicable.value) return;
 	const updated = await applyToPairRecruitment(props.recruitment);
 	if (updated != null) emit('updated', updated);
-}
-
-function advise() {
-	router.push('/chat/user/:userId', { params: { userId: props.recruitment.userId } });
 }
 </script>
 
