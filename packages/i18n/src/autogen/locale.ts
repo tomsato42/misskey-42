@@ -11228,6 +11228,14 @@ export interface Locale extends ILocale {
          * 課題を取得できませんでした
          */
         "intraProjectsRefreshFailed": string;
+        /**
+         * レベルが上がりました
+         */
+        "intraLevelUp": string;
+        /**
+         * 42 intra で Lv.{level} になりました！
+         */
+        "intraLevelUpShareText": ParameterizedString<"level">;
         "_types": {
             /**
              * すべて
@@ -11353,6 +11361,10 @@ export interface Locale extends ILocale {
              * 課題の再取得
              */
             "intraProjectsRefreshed": string;
+            /**
+             * レベルアップ
+             */
+            "intraLevelUp": string;
         };
         "_actions": {
             /**

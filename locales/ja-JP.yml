@@ -2966,6 +2966,8 @@ _notification:
   intraProjectFinished: "課題が終わりました"
   intraProjectsRefreshed: "課題の取得が終わりました"
   intraProjectsRefreshFailed: "課題を取得できませんでした"
+  intraLevelUp: "レベルが上がりました"
+  intraLevelUpShareText: "42 intra で Lv.{level} になりました！"
 
   _types:
     all: "すべて"
@@ -2999,6 +3001,7 @@ _notification:
     pairApplicationCancelled: "ペア募集の参加希望の取り下げ(課題の変更)"
     intraProjectFinished: "課題の結果"
     intraProjectsRefreshed: "課題の再取得"
+    intraLevelUp: "レベルアップ"
 
   _actions:
     followBack: "フォローバック"

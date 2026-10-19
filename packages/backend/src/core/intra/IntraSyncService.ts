@@ -12,6 +12,7 @@ import type { MiRole } from '@/models/Role.js';
 import { RoleService } from '@/core/RoleService.js';
 import { CacheService } from '@/core/CacheService.js';
 import { IdService } from '@/core/IdService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { bindThis } from '@/decorators.js';
@@ -21,7 +22,7 @@ import { IntraProjectService } from './IntraProjectService.js';
 import { IntraCohortService } from './IntraCohortService.js';
 import { IntraCoalitionService } from './IntraCoalitionService.js';
 import { extractIntraProfile } from './intra-user.js';
-import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLevelRoleTarget } from './intra-role.js';
+import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLeveledUpLevel, getLevelRoleTarget } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
 import type { IntraCoalition } from './intra-coalition.js';
@@ -66,6 +67,7 @@ export class IntraSyncService {
 		private intraProjectService: IntraProjectService,
 		private intraCohortService: IntraCohortService,
 		private intraCoalitionService: IntraCoalitionService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-sync');
 	}
@@ -142,7 +144,8 @@ export class IntraSyncService {
 	}
 
 	/**
-	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる
+	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる。
+	 * レベルが上がって新しいレベルのロールを付けたら intraLevelUp を通知する
 	 * @param refreshCoalition コアリションのロールが既に付いていても所属を取り直すか。コアリションは変わらないので、ログインのときだけ取り直す
 	 */
 	@bindThis
@@ -152,7 +155,7 @@ export class IntraSyncService {
 		const now = Date.now();
 		// RoleService のキャッシュはプロセス間で遅れて更新されるため、DB から直接読む
 		const [managed, assigns] = await Promise.all([
-			this.intraRolesRepository.find({ select: { roleId: true, kind: true } }),
+			this.intraRolesRepository.find({ select: { roleId: true, kind: true, key: true } }),
 			this.roleAssignmentsRepository.findBy({ userId }),
 		]);
 		const assignedRoleIds = assigns
@@ -160,6 +163,9 @@ export class IntraSyncService {
 			.map(a => a.roleId);
 		const coalitionRoleIds = new Set(managed.filter(r => r.kind === 'coalition').map(r => r.roleId));
 		const hasCoalitionRole = assignedRoleIds.some(id => coalitionRoleIds.has(id));
+		const previousLevelKeys = managed
+			.filter(r => r.kind === 'level' && assignedRoleIds.includes(r.roleId))
+			.map(r => r.key);
 
 		let coalition: IntraCoalition | null = null;
 		// false のときは、コアリションのロールを付けも外しもしない
@@ -174,8 +180,11 @@ export class IntraSyncService {
 		}
 
 		const desiredRoleIds: MiRole['id'][] = [];
+		let levelRoleId: MiRole['id'] | null = null;
 		for (const target of getIntraRoleTargets(profile, intakeYearMonth, coalition)) {
-			desiredRoleIds.push(await this.ensureRole(target));
+			const roleId = await this.ensureRole(target);
+			desiredRoleIds.push(roleId);
+			if (target.kind === 'level') levelRoleId = roleId;
 		}
 
 		const managedRoleIds = managed
@@ -193,11 +202,17 @@ export class IntraSyncService {
 			}
 		}
 
+		const leveledUpLevel = getLeveledUpLevel(previousLevelKeys, profile.level);
 		for (const roleId of toAssign) {
 			try {
 				await this.roleService.assign(userId, roleId);
 			} catch (err) {
+				// 同じユーザーの同期が同時に走ったときは、先に付けた方だけが通知する
 				if (!(err instanceof RoleService.AlreadyAssignedError)) throw err;
+				continue;
+			}
+			if (roleId === levelRoleId && leveledUpLevel != null) {
+				this.notificationService.createNotification(userId, 'intraLevelUp', { level: leveledUpLevel });
 			}
 		}
 	}

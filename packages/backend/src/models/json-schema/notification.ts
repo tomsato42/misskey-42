@@ -732,5 +732,20 @@ export const packedNotificationSchema = {
 				description: 'Whether fetching from 42 intra failed.',
 			},
 		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['intraLevelUp'],
+			},
+			level: {
+				type: 'integer',
+				optional: false, nullable: false,
+				description: 'The 42 intra level (integer part) after leveling up.',
+			},
+		},
 	}],
 } as const;

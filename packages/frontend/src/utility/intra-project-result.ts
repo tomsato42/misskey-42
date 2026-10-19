@@ -57,3 +57,10 @@ export async function shareIntraProjectResult(resultId: string): Promise<void> {
 	}
 	await os.post({ initialIntraProjectResult: result });
 }
+
+/**
+ * 42 intra のレベルが上がったことを書いた投稿フォームを開く
+ */
+export async function shareIntraLevelUp(level: number): Promise<void> {
+	await os.post({ initialText: i18n.tsx._notification.intraLevelUpShareText({ level }) });
+}
