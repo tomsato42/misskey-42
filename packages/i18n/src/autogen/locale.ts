@@ -14069,6 +14069,38 @@ export interface Locale extends ILocale {
          * 42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。
          */
         "ugcVisibilityLocked": string;
+        /**
+         * 注意: BHになった場合ログインできなくなります。パスキーを作成しましょう。
+         */
+        "passkeyNotice": string;
+        /**
+         * パスキーを作成
+         */
+        "createPasskey": string;
+        /**
+         * ブラックホールなどで 42 にログインできなくなった人は、登録しておいたパスキーでログインできます。
+         */
+        "passkeyLoginDescription": string;
+        /**
+         * パスキーを登録しておくと、ブラックホールなどで 42 にログインできなくなってもログインできます。登録と削除の前に、42 でログインし直して本人確認をします。
+         */
+        "passkeyInfo": string;
+        /**
+         * 本人確認のため、42 でログインし直します。終わるとこの画面に戻ります。
+         */
+        "reauthRequired": string;
+        /**
+         * 本人確認ができました。続けてパスキーを登録しますか？
+         */
+        "reauthDone": string;
+        /**
+         * このアカウントとは別の 42 のアカウントでログインされました。このアカウントの 42 のアカウントでログインし直してください。
+         */
+        "reauthMismatch": string;
+        /**
+         * 本人確認ができませんでした。もう一度お試しください。
+         */
+        "reauthFailed": string;
     };
     "_roleTimeline": {
         /**

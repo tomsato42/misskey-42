@@ -149,7 +149,9 @@ export class ApiServerService {
 
 		// 42 intra の OAuth2 ログイン。連携が無効なら登録せず、upstream と同じく 404 にする
 		if (this.config.intra != null) {
-			fastify.get('/intra/authorize', (request, reply) => this.intraAuthApiService.authorize(request, reply));
+			fastify.get<{
+				Querystring: { reauth?: string; };
+			}>('/intra/authorize', (request, reply) => this.intraAuthApiService.authorize(request, reply));
 
 			fastify.get<{
 				Querystring: { code?: string; state?: string; };

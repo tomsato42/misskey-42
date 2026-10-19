@@ -277,6 +277,7 @@ export * as 'i/calendar-feed/regenerate' from './endpoints/i/calendar-feed/regen
 export * as 'i/calendar-notification-settings' from './endpoints/i/calendar-notification-settings.js';
 export * as 'i/calendar-notification-settings/update' from './endpoints/i/calendar-notification-settings/update.js';
 export * as 'i/intra-roles' from './endpoints/i/intra-roles.js';
+export * as 'i/intra/start-reauth' from './endpoints/i/intra/start-reauth.js';
 export * as 'i/change-password' from './endpoints/i/change-password.js';
 export * as 'i/claim-achievement' from './endpoints/i/claim-achievement.js';
 export * as 'i/delete-account' from './endpoints/i/delete-account.js';

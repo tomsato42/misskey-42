@@ -4,6 +4,7 @@
  */
 
 import { apiUrl } from '@@/js/config.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 /**
  * 42 intra の認可画面へページ遷移する。
@@ -12,6 +13,15 @@ import { apiUrl } from '@@/js/config.js';
  */
 export function startIntraLogin(): void {
 	window.location.href = `${apiUrl}/intra/authorize`;
+}
+
+/**
+ * ログイン中のユーザーの本人確認のために、42 intra でログインし直す。
+ * 終わると backend が設定のセキュリティのページへ戻す (クエリの intraReauth に結果が入る)
+ */
+export async function startIntraReauth(): Promise<void> {
+	const { url } = await misskeyApi('i/intra/start-reauth', {});
+	window.location.href = url;
 }
 
 /**

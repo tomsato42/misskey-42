@@ -17,6 +17,7 @@ import {
 	buildIntraCookie,
 	buildIntraCookieClear,
 	buildIntraErrorUrl,
+	buildIntraReauthResultUrl,
 	getCookieValue,
 	isSameIntraToken,
 } from '@/core/intra/intra-auth.js';
@@ -61,16 +62,25 @@ export class IntraAuthApiService {
 	}
 
 	/**
-	 * GET /api/intra/authorize
+	 * GET /api/intra/authorize[?reauth=<チケット>]
+	 * reauth は、ログイン中のユーザーが本人確認のために 42 でログインし直すときに i/intra/start-reauth で発行したチケット
 	 */
 	@bindThis
-	public async authorize(request: FastifyRequest, reply: FastifyReply) {
+	public async authorize(request: FastifyRequest<{ Querystring: { reauth?: string; } }>, reply: FastifyReply) {
 		if (await this.isRateLimited(request, authorizeLimit)) {
 			reply.code(429);
 			return { error: rateLimitExceededError };
 		}
 
-		const { url, state } = await this.intraAuthService.createAuthorizeUrl();
+		const reauthTicket = request.query.reauth;
+		const authorization = reauthTicket != null
+			? await this.intraAuthService.createReauthAuthorizeUrl(reauthTicket)
+			: await this.intraAuthService.createAuthorizeUrl();
+		if (authorization == null) {
+			return reply.redirect(buildIntraReauthResultUrl(this.config.url, 'error'), 302);
+		}
+
+		const { url, state } = authorization;
 		// @fastify/cookie は登録されていないため、既存箇所 (ClientServerService) と同様にヘッダーを直接設定する
 		reply.header('Set-Cookie', buildIntraCookie(INTRA_STATE_COOKIE_NAME, state, INTRA_STATE_TTL_SEC, this.intraAuthService.isSecureCookie()));
 		return reply.redirect(url, 302);

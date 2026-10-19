@@ -21,23 +21,30 @@ import { IntraSyncService } from './IntraSyncService.js';
 import { buildIntraUsername, extractIntraProfile, isEligible } from './intra-user.js';
 import {
 	INTRA_LOGIN_CODE_TTL_SEC,
+	INTRA_REAUTH_TICKET_TTL_SEC,
+	INTRA_REAUTH_TTL_SEC,
 	INTRA_STATE_TTL_SEC,
 	buildIntraAuthorizeUrl,
 	buildIntraCompleteUrl,
 	buildIntraErrorUrl,
+	buildIntraReauthResultUrl,
 	buildIntraRedirectUri,
 	generateIntraToken,
 	isIntraToken,
 	isSameIntraToken,
 	isSignupConflictError,
 } from './intra-auth.js';
-import type { IntraAuthFailureReason } from './intra-auth.js';
+import type { IntraAuthFailureReason, IntraReauthResult } from './intra-auth.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
 
 type IntraConfig = NonNullable<Config['intra']>;
 
 /** 42 から受け取る認可コードの長さの上限。実際の値はこれよりずっと短い */
 const MAX_AUTHORIZATION_CODE_LENGTH = 1024;
+
+/** Redis に保存する state の値。ログインのときは '1'、本人確認のときはこの接頭辞にユーザー ID を続ける */
+const LOGIN_STATE_VALUE = '1';
+const REAUTH_STATE_PREFIX = 'reauth:';
 
 class IntraAuthError extends Error {
 	constructor(public reason: IntraAuthFailureReason, message: string) {
@@ -113,6 +120,61 @@ export class IntraAuthService {
 	}
 
 	/**
+	 * パスキーでのログインを制限すべきユーザーか。
+	 * intra で作ったアカウントのパスキーは 42 での本人確認の後にしか登録できないので、ブラックホールなどで 42 にログインできなくなっても使えるようにする。
+	 * それ以外のユーザーはパスワードと同じ扱い
+	 */
+	@bindThis
+	public async isPasskeyLoginRestricted(user: MiLocalUser, profile: Pick<MiUserProfile, 'intraId' | 'intraPasswordLoginAllowed'>): Promise<boolean> {
+		if (!this.isEnabled()) return false;
+		if (profile.intraId != null) return false;
+		return await this.isPasswordLoginRestricted(user, profile);
+	}
+
+	/**
+	 * パスキーの登録・削除で、パスワードの代わりに 42 での本人確認を求めるユーザーか (intra で作ったアカウント)。
+	 * intra で作ったアカウントはパスワードを持たないので、パスワードと TOTP の代わりにこちらを使う
+	 */
+	@bindThis
+	public usesIntraReauth(profile: Pick<MiUserProfile, 'intraId'>): boolean {
+		return this.isEnabled() && profile.intraId != null;
+	}
+
+	/**
+	 * 本人確認を始めるための使い捨てチケットを発行する。intra で作ったアカウントでなければ null
+	 */
+	@bindThis
+	public async createReauthTicket(userId: MiLocalUser['id']): Promise<string | null> {
+		const profile = await this.userProfilesRepository.findOneBy({ userId });
+		if (profile == null || !this.usesIntraReauth(profile)) return null;
+
+		const ticket = generateIntraToken();
+		await this.redisClient.set(`intra:reauth-ticket:${ticket}`, userId, 'EX', INTRA_REAUTH_TICKET_TTL_SEC);
+		return ticket;
+	}
+
+	/**
+	 * 本人確認のチケットを消費し、42 の認可画面の URL を返す。無効なチケットなら null。
+	 * 呼び出し側は state をブラウザの Cookie にも保存すること (callback で照合する)
+	 */
+	@bindThis
+	public async createReauthAuthorizeUrl(ticket: unknown): Promise<{ url: string; state: string } | null> {
+		if (!isIntraToken(ticket)) return null;
+		const userId = await this.redisClient.getdel(`intra:reauth-ticket:${ticket}`);
+		if (userId == null) return null;
+
+		return await this.createAuthorizeUrlFor(`${REAUTH_STATE_PREFIX}${userId}`);
+	}
+
+	/**
+	 * 直近 ({@link INTRA_REAUTH_TTL_SEC} 秒以内) に本人確認が済んでいるか
+	 */
+	@bindThis
+	public async hasRecentReauth(userId: MiLocalUser['id']): Promise<boolean> {
+		return await this.redisClient.get(`intra:reauth:${userId}`) != null;
+	}
+
+	/**
 	 * state の Cookie に Secure 属性を付けるか
 	 */
 	@bindThis
@@ -126,10 +188,15 @@ export class IntraAuthService {
 	 */
 	@bindThis
 	public async createAuthorizeUrl(): Promise<{ url: string; state: string }> {
+		return await this.createAuthorizeUrlFor(LOGIN_STATE_VALUE);
+	}
+
+	@bindThis
+	private async createAuthorizeUrlFor(stateValue: string): Promise<{ url: string; state: string }> {
 		const intra = this.getIntraConfig();
 
 		const state = generateIntraToken();
-		await this.redisClient.set(`intra:state:${state}`, '1', 'EX', INTRA_STATE_TTL_SEC);
+		await this.redisClient.set(`intra:state:${state}`, stateValue, 'EX', INTRA_STATE_TTL_SEC);
 
 		const url = buildIntraAuthorizeUrl({
 			apiBaseUrl: intra.apiBaseUrl,
@@ -148,7 +215,13 @@ export class IntraAuthService {
 	@bindThis
 	public async handleCallback(code: unknown, state: unknown, cookieState: unknown): Promise<{ url: string; loginCode: string | null }> {
 		try {
-			const user = await this.authenticate(code, state, cookieState);
+			const stateValue = await this.consumeState(state, cookieState);
+			if (stateValue.startsWith(REAUTH_STATE_PREFIX)) {
+				const url = await this.reauthenticate(code, stateValue.slice(REAUTH_STATE_PREFIX.length));
+				return { url, loginCode: null };
+			}
+
+			const user = await this.authenticate(code);
 
 			const loginCode = generateIntraToken();
 			await this.redisClient.set(`intra:login:${loginCode}`, user.id, 'EX', INTRA_LOGIN_CODE_TTL_SEC);
@@ -186,23 +259,71 @@ export class IntraAuthService {
 		return user;
 	}
 
+	/**
+	 * state を消費し、Redis に保存していた値を返す
+	 */
 	@bindThis
-	private async authenticate(code: unknown, state: unknown, cookieState: unknown): Promise<MiLocalUser> {
-		const intra = this.getIntraConfig();
-
+	private async consumeState(state: unknown, cookieState: unknown): Promise<string> {
 		// ログインを始めたブラウザと callback を開いたブラウザが同じであることを、Cookie の state で確かめる
 		if (!isSameIntraToken(state, cookieState)) {
 			throw new IntraAuthError('invalid_state', 'state does not match the cookie');
 		}
 
-		if (!isIntraToken(state) || await this.redisClient.getdel(`intra:state:${state}`) == null) {
+		const value = isIntraToken(state) ? await this.redisClient.getdel(`intra:state:${state}`) : null;
+		if (value == null) {
 			throw new IntraAuthError('invalid_state', 'state is missing, expired or already used');
 		}
+		return value;
+	}
 
+	private assertAuthorizationCode(code: unknown): asserts code is string {
 		// 42 の認可画面でユーザーが拒否した場合などは code が無い
 		if (typeof code !== 'string' || code === '' || code.length > MAX_AUTHORIZATION_CODE_LENGTH) {
 			throw new IntraAuthError('intra_error', 'authorization code is missing');
 		}
+	}
+
+	/**
+	 * 本人確認の callback を処理し、ブラウザのリダイレクト先を返す。
+	 * 42 でログインしたアカウントが、確認を始めたユーザーに結び付いた 42 のアカウントと同じなら、しばらくの間パスキーの登録・削除をできるようにする
+	 */
+	@bindThis
+	private async reauthenticate(code: unknown, userId: string): Promise<string> {
+		const result = await this.verifyReauth(code, userId).catch(err => {
+			this.logger.info(`Rejected intra reauthentication of user ${userId}: ${err instanceof Error ? err.message : String(err)}`);
+			return 'error' as const;
+		});
+
+		if (result === 'ok') {
+			await this.redisClient.set(`intra:reauth:${userId}`, '1', 'EX', INTRA_REAUTH_TTL_SEC);
+		}
+		return buildIntraReauthResultUrl(this.config.url, result);
+	}
+
+	@bindThis
+	private async verifyReauth(code: unknown, userId: string): Promise<IntraReauthResult> {
+		this.assertAuthorizationCode(code);
+
+		const user = await this.usersRepository.findOneBy({ id: userId, host: IsNull() }) as MiLocalUser | null;
+		const profile = await this.userProfilesRepository.findOneBy({ userId });
+		if (user == null || profile == null || user.isSuspended || user.isDeleted) {
+			throw new Error('user is missing, suspended or deleted');
+		}
+
+		const intraUser = await this.fetchIntraUser(code);
+		if (profile.intraId == null || profile.intraId !== intraUser.id) {
+			this.logger.info(`Rejected intra reauthentication of user ${userId}: logged in as another intra user ${intraUser.id}`);
+			return 'mismatch';
+		}
+
+		return 'ok';
+	}
+
+	@bindThis
+	private async authenticate(code: unknown): Promise<MiLocalUser> {
+		const intra = this.getIntraConfig();
+
+		this.assertAuthorizationCode(code);
 
 		if (this.meta.rootUserId == null) {
 			// SignupService は最初に作成したユーザーを root (管理者) にするため、初期セットアップ前は intra でのログインを受け付けない

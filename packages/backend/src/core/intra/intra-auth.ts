@@ -26,6 +26,18 @@ export type IntraAuthFailureReason = typeof intraAuthFailureReasons[number];
 export const INTRA_STATE_TTL_SEC = 60 * 10;
 /** ログイン用の使い捨てコードの有効期間 (秒) */
 export const INTRA_LOGIN_CODE_TTL_SEC = 60;
+/** 本人確認 (ログイン中のユーザーが 42 でログインし直すこと) を始めるための使い捨てチケットの有効期間 (秒) */
+export const INTRA_REAUTH_TICKET_TTL_SEC = 60;
+/** 本人確認が済んでから、パスキーの登録・削除ができる期間 (秒) */
+export const INTRA_REAUTH_TTL_SEC = 60 * 10;
+
+/**
+ * 本人確認の結果。フロントエンドの設定画面へ渡す
+ * - ok: 確認できた
+ * - mismatch: ログイン中のアカウントとは別の 42 のアカウントでログインされた
+ * - error: 期限切れ・42 との通信の失敗など
+ */
+export type IntraReauthResult = 'ok' | 'mismatch' | 'error';
 
 /** 生成するランダム値のバイト数 */
 const TOKEN_BYTES = 32;
@@ -130,6 +142,13 @@ export function buildIntraCompleteUrl(baseUrl: string, loginCode: string): strin
 
 export function buildIntraErrorUrl(baseUrl: string, reason: IntraAuthFailureReason): string {
 	return `${baseUrl}/intra-complete/error?reason=${encodeURIComponent(reason)}`;
+}
+
+/**
+ * 本人確認の後のリダイレクト先 (パスキーの設定がある画面)
+ */
+export function buildIntraReauthResultUrl(baseUrl: string, result: IntraReauthResult): string {
+	return `${baseUrl}/settings/security?intraReauth=${encodeURIComponent(result)}`;
 }
 
 /**

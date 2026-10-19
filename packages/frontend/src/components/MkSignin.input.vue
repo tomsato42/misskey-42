@@ -23,6 +23,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<p :class="$style.intraCaption">{{ i18n.ts._intra.autoSignupDescription }}</p>
 		</div>
 
+		<!-- 42 にログインできなくなった人 (ブラックホールなど) は、登録しておいたパスキーでログインする。管理者ログインを開いているときは下にあるので出さない -->
+		<div v-if="instance.intraLoginEnabled && !showLocalSignin" class="_gaps_s">
+			<MkButton type="button" rounded style="margin: 0 auto;" data-testid="signin-intra-passkey" @click="emit('passkeyClick', $event)">
+				<i class="ti ti-key"></i> {{ i18n.ts.signinWithPasskey }}
+			</MkButton>
+			<p :class="$style.intraCaption">{{ i18n.ts._intra.passkeyLoginDescription }}</p>
+		</div>
+
 		<!-- intra 連携が有効なときは、ここから下 (ユーザー名・パスキーでのログインなど) を折りたたみの中に入れる。
 		無効なときは div になり、Vue は通常の要素に default 以外のスロットを描画しないので、upstream と同じ表示になる -->
 		<component :is="localSigninWrapper.component" v-if="showLocalSignin" v-bind="localSigninWrapper.props">
