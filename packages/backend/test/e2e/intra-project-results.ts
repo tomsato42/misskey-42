@@ -10,8 +10,9 @@ import { describe, beforeAll, afterAll, test } from 'vitest';
 import { DataSource } from 'typeorm';
 import { MiIntraProjectResult } from '@/models/IntraProjectResult.js';
 import { MiUserProfile } from '@/models/UserProfile.js';
+import { MiIntraRole } from '@/models/IntraRole.js';
 import { genAidx } from '@/misc/id/aidx.js';
-import { api, failedApiCall, initTestDb, post, signup, successfulApiCall } from '../utils.js';
+import { api, failedApiCall, initTestDb, post, role, signup, successfulApiCall } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 describe('42 intra の課題の結果', () => {
@@ -45,6 +46,11 @@ describe('42 intra の課題の結果', () => {
 			finalMark: 0, validated: false, markedAt: new Date('2026-10-01T10:00:00.000Z'), teamId: 11,
 			members: [], outstandingCount: null, detailsTeamId: null, updatedAt: new Date(),
 		});
+
+		// alice は Lv.6 (最初に登録したので管理者でもある)
+		const lv6 = await role(alice, { name: 'Lv.6' });
+		await connection.getRepository(MiIntraRole).insert({ id: genAidx(Date.now() + 2), roleId: lv6.id, kind: 'level', key: '6' });
+		await api('admin/roles/assign', { userId: alice.id, roleId: lv6.id }, alice);
 	}, 1000 * 60 * 2);
 
 	afterAll(async () => {
@@ -120,5 +126,36 @@ describe('42 intra の課題の結果', () => {
 		await failedApiCall({ endpoint: 'i/intra/refresh-project-results', parameters: {}, user: carol }, {
 			status: 400, code: 'NOT_LINKED_WITH_INTRA', id: 'fefe5dd9-090f-47fc-ba47-184420934d3f',
 		});
+	});
+
+	test('今のレベル以下のレベルを付けて投稿でき、本文が無くてもよい', async () => {
+		const res = await successfulApiCall({ endpoint: 'notes/create', parameters: { intraLevel: 6 }, user: alice });
+		assert.deepStrictEqual(res.createdNote.intraLevel, { level: 6 });
+
+		const lower = await successfulApiCall({ endpoint: 'notes/create', parameters: { intraLevel: 5, text: 'Lv.5' }, user: alice });
+		assert.deepStrictEqual(lower.createdNote.intraLevel, { level: 5 });
+
+		const shown = await successfulApiCall({ endpoint: 'notes/show', parameters: { noteId: res.createdNote.id }, user: carol });
+		assert.deepStrictEqual(shown.intraLevel, { level: 6 });
+
+		const timeline = await successfulApiCall({ endpoint: 'users/notes', parameters: { userId: alice.id }, user: carol });
+		assert.deepStrictEqual(timeline.find(n => n.id === res.createdNote.id)?.intraLevel, { level: 6 });
+		assert.strictEqual(timeline.find(n => n.intraLevel == null)?.intraLevel, undefined);
+	});
+
+	test('今のレベルより上や、レベルのロールが無ければ付けられない', async () => {
+		await failedApiCall({ endpoint: 'notes/create', parameters: { intraLevel: 7 }, user: alice }, {
+			status: 400, code: 'INTRA_LEVEL_NOT_REACHED', id: '8e5faa98-dd99-4979-936e-2a497b9f47ab',
+		});
+		await failedApiCall({ endpoint: 'notes/create', parameters: { intraLevel: 0 }, user: bob }, {
+			status: 400, code: 'INTRA_LEVEL_NOT_REACHED', id: '8e5faa98-dd99-4979-936e-2a497b9f47ab',
+		});
+	});
+
+	test('見られないノートではレベルも隠す', async () => {
+		const res = await successfulApiCall({ endpoint: 'notes/create', parameters: { intraLevel: 6, visibility: 'followers', text: 'secret' }, user: alice });
+		const shown = await successfulApiCall({ endpoint: 'notes/show', parameters: { noteId: res.createdNote.id }, user: carol });
+		assert.strictEqual(shown.isHidden, true);
+		assert.strictEqual(shown.intraLevel, undefined);
 	});
 });

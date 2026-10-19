@@ -192,6 +192,10 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 								// 42times: 課題の通知は、点数を共有の画面を開く
 								client = await swos.openClient('push', '/projects', loginId);
 								break;
+							case 'intraLevelUp':
+								// 42times: 投稿するボタンは通知の一覧にあるので、通知の一覧を開く
+								client = await swos.openClient('push', '/my/notifications', loginId);
+								break;
 							case 'pairJoinRequested':
 							case 'pairAccepted':
 							case 'pairClosed':

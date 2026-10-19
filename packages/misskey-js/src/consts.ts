@@ -47,6 +47,7 @@ export const notificationTypes = [
 	'pairApplicationCancelled',
 	'intraProjectFinished',
 	'intraProjectsRefreshed',
+	'intraLevelUp',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;

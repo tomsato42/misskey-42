@@ -290,6 +290,13 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'intraLevelUp':
+					return [i18n.ts._notification.intraLevelUp, {
+						body: `Lv.${data.body.level}`,
+						badge: iconUrl('medal'),
+						data,
+					}];
+
 				case 'pairJoinRequested':
 					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
 						body: getUserName(data.body.user),

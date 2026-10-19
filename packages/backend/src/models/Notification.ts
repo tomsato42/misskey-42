@@ -226,6 +226,13 @@ export type MiNotification = {
 	createdAt: string;
 	/** 42 API から取得できなかった */
 	failed: boolean;
+} | {
+	/** 42times: 42 intra のレベルが上がった */
+	type: 'intraLevelUp';
+	id: string;
+	createdAt: string;
+	/** 上がった後のレベル (整数) */
+	level: number;
 };
 
 export type MiGroupedNotification = MiNotification | {
