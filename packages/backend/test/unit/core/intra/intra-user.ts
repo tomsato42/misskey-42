@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest';
 import {
 	buildIntraUsername,
 	extractIntraProfile,
+	findPiscineStartYearMonth,
 	isEligible,
 	parsePoolYearMonth,
 } from '@/core/intra/intra-user.js';
@@ -131,6 +132,7 @@ describe('extractIntraProfile', () => {
 			intraId: 123456,
 			login: 'tomoki',
 			poolYearMonth: '2307',
+			poolNameYearMonth: '2307',
 			blackholedAt: new Date('2025-03-01T00:00:00.000Z'),
 			paceDeadlineAt: null,
 			cursusBeginAt: new Date('2023-10-02T01:00:00.000Z'),
@@ -180,10 +182,74 @@ describe('extractIntraProfile', () => {
 
 	test('ピシンの年月が無ければ null', () => {
 		const user = createUser({ pool_year: null, pool_month: null });
-		expect(extractIntraProfile(user, CURSUS_42).poolYearMonth).toBeNull();
+		const profile = extractIntraProfile(user, CURSUS_42);
+		expect(profile.poolYearMonth).toBeNull();
+		expect(profile.poolNameYearMonth).toBeNull();
+	});
+
+	test('ピシンの年月は実際に始まった月を使い、名称の年月も残す', () => {
+		const user = createUser({
+			pool_year: '2024',
+			pool_month: 'september',
+			cursus_users: [
+				{ cursus_id: CURSUS_PISCINE, level: 8.5, blackholed_at: null, begin_at: '2024-08-26T00:00:00.000Z', end_at: '2024-09-20T09:00:00.000Z' },
+			],
+		});
+		const profile = extractIntraProfile(user, CURSUS_42);
+		expect(profile.poolYearMonth).toBe('2408');
+		expect(profile.poolNameYearMonth).toBe('2409');
 	});
 
 	test('ペース期日は API の項目が未確認のため常に null', () => {
 		expect(extractIntraProfile(createUser(), CURSUS_42).paceDeadlineAt).toBeNull();
+	});
+});
+
+describe('findPiscineStartYearMonth', () => {
+	function piscine(beginAt: string | null, cursusId = CURSUS_PISCINE, kind?: string) {
+		return { cursus_id: cursusId, level: 0, blackholed_at: null, begin_at: beginAt, end_at: null, ...(kind != null ? { cursus: { id: cursusId, kind } } : {}) };
+	}
+
+	test('名称と同じ月に始まっていればその月', () => {
+		expect(findPiscineStartYearMonth([piscine('2023-07-03T01:00:00.000Z')], '2307')).toBe('2307');
+	});
+
+	test('名称の前の月に始まっていれば始まった月', () => {
+		expect(findPiscineStartYearMonth([piscine('2024-08-26T00:00:00.000Z')], '2409')).toBe('2408');
+	});
+
+	test('月は日本時間で決める', () => {
+		// 日本時間では 9/1 9:00
+		expect(findPiscineStartYearMonth([piscine('2024-08-31T15:00:00.000Z')], '2409')).toBe('2409');
+	});
+
+	test('年をまたいでも前後の月として扱う', () => {
+		expect(findPiscineStartYearMonth([piscine('2024-12-30T00:00:00.000Z')], '2501')).toBe('2412');
+	});
+
+	test('名称の年月から 2 か月以上離れていれば使わない', () => {
+		expect(findPiscineStartYearMonth([piscine('2024-06-24T00:00:00.000Z')], '2409')).toBeNull();
+	});
+
+	test('kind が piscine の cursus も使い、ほかの cursus は使わない', () => {
+		expect(findPiscineStartYearMonth([piscine('2024-08-26T00:00:00.000Z', 3, 'piscine')], '2409')).toBe('2408');
+		expect(findPiscineStartYearMonth([piscine('2024-08-26T00:00:00.000Z', CURSUS_42, 'main')], '2409')).toBeNull();
+	});
+
+	test('複数あれば名称の年月に近いもの、同じなら早いもの', () => {
+		expect(findPiscineStartYearMonth([
+			piscine('2024-08-05T00:00:00.000Z'),
+			piscine('2024-09-02T00:00:00.000Z'),
+		], '2409')).toBe('2409');
+		expect(findPiscineStartYearMonth([
+			piscine('2024-10-07T00:00:00.000Z'),
+			piscine('2024-08-26T00:00:00.000Z'),
+		], '2409')).toBe('2408');
+	});
+
+	test('名称の年月が無いか、begin_at が無ければ null', () => {
+		expect(findPiscineStartYearMonth([piscine('2024-08-26T00:00:00.000Z')], null)).toBeNull();
+		expect(findPiscineStartYearMonth([piscine(null)], '2409')).toBeNull();
+		expect(findPiscineStartYearMonth([], '2409')).toBeNull();
 	});
 });

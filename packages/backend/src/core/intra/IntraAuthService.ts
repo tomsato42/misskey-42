@@ -402,7 +402,7 @@ export class IntraAuthService {
 
 	@bindThis
 	private async createUser(intraUser: IntraUser, profile: IntraProfile): Promise<MiLocalUser> {
-		const username = buildIntraUsername(profile.login, profile.poolYearMonth, intraUser.created_at);
+		const username = buildIntraUsername(profile.login, profile.poolNameYearMonth, intraUser.created_at);
 
 		let user: MiLocalUser;
 		try {
