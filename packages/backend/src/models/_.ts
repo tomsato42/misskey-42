@@ -50,6 +50,7 @@ import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
 import { MiCalendarEventReminder } from '@/models/CalendarEventReminder.js';
 import { MiCalendarEventInvitation } from '@/models/CalendarEventInvitation.js';
 import { MiIntraProject } from '@/models/IntraProject.js';
+import { MiIntraCohort } from '@/models/IntraCohort.js';
 import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
 import { MiPairMember } from '@/models/PairMember.js';
@@ -190,6 +191,7 @@ export {
 	MiCalendarEventReminder,
 	MiCalendarEventInvitation,
 	MiIntraProject,
+	MiIntraCohort,
 	MiIntraUserProgress,
 	MiPairRecruitment,
 	MiPairMember,
@@ -280,6 +282,7 @@ export type CalendarEventNotesRepository = Repository<MiCalendarEventNote> & MiR
 export type CalendarEventRemindersRepository = Repository<MiCalendarEventReminder> & MiRepository<MiCalendarEventReminder>;
 export type CalendarEventInvitationsRepository = Repository<MiCalendarEventInvitation> & MiRepository<MiCalendarEventInvitation>;
 export type IntraProjectsRepository = Repository<MiIntraProject> & MiRepository<MiIntraProject>;
+export type IntraCohortsRepository = Repository<MiIntraCohort> & MiRepository<MiIntraCohort>;
 export type IntraUserProgressesRepository = Repository<MiIntraUserProgress> & MiRepository<MiIntraUserProgress>;
 export type PairRecruitmentsRepository = Repository<MiPairRecruitment> & MiRepository<MiPairRecruitment>;
 export type PairMembersRepository = Repository<MiPairMember> & MiRepository<MiPairMember>;

@@ -18,6 +18,7 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { IntraApiService } from './IntraApiService.js';
 import { IntraProjectService } from './IntraProjectService.js';
+import { IntraCohortService } from './IntraCohortService.js';
 import { extractIntraProfile } from './intra-user.js';
 import { PRECREATED_MAX_LEVEL, diffIntraRoleAssignments, getIntraRoleIconUrl, getIntraRoleTargets, getLevelRoleTarget } from './intra-role.js';
 import type { IntraRoleTarget } from './intra-role.js';
@@ -60,6 +61,7 @@ export class IntraSyncService {
 		private idService: IdService,
 		private loggerService: LoggerService,
 		private intraProjectService: IntraProjectService,
+		private intraCohortService: IntraCohortService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-sync');
 	}
@@ -138,8 +140,9 @@ export class IntraSyncService {
 	 */
 	@bindThis
 	private async syncRoles(userId: MiUser['id'], profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
+		const intakeYearMonth = await this.intraCohortService.getIntakeYearMonth(profile.campus?.id ?? null, profile.cursusBeginAt);
 		const desiredRoleIds: MiRole['id'][] = [];
-		for (const target of getIntraRoleTargets(profile)) {
+		for (const target of getIntraRoleTargets(profile, intakeYearMonth)) {
 			desiredRoleIds.push(await this.ensureRole(target));
 		}
 

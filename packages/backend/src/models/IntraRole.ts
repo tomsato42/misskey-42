@@ -32,7 +32,7 @@ export class MiIntraRole {
 	 * level: 42cursus のレベル (整数) ごとのロール
 	 * campus: 主キャンパスごとのロール
 	 * pool: ピシンの時期 (年月) ごとのロール
-	 * cohort: 本科 (42cursus) への入学時期ごとのロール。開始日時を日本時間で 4 月か 10 月にまとめる
+	 * cohort: 本科 (42cursus) への入学時期ごとのロール。42cursus を始めた月に最も近い入学の月 (intra_cohort から求める) にまとめる
 	 */
 	@Column('varchar', {
 		length: 16,

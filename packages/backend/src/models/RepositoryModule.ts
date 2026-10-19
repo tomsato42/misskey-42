@@ -43,6 +43,7 @@ import {
 	MiCalendarEventReminder,
 	MiCalendarEventInvitation,
 	MiIntraProject,
+	MiIntraCohort,
 	MiIntraUserProgress,
 	MiPairRecruitment,
 	MiPairMember,
@@ -596,6 +597,12 @@ const $intraProjectsRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraCohortsRepository: Provider = {
+	provide: DI.intraCohortsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraCohort).extend(miRepository as MiRepository<MiIntraCohort>),
+	inject: [DI.db],
+};
+
 const $intraUserProgressesRepository: Provider = {
 	provide: DI.intraUserProgressesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiIntraUserProgress).extend(miRepository as MiRepository<MiIntraUserProgress>),
@@ -700,6 +707,7 @@ const $pairMembersRepository: Provider = {
 		$calendarEventRemindersRepository,
 		$calendarEventInvitationsRepository,
 		$intraProjectsRepository,
+		$intraCohortsRepository,
 		$intraUserProgressesRepository,
 		$pairRecruitmentsRepository,
 		$pairMembersRepository,
@@ -788,6 +796,7 @@ const $pairMembersRepository: Provider = {
 		$calendarEventRemindersRepository,
 		$calendarEventInvitationsRepository,
 		$intraProjectsRepository,
+		$intraCohortsRepository,
 		$intraUserProgressesRepository,
 		$pairRecruitmentsRepository,
 		$pairMembersRepository,

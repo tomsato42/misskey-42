@@ -9,11 +9,13 @@ import type { Config } from '@/config.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IntraProjectService } from '@/core/intra/IntraProjectService.js';
+import { IntraCohortService } from '@/core/intra/IntraCohortService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 /**
- * 42 intra の課題 (キャンパスごとの登録の条件) を取り込む。
- * 1 キャンパスあたり 42 API へのリクエストは 2 回 (42 Tokyo・42cursus で 161 件、1 ページ 100 件)
+ * 42 intra の課題 (キャンパスごとの登録の条件) を取り込み、ピシンごとの入学時期を集計し直す。
+ * 1 キャンパスあたり 42 API へのリクエストは、課題が 6 回 (42 Tokyo・42cursus で 161 件、1 ページ 30 件)、
+ * 入学時期が 18 回 (42 Tokyo・42cursus で 1720 人、1 ページ 100 件)
  */
 @Injectable()
 export class SyncIntraProjectsProcessorService {
@@ -24,6 +26,7 @@ export class SyncIntraProjectsProcessorService {
 		private config: Config,
 
 		private intraProjectService: IntraProjectService,
+		private intraCohortService: IntraCohortService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('sync-intra-projects');
@@ -37,5 +40,9 @@ export class SyncIntraProjectsProcessorService {
 		this.logger.info('Syncing projects with 42 intra...');
 		await this.intraProjectService.syncAllCampuses();
 		this.logger.succ('Synced projects with 42 intra.');
+
+		this.logger.info('Syncing cohorts with 42 intra...');
+		await this.intraCohortService.syncAllCampuses();
+		this.logger.succ('Synced cohorts with 42 intra.');
 	}
 }

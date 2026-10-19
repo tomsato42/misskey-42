@@ -165,6 +165,17 @@ describe('getCohortRoleTarget', () => {
 		expect(getCohortRoleTarget(new Date(beginAt), pool)).toEqual({ kind: 'cohort', key, name: `Cursus ${key.slice(0, 2)}/${key.slice(2)}` });
 	});
 
+	test('集計した入学時期があれば、ピシンの年月の丸めより優先する', () => {
+		expect(getCohortRoleTarget(new Date('2023-05-16T00:00:00.000Z'), '2304', '2305')).toEqual({ kind: 'cohort', key: '2305', name: 'Cursus 23/05' });
+		expect(getIntraRoleTargets({ ...EMPTY_PROFILE, poolNameYearMonth: '2304', cursusBeginAt: new Date('2023-05-16T00:00:00.000Z') }, '2305')).toEqual([
+			{ kind: 'cohort', key: '2305', name: 'Cursus 23/05' },
+		]);
+	});
+
+	test('集計した入学時期が YYMM 形式でなければ使わない', () => {
+		expect(getCohortRoleTarget(new Date('2023-05-16T00:00:00.000Z'), '2304', '2313')).toEqual({ kind: 'cohort', key: '2304', name: 'Cursus 23/04' });
+	});
+
 	test('ピシンの年月があっても、42cursus に在籍していなければ null', () => {
 		expect(getCohortRoleTarget(null, '2403')).toBeNull();
 	});

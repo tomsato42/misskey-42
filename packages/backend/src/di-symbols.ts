@@ -98,6 +98,7 @@ export const DI = {
 	calendarEventRemindersRepository: Symbol('calendarEventRemindersRepository'),
 	calendarEventInvitationsRepository: Symbol('calendarEventInvitationsRepository'),
 	intraProjectsRepository: Symbol('intraProjectsRepository'),
+	intraCohortsRepository: Symbol('intraCohortsRepository'),
 	intraUserProgressesRepository: Symbol('intraUserProgressesRepository'),
 	pairRecruitmentsRepository: Symbol('pairRecruitmentsRepository'),
 	pairMembersRepository: Symbol('pairMembersRepository'),
