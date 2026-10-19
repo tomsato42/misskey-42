@@ -4433,11 +4433,22 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * ペア募集に参加希望を送る。自分のその課題の判定が available か in_progress のときだけ送れる。作成者に通知する
+     * ペア募集に参加希望を送る。wantedProjectSlugs (やりたい課題) のすべてで自分の判定が available か in_progress のときだけ送れる。指定しなければ取り組める課題すべてになる。招待された人も送れる。作成者に通知する
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
     request<E extends 'pair-recruitments/apply', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 招待を取り消す (作成者だけ)。返事待ちか、断られた招待だけ取り消せる。取り消すと、もう一度招待できる
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/cancel-invitation', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
@@ -4455,11 +4466,44 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * ペア募集を作成する。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
+     * ペア募集を作成する。projectSlugs で複数の課題をまとめられる (人数はどの課題でも組める範囲にする)。projectSlug は 1 つの課題のときの古い指定。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
      * 
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
     request<E extends 'pair-recruitments/create', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 招待を断る (招待された人だけ)。断った後でも参加希望は送れる
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/decline', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 募集に招待する (作成者だけ)。同じキャンパスで、募集の課題のどれかに取り組めて、招待を受け取る人だけを招待できる。全員を招待できるときだけ送り、招待した人に通知する
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/invite', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 招待の候補 (作成者だけ)。同じキャンパスで、募集の課題のどれか (projectSlug を指定したらその課題) に取り組めて、招待を受け取る人。既に参加希望を送った人と招待した人は除く
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'pair-recruitments/invite-candidates', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
@@ -4504,6 +4548,17 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'pair-recruitments/show', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * 募集を編集する (作成者だけ、募集中の間だけ)。指定した項目だけを変える。課題を外すと、その課題だけをやりたい参加希望は取り下げになり、本人に通知する。参加が決まったメンバーのやりたい課題をすべて外すことはできない。人数を参加が決まった人数ちょうどにすると締め切る
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:account*
+     */
+    request<E extends 'pair-recruitments/update', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

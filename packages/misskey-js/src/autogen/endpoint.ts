@@ -604,10 +604,18 @@ import type {
 	PairRecruitmentsAcceptResponse,
 	PairRecruitmentsApplyRequest,
 	PairRecruitmentsApplyResponse,
+	PairRecruitmentsCancelInvitationRequest,
+	PairRecruitmentsCancelInvitationResponse,
 	PairRecruitmentsCloseRequest,
 	PairRecruitmentsCloseResponse,
 	PairRecruitmentsCreateRequest,
 	PairRecruitmentsCreateResponse,
+	PairRecruitmentsDeclineRequest,
+	PairRecruitmentsDeclineResponse,
+	PairRecruitmentsInviteRequest,
+	PairRecruitmentsInviteResponse,
+	PairRecruitmentsInviteCandidatesRequest,
+	PairRecruitmentsInviteCandidatesResponse,
 	PairRecruitmentsListRequest,
 	PairRecruitmentsListResponse,
 	PairRecruitmentsProjectsResponse,
@@ -615,6 +623,8 @@ import type {
 	PairRecruitmentsRejectResponse,
 	PairRecruitmentsShowRequest,
 	PairRecruitmentsShowResponse,
+	PairRecruitmentsUpdateRequest,
+	PairRecruitmentsUpdateResponse,
 	PairRecruitmentsWithdrawRequest,
 	PairRecruitmentsWithdrawResponse,
 	PingResponse,
@@ -1119,12 +1129,17 @@ export type Endpoints = {
 	'pages/update': { req: PagesUpdateRequest; res: EmptyResponse };
 	'pair-recruitments/accept': { req: PairRecruitmentsAcceptRequest; res: PairRecruitmentsAcceptResponse };
 	'pair-recruitments/apply': { req: PairRecruitmentsApplyRequest; res: PairRecruitmentsApplyResponse };
+	'pair-recruitments/cancel-invitation': { req: PairRecruitmentsCancelInvitationRequest; res: PairRecruitmentsCancelInvitationResponse };
 	'pair-recruitments/close': { req: PairRecruitmentsCloseRequest; res: PairRecruitmentsCloseResponse };
 	'pair-recruitments/create': { req: PairRecruitmentsCreateRequest; res: PairRecruitmentsCreateResponse };
+	'pair-recruitments/decline': { req: PairRecruitmentsDeclineRequest; res: PairRecruitmentsDeclineResponse };
+	'pair-recruitments/invite': { req: PairRecruitmentsInviteRequest; res: PairRecruitmentsInviteResponse };
+	'pair-recruitments/invite-candidates': { req: PairRecruitmentsInviteCandidatesRequest; res: PairRecruitmentsInviteCandidatesResponse };
 	'pair-recruitments/list': { req: PairRecruitmentsListRequest; res: PairRecruitmentsListResponse };
 	'pair-recruitments/projects': { req: EmptyRequest; res: PairRecruitmentsProjectsResponse };
 	'pair-recruitments/reject': { req: PairRecruitmentsRejectRequest; res: PairRecruitmentsRejectResponse };
 	'pair-recruitments/show': { req: PairRecruitmentsShowRequest; res: PairRecruitmentsShowResponse };
+	'pair-recruitments/update': { req: PairRecruitmentsUpdateRequest; res: PairRecruitmentsUpdateResponse };
 	'pair-recruitments/withdraw': { req: PairRecruitmentsWithdrawRequest; res: PairRecruitmentsWithdrawResponse };
 	'ping': { req: EmptyRequest; res: PingResponse };
 	'pinned-users': { req: EmptyRequest; res: PinnedUsersResponse };

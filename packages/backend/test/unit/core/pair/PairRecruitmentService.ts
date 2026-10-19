@@ -76,6 +76,11 @@ function fakeRepository<T extends Row>(rows: T[]) {
 			for (const r of targets) applySet(r, set);
 			return { affected: targets.length };
 		},
+		delete: async (where: Row) => {
+			const targets = rows.filter(r => matches(r, where));
+			for (const t of targets) rows.splice(rows.indexOf(t), 1);
+			return { affected: targets.length };
+		},
 	};
 }
 
@@ -126,6 +131,7 @@ describe('PairRecruitmentService', () => {
 	let projects: MiIntraProject[];
 	let progresses: MiIntraUserProgress[];
 	let users: Row[];
+	let profiles: Row[];
 	let blocking: Map<string, Set<string>>;
 	let notifications: { notifieeId: string; type: string; data: Row; notifierId?: string | null }[];
 	let notes: { userId: string; text: string; visibility: string }[];
@@ -149,6 +155,7 @@ describe('PairRecruitmentService', () => {
 		];
 		progresses = [progress('owner'), progress('alice'), progress('bob')];
 		users = [owner, alice, bob].map(u => ({ ...u }));
+		profiles = [owner, alice, bob].map(u => ({ userId: u.id, pairInvitationsEnabled: true }));
 		blocking = new Map();
 		notifications = [];
 		notes = [];
@@ -166,13 +173,27 @@ describe('PairRecruitmentService', () => {
 			fetch: async (userId: string) => new Set([...blocking.entries()].filter(([, set]) => set.has(userId)).map(([id]) => id)),
 		};
 
+		const recruitmentsRepository = {
+			...fakeRepository(recruitments as unknown as Row[]),
+			// getProjects の課題ごとの募集の数 (unnest した集計) をまねる
+			query: async (_sql: string, [campusId, at]: [number, Date]) => {
+				const counts = new Map<string, number>();
+				for (const r of recruitments) {
+					if (r.campusId !== campusId || r.status !== 'open' || r.expiresAt <= at) continue;
+					for (const slug of r.projectSlugs) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+				}
+				return [...counts].map(([slug, count]) => ({ slug, count: String(count) }));
+			},
+		};
+
 		service = new PairRecruitmentService(
 			config as Config,
-			fakeRepository(recruitments as unknown as Row[]) as any,
+			recruitmentsRepository as any,
 			fakeRepository(members as unknown as Row[]) as any,
 			fakeRepository(projects as unknown as Row[]) as any,
 			fakeRepository(progresses as unknown as Row[]) as any,
 			fakeRepository(users) as any,
+			{ ...fakeRepository(profiles), find: async (opts: { where: Row }) => profiles.filter(r => matches(r, opts.where)).map(r => ({ ...r })) } as any,
 			{ gen: () => `id${String(++seq).padStart(4, '0')}` } as any,
 			{ userBlockingCache: blockingCache, userBlockedCache: blockedCache } as any,
 			{} as any,
@@ -196,13 +217,14 @@ describe('PairRecruitmentService', () => {
 		await expect(promise).rejects.toSatisfy((err: unknown) => err instanceof PairRecruitmentError && err.code === code);
 	}
 
-	async function createRecruitment(overrides: Partial<Parameters<PairRecruitmentService['create']>[1]> = {}) {
+	async function createRecruitment(overrides: Partial<Parameters<PairRecruitmentService['create']>[1]> & { projectSlug?: string } = {}) {
+		const { projectSlug, ...rest } = overrides;
 		return await service.create(owner, {
-			projectSlug: 'cub3d',
+			projectSlugs: [projectSlug ?? 'cub3d'],
 			teamSize: 2,
 			startTiming: 'now',
 			announce: false,
-			...overrides,
+			...rest,
 		}, now);
 	}
 
@@ -253,7 +275,7 @@ describe('PairRecruitmentService', () => {
 		});
 
 		test('削除の処理中のユーザーは作成できない', async () => {
-			await expectCode(service.create({ ...owner, isDeleted: true } as MiLocalUser, { projectSlug: 'cub3d', teamSize: 2, startTiming: 'now', announce: false }, now), 'unavailable');
+			await expectCode(service.create({ ...owner, isDeleted: true } as MiLocalUser, { projectSlugs: ['cub3d'], teamSize: 2, startTiming: 'now', announce: false }, now), 'unavailable');
 		});
 
 		test('キャンパスが分からなければ作成できない', async () => {
@@ -304,7 +326,7 @@ describe('PairRecruitmentService', () => {
 	describe('apply', () => {
 		test('参加希望を送り、作成者に通知する', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 
 			expect(members).toEqual([expect.objectContaining({ recruitmentId: r.id, userId: 'alice', status: 'pending' })]);
 			expect(notifications).toEqual([{
@@ -317,58 +339,58 @@ describe('PairRecruitmentService', () => {
 
 		test('同じ募集に二重に送れない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
-			await expectCode(service.apply(alice, r.id, now), 'alreadyApplied');
+			await service.apply(alice, r.id, undefined, now);
+			await expectCode(service.apply(alice, r.id, undefined, now), 'alreadyApplied');
 		});
 
 		test('同時に送られて一意制約に当たった場合も alreadyApplied', async () => {
 			const r = await createRecruitment();
 			await Promise.all([
-				service.apply(alice, r.id, now),
-				expectCode(service.apply(alice, r.id, now), 'alreadyApplied'),
+				service.apply(alice, r.id, undefined, now),
+				expectCode(service.apply(alice, r.id, undefined, now), 'alreadyApplied'),
 			]);
 			expect(members).toHaveLength(1);
 		});
 
 		test('自分の募集には送れない', async () => {
 			const r = await createRecruitment();
-			await expectCode(service.apply(owner, r.id, now), 'cannotApplyOwn');
+			await expectCode(service.apply(owner, r.id, undefined, now), 'cannotApplyOwn');
 		});
 
 		test('その課題を終えた人や locked の人は送れない', async () => {
 			const r = await createRecruitment();
 			progresses[1].projectStatuses = { cub3d: { status: 'finished', validated: true } };
-			await expectCode(service.apply(alice, r.id, now), 'projectNotAvailable');
+			await expectCode(service.apply(alice, r.id, undefined, now), 'projectNotAvailable');
 		});
 
 		test('別のキャンパスの人からは見えない', async () => {
 			const r = await createRecruitment();
 			progresses[1].campusId = 1;
-			await expectCode(service.apply(alice, r.id, now), 'noSuchRecruitment');
+			await expectCode(service.apply(alice, r.id, undefined, now), 'noSuchRecruitment');
 		});
 
 		test('ブロックの関係にある人の募集は見えない', async () => {
 			const r = await createRecruitment();
 			blocking.set('owner', new Set(['alice']));
-			await expectCode(service.apply(alice, r.id, now), 'noSuchRecruitment');
+			await expectCode(service.apply(alice, r.id, undefined, now), 'noSuchRecruitment');
 		});
 
 		test('凍結された作成者の募集は見えない', async () => {
 			const r = await createRecruitment();
 			users.find(u => u.id === 'owner')!.isSuspended = true;
-			await expectCode(service.apply(alice, r.id, now), 'noSuchRecruitment');
+			await expectCode(service.apply(alice, r.id, undefined, now), 'noSuchRecruitment');
 		});
 
 		test('期限を過ぎた募集には送れない', async () => {
 			const r = await createRecruitment();
-			await expectCode(service.apply(alice, r.id, new Date(r.expiresAt.getTime() + 1)), 'recruitmentClosed');
+			await expectCode(service.apply(alice, r.id, undefined, new Date(r.expiresAt.getTime() + 1)), 'recruitmentClosed');
 		});
 
 		test('取り下げた後はもう一度送れる', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await service.withdraw(alice, r.id, now);
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			expect(members).toEqual([expect.objectContaining({ userId: 'alice', status: 'pending' })]);
 		});
 	});
@@ -376,8 +398,8 @@ describe('PairRecruitmentService', () => {
 	describe('accept / reject', () => {
 		test('承認すると参加者に通知し、人数がそろったら締め切ってメンバーに通知する', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
-			await service.apply(bob, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
 			notifications.length = 0;
 
 			const result = await service.accept(owner, r.id, 'alice', now);
@@ -393,8 +415,8 @@ describe('PairRecruitmentService', () => {
 
 		test('同時に承認しても人数を超えない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
-			await service.apply(bob, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
 
 			const results = await Promise.allSettled([
 				service.accept(owner, r.id, 'alice', now),
@@ -411,7 +433,7 @@ describe('PairRecruitmentService', () => {
 			progresses.push(progress('carol'));
 			users.push({ ...localUser('carol') });
 			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 
 			const result = await service.accept(owner, r.id, 'alice', now);
 			expect(result).toMatchObject({ status: 'open', acceptedCount: 1 });
@@ -419,17 +441,17 @@ describe('PairRecruitmentService', () => {
 
 		test('作成者以外は承認できない (参加希望を送っていない人には募集が無いものとして返す)', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await expectCode(service.accept(bob, r.id, 'alice', now), 'noSuchRecruitment');
 			await expectCode(service.reject(bob, r.id, 'alice', now), 'noSuchRecruitment');
-			await service.apply(bob, r.id, now);
+			await service.apply(bob, r.id, undefined, now);
 			await expectCode(service.accept(bob, r.id, 'alice', now), 'notOwner');
 			await expectCode(service.reject(bob, r.id, 'alice', now), 'notOwner');
 		});
 
 		test('承認の前に locked や finished になった人は承認できない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			progresses[1].projectStatuses = { cub3d: { status: 'finished', validated: true } };
 
 			await expectCode(service.accept(owner, r.id, 'alice', now), 'applicantNotAvailable');
@@ -438,7 +460,7 @@ describe('PairRecruitmentService', () => {
 
 		test('凍結された人は承認できない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			users.find(u => u.id === 'alice')!.isSuspended = true;
 
 			await expectCode(service.accept(owner, r.id, 'alice', now), 'applicantNotAvailable');
@@ -451,14 +473,14 @@ describe('PairRecruitmentService', () => {
 
 		test('見送りは通知せず、見送られた人は再び送れない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			notifications.length = 0;
 
 			await service.reject(owner, r.id, 'alice', now);
 
 			expect(members[0].status).toBe('rejected');
 			expect(notifications).toEqual([]);
-			await expectCode(service.apply(alice, r.id, now), 'rejectedBefore');
+			await expectCode(service.apply(alice, r.id, undefined, now), 'rejectedBefore');
 			await expectCode(service.accept(owner, r.id, 'alice', now), 'noSuchApplication');
 		});
 	});
@@ -466,7 +488,7 @@ describe('PairRecruitmentService', () => {
 	describe('withdraw / close', () => {
 		test('承認済みの人が取り下げると、承認済みの人数を戻す', async () => {
 			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await service.accept(owner, r.id, 'alice', now);
 
 			const result = await service.withdraw(alice, r.id, now);
@@ -479,14 +501,14 @@ describe('PairRecruitmentService', () => {
 			const r = await createRecruitment();
 			await expectCode(service.withdraw(alice, r.id, now), 'noSuchRecruitment');
 			await expectCode(service.withdraw(owner, r.id, now), 'notMember');
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await service.reject(owner, r.id, 'alice', now);
 			await expectCode(service.withdraw(alice, r.id, now), 'notMember');
 		});
 
 		test('締め切った後は取り下げられない', async () => {
 			const r = await createRecruitment();
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await service.close(owner, r.id, now);
 			await expectCode(service.withdraw(alice, r.id, now), 'recruitmentClosed');
 		});
@@ -495,10 +517,10 @@ describe('PairRecruitmentService', () => {
 			progresses.push(progress('carol'), progress('dave'));
 			users.push({ ...localUser('carol') }, { ...localUser('dave') });
 			const r = await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 5 });
-			await service.apply(alice, r.id, now);
-			await service.apply(bob, r.id, now);
-			await service.apply(localUser('carol'), r.id, now);
-			await service.apply(localUser('dave'), r.id, now);
+			await service.apply(alice, r.id, undefined, now);
+			await service.apply(bob, r.id, undefined, now);
+			await service.apply(localUser('carol'), r.id, undefined, now);
+			await service.apply(localUser('dave'), r.id, undefined, now);
 			await service.accept(owner, r.id, 'alice', now);
 			await service.reject(owner, r.id, 'carol', now);
 			await service.withdraw(localUser('dave'), r.id, now);
@@ -516,7 +538,7 @@ describe('PairRecruitmentService', () => {
 		test('作成者以外は締め切れず、締め切った募集はもう一度締め切れない', async () => {
 			const r = await createRecruitment();
 			await expectCode(service.close(alice, r.id, now), 'noSuchRecruitment');
-			await service.apply(alice, r.id, now);
+			await service.apply(alice, r.id, undefined, now);
 			await expectCode(service.close(alice, r.id, now), 'notOwner');
 			await service.close(owner, r.id, now);
 			await expectCode(service.close(owner, r.id, now), 'recruitmentClosed');
@@ -526,8 +548,8 @@ describe('PairRecruitmentService', () => {
 	describe('closeExpired', () => {
 		test('期限を過ぎた募集を締め切り、作成者とメンバーに通知する', async () => {
 			const expired = await createRecruitment();
-			const active = await service.create(owner, { projectSlug: 'cub3d', teamSize: 2, startTiming: 'now', announce: false }, new Date(now.getTime() + 1000 * 60 * 60 * 24 * 7));
-			await service.apply(alice, expired.id, now);
+			const active = await service.create(owner, { projectSlugs: ['cub3d'], teamSize: 2, startTiming: 'now', announce: false }, new Date(now.getTime() + 1000 * 60 * 60 * 24 * 7));
+			await service.apply(alice, expired.id, undefined, now);
 			notifications.length = 0;
 
 			const later = new Date(expired.expiresAt.getTime() + 1);
@@ -548,17 +570,10 @@ describe('PairRecruitmentService', () => {
 	describe('getProjects', () => {
 		test('2 人以上の課題だけを、取り組める課題を上にして返す', async () => {
 			progresses[0].projectStatuses = { minishell: { status: 'finished', validated: true }, cub3d: { status: 'in_progress', validated: null } };
-			(service as any).pairRecruitmentsRepository.createQueryBuilder = () => {
-				const qb = {
-					select: () => qb,
-					addSelect: () => qb,
-					where: () => qb,
-					andWhere: () => qb,
-					groupBy: () => qb,
-					getRawMany: async () => [{ slug: 'cub3d', count: '3' }],
-				};
-				return qb;
-			};
+			for (let i = 0; i < 3; i++) await createRecruitment();
+			// 締め切った募集は数えない
+			await createRecruitment({ projectSlug: 'ft_transcendence', teamSize: 4 });
+			recruitments[3].status = 'closed';
 
 			const result = await service.getProjects(owner, now);
 
@@ -572,6 +587,189 @@ describe('PairRecruitmentService', () => {
 		test('キャンパスが分からなければ空', async () => {
 			progresses.splice(0, progresses.length);
 			expect(await service.getProjects(owner, now)).toEqual([]);
+		});
+	});
+
+	describe('複数の課題', () => {
+		beforeEach(() => {
+			projects.push(
+				project('webserv', { maxGroupSize: 3 }),
+				project('ft_irc', { maxGroupSize: 3 }),
+			);
+		});
+
+		async function createMulti(overrides: Partial<Parameters<PairRecruitmentService['create']>[1]> = {}) {
+			return await service.create(owner, {
+				projectSlugs: ['webserv', 'ft_irc'],
+				teamSize: 3,
+				startTiming: 'now',
+				announce: false,
+				...overrides,
+			}, now);
+		}
+
+		test('課題をまとめて募集し、名前をつなぎ、人数はどの課題でも組める範囲にする', async () => {
+			const r = await createMulti();
+			expect(r).toMatchObject({
+				projectSlug: 'webserv',
+				projectName: 'webserv / ft_irc',
+				projectSlugs: ['webserv', 'ft_irc'],
+				minGroupSize: 2,
+				maxGroupSize: 3,
+			});
+			expect(r.projects.map(p => p.slug)).toEqual(['webserv', 'ft_irc']);
+
+			// cub3d は 2 人まで
+			await expectCode(createMulti({ projectSlugs: ['webserv', 'cub3d'] }), 'invalidTeamSize');
+			await createMulti({ projectSlugs: ['webserv', 'cub3d'], teamSize: 2 });
+			// 人数の範囲が重ならない
+			await expectCode(createMulti({ projectSlugs: ['cub3d', 'ft_transcendence'], teamSize: 2 }), 'noCommonTeamSize');
+		});
+
+		test('重複・多すぎる課題・取り組めない課題は選べない', async () => {
+			await expectCode(createMulti({ projectSlugs: ['webserv', 'webserv'] }), 'invalidProjects');
+			await expectCode(createMulti({ projectSlugs: ['webserv', 'ft_irc', 'cub3d', 'minishell', 'ft_transcendence'] }), 'tooManyProjects');
+			await expectCode(createMulti({ projectSlugs: [] }), 'invalidProjects');
+			progresses[0].projectStatuses = { ft_irc: { status: 'finished', validated: true } };
+			await expectCode(createMulti(), 'projectNotAvailable');
+		});
+
+		test('やりたい課題を選んで参加希望を送る。選ばなければ取り組める課題すべて', async () => {
+			const r = await createMulti();
+			await service.apply(alice, r.id, ['ft_irc'], now);
+			progresses[2].projectStatuses = { webserv: { status: 'finished', validated: true } };
+			await service.apply(bob, r.id, undefined, now);
+
+			expect(members.map(m => [m.userId, m.wantedProjectSlugs])).toEqual([['alice', ['ft_irc']], ['bob', ['ft_irc']]]);
+		});
+
+		test('募集に無い課題や、取り組めない課題をやりたい課題にはできない', async () => {
+			const r = await createMulti();
+			await expectCode(service.apply(alice, r.id, ['cub3d'], now), 'invalidWantedProjects');
+			progresses[1].projectStatuses = { webserv: { status: 'finished', validated: true } };
+			await expectCode(service.apply(alice, r.id, ['webserv', 'ft_irc'], now), 'projectNotAvailable');
+			progresses[1].projectStatuses = { webserv: { status: 'finished', validated: true }, ft_irc: { status: 'finished', validated: true } };
+			await expectCode(service.apply(alice, r.id, undefined, now), 'projectNotAvailable');
+		});
+
+		test('やりたい課題のどれかに取り組めれば承認できる', async () => {
+			const r = await createMulti();
+			await service.apply(alice, r.id, ['webserv', 'ft_irc'], now);
+			progresses[1].projectStatuses = { webserv: { status: 'finished', validated: true } };
+			await service.accept(owner, r.id, 'alice', now);
+			expect(members[0].status).toBe('accepted');
+		});
+	});
+
+	describe('update', () => {
+		beforeEach(() => {
+			projects.push(
+				project('webserv', { maxGroupSize: 3 }),
+				project('ft_irc', { maxGroupSize: 3 }),
+			);
+		});
+
+		test('ひとことと時期と人数を変えられる', async () => {
+			const r = await createRecruitment({ projectSlug: 'webserv', comment: 'a' });
+			const updated = await service.update(owner, r.id, { teamSize: 3, startTiming: 'date', startDate: '2026-10-25', comment: '  b  ' }, now);
+			expect(updated).toMatchObject({ teamSize: 3, startTiming: 'date', startDate: '2026-10-25', comment: 'b' });
+
+			const kept = await service.update(owner, r.id, { teamSize: 2 }, now);
+			expect(kept).toMatchObject({ teamSize: 2, startTiming: 'date', startDate: '2026-10-25', comment: 'b' });
+		});
+
+		test('課題を足すと複数の課題の募集になる。外すと、その課題だけをやりたい参加希望は取り下げになって通知される', async () => {
+			const r = await createRecruitment({ projectSlug: 'webserv' });
+			await service.apply(alice, r.id, undefined, now);
+
+			const multi = await service.update(owner, r.id, { projectSlugs: ['webserv', 'ft_irc'] }, now);
+			expect(multi.projectName).toBe('webserv / ft_irc');
+			await service.apply(bob, r.id, ['ft_irc'], now);
+			notifications.splice(0);
+
+			const single = await service.update(owner, r.id, { projectSlugs: ['webserv'] }, now);
+			expect(single.projectSlugs).toEqual(['webserv']);
+			expect(members.find(m => m.userId === 'alice')?.status).toBe('pending');
+			expect(members.find(m => m.userId === 'bob')?.status).toBe('withdrawn');
+			expect(notifications).toEqual([expect.objectContaining({ notifieeId: 'bob', type: 'pairApplicationCancelled', notifierId: 'owner' })]);
+		});
+
+		test('参加が決まった人のやりたい課題をすべて外すことと、参加が決まった人数より少なくすることはできない', async () => {
+			const r = await createRecruitment({ projectSlugs: ['webserv', 'ft_irc'], teamSize: 3 });
+			await service.apply(alice, r.id, ['ft_irc'], now);
+			await service.accept(owner, r.id, 'alice', now);
+
+			await expectCode(service.update(owner, r.id, { projectSlugs: ['webserv'] }, now), 'memberWouldLoseProject');
+			await expectCode(service.update(owner, r.id, { teamSize: 1 }, now), 'invalidTeamSize');
+		});
+
+		test('人数を参加が決まった人数ちょうどにすると締め切る', async () => {
+			const r = await createRecruitment({ projectSlug: 'webserv', teamSize: 3 });
+			await service.apply(alice, r.id, undefined, now);
+			await service.accept(owner, r.id, 'alice', now);
+
+			const closed = await service.update(owner, r.id, { teamSize: 2 }, now);
+			expect(closed).toMatchObject({ status: 'closed', closedReason: 'full' });
+		});
+
+		test('作成者以外と、締め切った募集は編集できない', async () => {
+			const r = await createRecruitment();
+			await service.apply(alice, r.id, undefined, now);
+			await expectCode(service.update(alice, r.id, { comment: 'x' }, now), 'notOwner');
+			await expectCode(service.update(bob, r.id, { comment: 'x' }, now), 'noSuchRecruitment');
+			await service.close(owner, r.id, now);
+			await expectCode(service.update(owner, r.id, { comment: 'x' }, now), 'recruitmentClosed');
+		});
+	});
+
+	describe('invite', () => {
+		test('招待すると通知し、招待された人は参加希望を送るか断れる', async () => {
+			const r = await createRecruitment();
+			await service.invite(owner, r.id, ['alice', 'bob'], now);
+
+			expect(members.map(m => [m.userId, m.status])).toEqual([['alice', 'invited'], ['bob', 'invited']]);
+			expect(notifications.map(n => [n.notifieeId, n.type, n.notifierId])).toEqual([['alice', 'pairInvited', 'owner'], ['bob', 'pairInvited', 'owner']]);
+
+			await service.apply(alice, r.id, undefined, now);
+			await service.decline(bob, r.id, now);
+			expect(members.map(m => [m.userId, m.status])).toEqual([['alice', 'pending'], ['bob', 'declined']]);
+
+			// 断った後でも送れる
+			await service.apply(bob, r.id, undefined, now);
+			expect(members[1].status).toBe('pending');
+		});
+
+		test('招待を受け取らない人・取り組めない人・別のキャンパスの人・参加希望を送った人は招待できない', async () => {
+			const r = await createRecruitment();
+			profiles[1].pairInvitationsEnabled = false;
+			await expectCode(service.invite(owner, r.id, ['alice'], now), 'cannotInvite');
+
+			progresses[2].projectStatuses = { cub3d: { status: 'finished', validated: true } };
+			await expectCode(service.invite(owner, r.id, ['bob'], now), 'cannotInvite');
+
+			progresses[2].projectStatuses = {};
+			progresses[2].campusId = 1;
+			await expectCode(service.invite(owner, r.id, ['bob'], now), 'cannotInvite');
+
+			progresses[2].campusId = 26;
+			await service.apply(bob, r.id, undefined, now);
+			await expectCode(service.invite(owner, r.id, ['bob'], now), 'cannotInvite');
+			await expectCode(service.invite(owner, r.id, ['owner'], now), 'cannotInvite');
+			// 1 人でも招待できなければ誰にも送らない
+			expect(notifications.filter(n => n.type === 'pairInvited')).toEqual([]);
+		});
+
+		test('作成者以外は招待できず、招待されていない人は断れない。取り消すともう一度招待できる', async () => {
+			const r = await createRecruitment();
+			await service.apply(alice, r.id, undefined, now);
+			await expectCode(service.invite(alice, r.id, ['bob'], now), 'notOwner');
+			await expectCode(service.decline(alice, r.id, now), 'notInvited');
+
+			await service.invite(owner, r.id, ['bob'], now);
+			await service.cancelInvitation(owner, r.id, 'bob');
+			expect(members.map(m => m.userId)).toEqual(['alice']);
+			await expectCode(service.cancelInvitation(owner, r.id, 'alice'), 'notInvited');
+			await service.invite(owner, r.id, ['bob'], now);
 		});
 	});
 });

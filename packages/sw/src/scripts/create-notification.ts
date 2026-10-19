@@ -293,6 +293,22 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'pairInvited':
+					return [i18n.tsx._notification.pairInvitedText({ project: data.body.pairRecruitment.projectName }), {
+						body: getUserName(data.body.user),
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('users'),
+						data,
+					}];
+
+				case 'pairApplicationCancelled':
+					return [i18n.tsx._notification.pairApplicationCancelledText({ project: data.body.pairRecruitment.projectName }), {
+						body: getUserName(data.body.user),
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('users'),
+						data,
+					}];
+
 				case 'pairClosed':
 					return [i18n.ts._notification.pairClosed, {
 						body: i18n.tsx._notification.pairClosedText({

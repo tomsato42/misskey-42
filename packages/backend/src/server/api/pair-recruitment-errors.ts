@@ -113,6 +113,51 @@ export const pairRecruitmentApiErrors = {
 		code: 'BLOCKED',
 		id: '755c961f-15c4-4aaa-8e87-437e2764fab7',
 	},
+	tooManyProjects: {
+		message: 'Too many projects in one recruitment.',
+		code: 'TOO_MANY_PROJECTS',
+		id: 'b80ab931-0ccf-44ef-ba57-ccb18c7641be',
+	},
+	invalidProjects: {
+		message: 'The list of projects is empty or has duplicates.',
+		code: 'INVALID_PROJECTS',
+		id: '8cba6a88-19ce-4bbc-92fb-37680d640880',
+	},
+	noCommonTeamSize: {
+		message: 'The projects have no team size in common.',
+		code: 'NO_COMMON_TEAM_SIZE',
+		id: '2bfcf2d3-3f03-4809-b08f-06c4b6e4715d',
+	},
+	invalidWantedProjects: {
+		message: 'The wanted projects are empty or not in this recruitment.',
+		code: 'INVALID_WANTED_PROJECTS',
+		id: '0e4d1095-ff81-406b-9b12-25608d84440d',
+	},
+	memberWouldLoseProject: {
+		message: 'A member would lose all of their wanted projects.',
+		code: 'MEMBER_WOULD_LOSE_PROJECT',
+		id: 'afa88b31-7cfc-46d8-b993-88e503c2a875',
+	},
+	teamSizeBelowMembers: {
+		message: 'The team size is smaller than the accepted members.',
+		code: 'TEAM_SIZE_BELOW_MEMBERS',
+		id: '03ae61ef-8493-4c30-be04-4a828f7bed8d',
+	},
+	tooManyInvitations: {
+		message: 'Too many invitations for this recruitment.',
+		code: 'TOO_MANY_INVITATIONS',
+		id: '7f8c0e3e-4ba0-4c62-a437-7733e35098c4',
+	},
+	cannotInvite: {
+		message: 'The user cannot be invited to this recruitment.',
+		code: 'CANNOT_INVITE',
+		id: 'fae204ef-0e88-4730-a156-4047d3ba2c02',
+	},
+	notInvited: {
+		message: 'You are not invited to this recruitment.',
+		code: 'NOT_INVITED',
+		id: '928a3f41-1077-4e75-a866-c6406d089124',
+	},
 } as const satisfies Record<PairRecruitmentErrorCode, ErrorDef>;
 
 /**

@@ -11162,6 +11162,14 @@ export interface Locale extends ILocale {
          * {project} のペア募集: {reason}
          */
         "pairClosedText": ParameterizedString<"project" | "reason">;
+        /**
+         * {project} のペア募集に招待されました
+         */
+        "pairInvitedText": ParameterizedString<"project">;
+        /**
+         * {project} のペア募集の課題が変わり、参加希望が取り下げになりました
+         */
+        "pairApplicationCancelledText": ParameterizedString<"project">;
         "_types": {
             /**
              * すべて
@@ -11271,6 +11279,14 @@ export interface Locale extends ILocale {
              * ペア募集の締め切り
              */
             "pairClosed": string;
+            /**
+             * ペア募集への招待
+             */
+            "pairInvited": string;
+            /**
+             * ペア募集の参加希望の取り下げ(課題の変更)
+             */
+            "pairApplicationCancelled": string;
         };
         "_actions": {
             /**
@@ -13730,6 +13746,216 @@ export interface Locale extends ILocale {
          */
         "project": string;
         /**
+         * 次に取り組む課題(いくつでも)
+         */
+        "projects": string;
+        /**
+         * 2つ以上選ぶと、参加する人が希望する課題を選べます。
+         */
+        "projectsCaption": string;
+        /**
+         * 選んだ課題のどれでも組める人数だけ選べます。
+         */
+        "teamSizeCaption": string;
+        /**
+         * 選んだ課題に共通して組める人数がありません。
+         */
+        "noCommonTeamSizeInfo": string;
+        /**
+         * {n}つの課題から
+         */
+        "fromNProjects": ParameterizedString<"n">;
+        /**
+         * {name} {n}人
+         */
+        "projectWantedCount": ParameterizedString<"name" | "n">;
+        /**
+         * 希望する課題を選択
+         */
+        "selectWantedProjects": string;
+        /**
+         * どれでもいい
+         */
+        "anyProject": string;
+        /**
+         * 参加希望を送る
+         */
+        "sendApplication": string;
+        /**
+         * 希望する課題
+         */
+        "wantedProjects": string;
+        /**
+         * やる課題
+         */
+        "decideProject": string;
+        /**
+         * {name} に決める
+         */
+        "decideProjectAs": ParameterizedString<"name">;
+        /**
+         * {name} に決めますか？ほかの課題だけを希望している人の参加希望は取り下げになります。
+         */
+        "decideProjectConfirm": ParameterizedString<"name">;
+        /**
+         * まだ決めない
+         */
+        "notDecidedYet": string;
+        /**
+         * 編集
+         */
+        "edit": string;
+        /**
+         * ペア募集を編集する
+         */
+        "editTitle": string;
+        /**
+         * 保存
+         */
+        "save": string;
+        /**
+         * {names} を外しますか？その課題だけを希望している人の参加希望は取り下げになり、通知が届きます。
+         */
+        "removeProjectConfirm": ParameterizedString<"names">;
+        /**
+         * 取り組める人を招待
+         */
+        "invite": string;
+        /**
+         * 取り組める人を招待
+         */
+        "inviteTitle": string;
+        /**
+         * どれか
+         */
+        "inviteAll": string;
+        /**
+         * 名前や intra のログインで探す
+         */
+        "searchInvitees": string;
+        /**
+         * {n}人に招待を送る
+         */
+        "sendInvitations": ParameterizedString<"n">;
+        /**
+         * 招待を送りました
+         */
+        "invitationsSent": string;
+        /**
+         * 招待中
+         */
+        "invitations": string;
+        /**
+         * 返事待ち
+         */
+        "invitationWaiting": string;
+        /**
+         * 見送られました
+         */
+        "invitationDeclined": string;
+        /**
+         * 取り消す
+         */
+        "cancelInvitation": string;
+        /**
+         * {name} への招待を取り消しますか？
+         */
+        "cancelInvitationConfirm": ParameterizedString<"name">;
+        /**
+         * {user} から招待されています
+         */
+        "invitedNotice": ParameterizedString<"user">;
+        /**
+         * 今回は見送る
+         */
+        "declineInvitation": string;
+        /**
+         * この招待を見送りますか？
+         */
+        "declineConfirm": string;
+        /**
+         * ペア募集の招待を受け取る
+         */
+        "receiveInvitations": string;
+        /**
+         * オフにすると、ほかの人の「取り組める人を招待」に表示されなくなります。
+         */
+        "receiveInvitationsDescription": string;
+        /**
+         * 共有
+         */
+        "share": string;
+        /**
+         * 募集を共有
+         */
+        "shareTitle": string;
+        /**
+         * ほかの場所に貼るための文章です。編集してからコピーできます。開くには 42times へのログインが必要です。
+         */
+        "shareDescription": string;
+        /**
+         * 文章をコピー
+         */
+        "copyText": string;
+        /**
+         * リンクだけコピー
+         */
+        "copyLinkOnly": string;
+        /**
+         * このペア募集を見るには、ログインしてください。
+         */
+        "loginRequired": string;
+        "_shareTemplate": {
+            /**
+             * [名前]
+             */
+            "name": string;
+            /**
+             * [課題]
+             */
+            "project": string;
+            /**
+             * {projects}どちらでも
+             */
+            "projectAny": ParameterizedString<"projects">;
+            /**
+             * [期間]
+             */
+            "period": string;
+            /**
+             * [人数]
+             */
+            "teamSize": string;
+            /**
+             * {n}人で取り組みます(現在{current}人、あと{remaining}人)
+             */
+            "teamSizeText": ParameterizedString<"n" | "current" | "remaining">;
+            /**
+             * [現状]
+             */
+            "status": string;
+            /**
+             * 未着手
+             */
+            "notStarted": string;
+            /**
+             * 進行中
+             */
+            "inProgress": string;
+            /**
+             * [活動可能時間など]
+             */
+            "availableTime": string;
+            /**
+             * [意気込み]
+             */
+            "motivation": string;
+            /**
+             * [募集のページ]
+             */
+            "link": string;
+        };
+        /**
          * 人数(自分を含む)
          */
         "teamSize": string;
@@ -13878,6 +14104,14 @@ export interface Locale extends ILocale {
              * 取り下げ
              */
             "withdrawn": string;
+            /**
+             * 招待中
+             */
+            "invited": string;
+            /**
+             * 招待を見送り
+             */
+            "declined": string;
         };
         "_errors": {
             /**
@@ -13964,6 +14198,42 @@ export interface Locale extends ILocale {
              * タイムラインへの告知には、ノートを投稿する権限が必要です。
              */
             "announcePermissionDenied": string;
+            /**
+             * まとめられる課題は 4 つまでです。
+             */
+            "tooManyProjects": string;
+            /**
+             * 課題を選んでください。
+             */
+            "invalidProjects": string;
+            /**
+             * 選んだ課題に共通して組める人数がありません。
+             */
+            "noCommonTeamSize": string;
+            /**
+             * 希望する課題を選んでください。
+             */
+            "invalidWantedProjects": string;
+            /**
+             * 参加が決まった人が希望する課題をすべて外すことはできません。
+             */
+            "memberWouldLoseProject": string;
+            /**
+             * 参加が決まった人数より少なくはできません。
+             */
+            "teamSizeBelowMembers": string;
+            /**
+             * この募集から送れる招待の数を超えています。
+             */
+            "tooManyInvitations": string;
+            /**
+             * 招待できない人が含まれています。
+             */
+            "cannotInvite": string;
+            /**
+             * 招待されていません。
+             */
+            "notInvited": string;
         };
     };
     "_intra": {

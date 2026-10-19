@@ -637,5 +637,47 @@ export const packedNotificationSchema = {
 				enum: pairClosedReasons,
 			},
 		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['pairInvited'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			pairRecruitment: pairRecruitmentSummarySchema,
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['pairApplicationCancelled'],
+			},
+			user: {
+				type: 'object',
+				ref: 'UserLite',
+				optional: false, nullable: false,
+			},
+			userId: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'id',
+			},
+			pairRecruitment: pairRecruitmentSummarySchema,
+		},
 	}],
 } as const;

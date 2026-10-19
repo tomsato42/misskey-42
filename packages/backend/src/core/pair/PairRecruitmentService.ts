@@ -12,13 +12,17 @@ import type {
 	IntraUserProgressesRepository,
 	PairMembersRepository,
 	PairRecruitmentsRepository,
+	UserProfilesRepository,
 	UsersRepository,
 } from '@/models/_.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
 import type { MiIntraProject } from '@/models/IntraProject.js';
 import type { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
-import type { MiPairRecruitment } from '@/models/PairRecruitment.js';
+import type { MiPairRecruitment, PairRecruitmentProjectEntry } from '@/models/PairRecruitment.js';
 import { MiPairMember } from '@/models/PairMember.js';
+import { MiUser as MiUserEntity } from '@/models/User.js';
+import { MiUserProfile } from '@/models/UserProfile.js';
+import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import { IdService } from '@/core/IdService.js';
 import { CacheService } from '@/core/CacheService.js';
 import { QueryService } from '@/core/QueryService.js';
@@ -32,18 +36,27 @@ import { judgeProjectAvailability } from '@/core/intra/intra-project.js';
 import type { IntraProjectAvailability, IntraProjectAvailabilityState } from '@/core/intra/intra-project.js';
 import {
 	PAIR_RECRUITMENT_LIFETIME_MS,
+	PAIR_RECRUITMENT_MAX_INVITATIONS,
 	PAIR_RECRUITMENT_MAX_OPEN_PER_USER,
 	PairRecruitmentError,
+	bestWantedState,
 	buildAnnouncementText,
 	canWorkOn,
+	combineWantedStates,
+	formatProjectNames,
+	getCommonTeamSizeRange,
+	getRecruitmentSlugs,
 	getTeamSizeRange,
 	isRecruitmentOpen,
 	isTeamFull,
-	isValidTeamSize,
 	judgeAccept,
 	judgeApply,
+	judgeInvite,
 	normalizeComment,
+	normalizeProjectSlugs,
 	normalizeStartDate,
+	normalizeWantedProjectSlugs,
+	planProjectChange,
 	sortProjectsByState,
 } from './pair-recruitment.js';
 import type { PairClosedReason, PairMemberStatus, PairStartTiming } from './pair-recruitment.js';
@@ -62,6 +75,15 @@ export type PairRecruitmentListTab = 'open' | 'mine' | 'joined';
 
 /** 「参加中」に出す参加の状態 */
 const JOINED_STATUSES: PairMemberStatus[] = ['pending', 'accepted'];
+
+/** 招待の候補を探すときに、取り組めるかを判定する人数の上限 */
+const INVITE_CANDIDATE_SCAN_LIMIT = 500;
+
+export type PairInviteCandidate = {
+	user: MiUser;
+	/** その人が取り組める、募集の課題の slug */
+	projectSlugs: string[];
+};
 
 /** 期限切れの締め切りで 1 回に処理する数 */
 const EXPIRE_BATCH_SIZE = 100;
@@ -91,6 +113,9 @@ export class PairRecruitmentService {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		private idService: IdService,
 		private cacheService: CacheService,
@@ -127,9 +152,51 @@ export class PairRecruitmentService {
 		return judgeProjectAvailability(project, progress);
 	}
 
+	/** キャンパスの課題を slug でまとめて取る */
 	@bindThis
-	private async findProject(campusId: number, slug: string): Promise<MiIntraProject | null> {
-		return await this.intraProjectsRepository.findOneBy({ campusId, slug });
+	private async findProjects(campusId: number, slugs: string[]): Promise<Map<string, MiIntraProject>> {
+		if (slugs.length === 0) return new Map();
+		const projects = await this.intraProjectsRepository.findBy({ campusId, slug: In(slugs) });
+		return new Map(projects.map(p => [p.slug, p]));
+	}
+
+	/** 課題ごとのユーザーの判定。課題が無いか、進捗が無いか、キャンパスが違えば null */
+	@bindThis
+	private judgeAll(campusId: number, slugs: string[], projects: Map<string, MiIntraProject>, progress: MiIntraUserProgress | null): Record<string, IntraProjectAvailabilityState | null> {
+		const states: Record<string, IntraProjectAvailabilityState | null> = {};
+		for (const slug of slugs) {
+			states[slug] = progress?.campusId === campusId ? this.judge(projects.get(slug) ?? null, progress)?.state ?? null : null;
+		}
+		return states;
+	}
+
+	/**
+	 * 選んだ課題を確かめて、募集に保存する形にする。新しく足す課題は、作成者が取り組めるものに限る
+	 * @param kept 既に募集にある課題 (編集のとき。そのまま残す)
+	 */
+	@bindThis
+	private async resolveProjectEntries(campusId: number, slugs: string[], progress: MiIntraUserProgress, kept: PairRecruitmentProjectEntry[] = []): Promise<PairRecruitmentProjectEntry[]> {
+		const keptMap = new Map(kept.map(e => [e.slug, e]));
+		const added = slugs.filter(slug => !keptMap.has(slug));
+		const projects = await this.findProjects(campusId, added);
+
+		const entries: PairRecruitmentProjectEntry[] = [];
+		for (const slug of slugs) {
+			const existing = keptMap.get(slug);
+			if (existing != null) {
+				entries.push(existing);
+				continue;
+			}
+			const project = projects.get(slug);
+			if (project == null) throw new PairRecruitmentError('noSuchProject');
+			const range = getTeamSizeRange(project);
+			if (range == null) throw new PairRecruitmentError('notPairProject');
+			entries.push({ slug: project.slug, name: project.name, minGroupSize: range.min, maxGroupSize: range.max });
+		}
+		for (const slug of added) {
+			if (!canWorkOn(judgeProjectAvailability(projects.get(slug)!, progress).state)) throw new PairRecruitmentError('projectNotAvailable');
+		}
+		return entries;
 	}
 
 	/** 作成者とブロックの関係にあるか (どちらの向きでも) */
@@ -174,14 +241,11 @@ export class PairRecruitmentService {
 
 		const [projects, counts] = await Promise.all([
 			this.intraProjectsRepository.findBy({ campusId }),
-			this.pairRecruitmentsRepository.createQueryBuilder('recruitment')
-				.select('recruitment.projectSlug', 'slug')
-				.addSelect('COUNT(*)', 'count')
-				.where('recruitment.campusId = :campusId', { campusId })
-				.andWhere('recruitment.status = \'open\'')
-				.andWhere('recruitment.expiresAt > :now', { now })
-				.groupBy('recruitment.projectSlug')
-				.getRawMany<{ slug: string; count: string }>(),
+			// 複数の課題をまとめた募集は、それぞれの課題で数える
+			this.pairRecruitmentsRepository.query(
+				'SELECT s.slug AS "slug", COUNT(*) AS "count" FROM "pair_recruitment" r CROSS JOIN LATERAL unnest(r."projectSlugs") AS s(slug) WHERE r."campusId" = $1 AND r."status" = \'open\' AND r."expiresAt" > $2 GROUP BY s.slug',
+				[campusId, now],
+			) as Promise<{ slug: string; count: string }[]>,
 		]);
 		const countMap = new Map(counts.map(c => [c.slug, parseInt(c.count, 10)]));
 
@@ -204,11 +268,12 @@ export class PairRecruitmentService {
 	}
 
 	/**
-	 * 募集を作成する。announce が true なら、作成者のノートとしてタイムラインにも告知する
+	 * 募集を作成する。課題は 1 つ以上で、選んだ課題のどれでも組める人数にする。
+	 * announce が true なら、作成者のノートとしてタイムラインにも告知する
 	 */
 	@bindThis
 	public async create(me: MiLocalUser, input: {
-		projectSlug: string;
+		projectSlugs: string[];
 		teamSize: number;
 		startTiming: PairStartTiming;
 		startDate?: string | null;
@@ -221,17 +286,15 @@ export class PairRecruitmentService {
 		const progress = await this.getProgress(me.id);
 		if (progress?.campusId == null) throw new PairRecruitmentError('noCampus');
 
-		const project = await this.findProject(progress.campusId, input.projectSlug);
-		if (project == null) throw new PairRecruitmentError('noSuchProject');
+		const slugs = normalizeProjectSlugs(input.projectSlugs);
+		const entries = await this.resolveProjectEntries(progress.campusId, slugs, progress);
 
-		const range = getTeamSizeRange(project);
-		if (range == null) throw new PairRecruitmentError('notPairProject');
-		if (!isValidTeamSize(project, input.teamSize)) throw new PairRecruitmentError('invalidTeamSize');
+		const range = getCommonTeamSizeRange(entries);
+		if (range == null) throw new PairRecruitmentError('noCommonTeamSize');
+		if (!Number.isInteger(input.teamSize) || input.teamSize < range.min || input.teamSize > range.max) throw new PairRecruitmentError('invalidTeamSize');
 
 		const startDate = normalizeStartDate(input.startTiming, input.startDate, now);
 		const comment = normalizeComment(input.comment);
-
-		if (!canWorkOn(judgeProjectAvailability(project, progress).state)) throw new PairRecruitmentError('projectNotAvailable');
 
 		const openCount = await this.pairRecruitmentsRepository.countBy({
 			userId: me.id,
@@ -245,10 +308,12 @@ export class PairRecruitmentService {
 			userId: me.id,
 			user: null,
 			campusId: progress.campusId,
-			projectSlug: project.slug,
-			projectName: project.name,
+			projectSlug: entries[0].slug,
+			projectName: formatProjectNames(entries.map(e => e.name)),
 			minGroupSize: range.min,
 			maxGroupSize: range.max,
+			projects: entries,
+			projectSlugs: entries.map(e => e.slug),
 			teamSize: input.teamSize,
 			startTiming: input.startTiming,
 			startDate,
@@ -286,6 +351,90 @@ export class PairRecruitmentService {
 		}
 
 		return recruitment;
+	}
+
+	/**
+	 * 募集を編集する (作成者だけ、募集中の間だけ)。指定した項目だけを変える。
+	 * 課題を外すと、その課題だけをやりたい参加希望は取り下げにして本人に通知する。参加が決まったメンバーのやりたい課題をすべて外すことはできない。
+	 * 人数を参加が決まった人数ちょうどにしたら締め切る
+	 */
+	@bindThis
+	public async update(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], input: {
+		projectSlugs?: string[];
+		teamSize?: number;
+		startTiming?: PairStartTiming;
+		startDate?: string | null;
+		comment?: string | null;
+	}, now = new Date()): Promise<MiPairRecruitment> {
+		this.assertEnabled();
+		this.assertActive(me);
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
+		if (!isRecruitmentOpen(recruitment, now)) throw new PairRecruitmentError('recruitmentClosed');
+
+		const currentSlugs = getRecruitmentSlugs(recruitment);
+		let entries = recruitment.projects.length > 0 ? recruitment.projects : [{
+			slug: recruitment.projectSlug,
+			name: recruitment.projectName,
+			minGroupSize: recruitment.minGroupSize,
+			maxGroupSize: recruitment.maxGroupSize,
+		}];
+		if (input.projectSlugs != null) {
+			const slugs = normalizeProjectSlugs(input.projectSlugs);
+			const progress = await this.getProgress(me.id);
+			if (progress?.campusId == null) throw new PairRecruitmentError('noCampus');
+			entries = await this.resolveProjectEntries(recruitment.campusId, slugs, progress, entries.filter(e => slugs.includes(e.slug)));
+		}
+		const newSlugs = entries.map(e => e.slug);
+
+		const range = getCommonTeamSizeRange(entries);
+		if (range == null) throw new PairRecruitmentError('noCommonTeamSize');
+		const teamSize = input.teamSize ?? recruitment.teamSize;
+		if (!Number.isInteger(teamSize) || teamSize < range.min || teamSize > range.max) throw new PairRecruitmentError('invalidTeamSize');
+		if (teamSize < recruitment.acceptedCount + 1) throw new PairRecruitmentError('teamSizeBelowMembers');
+
+		const startTiming = input.startTiming ?? recruitment.startTiming;
+		const startDate = input.startTiming != null ? normalizeStartDate(input.startTiming, input.startDate, now) : recruitment.startDate;
+		const comment = input.comment !== undefined ? normalizeComment(input.comment) : recruitment.comment;
+
+		const projectsChanged = newSlugs.join('\n') !== currentSlugs.join('\n');
+		const members = projectsChanged ? await this.pairMembersRepository.findBy({ recruitmentId: recruitment.id }) : [];
+		const plan = planProjectChange({ newSlugs, members });
+
+		const result = await this.pairRecruitmentsRepository.update({ id: recruitment.id, status: 'open' }, {
+			projectSlug: newSlugs[0],
+			projectName: formatProjectNames(entries.map(e => e.name)),
+			minGroupSize: range.min,
+			maxGroupSize: range.max,
+			projects: entries,
+			projectSlugs: newSlugs,
+			teamSize,
+			startTiming,
+			startDate,
+			comment,
+		});
+		if (result.affected === 0) throw new PairRecruitmentError('recruitmentClosed');
+
+		for (const [userId, wanted] of plan.wanted) {
+			await this.pairMembersRepository.update({ recruitmentId: recruitment.id, userId }, { wantedProjectSlugs: wanted });
+		}
+
+		const latest = await this.findRecruitmentOrFail(recruitment.id);
+		for (const userId of plan.withdrawUserIds) {
+			const withdrawn = await this.pairMembersRepository.update({ recruitmentId: recruitment.id, userId, status: 'pending' }, { status: 'withdrawn', updatedAt: now });
+			if (withdrawn.affected === 0) continue;
+			this.notificationService.createNotification(userId, 'pairApplicationCancelled', {
+				pairRecruitmentId: latest.id,
+				projectSlug: latest.projectSlug,
+				projectName: latest.projectName,
+			}, me.id);
+		}
+
+		if (isTeamFull(latest.teamSize, latest.acceptedCount)) {
+			await this.closeRecruitment(latest, 'full', now);
+			return await this.findRecruitmentOrFail(recruitment.id);
+		}
+		return latest;
 	}
 
 	/**
@@ -377,7 +526,7 @@ export class PairRecruitmentService {
 		}
 
 		if (params.projectSlug != null) {
-			query.andWhere('recruitment.projectSlug = :projectSlug', { projectSlug: params.projectSlug });
+			query.andWhere(':projectSlug = ANY(recruitment.projectSlugs)', { projectSlug: params.projectSlug });
 		}
 
 		if (params.onlyWorkable) {
@@ -385,40 +534,47 @@ export class PairRecruitmentService {
 			const projects = await this.intraProjectsRepository.findBy({ campusId });
 			const workable = projects.filter(p => canWorkOn(judgeProjectAvailability(p, progress).state)).map(p => p.slug);
 			if (workable.length === 0) return [];
-			query.andWhere('recruitment.projectSlug IN (:...workable)', { workable });
+			query.andWhere('recruitment.projectSlugs && ARRAY[:...workable]::varchar[]', { workable });
 		}
 
 		return await query.limit(params.limit).getMany();
 	}
 
 	/**
-	 * 参加希望を送る。作成者に通知する
+	 * 参加希望を送る。作成者に通知する。
+	 * やりたい課題を指定しなければ、募集の課題のうち自分が取り組めるものすべてをやりたい課題にする
 	 */
 	@bindThis
-	public async apply(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], now = new Date()): Promise<MiPairRecruitment> {
+	public async apply(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], wantedProjectSlugs?: string[] | null, now = new Date()): Promise<MiPairRecruitment> {
 		const recruitment = await this.get(me, recruitmentId);
 		this.assertActive(me);
 
 		if (recruitment.userId !== me.id && await this.isBlockedWith(me.id, recruitment.userId)) throw new PairRecruitmentError('blocked');
 
-		const [existing, progress, project] = await Promise.all([
+		const slugs = getRecruitmentSlugs(recruitment);
+		const [existing, progress, projects] = await Promise.all([
 			this.pairMembersRepository.findOneBy({ recruitmentId: recruitment.id, userId: me.id }),
 			this.getProgress(me.id),
-			this.findProject(recruitment.campusId, recruitment.projectSlug),
+			this.findProjects(recruitment.campusId, slugs),
 		]);
+		const states = this.judgeAll(recruitment.campusId, slugs, projects, progress);
 
-		const error = judgeApply({
+		// 課題の判定より先に、募集の状態と自分の参加の状態を確かめる
+		const statusError = judgeApply({
 			recruitment,
 			applicantId: me.id,
 			existingStatus: existing?.status ?? null,
-			state: this.judge(project, progress)?.state ?? null,
+			state: 'available',
 			now,
 		});
-		if (error != null) throw new PairRecruitmentError(error);
+		if (statusError != null) throw new PairRecruitmentError(statusError);
+
+		const wanted = normalizeWantedProjectSlugs({ wanted: wantedProjectSlugs, recruitmentSlugs: slugs, states });
+		if (!canWorkOn(combineWantedStates(wanted.map(slug => states[slug])))) throw new PairRecruitmentError('projectNotAvailable');
 
 		if (existing != null) {
-			// 取り下げた後にもう一度送る
-			const result = await this.pairMembersRepository.update({ id: existing.id, status: 'withdrawn' }, { status: 'pending', updatedAt: now });
+			// 取り下げた後や、招待されたときにもう一度送る
+			const result = await this.pairMembersRepository.update({ id: existing.id, status: In(['withdrawn', 'invited', 'declined']) }, { status: 'pending', wantedProjectSlugs: wanted, updatedAt: now });
 			if (result.affected === 0) throw new PairRecruitmentError('alreadyApplied');
 		} else {
 			try {
@@ -427,6 +583,7 @@ export class PairRecruitmentService {
 					recruitmentId: recruitment.id,
 					userId: me.id,
 					status: 'pending',
+					wantedProjectSlugs: wanted,
 					updatedAt: now,
 				});
 			} catch (err) {
@@ -446,6 +603,179 @@ export class PairRecruitmentService {
 	}
 
 	/**
+	 * 招待を断る (招待された人だけ)
+	 */
+	@bindThis
+	public async decline(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], now = new Date()): Promise<MiPairRecruitment> {
+		this.assertEnabled();
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+
+		const result = await this.pairMembersRepository.update({ recruitmentId: recruitment.id, userId: me.id, status: 'invited' }, { status: 'declined', updatedAt: now });
+		if (result.affected === 0) throw new PairRecruitmentError('notInvited');
+		return recruitment;
+	}
+
+	/**
+	 * 招待の候補。同じキャンパスで、募集の課題のどれか (projectSlug を指定したらその課題) に取り組めて、招待を受け取る人。
+	 * 作成者・既に参加希望を送った人・招待した人・ブロックの関係にある人・凍結や削除されたユーザーを除き、最近使った人から並べる
+	 */
+	@bindThis
+	public async getInviteCandidates(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], params: {
+		projectSlug?: string | null;
+		query?: string | null;
+		limit: number;
+	}, now = new Date()): Promise<PairInviteCandidate[]> {
+		this.assertEnabled();
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
+		if (!isRecruitmentOpen(recruitment, now)) throw new PairRecruitmentError('recruitmentClosed');
+
+		const recruitmentSlugs = getRecruitmentSlugs(recruitment);
+		const slugs = params.projectSlug != null ? recruitmentSlugs.filter(slug => slug === params.projectSlug) : recruitmentSlugs;
+		if (slugs.length === 0) return [];
+
+		const [projects, members, blocking, blocked] = await Promise.all([
+			this.findProjects(recruitment.campusId, slugs),
+			this.pairMembersRepository.findBy({ recruitmentId: recruitment.id }),
+			this.cacheService.userBlockingCache.fetch(me.id),
+			this.cacheService.userBlockedCache.fetch(me.id),
+		]);
+		const excludeIds = [...new Set([
+			me.id,
+			...members.filter(m => m.status !== 'withdrawn').map(m => m.userId),
+			...blocking,
+			...blocked,
+		])];
+
+		const query = this.intraUserProgressesRepository.createQueryBuilder('progress')
+			.innerJoin(MiUserEntity, 'user', 'user.id = progress.userId')
+			.innerJoin(MiUserProfile, 'profile', 'profile.userId = progress.userId')
+			.where('progress.campusId = :campusId', { campusId: recruitment.campusId })
+			.andWhere('user.host IS NULL')
+			.andWhere('user.isSuspended = FALSE')
+			.andWhere('user.isDeleted = FALSE')
+			.andWhere('profile.pairInvitationsEnabled = TRUE')
+			.andWhere('progress.userId NOT IN (:...excludeIds)', { excludeIds });
+
+		const q = params.query?.trim();
+		if (q != null && q !== '') {
+			const like = `%${sqlLikeEscape(q.toLowerCase())}%`;
+			query.andWhere('(user.usernameLower LIKE :like OR LOWER(user.name) LIKE :like OR LOWER(profile.intraLogin) LIKE :like)', { like });
+		}
+
+		const progresses = await query
+			.orderBy('user.lastActiveDate', 'DESC', 'NULLS LAST')
+			.limit(INVITE_CANDIDATE_SCAN_LIMIT)
+			.getMany();
+
+		const found: { userId: string; projectSlugs: string[] }[] = [];
+		for (const progress of progresses) {
+			const states = this.judgeAll(recruitment.campusId, slugs, projects, progress);
+			const workable = slugs.filter(slug => canWorkOn(states[slug]));
+			if (workable.length > 0) found.push({ userId: progress.userId, projectSlugs: workable });
+			if (found.length >= params.limit) break;
+		}
+		if (found.length === 0) return [];
+
+		const users = await this.usersRepository.findBy({ id: In(found.map(f => f.userId)) });
+		const userMap = new Map(users.map(u => [u.id, u]));
+		return found.filter(f => userMap.has(f.userId)).map(f => ({ user: userMap.get(f.userId)!, projectSlugs: f.projectSlugs }));
+	}
+
+	/**
+	 * 招待を送る (作成者だけ)。全員を招待できるときだけ送り、招待した人に通知する
+	 */
+	@bindThis
+	public async invite(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], userIds: MiUser['id'][], now = new Date()): Promise<MiPairRecruitment> {
+		this.assertEnabled();
+		this.assertActive(me);
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
+
+		const ids = [...new Set(userIds)];
+		const slugs = getRecruitmentSlugs(recruitment);
+		const [members, users, profiles, progresses, projects] = await Promise.all([
+			this.pairMembersRepository.findBy({ recruitmentId: recruitment.id }),
+			this.usersRepository.findBy({ id: In(ids) }),
+			this.userProfilesRepository.find({ where: { userId: In(ids) }, select: { userId: true, pairInvitationsEnabled: true } }),
+			this.intraUserProgressesRepository.findBy({ userId: In(ids) }),
+			this.findProjects(recruitment.campusId, slugs),
+		]);
+
+		const memberMap = new Map(members.map(m => [m.userId, m]));
+		const userMap = new Map(users.map(u => [u.id, u]));
+		const profileMap = new Map(profiles.map(p => [p.userId, p]));
+		const progressMap = new Map(progresses.map(p => [p.userId, p]));
+
+		for (const userId of ids) {
+			const user = userMap.get(userId);
+			if (user == null || user.host != null || user.isSuspended || user.isDeleted) throw new PairRecruitmentError('cannotInvite');
+			if (await this.isBlockedWith(me.id, userId)) throw new PairRecruitmentError('cannotInvite');
+			const states = this.judgeAll(recruitment.campusId, slugs, projects, progressMap.get(userId) ?? null);
+			const error = judgeInvite({
+				recruitment,
+				actorId: me.id,
+				inviteeId: userId,
+				existingStatus: memberMap.get(userId)?.status ?? null,
+				acceptsInvitations: profileMap.get(userId)?.pairInvitationsEnabled ?? false,
+				states: slugs.map(slug => states[slug]),
+				now,
+			});
+			if (error != null) throw new PairRecruitmentError(error);
+		}
+
+		// 締め切りや満員のエラーを先に返すため、招待の数は 1 人ずつの判定の後に調べる
+		const invitationCount = members.filter(m => m.status === 'invited' || m.status === 'declined').length;
+		if (invitationCount + ids.length > PAIR_RECRUITMENT_MAX_INVITATIONS) throw new PairRecruitmentError('tooManyInvitations');
+
+		for (const userId of ids) {
+			const existing = memberMap.get(userId);
+			if (existing != null) {
+				// 取り下げた人をもう一度招待する
+				const result = await this.pairMembersRepository.update({ id: existing.id, status: 'withdrawn' }, { status: 'invited', wantedProjectSlugs: [], updatedAt: now });
+				if (result.affected === 0) continue;
+			} else {
+				try {
+					await this.pairMembersRepository.insert({
+						id: this.idService.gen(now.getTime()),
+						recruitmentId: recruitment.id,
+						userId,
+						status: 'invited',
+						wantedProjectSlugs: [],
+						updatedAt: now,
+					});
+				} catch (err) {
+					// 同時に参加希望を送られた場合など
+					if (isDuplicateKeyValueError(err)) continue;
+					throw err;
+				}
+			}
+
+			this.notificationService.createNotification(userId, 'pairInvited', {
+				pairRecruitmentId: recruitment.id,
+				projectSlug: recruitment.projectSlug,
+				projectName: recruitment.projectName,
+			}, me.id);
+		}
+
+		return recruitment;
+	}
+
+	/**
+	 * 招待を取り消す (作成者だけ)。まだ返事をしていないか、断られた招待だけ
+	 */
+	@bindThis
+	public async cancelInvitation(me: MiLocalUser, recruitmentId: MiPairRecruitment['id'], userId: MiUser['id']): Promise<MiPairRecruitment> {
+		this.assertEnabled();
+		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
+		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
+
+		const result = await this.pairMembersRepository.delete({ recruitmentId: recruitment.id, userId, status: In(['invited', 'declined']) });
+		if (result.affected === 0) throw new PairRecruitmentError('notInvited');
+		return recruitment;
+	}
+
+	/**
 	 * 参加希望を承認する (作成者だけ)。承認した人に通知し、人数がそろったら締め切る
 	 */
 	@bindThis
@@ -454,17 +784,20 @@ export class PairRecruitmentService {
 		const recruitment = await this.findForParticipantOrFail(me, recruitmentId);
 		if (recruitment.userId !== me.id) throw new PairRecruitmentError('notOwner');
 
-		const [member, applicant, progress, project] = await Promise.all([
+		const slugs = getRecruitmentSlugs(recruitment);
+		const [member, applicant, progress, projects] = await Promise.all([
 			this.pairMembersRepository.findOneBy({ recruitmentId: recruitment.id, userId }),
 			this.usersRepository.findOneBy({ id: userId }),
 			this.getProgress(userId),
-			this.findProject(recruitment.campusId, recruitment.projectSlug),
+			this.findProjects(recruitment.campusId, slugs),
 		]);
 
-		// 凍結・削除されたユーザーは取り組めないものとして扱う
+		// やりたい課題のどれかに取り組めれば承認できる。凍結・削除されたユーザーは取り組めないものとして扱う
+		const states = this.judgeAll(recruitment.campusId, slugs, projects, progress);
+		const wanted = (member?.wantedProjectSlugs ?? []).filter(slug => slugs.includes(slug));
 		const applicantState = applicant == null || applicant.isSuspended || applicant.isDeleted
 			? null
-			: this.judge(project, progress)?.state ?? null;
+			: bestWantedState((wanted.length > 0 ? wanted : slugs).map(slug => states[slug]));
 
 		const error = judgeAccept({
 			recruitment,

@@ -30,6 +30,8 @@
  * pairJoinRequested - 自分のペア募集に参加希望が届いた
  * pairAccepted - ペア募集への参加希望が承認された
  * pairClosed - 参加希望を送った・参加しているペア募集か、自分のペア募集が締め切られた
+ * pairInvited - ペア募集に招待された
+ * pairApplicationCancelled - ペア募集が編集され、やりたい課題が外れたので参加希望が取り下げになった
  */
 export const notificationTypes = [
 	'note',
@@ -58,6 +60,8 @@ export const notificationTypes = [
 	'pairJoinRequested',
 	'pairAccepted',
 	'pairClosed',
+	'pairInvited',
+	'pairApplicationCancelled',
 ] as const;
 
 export const groupedNotificationTypes = [

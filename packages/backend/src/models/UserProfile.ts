@@ -336,6 +336,14 @@ export class MiUserProfile {
 	public calendarNotificationSettings: CalendarNotificationSettings;
 	//#endregion
 
+	//#region pair recruitment
+	// ペア募集の招待を受け取るか。受け取らない人は招待の候補に出さない
+	@Column('boolean', {
+		default: true,
+	})
+	public pairInvitationsEnabled: boolean;
+	//#endregion
+
 	//#region Denormalized fields
 	@Index()
 	@Column('varchar', {

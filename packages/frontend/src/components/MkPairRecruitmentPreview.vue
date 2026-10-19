@@ -13,6 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-if="recruitment != null">
 		<MkA :to="detailPath" :class="[$style.title, $style.stretchedLink]">{{ recruitment.project.name }}</MkA>
 		<div :class="$style.meta">
+			<span v-if="isMultiProject(recruitment)"><i class="ti ti-list-check" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.fromNProjects({ n: recruitment.projects.length }) }}</span>
 			<span><i class="ti ti-users" aria-hidden="true"></i>{{ i18n.tsx._pairRecruitment.teamSizeAndRemaining({ n: recruitment.teamSize, m: remaining }) }}</span>
 			<span><i class="ti ti-calendar" aria-hidden="true"></i>{{ getStartTimingText(recruitment) }}</span>
 			<span v-if="recruitment.status !== 'open'"><i class="ti ti-circle-x" aria-hidden="true"></i>{{ closedText }}</span>
@@ -32,8 +33,8 @@ import MkButton from '@/components/MkButton.vue';
 import MkPairProjectStateBadge from '@/components/MkPairProjectStateBadge.vue';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { canApply, getRemainingSlots, getStartTimingText } from '@/utility/pair-recruitment.js';
-import { pairRecruitmentAction } from '@/utility/pair-recruitment-action.js';
+import { canApply, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';
+import { applyToPairRecruitment } from '@/utility/pair-recruitment-dialog.js';
 
 const props = withDefaults(defineProps<{
 	recruitmentId: string;
@@ -69,7 +70,7 @@ watch(() => props.recruitmentId, (id) => {
 
 async function apply() {
 	if (recruitment.value == null || !applicable.value) return;
-	const updated = await pairRecruitmentAction('pair-recruitments/apply', { recruitmentId: recruitment.value.id });
+	const updated = await applyToPairRecruitment(recruitment.value);
 	if (updated != null) recruitment.value = updated;
 }
 </script>

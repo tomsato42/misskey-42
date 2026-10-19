@@ -17,6 +17,12 @@ export const PAIR_RECRUITMENT_MAX_OPEN_PER_USER = 5;
 /** ひとことの最大の長さ */
 export const PAIR_RECRUITMENT_COMMENT_MAX_LENGTH = 500;
 
+/** 1 つの募集にまとめられる課題の最大の数 */
+export const PAIR_RECRUITMENT_MAX_PROJECTS = 4;
+
+/** 1 つの募集から送れる招待の最大の数 (見送られた招待を含む) */
+export const PAIR_RECRUITMENT_MAX_INVITATIONS = 30;
+
 /** 始める日として指定できる、今日からの最大の日数 */
 export const PAIR_RECRUITMENT_START_DATE_MAX_DAYS = 366;
 
@@ -30,8 +36,11 @@ export type PairRecruitmentStatus = typeof pairRecruitmentStatuses[number];
 export const pairClosedReasons = ['full', 'manual', 'expired'] as const;
 export type PairClosedReason = typeof pairClosedReasons[number];
 
-/** pending: 参加希望、accepted: 承認された、rejected: 見送られた、withdrawn: 本人が取り下げた */
-export const pairMemberStatuses = ['pending', 'accepted', 'rejected', 'withdrawn'] as const;
+/**
+ * pending: 参加希望、accepted: 承認された、rejected: 見送られた、withdrawn: 取り下げた (本人か、編集で希望した課題が外れた)、
+ * invited: 作成者に招待された (まだ返事をしていない)、declined: 招待を断った
+ */
+export const pairMemberStatuses = ['pending', 'accepted', 'rejected', 'withdrawn', 'invited', 'declined'] as const;
 export type PairMemberStatus = typeof pairMemberStatuses[number];
 
 /** 閲覧者から見た募集との関係。owner は作成者 */
@@ -79,6 +88,24 @@ export const pairRecruitmentErrorCodes = [
 	'notMember',
 	/** ブロックの関係にある */
 	'blocked',
+	/** 課題が多すぎる */
+	'tooManyProjects',
+	/** 課題の指定が正しくない (空、重複) */
+	'invalidProjects',
+	/** まとめた課題に共通して組める人数が無い */
+	'noCommonTeamSize',
+	/** やりたい課題の指定が正しくない (空、募集に無い課題) */
+	'invalidWantedProjects',
+	/** 参加が決まったメンバーのやりたい課題をすべて外そうとした */
+	'memberWouldLoseProject',
+	/** 参加が決まったメンバーより少ない人数にしようとした */
+	'teamSizeBelowMembers',
+	/** 招待が多すぎる */
+	'tooManyInvitations',
+	/** 招待できない人 (別のキャンパス、招待を受け取らない、取り組めない、既に参加希望を送ったなど) */
+	'cannotInvite',
+	/** 招待されていない */
+	'notInvited',
 ] as const;
 export type PairRecruitmentErrorCode = typeof pairRecruitmentErrorCodes[number];
 
@@ -109,6 +136,110 @@ export function getTeamSizeRange(project: PairProjectGroupSize): { min: number; 
 	const min = Math.max(2, project.minGroupSize ?? 2);
 	if (min > project.maxGroupSize) return null;
 	return { min, max: project.maxGroupSize };
+}
+
+/**
+ * まとめた課題のどれでも組める人数の範囲 (それぞれの範囲の重なり)。重なりが無いか、2 人以上で取り組む課題でないものがあれば null
+ */
+export function getCommonTeamSizeRange(projects: PairProjectGroupSize[]): { min: number; max: number } | null {
+	if (projects.length === 0) return null;
+	let min = 2;
+	let max = Infinity;
+	for (const project of projects) {
+		const range = getTeamSizeRange(project);
+		if (range == null) return null;
+		min = Math.max(min, range.min);
+		max = Math.min(max, range.max);
+	}
+	return min <= max ? { min, max } : null;
+}
+
+/**
+ * 募集の課題の slug (古い行で projectSlugs が空のときは projectSlug)
+ */
+export function getRecruitmentSlugs(recruitment: { projectSlug: string; projectSlugs: string[] }): string[] {
+	return recruitment.projectSlugs.length > 0 ? recruitment.projectSlugs : [recruitment.projectSlug];
+}
+
+/**
+ * 課題の slug の一覧を確かめる (1 個以上、上限まで、重複なし)
+ */
+export function normalizeProjectSlugs(slugs: string[]): string[] {
+	if (slugs.length === 0) throw new PairRecruitmentError('invalidProjects');
+	if (slugs.length > PAIR_RECRUITMENT_MAX_PROJECTS) throw new PairRecruitmentError('tooManyProjects');
+	if (new Set(slugs).size !== slugs.length) throw new PairRecruitmentError('invalidProjects');
+	return slugs;
+}
+
+/**
+ * 募集の表示名 (課題の名前を / でつなぐ。列の長さに収める)
+ */
+export function formatProjectNames(names: string[]): string {
+	return names.join(' / ').slice(0, 256);
+}
+
+/**
+ * やりたい課題を確かめる。指定が無ければ、募集の課題のうち自分が取り組めるものすべて (どれでもいい)。
+ * 指定するときは 1 個以上で、募集の課題に限る
+ */
+export function normalizeWantedProjectSlugs(params: {
+	wanted: string[] | null | undefined;
+	recruitmentSlugs: string[];
+	/** 自分の課題ごとの判定 */
+	states: Record<string, IntraProjectAvailabilityState | null>;
+}): string[] {
+	const { wanted, recruitmentSlugs, states } = params;
+	if (wanted == null) {
+		const workable = recruitmentSlugs.filter(slug => canWorkOn(states[slug]));
+		if (workable.length === 0) throw new PairRecruitmentError('projectNotAvailable');
+		return workable;
+	}
+	if (wanted.length === 0 || new Set(wanted).size !== wanted.length || wanted.some(slug => !recruitmentSlugs.includes(slug))) {
+		throw new PairRecruitmentError('invalidWantedProjects');
+	}
+	// 募集の並び順にそろえる
+	return recruitmentSlugs.filter(slug => wanted.includes(slug));
+}
+
+/**
+ * やりたい課題すべての判定から、参加希望を送るときに使う判定を 1 つ選ぶ。取り組めない課題があればその判定、なければ最初の判定
+ */
+export function combineWantedStates(states: (IntraProjectAvailabilityState | null)[]): IntraProjectAvailabilityState | null {
+	if (states.length === 0) return null;
+	return states.find(s => !canWorkOn(s)) ?? states[0];
+}
+
+/**
+ * やりたい課題の判定から、承認するときに使う判定を 1 つ選ぶ。どれか 1 つでも取り組めればその判定
+ */
+export function bestWantedState(states: (IntraProjectAvailabilityState | null)[]): IntraProjectAvailabilityState | null {
+	if (states.length === 0) return null;
+	return states.find(s => canWorkOn(s)) ?? states[0];
+}
+
+/**
+ * 編集で課題を変えたときのメンバーの扱いを決める。
+ * 参加が決まったメンバーのやりたい課題がすべて外れるならエラー。参加希望中でやりたい課題がすべて外れる人は取り下げにする。
+ * それ以外の人のやりたい課題は、残る課題だけにする
+ */
+export function planProjectChange(params: {
+	newSlugs: string[];
+	members: { userId: string; status: PairMemberStatus; wantedProjectSlugs: string[] }[];
+}): { withdrawUserIds: string[]; wanted: Map<string, string[]> } {
+	const { newSlugs, members } = params;
+	const withdrawUserIds: string[] = [];
+	const wanted = new Map<string, string[]>();
+	for (const member of members) {
+		if (member.status !== 'pending' && member.status !== 'accepted') continue;
+		const remaining = member.wantedProjectSlugs.filter(slug => newSlugs.includes(slug));
+		if (remaining.length === 0) {
+			if (member.status === 'accepted') throw new PairRecruitmentError('memberWouldLoseProject');
+			withdrawUserIds.push(member.userId);
+			continue;
+		}
+		if (remaining.length !== member.wantedProjectSlugs.length) wanted.set(member.userId, remaining);
+	}
+	return { withdrawUserIds, wanted };
 }
 
 export function isPairProject(project: PairProjectGroupSize): boolean {
@@ -226,10 +357,37 @@ export function judgeApply(params: {
 	const { recruitment, applicantId, existingStatus, state, now } = params;
 	if (recruitment.userId === applicantId) return 'cannotApplyOwn';
 	if (!isRecruitmentOpen(recruitment, now)) return 'recruitmentClosed';
+	// 招待された人 (invited / declined) と取り下げた人は送れる
 	if (existingStatus === 'pending' || existingStatus === 'accepted') return 'alreadyApplied';
 	if (existingStatus === 'rejected') return 'rejectedBefore';
 	if (isTeamFull(recruitment.teamSize, recruitment.acceptedCount)) return 'full';
 	if (!canWorkOn(state)) return 'projectNotAvailable';
+	return null;
+}
+
+/**
+ * 招待できるか。できなければ理由を返す
+ */
+export function judgeInvite(params: {
+	recruitment: Pick<PairRecruitmentState, 'status' | 'expiresAt'> & { userId: string; teamSize: number; acceptedCount: number };
+	actorId: string;
+	inviteeId: string;
+	/** その募集への既存の参加希望・招待の状態 */
+	existingStatus: PairMemberStatus | null;
+	/** 招待される人が招待を受け取るか */
+	acceptsInvitations: boolean;
+	/** 招待される人の、募集の課題ごとの判定 (キャンパスが違えば空) */
+	states: (IntraProjectAvailabilityState | null)[];
+	now: Date;
+}): PairRecruitmentErrorCode | null {
+	const { recruitment, actorId, inviteeId, existingStatus, acceptsInvitations, states, now } = params;
+	if (recruitment.userId !== actorId) return 'notOwner';
+	if (!isRecruitmentOpen(recruitment, now)) return 'recruitmentClosed';
+	if (isTeamFull(recruitment.teamSize, recruitment.acceptedCount)) return 'full';
+	if (inviteeId === actorId) return 'cannotInvite';
+	if (existingStatus != null && existingStatus !== 'withdrawn') return 'cannotInvite';
+	if (!acceptsInvitations) return 'cannotInvite';
+	if (!states.some(s => canWorkOn(s))) return 'cannotInvite';
 	return null;
 }
 

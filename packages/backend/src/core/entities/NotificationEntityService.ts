@@ -212,7 +212,7 @@ export class NotificationEntityService implements OnModuleInit {
 				icon: notification.customIcon,
 			} : {}),
 			...(calendarEvent != null ? packCalendarNotificationFields(notification, calendarEvent) : {}),
-			...(notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' ? {
+			...(notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' ? {
 				pairRecruitment: {
 					id: notification.pairRecruitmentId,
 					projectSlug: notification.projectSlug,

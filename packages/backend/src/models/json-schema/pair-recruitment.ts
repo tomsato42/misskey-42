@@ -127,6 +127,43 @@ const packedPairRecruitmentProperties = {
 			},
 		},
 	},
+	projects: {
+		type: 'array',
+		optional: false, nullable: false,
+		description: 'まとめた課題 (1 つ以上)。project は最初の課題で、名前は課題の名前を / でつないだもの',
+		items: {
+			type: 'object',
+			optional: false, nullable: false,
+			properties: {
+				slug: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+				name: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+				minGroupSize: {
+					type: 'integer',
+					optional: false, nullable: false,
+				},
+				maxGroupSize: {
+					type: 'integer',
+					optional: false, nullable: false,
+				},
+				myState: {
+					type: 'string',
+					optional: false, nullable: true,
+					enum: projectStates,
+				},
+				wantedCount: {
+					type: 'integer',
+					optional: false, nullable: false,
+					description: 'この課題をやりたい参加希望中・参加中の人数 (作成者を含まない)',
+				},
+			},
+		},
+	},
 	teamSize: {
 		type: 'integer',
 		optional: false, nullable: false,
@@ -167,6 +204,15 @@ const packedPairRecruitmentProperties = {
 		type: 'string',
 		optional: false, nullable: true,
 		enum: pairViewerStatuses,
+	},
+	myWantedProjectSlugs: {
+		type: 'array',
+		optional: false, nullable: true,
+		description: '自分のやりたい課題 (参加希望中・参加中のときだけ)',
+		items: {
+			type: 'string',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 
@@ -213,6 +259,14 @@ export const packedPairMemberSchema = {
 			optional: false, nullable: true,
 			enum: projectStates,
 		},
+		wantedProjectSlugs: {
+			type: 'array',
+			optional: false, nullable: false,
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+		},
 	},
 } as const;
 
@@ -225,13 +279,52 @@ export const packedPairRecruitmentDetailedSchema = {
 			optional: false, nullable: true,
 			description: '作成者の 42 intra の課題のページ。作成者がその課題に登録したことが無ければ null',
 		},
+		ownerIntraLogin: {
+			type: 'string',
+			optional: false, nullable: true,
+			description: '作成者の 42 intra のログイン名 (共有の文章に使う)',
+		},
 		members: {
 			type: 'array',
 			optional: false, nullable: false,
+			description: '参加希望中・参加中・見送った人など (招待は含まない)',
 			items: {
 				type: 'object',
 				optional: false, nullable: false,
 				ref: 'PairMember',
+			},
+		},
+		invitations: {
+			type: 'array',
+			optional: false, nullable: false,
+			description: '返事待ちと断られた招待。作成者にだけ返す (ほかの人には空)',
+			items: {
+				type: 'object',
+				optional: false, nullable: false,
+				ref: 'PairMember',
+			},
+		},
+	},
+} as const;
+
+/**
+ * 招待の候補
+ */
+export const packedPairInviteCandidateSchema = {
+	type: 'object',
+	properties: {
+		user: {
+			type: 'object',
+			optional: false, nullable: false,
+			ref: 'UserLite',
+		},
+		projectSlugs: {
+			type: 'array',
+			optional: false, nullable: false,
+			description: 'その人が取り組める、募集の課題の slug',
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
 			},
 		},
 	},

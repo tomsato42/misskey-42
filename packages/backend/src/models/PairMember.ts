@@ -10,7 +10,7 @@ import { MiPairRecruitment } from './PairRecruitment.js';
 import type { PairMemberStatus } from '@/core/pair/pair-recruitment.js';
 
 /**
- * ペア募集への参加希望と参加。作成者はこのテーブルに入らない
+ * ペア募集への参加希望と参加、作成者からの招待。作成者はこのテーブルに入らない
  */
 @Entity('pair_member')
 @Index(['recruitmentId', 'userId'], { unique: true })
@@ -41,11 +41,17 @@ export class MiPairMember {
 	@JoinColumn()
 	public user: MiUser | null;
 
-	/** pending: 参加希望、accepted: 承認された、rejected: 見送られた、withdrawn: 本人が取り下げた */
+	/** pending: 参加希望、accepted: 承認された、rejected: 見送られた、withdrawn: 取り下げた、invited: 招待された、declined: 招待を断った */
 	@Column('varchar', {
 		length: 16,
 	})
 	public status: PairMemberStatus;
+
+	/** やりたい課題の slug (募集の課題のうちの 1 つ以上。招待中は空) */
+	@Column('varchar', {
+		length: 128, array: true, default: '{}',
+	})
+	public wantedProjectSlugs: string[];
 
 	/** status を最後に変えた日時 */
 	@Column('timestamp with time zone')

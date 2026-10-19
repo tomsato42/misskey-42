@@ -21,12 +21,23 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import { judgeProjectAvailability } from '@/core/intra/intra-project.js';
 import type { IntraProjectAvailabilityState } from '@/core/intra/intra-project.js';
-import { canSeeMember, getEffectiveState, getOwnerIntraProjectUrl } from '@/core/pair/pair-recruitment.js';
-import type { PairViewerStatus } from '@/core/pair/pair-recruitment.js';
+import { bestWantedState, canSeeMember, getEffectiveState, getOwnerIntraProjectUrl, getRecruitmentSlugs } from '@/core/pair/pair-recruitment.js';
+import type { PairMemberStatus, PairViewerStatus } from '@/core/pair/pair-recruitment.js';
+import type { MiPairMember } from '@/models/PairMember.js';
+import type { PairInviteCandidate } from '@/core/pair/PairRecruitmentService.js';
 import { UserEntityService } from './UserEntityService.js';
 
 function projectKey(campusId: number, slug: string): string {
 	return `${campusId}:${slug}`;
+}
+
+/** 招待 (members ではなく invitations に出す状態) */
+const INVITATION_STATUSES: PairMemberStatus[] = ['invited', 'declined'];
+
+/** 募集の課題 (古い行で projects が空のときは、projectSlug などの列から作る) */
+function getEntries(r: MiPairRecruitment) {
+	if (r.projects.length > 0) return r.projects;
+	return [{ slug: r.projectSlug, name: r.projectName, minGroupSize: r.minGroupSize, maxGroupSize: r.maxGroupSize }];
 }
 
 @Injectable()
@@ -55,7 +66,7 @@ export class PairRecruitmentEntityService {
 		if (recruitments.length === 0) return new Map();
 		const projects = await this.intraProjectsRepository.findBy({
 			campusId: In([...new Set(recruitments.map(r => r.campusId))]),
-			slug: In([...new Set(recruitments.map(r => r.projectSlug))]),
+			slug: In([...new Set(recruitments.flatMap(r => getRecruitmentSlugs(r)))]),
 		});
 		return new Map(projects.map(p => [projectKey(p.campusId, p.slug), p]));
 	}
@@ -76,7 +87,7 @@ export class PairRecruitmentEntityService {
 		const ids = recruitments.map(r => r.id);
 		const ownIds = recruitments.filter(r => r.userId === me.id).map(r => r.id);
 
-		const [users, projects, myProgress, myMembers, pendingCounts] = await Promise.all([
+		const [users, projects, myProgress, myMembers, pendingCounts, wantedCounts] = await Promise.all([
 			this.userEntityService.packMany(recruitments.map(r => r.user ?? r.userId), me),
 			this.fetchProjects(recruitments),
 			this.intraUserProgressesRepository.findOneBy({ userId: me.id }),
@@ -90,16 +101,28 @@ export class PairRecruitmentEntityService {
 					.groupBy('member.recruitmentId')
 					.getRawMany<{ recruitmentId: string; count: string }>()
 				: Promise.resolve([]),
+			// 課題ごとの、やりたい人の数 (参加希望中と参加中)
+			this.pairMembersRepository.query(
+				'SELECT m."recruitmentId" AS "recruitmentId", s.slug AS "slug", COUNT(*) AS "count" FROM "pair_member" m CROSS JOIN LATERAL unnest(m."wantedProjectSlugs") AS s(slug) WHERE m."recruitmentId" = ANY($1) AND m."status" IN (\'pending\', \'accepted\') GROUP BY m."recruitmentId", s.slug',
+				[ids],
+			) as Promise<{ recruitmentId: string; slug: string; count: string }[]>,
 		]);
 
 		const userMap = new Map(users.map(u => [u.id, u]));
-		const myMemberMap = new Map(myMembers.map(m => [m.recruitmentId, m.status]));
+		const myMemberMap = new Map(myMembers.map(m => [m.recruitmentId, m]));
+		const wantedCountMap = new Map(wantedCounts.map(c => [`${c.recruitmentId}:${c.slug}`, parseInt(c.count, 10)]));
 		const pendingCountMap = new Map(pendingCounts.map(c => [c.recruitmentId, parseInt(c.count, 10)]));
 
 		return recruitments.map(r => {
 			const state = getEffectiveState(r, now);
 			const isOwner = r.userId === me.id;
-			const myStatus: PairViewerStatus | null = isOwner ? 'owner' : myMemberMap.get(r.id) ?? null;
+			const myMember = myMemberMap.get(r.id);
+			const myStatus: PairViewerStatus | null = isOwner ? 'owner' : myMember?.status ?? null;
+			const entries = getEntries(r).map(e => ({
+				...e,
+				myState: this.judgeState(projects.get(projectKey(r.campusId, e.slug)), myProgress),
+				wantedCount: wantedCountMap.get(`${r.id}:${e.slug}`) ?? 0,
+			}));
 			return {
 				id: r.id,
 				createdAt: this.idService.parse(r.id).date.toISOString(),
@@ -115,6 +138,7 @@ export class PairRecruitmentEntityService {
 					minGroupSize: r.minGroupSize,
 					maxGroupSize: r.maxGroupSize,
 				},
+				projects: entries,
 				teamSize: r.teamSize,
 				acceptedCount: r.acceptedCount,
 				pendingCount: isOwner ? pendingCountMap.get(r.id) ?? 0 : null,
@@ -122,10 +146,22 @@ export class PairRecruitmentEntityService {
 				startDate: r.startDate,
 				comment: r.comment,
 				noteId: r.noteId,
-				myProjectState: this.judgeState(projects.get(projectKey(r.campusId, r.projectSlug)), myProgress),
+				// まとめた課題のどれかに取り組めれば、取り組める判定を返す
+				myProjectState: bestWantedState(entries.map(e => e.myState)),
 				myStatus,
+				myWantedProjectSlugs: myMember != null && (myMember.status === 'pending' || myMember.status === 'accepted') ? myMember.wantedProjectSlugs : null,
 			};
 		});
+	}
+
+	/**
+	 * 招待の候補を返す
+	 */
+	@bindThis
+	public async packInviteCandidates(candidates: PairInviteCandidate[], me: { id: MiUser['id'] }): Promise<Packed<'PairInviteCandidate'>[]> {
+		const users = await this.userEntityService.packMany(candidates.map(c => c.user), me);
+		const userMap = new Map(users.map(u => [u.id, u]));
+		return candidates.map(c => ({ user: userMap.get(c.user.id)!, projectSlugs: c.projectSlugs }));
 	}
 
 	@bindThis
@@ -171,20 +207,29 @@ export class PairRecruitmentEntityService {
 			: [[], []];
 		const userMap = new Map(users.map(u => [u.id, u]));
 		const progressMap = new Map(progresses.map(p => [p.userId, p]));
-		const project = projects.get(projectKey(recruitment.campusId, recruitment.projectSlug));
-
-		return {
-			...packed,
-			ownerIntraProjectUrl: getOwnerIntraProjectUrl(recruitment.projectSlug, ownerProfile?.intraLogin, ownerProgress?.projectStatuses),
-			members: visible.map(m => ({
+		const slugs = getRecruitmentSlugs(recruitment);
+		const packMember = (m: MiPairMember) => {
+			const wanted = m.wantedProjectSlugs.filter(slug => slugs.includes(slug));
+			return {
 				id: m.id,
 				createdAt: this.idService.parse(m.id).date.toISOString(),
 				updatedAt: m.updatedAt.toISOString(),
 				userId: m.userId,
 				user: userMap.get(m.userId)!,
 				status: m.status,
-				projectState: this.judgeState(project, progressMap.get(m.userId)),
-			})),
+				// やりたい課題のどれかに取り組めれば、取り組める判定を返す (招待中はまとめた課題すべてから)
+				projectState: bestWantedState((wanted.length > 0 ? wanted : slugs).map(slug => this.judgeState(projects.get(projectKey(recruitment.campusId, slug)), progressMap.get(m.userId)))),
+				wantedProjectSlugs: wanted,
+			};
+		};
+
+		return {
+			...packed,
+			// 複数の課題をまとめた募集では、どの課題のページか分からないので出さない
+			ownerIntraProjectUrl: slugs.length === 1 ? getOwnerIntraProjectUrl(recruitment.projectSlug, ownerProfile?.intraLogin, ownerProgress?.projectStatuses) : null,
+			ownerIntraLogin: ownerProfile?.intraLogin ?? null,
+			members: visible.filter(m => !INVITATION_STATUSES.includes(m.status)).map(packMember),
+			invitations: recruitment.userId === me.id ? visible.filter(m => INVITATION_STATUSES.includes(m.status)).map(packMember) : [],
 		};
 	}
 }
