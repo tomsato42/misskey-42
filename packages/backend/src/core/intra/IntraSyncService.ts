@@ -81,11 +81,13 @@ export class IntraSyncService {
 	/**
 	 * ユーザーのプロフィールとロールを intra の情報に合わせる。
 	 * intra と連携していないユーザーには何もしない
-	 * @param intraUser 取得済みの intra のユーザー情報 (ログイン直後など)。省略すると 42 API から取得する
+	 * @param intraUser 取得済みの intra のユーザー情報 (ログイン直後など)。省略すると 42 API から取得し、コアリションのロールが付いていれば所属を取り直さない
 	 */
 	@bindThis
 	public async syncUser(userId: MiUser['id'], intraUser?: IntraUser): Promise<void> {
 		const intra = this.getIntraConfig();
+		// ログインのとき (intraUser を渡されたとき) だけ、コアリションの所属を取り直す
+		const refreshCoalition = intraUser != null;
 
 		const profile = await this.userProfilesRepository.findOneBy({ userId });
 		if (profile == null || profile.intraId == null) return;
@@ -118,7 +120,7 @@ export class IntraSyncService {
 		const updatedProfile = await this.userProfilesRepository.findOneByOrFail({ userId });
 		await this.cacheService.userProfileCache.set(userId, updatedProfile);
 
-		await this.syncRoles(userId, intraUser.id, extracted);
+		await this.syncRoles(userId, intraUser.id, extracted, refreshCoalition);
 
 		try {
 			await this.intraProjectService.syncUserProgress(userId, intraUser, extracted.campus?.id ?? null);
@@ -141,25 +143,11 @@ export class IntraSyncService {
 
 	/**
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる
+	 * @param refreshCoalition コアリションのロールが既に付いていても所属を取り直すか。コアリションは変わらないので、ログインのときだけ取り直す
 	 */
 	@bindThis
-	private async syncRoles(userId: MiUser['id'], intraId: number, profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>): Promise<void> {
+	private async syncRoles(userId: MiUser['id'], intraId: number, profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, refreshCoalition: boolean): Promise<void> {
 		const intakeYearMonth = await this.intraCohortService.getIntakeYearMonth(profile.campus?.id ?? null, profile.cursusBeginAt);
-
-		let coalition: IntraCoalition | null = null;
-		let coalitionKnown = true;
-		try {
-			coalition = await this.intraCoalitionService.getUserCoalition(intraId, profile.campus?.id ?? null);
-		} catch (err) {
-			// 所属が分からないときは、コアリションのロールを付けも外しもしない
-			coalitionKnown = false;
-			this.logger.warn(`Failed to get the coalition of intra user ${intraId} (user ${userId}): ${err instanceof Error ? err.message : String(err)}`);
-		}
-
-		const desiredRoleIds: MiRole['id'][] = [];
-		for (const target of getIntraRoleTargets(profile, intakeYearMonth, coalition)) {
-			desiredRoleIds.push(await this.ensureRole(target));
-		}
 
 		const now = Date.now();
 		// RoleService のキャッシュはプロセス間で遅れて更新されるため、DB から直接読む
@@ -170,6 +158,26 @@ export class IntraSyncService {
 		const assignedRoleIds = assigns
 			.filter(a => a.expiresAt == null || a.expiresAt.getTime() > now)
 			.map(a => a.roleId);
+		const coalitionRoleIds = new Set(managed.filter(r => r.kind === 'coalition').map(r => r.roleId));
+		const hasCoalitionRole = assignedRoleIds.some(id => coalitionRoleIds.has(id));
+
+		let coalition: IntraCoalition | null = null;
+		// false のときは、コアリションのロールを付けも外しもしない
+		let coalitionKnown = refreshCoalition || !hasCoalitionRole;
+		if (coalitionKnown) {
+			try {
+				coalition = await this.intraCoalitionService.getUserCoalition(intraId, profile.campus?.id ?? null);
+			} catch (err) {
+				coalitionKnown = false;
+				this.logger.warn(`Failed to get the coalition of intra user ${intraId} (user ${userId}): ${err instanceof Error ? err.message : String(err)}`);
+			}
+		}
+
+		const desiredRoleIds: MiRole['id'][] = [];
+		for (const target of getIntraRoleTargets(profile, intakeYearMonth, coalition)) {
+			desiredRoleIds.push(await this.ensureRole(target));
+		}
+
 		const managedRoleIds = managed
 			.filter(r => coalitionKnown || r.kind !== 'coalition')
 			.map(r => r.roleId);
