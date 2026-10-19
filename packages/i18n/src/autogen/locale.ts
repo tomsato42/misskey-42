@@ -6938,10 +6938,6 @@ export interface Locale extends ILocale {
              */
             "step3Description": string;
             /**
-             * 課題を終えた人は「アドバイスする」から、募集した人にチャットで相談に乗れます
-             */
-            "advise": string;
-            /**
              * メニューの「ペア募集」から募集の一覧を開けます。
              */
             "whereToOpen": string;
@@ -13653,10 +13649,6 @@ export interface Locale extends ILocale {
          * 参加希望を取り下げますか？
          */
         "withdrawConfirm": string;
-        /**
-         * アドバイスする
-         */
-        "advise": string;
         /**
          * メッセージを送る
          */
