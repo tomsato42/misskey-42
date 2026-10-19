@@ -68,6 +68,7 @@ describe('IntraSyncService', () => {
 	/** intra のユーザー ID → コアリション。Error なら取得に失敗する */
 	let coalitions: Map<number, IntraCoalition | Error>;
 	let coalitionCalls: number[];
+	let notifications: { userId: string; type: string; data: Record<string, unknown> }[];
 	let service: IntraSyncService;
 
 	function nextId(prefix: string) {
@@ -121,6 +122,7 @@ describe('IntraSyncService', () => {
 		intakes = new Map();
 		coalitions = new Map();
 		coalitionCalls = [];
+		notifications = [];
 		progressSyncHook = null;
 
 		const config = {
@@ -236,6 +238,12 @@ describe('IntraSyncService', () => {
 			},
 		};
 
+		const fakeNotificationService = {
+			createNotification: (userId: string, type: string, data: Record<string, unknown>) => {
+				notifications.push({ userId, type, data });
+			},
+		};
+
 		service = new IntraSyncService(
 			config as Config,
 			fakeProfilesRepository as any,
@@ -249,6 +257,7 @@ describe('IntraSyncService', () => {
 			fakeIntraProjectService as any,
 			fakeIntraCohortService as any,
 			fakeIntraCoalitionService as any,
+			fakeNotificationService as any,
 		);
 	});
 
@@ -302,6 +311,25 @@ describe('IntraSyncService', () => {
 		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Manual', 'Piscine 23/07', 'Tokyo']);
 		// 既存のロールは作り直さない
 		expect(intraRoles.filter(r => r.kind === 'campus')).toHaveLength(1);
+		expect(notifications).toEqual([{ userId: 'u1', type: 'intraLevelUp', data: { level: 5 } }]);
+	});
+
+	test('レベルが変わらなければ、レベルが上がった通知は出さない', async () => {
+		addProfile('u1', { intraId: 1000 });
+		assign('u1', addManagedRole('level', '5', 'Lv.5'));
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(notifications).toEqual([]);
+	});
+
+	test('初めての同期でレベルのロールを付けたときは、レベルが上がった通知は出さない', async () => {
+		addProfile('u1', { intraId: 1000 });
+
+		await service.syncUser('u1', createIntraUser());
+
+		expect(roleNamesOf('u1')).toContain('Lv.5');
+		expect(notifications).toEqual([]);
 	});
 
 	test('入学時期のロールを付け替え、ほかの入学時期のロールは外す', async () => {

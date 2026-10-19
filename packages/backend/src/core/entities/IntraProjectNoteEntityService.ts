@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { IntraProjectNotesRepository, UserProfilesRepository } from '@/models/_.js';
+import type { IntraLevelNotesRepository, IntraProjectNotesRepository, UserProfilesRepository } from '@/models/_.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
@@ -18,13 +18,16 @@ import { UserEntityService } from './UserEntityService.js';
 type Me = { id: MiUser['id'] } | null | undefined;
 
 /**
- * 42 intra の課題の結果 (自分の結果と、ノートに付けた結果) を API の返り値の形にする
+ * 42 intra の課題の結果 (自分の結果と、ノートに付けた結果) とノートに付けたレベルを API の返り値の形にする
  */
 @Injectable()
 export class IntraProjectNoteEntityService {
 	constructor(
 		@Inject(DI.intraProjectNotesRepository)
 		private intraProjectNotesRepository: IntraProjectNotesRepository,
+
+		@Inject(DI.intraLevelNotesRepository)
+		private intraLevelNotesRepository: IntraLevelNotesRepository,
 
 		@Inject(DI.userProfilesRepository)
 		private userProfilesRepository: UserProfilesRepository,
@@ -77,6 +80,18 @@ export class IntraProjectNoteEntityService {
 			});
 		}
 		return result;
+	}
+
+	/**
+	 * ノートに付けたレベルをまとめて引く。レベルが付いていないノートは含まない
+	 */
+	@bindThis
+	public async packLevelsByNoteIds(noteIds: MiNote['id'][]): Promise<Map<MiNote['id'], { level: number }>> {
+		const ids = [...new Set(noteIds)];
+		if (ids.length === 0) return new Map();
+
+		const rows = await this.intraLevelNotesRepository.findBy({ noteId: In(ids) });
+		return new Map(rows.map(r => [r.noteId, { level: r.level }]));
 	}
 
 	/**

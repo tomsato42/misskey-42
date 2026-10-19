@@ -197,6 +197,7 @@ export class NoteEntityService implements OnModuleInit {
 		packedNote.cw = null;
 		packedNote.calendarEvent = undefined; // 42times: 見られないノートが何のイベントのものかも隠す
 		packedNote.intraProjectResult = undefined; // 42times: 見られないノートに付けた課題の結果も隠す
+		packedNote.intraLevel = undefined; // 42times: レベルも隠す
 		packedNote.isHidden = true;
 		// TODO: hiddenReason みたいなのを提供しても良さそう
 	}
@@ -367,6 +368,8 @@ export class NoteEntityService implements OnModuleInit {
 				calendarEvents?: Map<MiNote['id'], Packed<'CalendarEventLite'> | null>;
 				/** 42times: ノートの ID ごとの課題の結果 (付いていなければ null)。無い ID は 1 件ずつ引く */
 				intraProjectResults?: Map<MiNote['id'], Packed<'IntraProjectNote'> | null>;
+				/** 42times: ノートの ID ごとのレベル (付いていなければ null)。無い ID は 1 件ずつ引く */
+				intraLevels?: Map<MiNote['id'], { level: number } | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -445,6 +448,7 @@ export class NoteEntityService implements OnModuleInit {
 			url: note.url ?? undefined,
 			calendarEvent: this.packCalendarEvent(note.id, me, options?._hint_?.calendarEvents),
 			intraProjectResult: this.packIntraProjectResult(note.id, me, options?._hint_?.intraProjectResults),
+			intraLevel: this.packIntraLevel(note.id, options?._hint_?.intraLevels),
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,
@@ -572,6 +576,8 @@ export class NoteEntityService implements OnModuleInit {
 		// 42times: 課題の結果も同じノートの分をまとめて引く。付いていないノートは null にして、1 件ずつ引き直さないようにする
 		const packedIntraProjectResults = await this.intraProjectNoteEntityService.packManyByNoteIds(relatedNoteIds, me);
 		const intraProjectResults = new Map<MiNote['id'], Packed<'IntraProjectNote'> | null>(relatedNoteIds.map(id => [id, packedIntraProjectResults.get(id) ?? null]));
+		const packedIntraLevels = await this.intraProjectNoteEntityService.packLevelsByNoteIds(relatedNoteIds);
+		const intraLevels = new Map<MiNote['id'], { level: number } | null>(relatedNoteIds.map(id => [id, packedIntraLevels.get(id) ?? null]));
 
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
@@ -582,6 +588,7 @@ export class NoteEntityService implements OnModuleInit {
 				packedUsers,
 				calendarEvents,
 				intraProjectResults,
+				intraLevels,
 			},
 		})));
 	}
@@ -613,6 +620,20 @@ export class NoteEntityService implements OnModuleInit {
 		const packed = hint?.has(noteId)
 			? hint.get(noteId)
 			: (await this.intraProjectNoteEntityService.packManyByNoteIds([noteId], me)).get(noteId);
+		return packed ?? undefined;
+	}
+
+	/**
+	 * 42times: ノートに付けたレベル。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packIntraLevel(
+		noteId: MiNote['id'],
+		hint: Map<MiNote['id'], { level: number } | null> | undefined,
+	): Promise<{ level: number } | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.intraProjectNoteEntityService.packLevelsByNoteIds([noteId])).get(noteId);
 		return packed ?? undefined;
 	}
 

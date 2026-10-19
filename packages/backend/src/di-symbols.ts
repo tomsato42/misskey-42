@@ -102,6 +102,7 @@ export const DI = {
 	intraUserProgressesRepository: Symbol('intraUserProgressesRepository'),
 	intraProjectResultsRepository: Symbol('intraProjectResultsRepository'),
 	intraProjectNotesRepository: Symbol('intraProjectNotesRepository'),
+	intraLevelNotesRepository: Symbol('intraLevelNotesRepository'),
 	pairRecruitmentsRepository: Symbol('pairRecruitmentsRepository'),
 	pairMembersRepository: Symbol('pairMembersRepository'),
 	//#endregion

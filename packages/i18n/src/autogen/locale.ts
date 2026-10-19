@@ -11228,6 +11228,14 @@ export interface Locale extends ILocale {
          * 課題を取得できませんでした
          */
         "intraProjectsRefreshFailed": string;
+        /**
+         * レベルが上がりました
+         */
+        "intraLevelUp": string;
+        /**
+         * Lv.{level} になりました！
+         */
+        "intraLevelUpShareText": ParameterizedString<"level">;
         "_types": {
             /**
              * すべて
@@ -11353,6 +11361,10 @@ export interface Locale extends ILocale {
              * 課題の再取得
              */
             "intraProjectsRefreshed": string;
+            /**
+             * レベルアップ
+             */
+            "intraLevelUp": string;
         };
         "_actions": {
             /**
@@ -15330,6 +15342,26 @@ export interface Locale extends ILocale {
             "invalidUserList": string;
         };
     };
+    "_intraLevel": {
+        /**
+         * 42 intra のレベル
+         */
+        "caption": string;
+        /**
+         * 42 intra のレベル {level}
+         */
+        "label": ParameterizedString<"level">;
+        /**
+         * レベルを外す
+         */
+        "remove": string;
+        "_errors": {
+            /**
+             * このレベルにはまだ届いていません。
+             */
+            "notReached": string;
+        };
+    };
     "_intraProjectResult": {
         /**
          * 点数を共有
@@ -15372,7 +15404,7 @@ export interface Locale extends ILocale {
          */
         "refreshing": string;
         /**
-         * 課題の点数は下書きと予約投稿には保存されません。
+         * 課題の点数とレベルは下書きと予約投稿には保存されません。
          */
         "notSavedInDraft": string;
         /**

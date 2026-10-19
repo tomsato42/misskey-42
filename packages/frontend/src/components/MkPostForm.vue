@@ -92,6 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
 	<MkIntraProjectResult v-if="intraProjectResult != null" :class="$style.intraProjectResult" :result="intraProjectResult" removable @remove="intraProjectResult = null"/>
+	<MkIntraLevel v-if="intraLevel != null" :class="$style.intraProjectResult" :level="intraLevel" removable @remove="intraLevel = null"/>
 	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
@@ -172,6 +173,7 @@ import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
 import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
 import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
+import MkIntraLevel from '@/components/MkIntraLevel.vue';
 import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
 import {
 	calendarEventFormToParams,
@@ -269,6 +271,8 @@ const hasCalendarEventState = computed(() => calendarEventForm.value != null || 
 
 // 42times: 付ける課題の結果 (点数を共有)。下書きと予約投稿には保存しない
 const intraProjectResult = shallowRef<Misskey.entities.IntraProjectResult | null>(props.initialIntraProjectResult ?? null);
+// 42times: 付ける 42 intra のレベル。課題の結果と同じく、下書きと予約投稿には保存しない
+const intraLevel = ref<number | null>(props.initialIntraLevel ?? null);
 
 let textAutocomplete: Autocomplete | null = null;
 let cwAutocomplete: Autocomplete | null = null;
@@ -363,6 +367,7 @@ const canPost = computed((): boolean => {
 			1 <= uploader.items.value.length ||
 			poll.value != null ||
 			intraProjectResult.value != null ||
+			intraLevel.value != null ||
 			renoteTargetNote.value != null ||
 			quoteId.value != null
 		) &&
@@ -718,8 +723,8 @@ function showOtherSettings() {
 				});
 				if (canceled) return;
 			}
-			// 42times: 下書きには課題の結果を保存しない
-			if (intraProjectResult.value != null) {
+			// 42times: 下書きには課題の結果とレベルを保存しない
+			if (intraProjectResult.value != null || intraLevel.value != null) {
 				const { canceled } = await os.confirm({
 					type: 'warning',
 					text: i18n.ts._intraProjectResult.notSavedInDraft,
@@ -787,6 +792,7 @@ function clear() {
 	scheduledAt.value = null;
 	clearCalendarEvent();
 	intraProjectResult.value = null;
+	intraLevel.value = null;
 	uploader.reset();
 }
 
@@ -862,6 +868,10 @@ function handleIntraProjectResultPostError(err: unknown): boolean {
 			return true;
 		case 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE':
 			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.cannotAttachToPureRenote });
+			return true;
+		case 'INTRA_LEVEL_NOT_REACHED':
+			os.alert({ type: 'error', text: i18n.ts._intraLevel._errors.notReached });
+			intraLevel.value = null;
 			return true;
 		default:
 			return false;
@@ -1185,6 +1195,7 @@ async function post(ev?: PointerEvent) {
 	let postData = {
 		...calendarParams,
 		...(intraProjectResult.value != null ? { intraProjectResultId: intraProjectResult.value.id } : {}),
+		...(intraLevel.value != null ? { intraLevel: intraLevel.value } : {}),
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
 		replyId: replyTargetNote.value ? replyTargetNote.value.id : undefined,
@@ -1538,14 +1549,15 @@ async function schedule() {
 	if (canceled) return;
 	if (result.getTime() <= Date.now()) return;
 
-	// 42times: 予約投稿には課題の結果を付けられないので、外してよいか確かめる
-	if (intraProjectResult.value != null) {
+	// 42times: 予約投稿には課題の結果とレベルを付けられないので、外してよいか確かめる
+	if (intraProjectResult.value != null || intraLevel.value != null) {
 		const confirm = await os.confirm({
 			type: 'warning',
 			text: i18n.ts._intraProjectResult.notSavedInDraft,
 		});
 		if (confirm.canceled) return;
 		intraProjectResult.value = null;
+		intraLevel.value = null;
 	}
 
 	scheduledAt.value = result.getTime();

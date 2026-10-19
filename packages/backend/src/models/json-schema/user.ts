@@ -665,6 +665,7 @@ export const packedMeDetailedOnlySchema = {
 				pairApplicationCancelled: { optional: true, ...notificationRecieveConfig },
 				intraProjectFinished: { optional: true, ...notificationRecieveConfig },
 				intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
+				intraLevelUp: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

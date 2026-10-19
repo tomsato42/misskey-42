@@ -225,6 +225,7 @@ export const paramDef = {
 				pairApplicationCancelled: notificationRecieveConfig,
 				intraProjectFinished: notificationRecieveConfig,
 				intraProjectsRefreshed: notificationRecieveConfig,
+				intraLevelUp: notificationRecieveConfig,
 			},
 		},
 		emailNotificationTypes: { type: 'array', items: {

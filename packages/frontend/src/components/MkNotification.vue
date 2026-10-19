@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="[$style.root, { [$style.contentVisibilityAuto]: contentVisibilityAuto }]">
 	<div :class="$style.head">
 		<MkAvatar v-if="['pollEnded', 'note'].includes(notification.type) && 'note' in notification" :class="$style.icon" :user="notification.note.user" link preview/>
-		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectsRefreshed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
+		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectsRefreshed', 'intraLevelUp'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
@@ -38,6 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
 				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited',
 				[$style.t_intraProjectsRefreshed]: notification.type === 'intraProjectsRefreshed',
+				[$style.t_intraLevelUp]: notification.type === 'intraLevelUp',
 				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled',
 			}]"
 		>
@@ -67,6 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'pairApplicationCancelled'" class="ti ti-arrow-back-up"></i>
 			<i v-else-if="notification.type === 'intraProjectsRefreshed' && notification.failed" class="ti ti-alert-triangle"></i>
 			<i v-else-if="notification.type === 'intraProjectsRefreshed'" class="ti ti-refresh"></i>
+			<i v-else-if="notification.type === 'intraLevelUp'" class="ti ti-trending-up"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -97,6 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
 			<span v-else-if="notification.type === 'intraProjectFinished'">{{ i18n.ts._notification.intraProjectFinished }}</span>
 			<span v-else-if="notification.type === 'intraProjectsRefreshed'">{{ i18n.ts._intraProjectResult.share }}</span>
+			<span v-else-if="notification.type === 'intraLevelUp'">{{ i18n.ts._notification.intraLevelUp }}</span>
 			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
@@ -199,6 +202,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="shareIntraProjectResult(notification.intraProjectResult.id)">{{ i18n.ts._intraProjectResult.post }}</MkButton>
 				</div>
 			</template>
+			<template v-else-if="notification.type === 'intraLevelUp'">
+				<b :class="[$style.text, $style.intraProjectName]">Lv.{{ notification.level }}</b>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="shareIntraLevelUp(notification.level)">{{ i18n.ts._intraProjectResult.post }}</MkButton>
+				</div>
+			</template>
 			<MkA v-else-if="notification.type === 'intraProjectsRefreshed'" :class="$style.text" to="/projects">
 				{{ notification.failed ? i18n.ts._notification.intraProjectsRefreshFailed : i18n.ts._notification.intraProjectsRefreshed }}
 			</MkA>
@@ -257,7 +266,7 @@ import * as Misskey from 'misskey-js';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkIntraProjectResultTile from '@/components/MkIntraProjectResultTile.vue';
-import { shareIntraProjectResult } from '@/utility/intra-project-result.js';
+import { shareIntraLevelUp, shareIntraProjectResult } from '@/utility/intra-project-result.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
@@ -483,7 +492,8 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
-.t_achievementEarned {
+.t_achievementEarned,
+.t_intraLevelUp {
 	background: var(--eventAchievement);
 	pointer-events: none;
 }

@@ -10,6 +10,7 @@ import {
 	getCohortRoleTarget,
 	getIntraRoleIconUrl,
 	getIntraRoleTargets,
+	getLeveledUpLevel,
 	getPoolRoleTarget,
 	poolToCohortYearMonth,
 	toCohortYearMonth,
@@ -256,5 +257,27 @@ describe('getIntraRoleIconUrl', () => {
 	test('ひな形が無ければ null', () => {
 		expect(getIntraRoleIconUrl({ kind: 'level', key: '10' }, { levelBadgeUrl: null, coalitionIconUrl: null })).toBeNull();
 		expect(getIntraRoleIconUrl({ kind: 'coalition', key: '308' }, { ...templates, coalitionIconUrl: null })).toBeNull();
+	});
+});
+
+describe('getLeveledUpLevel', () => {
+	test('付いていたレベルより上がっていれば、上がった後のレベルを返す', () => {
+		expect(getLeveledUpLevel(['4'], 5)).toBe(5);
+		expect(getLeveledUpLevel(['3'], 6)).toBe(6);
+	});
+
+	test('同じか下がっていれば null', () => {
+		expect(getLeveledUpLevel(['5'], 5)).toBeNull();
+		expect(getLeveledUpLevel(['6'], 5)).toBeNull();
+	});
+
+	test('レベルのロールが付いていなかったり、今のレベルが無ければ null', () => {
+		expect(getLeveledUpLevel([], 5)).toBeNull();
+		expect(getLeveledUpLevel(['4'], null)).toBeNull();
+	});
+
+	test('レベルのロールが複数付いていたら、いちばん高いものと比べる', () => {
+		expect(getLeveledUpLevel(['4', '6'], 5)).toBeNull();
+		expect(getLeveledUpLevel(['4', '6'], 7)).toBe(7);
 	});
 });

@@ -279,5 +279,17 @@ export const packedNoteSchema = {
 			optional: true, nullable: false,
 			ref: 'IntraProjectNote',
 		},
+
+		// 42times: ノートに付けた 42 intra のレベル (投稿した時点の値)。付いていなければ無い
+		intraLevel: {
+			type: 'object',
+			optional: true, nullable: false,
+			properties: {
+				level: {
+					type: 'integer',
+					optional: false, nullable: false,
+				},
+			},
+		},
 	},
 } as const;

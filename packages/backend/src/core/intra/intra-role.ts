@@ -121,6 +121,19 @@ export function getLevelRoleTarget(level: number): IntraRoleTarget {
 }
 
 /**
+ * レベルが上がったかを判定し、上がっていれば上がった後のレベルを返す。
+ * レベルのロールが付いていなかった (初めての同期や、42cursus に在籍していなかった) ときは上がったことにしない
+ * @param previousLevelKeys 同期の前に付いていたレベルのロールの key
+ * @param level intra の今のレベル (整数部分)。無ければ null
+ */
+export function getLeveledUpLevel(previousLevelKeys: string[], level: number | null): number | null {
+	if (level == null) return null;
+	const previousLevels = previousLevelKeys.map(key => Number(key)).filter(n => Number.isInteger(n));
+	if (previousLevels.length === 0) return null;
+	return level > Math.max(...previousLevels) ? level : null;
+}
+
+/**
  * intra の情報から、ユーザーに付けるべきロールの条件を返す。
  * レベル・キャンパス・ピシンの年月・42cursus の開始日時のうち無いものは、その種類のロールを含めない
  * @param intakeYearMonth 本人が 42cursus を始めた月に最も近い入学の月 (YYMM)。無ければ null
