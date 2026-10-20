@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
@@ -161,6 +161,11 @@ export function useNote(
 	const urls = computed(() => parsed.value ? extractUrlFromMfm(parsed.value).filter((url) => appearNote.renote?.url !== url && appearNote.renote?.uri !== url) : null);
 	const isLong = computed(() => shouldCollapsed({ ...appearNote, text: $appearNote.text, cw: $appearNote.cw }, urls.value ?? []));
 	const collapsed = ref(appearNote.cw == null && isLong.value);
+	// 編集で長さや CW が変わったら、折りたたみを付け直し、前の本文の翻訳を消す
+	watch(() => [$appearNote.text, $appearNote.cw], () => {
+		collapsed.value = $appearNote.cw == null && isLong.value;
+		translation.value = null;
+	});
 	const canRenote = ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id);
 	const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null)));

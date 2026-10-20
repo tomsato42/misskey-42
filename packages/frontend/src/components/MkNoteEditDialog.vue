@@ -59,6 +59,8 @@ const cw = ref(props.note.cw ?? '');
 const saving = ref(false);
 
 const maxTextLength = instance.maxNoteTextLength;
+/** notes/update の CW の上限 */
+const MAX_CW_LENGTH = 100;
 const textLength = computed(() => text.value.length);
 
 // 空欄は「無し」として送る (CW を消すときは欄を空にする)
@@ -68,6 +70,7 @@ const newCw = computed(() => cw.value.trim() === '' ? null : cw.value);
 const canSave = computed(() =>
 	!saving.value &&
 	textLength.value <= maxTextLength &&
+	(newCw.value == null || newCw.value.length <= MAX_CW_LENGTH) &&
 	(newText.value !== props.note.text || newCw.value !== (props.note.cw ?? null)),
 );
 

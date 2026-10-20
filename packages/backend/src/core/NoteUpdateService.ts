@@ -88,7 +88,12 @@ export class NoteUpdateService {
 			updatedAt,
 		});
 
-		this.searchService.indexNote(updated);
+		// 本文も CW も無くなったら索引から外す (indexNote はどちらも無いと何もしない)
+		if (updated.text == null && updated.cw == null) {
+			this.searchService.unindexNote(updated);
+		} else {
+			this.searchService.indexNote(updated);
+		}
 
 		return updated;
 	}
