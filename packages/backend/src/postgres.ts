@@ -49,6 +49,7 @@ import { MiIntraUserProgress } from '@/models/IntraUserProgress.js';
 import { MiIntraProjectResult } from '@/models/IntraProjectResult.js';
 import { MiIntraProjectNote } from '@/models/IntraProjectNote.js';
 import { MiIntraLevelNote } from '@/models/IntraLevelNote.js';
+import { MiNoteHistory } from '@/models/NoteHistory.js';
 import { MiPairRecruitment } from '@/models/PairRecruitment.js';
 import { MiPairMember } from '@/models/PairMember.js';
 import { MiMeta } from '@/models/Meta.js';
@@ -280,6 +281,7 @@ export const entities = [
 	MiIntraProjectResult,
 	MiIntraProjectNote,
 	MiIntraLevelNote,
+	MiNoteHistory,
 	MiPairRecruitment,
 	MiPairMember,
 	...charts,

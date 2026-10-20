@@ -181,6 +181,7 @@ export const hiddenNote = (note: misskey.entities.Note): misskey.entities.Note =
 	delete temp.calendarEvent;
 	delete temp.intraProjectResult;
 	delete temp.intraLevel;
+	delete temp.updatedAt;
 	return temp;
 };
 

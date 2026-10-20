@@ -353,6 +353,7 @@ export * as 'notes/favorites/create' from './endpoints/notes/favorites/create.js
 export * as 'notes/favorites/delete' from './endpoints/notes/favorites/delete.js';
 export * as 'notes/featured' from './endpoints/notes/featured.js';
 export * as 'notes/global-timeline' from './endpoints/notes/global-timeline.js';
+export * as 'notes/history' from './endpoints/notes/history.js';
 export * as 'notes/hybrid-timeline' from './endpoints/notes/hybrid-timeline.js';
 export * as 'notes/local-timeline' from './endpoints/notes/local-timeline.js';
 export * as 'notes/mentions' from './endpoints/notes/mentions.js';
@@ -373,6 +374,7 @@ export * as 'notes/thread-muting/delete' from './endpoints/notes/thread-muting/d
 export * as 'notes/timeline' from './endpoints/notes/timeline.js';
 export * as 'notes/translate' from './endpoints/notes/translate.js';
 export * as 'notes/unrenote' from './endpoints/notes/unrenote.js';
+export * as 'notes/update' from './endpoints/notes/update.js';
 export * as 'notes/user-list-timeline' from './endpoints/notes/user-list-timeline.js';
 export * as 'notifications/create' from './endpoints/notifications/create.js';
 export * as 'notifications/flush' from './endpoints/notifications/flush.js';

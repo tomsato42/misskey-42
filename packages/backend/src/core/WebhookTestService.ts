@@ -76,6 +76,7 @@ function generateDummyNote(override?: Partial<MiNote>): MiNote {
 		renote: null,
 		threadId: null,
 		text: 'This is a dummy note for testing purposes.',
+		updatedAt: null,
 		name: null,
 		cw: null,
 		userId: 'dummy-user-1',

@@ -195,6 +195,7 @@ export class NoteEntityService implements OnModuleInit {
 		packedNote.text = null;
 		packedNote.poll = undefined;
 		packedNote.cw = null;
+		packedNote.updatedAt = undefined; // 42times: 編集したかも隠す
 		packedNote.calendarEvent = undefined; // 42times: 見られないノートが何のイベントのものかも隠す
 		packedNote.intraProjectResult = undefined; // 42times: 見られないノートに付けた課題の結果も隠す
 		packedNote.intraLevel = undefined; // 42times: レベルも隠す
@@ -413,6 +414,7 @@ export class NoteEntityService implements OnModuleInit {
 		const packed: Packed<'Note'> = await awaitAll({
 			id: note.id,
 			createdAt: this.idService.parse(note.id).date.toISOString(),
+			updatedAt: note.updatedAt?.toISOString() ?? undefined,
 			userId: note.userId,
 			user: packedUsers?.get(note.userId) ?? this.userEntityService.pack(note.user ?? note.userId, me),
 			text: text,
