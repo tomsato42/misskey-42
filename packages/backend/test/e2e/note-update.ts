@@ -75,6 +75,31 @@ describe('Note update', () => {
 		assert.strictEqual(castAsError(res.body).error.code, 'EMPTY_NOTE');
 	});
 
+	test('編集する前の版が新しい順に履歴に残る', async () => {
+		const note = await post(alice, { text: 'v1' });
+		await api('notes/update', { noteId: note.id, text: 'v2', cw: null }, alice);
+		await api('notes/update', { noteId: note.id, text: 'v3', cw: 'cw' }, alice);
+
+		const res = await api('notes/history', { noteId: note.id }, bob);
+		assert.strictEqual(res.status, 200);
+		assert.deepStrictEqual(res.body.map(v => [v.text, v.cw]), [['v2', null], ['v1', null]]);
+		assert.strictEqual(res.body[1].createdAt, note.createdAt);
+		assert.strictEqual(res.body[0].createdAt, res.body[1].replacedAt);
+	});
+
+	test('見られないノートの履歴は見られない', async () => {
+		const note = await post(alice, { text: 'secret', visibility: 'specified', visibleUserIds: [] });
+		await api('notes/update', { noteId: note.id, text: 'secret 2', cw: null }, alice);
+
+		const own = await api('notes/history', { noteId: note.id }, alice);
+		assert.strictEqual(own.status, 200);
+		assert.strictEqual(own.body.length, 1);
+
+		const res = await api('notes/history', { noteId: note.id }, bob);
+		assert.strictEqual(res.status, 400);
+		assert.strictEqual(castAsError(res.body as any).error.code, 'NO_SUCH_NOTE');
+	});
+
 	test('存在しないノート', async () => {
 		const res = await api('notes/update', { noteId: 'aaaaaaaaaa', text: 'x', cw: null }, alice);
 		assert.strictEqual(res.status, 400);

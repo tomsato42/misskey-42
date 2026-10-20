@@ -3366,6 +3366,15 @@ export type paths = {
          */
         post: operations['notes___global-timeline'];
     };
+    '/notes/history': {
+        /**
+         * notes/history
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['notes___history'];
+    };
     '/notes/hybrid-timeline': {
         /**
          * notes/hybrid-timeline
@@ -33548,6 +33557,87 @@ export interface operations {
                 };
                 content: {
                     'application/json': components['schemas']['Note'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___history: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        id: string;
+                        text: string | null;
+                        cw: string | null;
+                        /**
+                         * Format: date-time
+                         * @description When this version was written (the note creation or the previous edit).
+                         */
+                        createdAt: string;
+                        /**
+                         * Format: date-time
+                         * @description When this version was replaced by the next edit.
+                         */
+                        replacedAt: string;
+                    }[];
                 };
             };
             /** @description Client error */

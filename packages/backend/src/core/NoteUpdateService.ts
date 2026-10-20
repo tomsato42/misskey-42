@@ -4,11 +4,12 @@
  */
 
 // 42times: ノートの本文・CW の編集。連合しないので ActivityPub の Update は送らない。
-// メンション・公開範囲・添付は作成時のままにし、編集で増えたメンションにも通知しない
+// メンション・公開範囲・添付は作成時のままにし、編集で増えたメンションにも通知しない。
+// 編集する前の本文と CW は note_history に残す
 
 import { Inject, Injectable } from '@nestjs/common';
 import * as mfm from 'mfm-js';
-import type { NotesRepository } from '@/models/_.js';
+import type { NoteHistoriesRepository, NotesRepository } from '@/models/_.js';
 import type { MiNote } from '@/models/Note.js';
 import type { MiUser } from '@/models/User.js';
 import { DI } from '@/di-symbols.js';
@@ -16,6 +17,7 @@ import { bindThis } from '@/decorators.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { HashtagService } from '@/core/HashtagService.js';
 import { SearchService } from '@/core/SearchService.js';
+import { IdService } from '@/core/IdService.js';
 import { extractHashtags } from '@/misc/extract-hashtags.js';
 import { normalizeForSearch } from '@/misc/normalize-for-search.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
@@ -47,6 +49,10 @@ export class NoteUpdateService {
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
+		@Inject(DI.noteHistoriesRepository)
+		private noteHistoriesRepository: NoteHistoriesRepository,
+
+		private idService: IdService,
 		private globalEventService: GlobalEventService,
 		private hashtagService: HashtagService,
 		private searchService: SearchService,
@@ -66,6 +72,14 @@ export class NoteUpdateService {
 			.splice(0, 32);
 		const tags = rawTags.map(tag => normalizeForSearch(tag));
 		const updatedAt = new Date();
+
+		// 編集する前の版を履歴に残す (id の日時が置き換えた日時になる)
+		await this.noteHistoriesRepository.insert({
+			id: this.idService.gen(updatedAt.getTime()),
+			noteId: note.id,
+			text: note.text,
+			cw: note.cw,
+		});
 
 		await this.notesRepository.update({ id: note.id }, {
 			text: edit.text,
