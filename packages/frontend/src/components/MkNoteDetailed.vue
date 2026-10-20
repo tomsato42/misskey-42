@@ -77,24 +77,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</header>
 			<div :class="$style.noteContent">
-				<p v-if="appearNote.cw != null" :class="$style.cw">
+				<p v-if="$appearNote.cw != null" :class="$style.cw">
 					<Mfm
-						v-if="appearNote.cw != ''"
-						:text="appearNote.cw"
+						v-if="$appearNote.cw != ''"
+						:text="$appearNote.cw"
 						:author="appearNote.user"
 						:nyaize="'respect'"
 						:enableEmojiMenu="true"
 						:enableEmojiMenuReaction="true"
 					/>
-					<MkCwButton v-model="showContent" :text="appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll"/>
+					<MkCwButton v-model="showContent" :text="$appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll"/>
 				</p>
-				<div v-show="appearNote.cw == null || showContent">
+				<div v-show="$appearNote.cw == null || showContent">
 					<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 					<MkA v-if="appearNote.replyId" :class="$style.noteReplyTarget" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
 					<Mfm
-						v-if="appearNote.text"
+						v-if="$appearNote.text"
 						:parsedNodes="parsed"
-						:text="appearNote.text"
+						:text="$appearNote.text"
 						:author="appearNote.user"
 						:nyaize="'respect'"
 						:emojiUrls="appearNote.emojis"
@@ -138,6 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkA :to="notePage(appearNote)">
 						<MkTime :time="appearNote.createdAt" mode="detail" colored/>
 					</MkA>
+					<span v-if="$appearNote.updatedAt != null" style="margin-left: 0.5em;"><i class="ti ti-pencil"></i> {{ i18n.ts.edited }}</span>
 					<span style="margin-left: 0.5em;">
 						<span style="border: 1px solid var(--MI_THEME-divider); margin-right: 0.5em;"></span>
 						<i v-if="appearNote.visibility === 'public'" class="ti ti-world"></i>
@@ -394,7 +395,7 @@ const keymap = {
 		galleryEl.value?.openGallery();
 	},
 	'v|enter': () => {
-		if (appearNote.cw != null) {
+		if ($appearNote.cw != null) {
 			showContent.value = !showContent.value;
 		}
 	},

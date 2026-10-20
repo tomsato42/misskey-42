@@ -111,7 +111,8 @@ export interface NoteEventTypes {
 	};
 	updated: {
 		cw: string | null;
-		text: string;
+		text: string | null;
+		updatedAt: Date;
 	};
 	reacted: {
 		reaction: string;

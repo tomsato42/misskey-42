@@ -25,6 +25,7 @@ import { genEmbedCode } from '@/utility/get-embed-code.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { globalEvents } from '@/events.js';
+import { openNoteEditDialog } from '@/utility/note-edit.js';
 
 const isInBrowserTranslationAvailable = (
 	'LanguageDetector' in window &&
@@ -516,6 +517,12 @@ export function getNoteMenu(props: {
 		if (appearNote.userId === $i.id || $i.isModerator || $i.isAdmin) {
 			menuItems.push({ type: 'divider' });
 			if (appearNote.userId === $i.id) {
+				// 42times: 本文と CW はそのまま編集できる
+				menuItems.push({
+					icon: 'ti ti-pencil',
+					text: i18n.ts.edit,
+					action: () => openNoteEditDialog(appearNote),
+				});
 				menuItems.push({
 					icon: 'ti ti-edit',
 					text: i18n.ts.deleteAndEdit,
