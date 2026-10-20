@@ -138,7 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkA :to="notePage(appearNote)">
 						<MkTime :time="appearNote.createdAt" mode="detail" colored/>
 					</MkA>
-					<button v-if="$appearNote.updatedAt != null" class="_textButton" style="margin-left: 0.5em;" @click="openNoteHistoryDialog(appearNote)"><i class="ti ti-pencil"></i> {{ i18n.ts.edited }}</button>
+					<span v-if="$appearNote.updatedAt != null" style="margin-left: 0.5em;"><i class="ti ti-pencil"></i> {{ i18n.ts.edited }}</span>
 					<span style="margin-left: 0.5em;">
 						<span style="border: 1px solid var(--MI_THEME-divider); margin-right: 0.5em;"></span>
 						<i v-if="appearNote.visibility === 'public'" class="ti ti-world"></i>
@@ -148,6 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span style="margin-left: 0.3em;">{{ i18n.ts._visibility[appearNote.visibility] }}</span>
 					</span>
 				</div>
+				<MkNoteEditHistory v-if="$appearNote.updatedAt != null" :note="appearNote" :updatedAt="$appearNote.updatedAt"/>
 				<MkReactionsViewer
 					v-if="appearNote.reactionAcceptance !== 'likeOnly'"
 					style="margin-top: 6px;"
@@ -273,7 +274,7 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
-import { openNoteHistoryDialog } from '@/utility/note-edit.js';
+import MkNoteEditHistory from '@/components/MkNoteEditHistory.vue';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;

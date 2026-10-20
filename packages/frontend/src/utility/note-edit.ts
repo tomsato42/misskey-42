@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// 42times: ノートの編集・編集履歴のダイアログを開く。保存できたら表示中のノートにも反映する
+// 42times: ノートの編集ダイアログを開く。保存できたら表示中のノートにも反映する
 
 import { defineAsyncComponent } from 'vue';
 import type * as Misskey from 'misskey-js';
@@ -22,14 +22,6 @@ export function openNoteEditDialog(note: Misskey.entities.Note): void {
 				updatedAt: updated.updatedAt,
 			});
 		},
-		closed: () => dispose(),
-	});
-}
-
-export function openNoteHistoryDialog(note: Misskey.entities.Note): void {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkNoteHistoryDialog.vue')), {
-		note,
-	}, {
 		closed: () => dispose(),
 	});
 }

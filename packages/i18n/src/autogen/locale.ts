@@ -4933,10 +4933,6 @@ export interface Locale extends ILocale {
      */
     "noteEditHistory": string;
     /**
-     * 現在
-     */
-    "noteEditHistoryCurrent": string;
-    /**
      * 最初
      */
     "noteEditHistoryOriginal": string;
