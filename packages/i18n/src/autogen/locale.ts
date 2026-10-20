@@ -4929,6 +4929,18 @@ export interface Locale extends ILocale {
      */
     "noteEditEmpty": string;
     /**
+     * 編集履歴
+     */
+    "noteEditHistory": string;
+    /**
+     * 現在
+     */
+    "noteEditHistoryCurrent": string;
+    /**
+     * 最初
+     */
+    "noteEditHistoryOriginal": string;
+    /**
      * 通知の受信設定
      */
     "notificationRecieveConfig": string;

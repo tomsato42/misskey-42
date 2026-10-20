@@ -25,7 +25,7 @@ import { genEmbedCode } from '@/utility/get-embed-code.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { globalEvents } from '@/events.js';
-import { openNoteEditDialog } from '@/utility/note-edit.js';
+import { openNoteEditDialog, openNoteHistoryDialog } from '@/utility/note-edit.js';
 
 const isInBrowserTranslationAvailable = (
 	'LanguageDetector' in window &&
@@ -380,6 +380,15 @@ export function getNoteMenu(props: {
 			action: copyContent,
 		}, getCopyNoteLinkMenu(appearNote, i18n.ts.copyLink));
 
+		// 42times: 編集したノートは編集履歴を見られる
+		if (appearNote.updatedAt != null) {
+			menuItems.push({
+				icon: 'ti ti-history',
+				text: i18n.ts.noteEditHistory,
+				action: () => openNoteHistoryDialog(appearNote),
+			});
+		}
+
 		if (link) {
 			menuItems.push({
 				icon: 'ti ti-link',
@@ -562,6 +571,15 @@ export function getNoteMenu(props: {
 			text: i18n.ts.copyContent,
 			action: copyContent,
 		}, getCopyNoteLinkMenu(appearNote, i18n.ts.copyLink));
+
+		// 42times: 編集したノートは編集履歴を見られる
+		if (appearNote.updatedAt != null) {
+			menuItems.push({
+				icon: 'ti ti-history',
+				text: i18n.ts.noteEditHistory,
+				action: () => openNoteHistoryDialog(appearNote),
+			});
+		}
 
 		if (link != null) {
 			menuItems.push({
