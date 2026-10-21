@@ -1,21 +1,6 @@
 {
-	"category": "ミーム",
-	"license": "42times で作成 (CC0)。文字は IPAゴシック (IPAフォントライセンス v1.0) で描画。文言は日本郵便の注意喚起「「レターパックで現金送れ」はすべて詐欺です」による",
 	"emojis": [
-		{
-			"name": "letterpack_sagi",
-			"file": "letterpack_sagi.png",
-			"aliases": ["レターパックで現金送れは全て詐欺です", "レターパック", "レタはす", "詐欺", "letterpack"]
-		},
-		{
-			"name": "letterpack_genkin_okure",
-			"file": "letterpack_genkin_okure.png",
-			"aliases": ["レターパックで現金送れ", "レターパック", "send_money", "letterpack"]
-		},
-		{
-			"name": "subete_sagi_desu",
-			"file": "subete_sagi_desu.png",
-			"aliases": ["は全て詐欺です", "全て詐欺です", "詐欺"]
-		}
+		{ "copyFrom": "misskey.io", "remoteName": "send_money" },
+		{ "copyFrom": "misskey.io", "remoteQuery": "全て詐欺" }
 	]
 }

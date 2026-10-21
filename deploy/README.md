@@ -381,7 +381,7 @@ intra:
 
 `deploy/emojis/add-emojis.sh` は、ディレクトリに置いた `emojis.json` と画像から、カスタム絵文字をまとめて登録します。web のコンテナにディレクトリをコピーし、コンテナの中の node で管理 API (`drive/files/create` → `admin/emoji/add`) を呼びます (VPS に node は入れません)。画像は登録したアカウントのドライブの `custom-emojis` フォルダに入ります。絵文字はこのファイルを参照するので、フォルダの中身は消さないでください。
 
-`emojis.json` は次の形です。`category`・`license`・`isSensitive`・`localOnly` は全体の既定値を上に書け、絵文字ごとに上書きできます。画像は `file` (同じディレクトリのファイル) か `url` (コンテナから取得) で指定します。例は `deploy/emojis/letterpack/` です。
+`emojis.json` は次の形です。`category`・`license`・`isSensitive`・`localOnly` は全体の既定値を上に書け、絵文字ごとに上書きできます。画像は `file` (同じディレクトリのファイル) か `url` (コンテナから取得) で指定します。ほかの Misskey サーバーの絵文字は `copyFrom` (サーバーのホスト名) と `remoteName` (絵文字名) か `remoteQuery` (名前かエイリアスに含まれる文字列) で選ぶと、画像・エイリアス・カテゴリ・ライセンスごと写します。`name` を省くと元の名前になり、ライセンスには「出典: <サーバー> :<名前>:」が付きます。`remoteQuery` が 1 つに絞れないときは候補を出して失敗するので、`remoteName` に書き換えます。例は `deploy/emojis/letterpack/` (misskey.io の「レターパックで現金送れ」「は全て詐欺です」を写す) と `deploy/emojis/letterpack-jisaku/` (同じ文言を IPAゴシックで描いた自作の画像) です。
 
 ```json
 {
@@ -389,7 +389,8 @@ intra:
   "license": "出どころと利用条件",
   "emojis": [
     { "name": "foo", "file": "foo.png", "aliases": ["ふー"] },
-    { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" }
+    { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" },
+    { "copyFrom": "misskey.io", "remoteName": "send_money" }
   ]
 }
 ```
@@ -400,7 +401,7 @@ intra:
    # ローカルの PC (リポジトリのルート) で
    ssh misskey-vps 'install -d -m 700 /home/misskey/42times/emojis'
    scp deploy/emojis/add-emojis.sh deploy/emojis/add-emojis.mjs misskey-vps:/home/misskey/42times/emojis/
-   scp -r deploy/emojis/letterpack misskey-vps:/home/misskey/42times/emojis/
+   scp -r deploy/emojis/letterpack deploy/emojis/letterpack-jisaku misskey-vps:/home/misskey/42times/emojis/
    ssh misskey-vps 'chmod 700 /home/misskey/42times/emojis/add-emojis.sh'
    ```
 
@@ -413,7 +414,7 @@ intra:
    ~/42times/emojis/add-emojis.sh ~/42times/emojis/letterpack
    ```
 
-   `add :letterpack_sagi:` のように出れば登録できています。ブラウザは絵文字の一覧を覚えているので、出てこないときは再読み込みします。
+   `add :send_money:` のように出れば登録できています。ブラウザは絵文字の一覧を覚えているので、出てこないときは再読み込みします。
 
 ## バックアップ
 

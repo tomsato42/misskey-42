@@ -10,7 +10,12 @@
 // emojis.json の形 (category・license・isSensitive・localOnly は全体の既定値を上に書け、絵文字ごとに上書きできる):
 //   { "category": "ミーム", "license": "...", "emojis": [
 //     { "name": "foo", "file": "foo.png", "aliases": ["ふー"] },
-//     { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" } ] }
+//     { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" },
+//     { "copyFrom": "misskey.io", "remoteName": "send_money" },
+//     { "copyFrom": "misskey.io", "remoteQuery": "全て詐欺" } ] }
+// copyFrom はほかの Misskey サーバーの絵文字を画像・エイリアス・カテゴリ・ライセンスごと写す。remoteName (絵文字名) か
+// remoteQuery (名前かエイリアスに含まれる文字列。1 つに絞れないときは候補を出して失敗する) で選ぶ。
+// name を省くと元の名前を使う。ライセンスには「出典: <サーバー> :<名前>:」を足す。
 
 import { readFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
@@ -63,6 +68,49 @@ async function loadImage(emoji) {
 	throw new Error(`${emoji.name}: file か url を書いてください`);
 }
 
+const remoteLists = new Map();
+async function remoteApi(host, endpoint, body) {
+	const res = await fetch(`https://${host}/api/${endpoint}`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+	});
+	if (!res.ok) throw new Error(`${host} ${endpoint}: ${res.status} ${await res.text()}`);
+	return await res.json();
+}
+
+// copyFrom の絵文字を探し、画像の URL と元の設定を entry に足す (entry に書いた値が優先)
+async function resolveRemote(entry) {
+	const host = entry.copyFrom;
+	if (!remoteLists.has(host)) remoteLists.set(host, (await remoteApi(host, 'emojis', {})).emojis);
+	const list = remoteLists.get(host);
+	let matches;
+	if (entry.remoteName != null) {
+		matches = list.filter(e => e.name === entry.remoteName);
+	} else if (entry.remoteQuery != null) {
+		const q = entry.remoteQuery;
+		matches = list.filter(e => e.name.includes(q) || (e.aliases ?? []).some(a => a.includes(q)));
+	} else {
+		throw new Error(`${host}: remoteName か remoteQuery を書いてください`);
+	}
+	const label = entry.remoteName ?? entry.remoteQuery;
+	if (matches.length !== 1) {
+		const candidates = matches.slice(0, 20).map(e => `:${e.name}: [${(e.aliases ?? []).join(', ')}]`).join('\n  ');
+		throw new Error(`${host} で「${label}」が ${matches.length} 件見つかりました${matches.length > 0 ? `\n  ${candidates}` : ''}`);
+	}
+	const remote = await remoteApi(host, 'emoji', { name: matches[0].name });
+	const source = `出典: ${host} :${remote.name}:`;
+	return {
+		name: remote.name,
+		url: remote.url,
+		aliases: (remote.aliases ?? []).filter(a => a !== ''),
+		category: remote.category ?? undefined,
+		license: remote.license ? `${remote.license} / ${source}` : source,
+		isSensitive: remote.isSensitive ?? undefined,
+		...Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined)),
+	};
+}
+
 let folderId;
 async function getFolderId() {
 	if (folderId !== undefined) return folderId;
@@ -89,15 +137,17 @@ const defaults = Array.isArray(manifest) ? {} : manifest;
 const existing = await existingNames();
 let failed = 0;
 for (const entry of list) {
-	const emoji = {
-		category: defaults.category ?? null,
-		license: defaults.license ?? null,
-		isSensitive: defaults.isSensitive ?? false,
-		localOnly: defaults.localOnly ?? false,
-		aliases: [],
-		...entry,
-	};
+	let emoji = entry;
 	try {
+		if (entry.copyFrom != null) emoji = await resolveRemote(entry);
+		emoji = {
+			category: defaults.category ?? null,
+			license: defaults.license ?? null,
+			isSensitive: defaults.isSensitive ?? false,
+			localOnly: defaults.localOnly ?? false,
+			aliases: [],
+			...Object.fromEntries(Object.entries(emoji).filter(([, v]) => v !== undefined)),
+		};
 		if (!/^[a-zA-Z0-9_]+$/.test(emoji.name ?? '')) throw new Error(`名前は英数字と _ だけにしてください: ${emoji.name}`);
 		const already = existing.has(emoji.name);
 		if (already && !update) {
@@ -106,7 +156,7 @@ for (const entry of list) {
 		}
 		if (dryRun) {
 			await loadImage(emoji);
-			console.log(`${already ? 'update' : 'add   '}  :${emoji.name}: (dry-run) category=${emoji.category} aliases=${emoji.aliases.join(',')}`);
+			console.log(`${already ? 'update' : 'add   '}  :${emoji.name}: (dry-run) category=${emoji.category} aliases=${emoji.aliases.join(',')} license=${emoji.license}`);
 			continue;
 		}
 		const fileId = await upload(emoji);
@@ -124,7 +174,7 @@ for (const entry of list) {
 		console.log(`${already ? 'update' : 'add   '}  :${emoji.name}:`);
 	} catch (e) {
 		failed++;
-		console.error(`failed  :${emoji.name}: ${e.message}`);
+		console.error(`failed  :${emoji.name ?? emoji.remoteName ?? emoji.remoteQuery}: ${e.message}`);
 	}
 }
 if (failed > 0) process.exit(1);
