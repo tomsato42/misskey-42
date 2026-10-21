@@ -35181,6 +35181,8 @@ export interface operations {
                     noteId: string;
                     text: string | null;
                     cw: string | null;
+                    /** @enum {string} */
+                    visibility?: 'public' | 'home' | 'followers';
                 };
             };
         };

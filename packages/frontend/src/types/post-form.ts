@@ -34,8 +34,8 @@ export interface PostFormProps {
 	/** 42times: 付ける 42 intra のレベルの初期値 (レベルが上がった通知の「投稿する」) */
 	initialIntraLevel?: number | null;
 	/**
-	 * 42times: 編集するノート。あるときは本文と CW だけを書き換えて notes/update で保存する
-	 * (ほかの props は渡さない。返信先・引用・チャンネル・公開範囲はこのノートのものを表示する)
+	 * 42times: 編集するノート。あるときは本文・CW・公開範囲 (公開・ホーム・フォロワーの間) だけを書き換えて notes/update で保存する
+	 * (ほかの props は渡さない。返信先・引用・チャンネルはこのノートのものを表示する)
 	 */
 	editNote?: Misskey.entities.Note | null;
 	instant?: boolean;

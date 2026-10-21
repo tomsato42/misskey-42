@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div :class="$style.headerRight">
 			<template v-if="!(targetChannel != null && fixed)">
-				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" :disabled="editNote != null" @click="setVisibility">
+				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" :disabled="editNote != null && editNote.visibility === 'specified'" @click="setVisibility">
 					<span v-if="visibility === 'public'"><i class="ti ti-world"></i></span>
 					<span v-if="visibility === 'home'"><i class="ti ti-home"></i></span>
 					<span v-if="visibility === 'followers'"><i class="ti ti-lock"></i></span>
@@ -376,15 +376,23 @@ const cwTextLength = computed((): number => {
 const maxCwTextLength = 100;
 
 //#region 42times: ノートの編集
-// 本文と CW だけを notes/update で書き換える。書きかけの本文と CW は、新規のノートと同じく端末の下書きに保存する
+// 本文・CW・公開範囲を notes/update で書き換える。書きかけの内容は、新規のノートと同じく端末の下書きに保存する。
+// 公開範囲は公開・ホーム・フォロワーの間だけ変えられる (ダイレクトのノートは変えられず、ほかのノートをダイレクトにもできない)
 /** 保存する本文。空欄は「無し」として送る */
 const editedText = computed(() => text.value.trim() === '' ? null : text.value);
 /** 保存する CW。オフのときは無し */
 const editedCw = computed(() => useCw.value ? cw.value : null);
 
-/** 本文か CW を元のノートから変えたか */
+/** 保存する公開範囲。元のノートから変えていなければ送らない (送ると作成時の制限を掛け直すので) */
+const editedVisibility = computed((): 'public' | 'home' | 'followers' | undefined => {
+	const v = visibility.value;
+	if (props.editNote == null || v === props.editNote.visibility || v === 'specified') return undefined;
+	return v;
+});
+
+/** 本文・CW・公開範囲を元のノートから変えたか */
 const isEditChanged = computed((): boolean => props.editNote != null &&
-	(editedText.value !== props.editNote.text || editedCw.value !== (props.editNote.cw ?? null)));
+	(editedText.value !== props.editNote.text || editedCw.value !== (props.editNote.cw ?? null) || editedVisibility.value != null));
 
 const canSaveEdit = computed((): boolean => {
 	if (props.editNote == null) return false;
@@ -399,11 +407,12 @@ const canSaveEdit = computed((): boolean => {
 		);
 });
 
-/** 本文と CW を元のノートのものに戻す (下書きも消える) */
+/** 本文・CW・公開範囲を元のノートのものに戻す (下書きも消える) */
 function resetEdit(note: Misskey.entities.Note) {
 	text.value = note.text ?? '';
 	useCw.value = note.cw != null;
 	cw.value = note.cw ?? null;
+	visibility.value = note.visibility;
 }
 
 /** プレビューに出す元のノートの投票 (投票は編集できない) */
@@ -544,7 +553,7 @@ if (prefer.s.keepCw && replyTargetNote.value && replyTargetNote.value.cw) {
 	cw.value = replyTargetNote.value.cw;
 }
 
-// 42times: 編集するノートの本文と CW を入れる。公開範囲は元のノートのものを出す (変えられない)
+// 42times: 編集するノートの本文・CW・公開範囲を入れる
 if (props.editNote != null) {
 	text.value = props.editNote.text ?? '';
 	useCw.value = props.editNote.cw != null;
@@ -662,10 +671,13 @@ function setVisibility() {
 		isSilenced: $i.isSilenced,
 		anchorElement: visibilityButton.value,
 		...(replyTargetNote.value ? { isReplyVisibilitySpecified: replyTargetNote.value.visibility === 'specified' } : {}),
+		// 42times: 編集ではダイレクトにできない
+		hideSpecified: props.editNote != null,
 	}, {
 		changeVisibility: v => {
 			visibility.value = v;
-			if (prefer.s.rememberNoteVisibility) {
+			// 42times: 編集で選んだ公開範囲は、次に投稿するときの公開範囲として覚えない
+			if (prefer.s.rememberNoteVisibility && props.editNote == null) {
 				store.set('visibility', visibility.value);
 			}
 		},
@@ -1468,6 +1480,7 @@ async function saveEdit(note: Misskey.entities.Note) {
 			noteId: note.id,
 			text: editedText.value,
 			cw: editedCw.value,
+			...(editedVisibility.value != null ? { visibility: editedVisibility.value } : {}),
 		});
 		emitNoteUpdated(updated);
 		deleteDraft();
@@ -1826,6 +1839,9 @@ onMounted(() => {
 					text.value = draft.data.text;
 					useCw.value = draft.data.useCw;
 					cw.value = draft.data.cw;
+					if (props.editNote.visibility !== 'specified' && ['public', 'home', 'followers'].includes(draft.data.visibility)) {
+						visibility.value = draft.data.visibility;
+					}
 				} else {
 					deleteDraft();
 				}

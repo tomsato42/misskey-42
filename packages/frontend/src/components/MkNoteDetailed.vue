@@ -57,10 +57,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkA>
 						<span v-if="appearNote.user.isBot" :class="$style.isBot">bot</span>
 						<div :class="$style.noteHeaderInfo">
-							<span v-if="appearNote.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[appearNote.visibility]">
-								<i v-if="appearNote.visibility === 'home'" class="ti ti-home"></i>
-								<i v-else-if="appearNote.visibility === 'followers'" class="ti ti-lock"></i>
-								<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
+							<span v-if="$appearNote.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[$appearNote.visibility]">
+								<i v-if="$appearNote.visibility === 'home'" class="ti ti-home"></i>
+								<i v-else-if="$appearNote.visibility === 'followers'" class="ti ti-lock"></i>
+								<i v-else-if="$appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 							</span>
 							<span v-if="appearNote.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 						</div>
@@ -141,11 +141,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="$appearNote.updatedAt != null" style="margin-left: 0.5em;"><i class="ti ti-pencil"></i> {{ i18n.ts.edited }}</span>
 					<span style="margin-left: 0.5em;">
 						<span style="border: 1px solid var(--MI_THEME-divider); margin-right: 0.5em;"></span>
-						<i v-if="appearNote.visibility === 'public'" class="ti ti-world"></i>
-						<i v-else-if="appearNote.visibility === 'home'" class="ti ti-home"></i>
-						<i v-else-if="appearNote.visibility === 'followers'" class="ti ti-lock"></i>
-						<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
-						<span style="margin-left: 0.3em;">{{ i18n.ts._visibility[appearNote.visibility] }}</span>
+						<i v-if="$appearNote.visibility === 'public'" class="ti ti-world"></i>
+						<i v-else-if="$appearNote.visibility === 'home'" class="ti ti-home"></i>
+						<i v-else-if="$appearNote.visibility === 'followers'" class="ti ti-lock"></i>
+						<i v-else-if="$appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
+						<span style="margin-left: 0.3em;">{{ i18n.ts._visibility[$appearNote.visibility] }}</span>
 					</span>
 				</div>
 				<MkNoteEditHistory v-if="$appearNote.updatedAt != null" :note="appearNote" :updatedAt="$appearNote.updatedAt"/>

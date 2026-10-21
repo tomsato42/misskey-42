@@ -10,10 +10,11 @@ import type * as Misskey from 'misskey-js';
 import { noteEvents } from '@/composables/use-note-capture.js';
 
 export function emitNoteUpdated(updated: Misskey.entities.Note): void {
-	if (updated.updatedAt == null) return;
 	noteEvents.emit(`updated:${updated.id}`, {
 		text: updated.text,
 		cw: updated.cw ?? null,
-		updatedAt: updated.updatedAt,
+		visibility: updated.visibility,
+		// 公開範囲だけ変えたときは編集した日時が付かない
+		updatedAt: updated.updatedAt ?? null,
 	});
 }

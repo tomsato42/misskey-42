@@ -16,11 +16,19 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
 
+// 42times: ノートを編集したとき。公開範囲だけ変えたときは編集した日時が付かない (一度も編集していなければ null)
+type NoteUpdatedContext = {
+	text: string | null;
+	cw: string | null;
+	visibility: Misskey.entities.Note['visibility'];
+	updatedAt: string | null;
+};
+
 export const noteEvents = new EventEmitter<{
 	[ev: `reacted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; reaction: string; emoji?: { name: string; url: string; } | null; }) => void;
 	[ev: `unreacted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; reaction: string; emoji?: { name: string; url: string; } | null; }) => void;
 	[ev: `pollVoted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; choice: number; }) => void;
-	[ev: `updated:${string}`]: (ctx: { text: string | null; cw: string | null; updatedAt: string; }) => void;
+	[ev: `updated:${string}`]: (ctx: NoteUpdatedContext) => void;
 }>();
 
 const fetchEvent = new EventEmitter<{
@@ -160,6 +168,7 @@ function realtimeSubscribe(props: {
 				noteEvents.emit(`updated:${id}`, {
 					text: body.text,
 					cw: body.cw,
+					visibility: body.visibility,
 					updatedAt: body.updatedAt,
 				});
 				break;
@@ -199,6 +208,7 @@ export type ReactiveNoteData = {
 	// 42times: 編集で変わる
 	text: Misskey.entities.Note['text'];
 	cw: Misskey.entities.Note['cw'];
+	visibility: Misskey.entities.Note['visibility'];
 	updatedAt: Misskey.entities.Note['updatedAt'];
 };
 
@@ -231,6 +241,7 @@ export function useNoteCapture(props: {
 		pollChoices: note.poll?.choices ?? [],
 		text: note.text,
 		cw: note.cw,
+		visibility: note.visibility,
 		updatedAt: note.updatedAt,
 	});
 
@@ -299,14 +310,16 @@ export function useNoteCapture(props: {
 		$note.pollChoices = choices;
 	}
 
-	function onUpdated(ctx: { text: string | null; cw: string | null; updatedAt: string; }): void {
+	function onUpdated(ctx: NoteUpdatedContext): void {
 		$note.text = ctx.text;
 		$note.cw = ctx.cw;
-		$note.updatedAt = ctx.updatedAt;
+		$note.visibility = ctx.visibility;
+		$note.updatedAt = ctx.updatedAt ?? undefined;
 		// メニュー (コピーや編集) は元のノートを見るので、そちらも合わせる
 		note.text = ctx.text;
 		note.cw = ctx.cw;
-		note.updatedAt = ctx.updatedAt;
+		note.visibility = ctx.visibility;
+		note.updatedAt = ctx.updatedAt ?? undefined;
 	}
 
 	function subscribe() {

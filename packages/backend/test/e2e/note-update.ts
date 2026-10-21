@@ -6,7 +6,7 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { describe, beforeAll, test } from 'vitest';
+import { describe, beforeAll, test, vi } from 'vitest';
 import { api, castAsError, initTestDb, post, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
@@ -98,6 +98,73 @@ describe('Note update', () => {
 		const res = await api('notes/history', { noteId: note.id }, bob);
 		assert.strictEqual(res.status, 400);
 		assert.strictEqual(castAsError(res.body as any).error.code, 'NO_SUCH_NOTE');
+	});
+
+	describe('公開範囲', () => {
+		const waitForTl = { timeout: 3000, interval: 25 };
+
+		test('公開範囲だけ変えたときは、編集した日時も履歴も付かない', async () => {
+			const note = await post(alice, { text: 'visibility only' });
+			const res = await api('notes/update', { noteId: note.id, text: 'visibility only', cw: null, visibility: 'home' }, alice);
+			assert.strictEqual(res.status, 200);
+			assert.strictEqual(res.body.visibility, 'home');
+			assert.strictEqual(res.body.updatedAt, undefined);
+
+			const history = await api('notes/history', { noteId: note.id }, alice);
+			assert.deepStrictEqual(history.body, []);
+		});
+
+		test('フォロワーに狭めると、フォローしていない人のローカルタイムラインから消え、中身も見えなくなる', async () => {
+			const carol = await signup();
+			const note = await post(alice, { text: 'narrow' });
+			await vi.waitFor(async () => {
+				const tl = await api('notes/local-timeline', { limit: 100 }, carol);
+				assert.ok(tl.body.some(n => n.id === note.id));
+			}, waitForTl);
+
+			const res = await api('notes/update', { noteId: note.id, text: 'narrow', cw: null, visibility: 'followers' }, alice);
+			assert.strictEqual(res.body.visibility, 'followers');
+
+			await vi.waitFor(async () => {
+				const tl = await api('notes/local-timeline', { limit: 100 }, carol);
+				assert.ok(!tl.body.some(n => n.id === note.id));
+			}, waitForTl);
+
+			const shown = await api('notes/show', { noteId: note.id }, carol);
+			assert.notStrictEqual(shown.body.text, 'narrow');
+		});
+
+		test('公開に広げると、ローカルタイムラインに出る', async () => {
+			const carol = await signup();
+			const note = await post(alice, { text: 'widen', visibility: 'followers' });
+
+			const res = await api('notes/update', { noteId: note.id, text: 'widen', cw: null, visibility: 'public' }, alice);
+			assert.strictEqual(res.body.visibility, 'public');
+
+			await vi.waitFor(async () => {
+				const tl = await api('notes/local-timeline', { limit: 100 }, carol);
+				assert.ok(tl.body.some(n => n.id === note.id && n.text === 'widen'));
+			}, waitForTl);
+		});
+
+		test('返信先より広くはできない', async () => {
+			const target = await post(bob, { text: 'home', visibility: 'home' });
+			const reply = await post(alice, { text: 'reply', replyId: target.id, visibility: 'followers' });
+			const res = await api('notes/update', { noteId: reply.id, text: 'reply', cw: null, visibility: 'public' }, alice);
+			assert.strictEqual(res.status, 200);
+			assert.strictEqual(res.body.visibility, 'home');
+		});
+
+		test('ダイレクトは公開範囲を変えられない (公開範囲を送らなければ本文は編集できる)', async () => {
+			const note = await post(alice, { text: 'direct', visibility: 'specified', visibleUserIds: [] });
+			const res = await api('notes/update', { noteId: note.id, text: 'direct', cw: null, visibility: 'public' }, alice);
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual(castAsError(res.body).error.code, 'CANNOT_CHANGE_VISIBILITY');
+
+			const same = await api('notes/update', { noteId: note.id, text: 'direct 2', cw: null }, alice);
+			assert.strictEqual(same.status, 200);
+			assert.strictEqual(same.body.visibility, 'specified');
+		});
 	});
 
 	test('存在しないノート', async () => {
