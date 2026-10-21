@@ -169,7 +169,14 @@ for (const entry of list) {
 			isSensitive: emoji.isSensitive,
 			localOnly: emoji.localOnly,
 		};
-		await api(already ? 'admin/emoji/update' : 'admin/emoji/add', props);
+		try {
+			await api(already ? 'admin/emoji/update' : 'admin/emoji/add', props);
+		} catch (e) {
+			// 登録できなかった画像をドライブに残さない
+			await api('drive/files/delete', { fileId }).catch(() => {});
+			if (e.code === 'PERMISSION_DENIED') e.message += ' (トークンの「管理者権限」の「絵文字を操作する」をオンにしてください)';
+			throw e;
+		}
 		existing.add(emoji.name);
 		console.log(`${already ? 'update' : 'add   '}  :${emoji.name}:`);
 	} catch (e) {
