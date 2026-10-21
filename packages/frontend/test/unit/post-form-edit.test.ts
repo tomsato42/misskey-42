@@ -181,6 +181,33 @@ describe('MkPostForm (editNote)', () => {
 		assert.isUndefined(editDraft());
 	});
 
+	test('公開範囲のボタンは、ダイレクトのノートでなければ押せる', () => {
+		const visibilityButton = (result: ReturnType<typeof renderForm>, icon: string) => result.container.querySelector(`header .${icon}`)!.closest('button')!;
+
+		const pub = renderForm(makeNote({ visibility: 'public' }));
+		assert.isFalse(visibilityButton(pub, 'ti-world').disabled);
+		cleanup();
+
+		const specified = renderForm(makeNote({ visibility: 'specified', visibleUserIds: [] }));
+		assert.isTrue(visibilityButton(specified, 'ti-mail').disabled);
+	});
+
+	test('下書きで公開範囲を変えていたら復元し、本文が同じでも保存すると公開範囲を送る', async () => {
+		miLocalStorage.setItem('drafts', JSON.stringify({
+			'edit:note1': { updatedAt: '2026-10-20T00:30:00.000Z', data: { text: 'before', useCw: false, cw: null, visibility: 'followers' } },
+		}));
+		const note = makeNote({ text: 'before', visibility: 'public' });
+		misskeyApiMock.mockImplementation(async (endpoint: string) => endpoint === 'notes/update' ? { ...note, visibility: 'followers' } : []);
+		const result = renderForm(note);
+		await settle();
+
+		assert.isNotNull(result.container.querySelector('header .ti-lock'));
+		await fireEvent.click(result.getByTestId('post-form-submit'));
+
+		await waitFor(() => assert.strictEqual(updateCalls().length, 1));
+		assert.deepStrictEqual(updateCalls()[0], ['notes/update', { noteId: 'note1', text: 'before', cw: null, visibility: 'followers' }]);
+	});
+
 	test('ほかのノートや新規の下書きは使わない', async () => {
 		miLocalStorage.setItem('drafts', JSON.stringify({
 			'note:me': { updatedAt: '2026-10-20T02:00:00.000Z', data: { text: 'new note draft', useCw: false, cw: null } },
