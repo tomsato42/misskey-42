@@ -1,0 +1,130 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+// emojis.json に書いたカスタム絵文字を、管理 API (drive/files/create → admin/emoji/add) で登録する。
+// 普段は add-emojis.sh から web のコンテナの中で実行する (手順は deploy/README.md の「カスタム絵文字の追加」)。
+//   EMOJI_DIR=<emojis.json のあるディレクトリ> MISSKEY_TOKEN=<アクセストークン> node add-emojis.mjs [--update] [--dry-run]
+// 同じ名前の絵文字があれば飛ばす。--update を付けると画像と設定を置き換える。
+// emojis.json の形 (category・license・isSensitive・localOnly は全体の既定値を上に書け、絵文字ごとに上書きできる):
+//   { "category": "ミーム", "license": "...", "emojis": [
+//     { "name": "foo", "file": "foo.png", "aliases": ["ふー"] },
+//     { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" } ] }
+
+import { readFile } from 'node:fs/promises';
+import { basename, extname, join } from 'node:path';
+
+const args = process.argv.slice(2);
+const update = args.includes('--update');
+const dryRun = args.includes('--dry-run');
+const dir = process.env.EMOJI_DIR ?? '.';
+const base = (process.env.MISSKEY_URL ?? 'http://127.0.0.1:3001').replace(/\/$/, '');
+const token = process.env.MISSKEY_TOKEN;
+const FOLDER_NAME = 'custom-emojis';
+const MIME = { '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.apng': 'image/apng', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.avif': 'image/avif' };
+
+if (!token) throw new Error('MISSKEY_TOKEN is not set');
+
+async function api(endpoint, body) {
+	const res = await fetch(`${base}/api/${endpoint}`, {
+		method: 'POST',
+		...(body instanceof FormData
+			? { body }
+			: { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ i: token, ...body }) }),
+	});
+	const text = await res.text();
+	const json = text === '' ? null : JSON.parse(text);
+	if (!res.ok) {
+		const err = new Error(`${endpoint}: ${res.status} ${json?.error?.code ?? ''} ${json?.error?.message ?? text}`);
+		err.code = json?.error?.code;
+		throw err;
+	}
+	return json;
+}
+
+// emoji で 1 件ずつ引くと、無いときに INTERNAL_ERROR になるので、一覧から名前を集める
+async function existingNames() {
+	const { emojis } = await api('emojis', {});
+	return new Set(emojis.map(e => e.name));
+}
+
+async function loadImage(emoji) {
+	if (emoji.file != null) {
+		const path = join(dir, emoji.file);
+		return { data: await readFile(path), filename: basename(path), type: MIME[extname(path).toLowerCase()] };
+	}
+	if (emoji.url != null) {
+		const res = await fetch(emoji.url);
+		if (!res.ok) throw new Error(`${emoji.url}: ${res.status}`);
+		const filename = basename(new URL(emoji.url).pathname) || emoji.name;
+		return { data: Buffer.from(await res.arrayBuffer()), filename, type: res.headers.get('content-type') ?? MIME[extname(filename).toLowerCase()] };
+	}
+	throw new Error(`${emoji.name}: file か url を書いてください`);
+}
+
+let folderId;
+async function getFolderId() {
+	if (folderId !== undefined) return folderId;
+	const found = await api('drive/folders/find', { name: FOLDER_NAME, parentId: null });
+	folderId = found.length > 0 ? found[0].id : (await api('drive/folders/create', { name: FOLDER_NAME })).id;
+	return folderId;
+}
+
+async function upload(emoji) {
+	const image = await loadImage(emoji);
+	const ext = extname(image.filename) || '.png';
+	const form = new FormData();
+	form.append('i', token);
+	form.append('folderId', await getFolderId());
+	form.append('name', `${emoji.name}${ext}`);
+	form.append('file', new Blob([image.data], { type: image.type ?? 'application/octet-stream' }), `${emoji.name}${ext}`);
+	return (await api('drive/files/create', form)).id;
+}
+
+const manifest = JSON.parse(await readFile(join(dir, 'emojis.json'), 'utf8'));
+const list = Array.isArray(manifest) ? manifest : manifest.emojis;
+const defaults = Array.isArray(manifest) ? {} : manifest;
+
+const existing = await existingNames();
+let failed = 0;
+for (const entry of list) {
+	const emoji = {
+		category: defaults.category ?? null,
+		license: defaults.license ?? null,
+		isSensitive: defaults.isSensitive ?? false,
+		localOnly: defaults.localOnly ?? false,
+		aliases: [],
+		...entry,
+	};
+	try {
+		if (!/^[a-zA-Z0-9_]+$/.test(emoji.name ?? '')) throw new Error(`名前は英数字と _ だけにしてください: ${emoji.name}`);
+		const already = existing.has(emoji.name);
+		if (already && !update) {
+			console.log(`skip    :${emoji.name}: (すでにあります。置き換えるときは --update)`);
+			continue;
+		}
+		if (dryRun) {
+			await loadImage(emoji);
+			console.log(`${already ? 'update' : 'add   '}  :${emoji.name}: (dry-run) category=${emoji.category} aliases=${emoji.aliases.join(',')}`);
+			continue;
+		}
+		const fileId = await upload(emoji);
+		const props = {
+			name: emoji.name,
+			fileId,
+			category: emoji.category,
+			aliases: emoji.aliases,
+			license: emoji.license,
+			isSensitive: emoji.isSensitive,
+			localOnly: emoji.localOnly,
+		};
+		await api(already ? 'admin/emoji/update' : 'admin/emoji/add', props);
+		existing.add(emoji.name);
+		console.log(`${already ? 'update' : 'add   '}  :${emoji.name}:`);
+	} catch (e) {
+		failed++;
+		console.error(`failed  :${emoji.name}: ${e.message}`);
+	}
+}
+if (failed > 0) process.exit(1);

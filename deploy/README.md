@@ -30,6 +30,7 @@ GitHub (main に push / 手動実行)
 | `configure-backup-r2.sh` | `/home/misskey/42times/configure-backup-r2.sh` | バックアップを送る R2 の鍵 (`.config/backup-r2.env`) を対話形式で書き込む。書き込む前に R2 へのアップロードを試す |
 | `default.yml.example` | `/home/misskey/42times/.config/default.yml` (コピーして編集) | 本番用の設定の例。秘密の値はダミー |
 | `nginx/42times.kinachan.com.conf` | `/etc/nginx/conf.d/42times.kinachan.com.conf` | nginx の server ブロック |
+| `emojis/add-emojis.sh`・`emojis/add-emojis.mjs` | `/home/misskey/42times/emojis/` | カスタム絵文字を `emojis.json` からまとめて登録する ([カスタム絵文字の追加](#カスタム絵文字の追加)) |
 
 VPS の `/home/misskey/42times/` は最終的に次のようになります。
 
@@ -375,6 +376,44 @@ intra:
 ```
 
 アイコンは次の毎時の同期 (毎時 15 分) で、アイコンが未設定のコアリションのロールに付きます。管理画面でアイコンを設定したロールは上書きしません。
+
+### カスタム絵文字の追加
+
+`deploy/emojis/add-emojis.sh` は、ディレクトリに置いた `emojis.json` と画像から、カスタム絵文字をまとめて登録します。web のコンテナにディレクトリをコピーし、コンテナの中の node で管理 API (`drive/files/create` → `admin/emoji/add`) を呼びます (VPS に node は入れません)。画像は登録したアカウントのドライブの `custom-emojis` フォルダに入ります。絵文字はこのファイルを参照するので、フォルダの中身は消さないでください。
+
+`emojis.json` は次の形です。`category`・`license`・`isSensitive`・`localOnly` は全体の既定値を上に書け、絵文字ごとに上書きできます。画像は `file` (同じディレクトリのファイル) か `url` (コンテナから取得) で指定します。例は `deploy/emojis/letterpack/` です。
+
+```json
+{
+  "category": "ミーム",
+  "license": "出どころと利用条件",
+  "emojis": [
+    { "name": "foo", "file": "foo.png", "aliases": ["ふー"] },
+    { "name": "bar", "url": "https://example.com/bar.png", "category": "ほか" }
+  ]
+}
+```
+
+1. スクリプトを VPS に置きます (初回と、スクリプトを変えたとき)。絵文字のディレクトリも一緒に送ります。
+
+   ```sh
+   # ローカルの PC (リポジトリのルート) で
+   ssh misskey-vps 'install -d -m 700 /home/misskey/42times/emojis'
+   scp deploy/emojis/add-emojis.sh deploy/emojis/add-emojis.mjs misskey-vps:/home/misskey/42times/emojis/
+   scp -r deploy/emojis/letterpack misskey-vps:/home/misskey/42times/emojis/
+   ssh misskey-vps 'chmod 700 /home/misskey/42times/emojis/add-emojis.sh'
+   ```
+
+2. 管理者のアカウントで、設定 → API → 「アクセストークンの発行」から、「絵文字を操作する (write:admin:emoji)」「ドライブを見る (read:drive)」「ドライブを操作する (write:drive)」にチェックを入れたトークンを作ります。使い終わったら消して構いません。
+
+3. VPS で実行します。トークンは入力を求められます (環境変数 `MISSKEY_TOKEN` でも渡せます)。`--dry-run` で何が登録されるかだけ確かめられます。同じ名前の絵文字があれば飛ばし、`--update` を付けると画像と設定を置き換えます。
+
+   ```sh
+   ~/42times/emojis/add-emojis.sh ~/42times/emojis/letterpack --dry-run
+   ~/42times/emojis/add-emojis.sh ~/42times/emojis/letterpack
+   ```
+
+   `add :letterpack_sagi:` のように出れば登録できています。ブラウザは絵文字の一覧を覚えているので、出てこないときは再読み込みします。
 
 ## バックアップ
 
