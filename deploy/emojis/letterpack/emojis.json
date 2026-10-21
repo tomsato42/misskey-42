@@ -1,0 +1,6 @@
+{
+	"emojis": [
+		{ "copyFrom": "misskey.io", "remoteName": "send_money" },
+		{ "copyFrom": "misskey.io", "remoteQuery": "全て詐欺" }
+	]
+}
