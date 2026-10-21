@@ -304,6 +304,9 @@ uploader.events.on('itemUploaded', ctx => {
 });
 
 const draftKey = computed((): string => {
+	// 42times: 編集の下書きはノートごとに持つ
+	if (props.editNote != null) return `edit:${props.editNote.id}`;
+
 	let key = targetChannel.value ? `channel:${targetChannel.value.id}` : '';
 
 	if (renoteTargetNote.value) {
@@ -374,15 +377,19 @@ const cwTextLength = computed((): number => {
 const maxCwTextLength = 100;
 
 //#region 42times: ノートの編集
-// 本文と CW だけを notes/update で書き換える。下書きには保存しない
+// 本文と CW だけを notes/update で書き換える。書きかけの本文と CW は、新規のノートと同じく端末の下書きに保存する
 /** 保存する本文。空欄は「無し」として送る */
 const editedText = computed(() => text.value.trim() === '' ? null : text.value);
 /** 保存する CW。オフのときは無し */
 const editedCw = computed(() => useCw.value ? cw.value : null);
 
+/** 本文か CW を元のノートから変えたか */
+const isEditChanged = computed((): boolean => props.editNote != null &&
+	(editedText.value !== props.editNote.text || editedCw.value !== (props.editNote.cw ?? null)));
+
 const canSaveEdit = computed((): boolean => {
 	if (props.editNote == null) return false;
-	return !posting.value && !posted.value &&
+	return isEditChanged.value && !posting.value && !posted.value &&
 		textLength.value <= maxTextLength.value &&
 		(
 			useCw.value ?
@@ -390,9 +397,15 @@ const canSaveEdit = computed((): boolean => {
 					cw.value != null && cw.value.trim() !== '' &&
 					cwTextLength.value <= maxCwTextLength
 				) : true
-		) &&
-		(editedText.value !== props.editNote.text || editedCw.value !== (props.editNote.cw ?? null));
+		);
 });
+
+/** 本文と CW を元のノートのものに戻す (下書きも消える) */
+function resetEdit(note: Misskey.entities.Note) {
+	text.value = note.text ?? '';
+	useCw.value = note.cw != null;
+	cw.value = note.cw ?? null;
+}
 
 /** プレビューに出す元のノートの投票 (投票は編集できない) */
 const editNotePoll = computed((): PollEditorModelValue | undefined => {
@@ -724,8 +737,9 @@ async function toggleReactionAcceptance() {
 
 //#region その他の設定メニューpopup
 function showOtherSettings() {
-	// 42times: 編集のときは下書き・予約投稿・リアクションの受け入れ・リセットを出さない
+	// 42times: 編集のときはサーバーの下書き・予約投稿・リアクションの受け入れを出さない。リセットは元のノートに戻す
 	if (props.editNote != null) {
+		const note = props.editNote;
 		os.popupMenu([{
 			type: 'component',
 			component: XTextCounter,
@@ -737,6 +751,18 @@ function showOtherSettings() {
 			icon: 'ti ti-eye',
 			text: i18n.ts.preview,
 			ref: showPreview,
+		}, {
+			icon: 'ti ti-trash',
+			text: i18n.ts.reset,
+			danger: true,
+			action: async () => {
+				const { canceled } = await os.confirm({
+					type: 'question',
+					text: i18n.ts.resetAreYouSure,
+				});
+				if (canceled) return;
+				resetEdit(note);
+			},
 		}] satisfies MenuItem[], otherSettingsButton.value);
 		return;
 	}
@@ -1118,7 +1144,13 @@ type StoredDrafts = {
 };
 
 function saveDraft() {
-	if (props.instant || props.mock || props.editNote != null) return;
+	if (props.instant || props.mock) return;
+
+	// 42times: 編集で元のノートと同じに戻したら、下書きは要らない
+	if (props.editNote != null && !isEditChanged.value) {
+		deleteDraft();
+		return;
+	}
 
 	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
 
@@ -1439,6 +1471,7 @@ async function saveEdit(note: Misskey.entities.Note) {
 			cw: editedCw.value,
 		});
 		emitNoteUpdated(updated);
+		deleteDraft();
 		posted.value = true;
 		emit('posted');
 	} catch (err) {
@@ -1781,6 +1814,22 @@ onMounted(() => {
 			// 42times: 削除して編集するとき、元のノートのイベントに紐づけ直す (告知のノートを消してもイベントは残る)
 			if (init.calendarEvent != null && !init.calendarEvent.isCanceled && linkedCalendarEvent.value == null) {
 				linkedCalendarEvent.value = init.calendarEvent;
+			}
+		}
+
+		// 42times: 書きかけの編集を復元する。下書きを保存した後にノートが編集されていたら (ほかの端末など)、
+		// 古い本文で上書きしないよう下書きを捨てる
+		if (props.editNote != null && !props.mock) {
+			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
+			if (draft != null) {
+				const noteUpdatedAt = new Date(props.editNote.updatedAt ?? props.editNote.createdAt).getTime();
+				if (new Date(draft.updatedAt).getTime() >= noteUpdatedAt) {
+					text.value = draft.data.text;
+					useCw.value = draft.data.useCw;
+					cw.value = draft.data.cw;
+				} else {
+					deleteDraft();
+				}
 			}
 		}
 

@@ -12,6 +12,7 @@ import { components } from '@/components/index.js';
 import { directives } from '@/directives/index.js';
 import MkPostForm from '@/components/MkPostForm.vue';
 import { instance } from '@/instance.js';
+import { miLocalStorage } from '@/local-storage.js';
 
 const me = vi.hoisted(() => ({
 	id: 'me',
@@ -34,6 +35,12 @@ const misskeyApiMock = vi.hoisted(() => vi.fn(async (endpoint: string, params?: 
 const updateCalls = () => misskeyApiMock.mock.calls.filter(([endpoint]) => endpoint === 'notes/update');
 
 vi.mock('@/utility/misskey-api.js', () => ({ misskeyApi: misskeyApiMock }));
+
+/** 端末に保存したこのノートの編集の下書き */
+const editDraft = (noteId = 'note1') => JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[`edit:${noteId}`];
+
+/** フォームが下書きを復元し、変更を見張り始めるまで待つ */
+const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 
 function makeNote(note: Partial<Misskey.entities.Note>): Misskey.entities.Note {
 	return {
@@ -69,6 +76,7 @@ describe('MkPostForm (editNote)', () => {
 		misskeyApiMock.mockClear();
 		// テストではサーバーの情報を読み込まないので、本文の上限だけ入れる
 		instance.maxNoteTextLength = 3000;
+		miLocalStorage.removeItem('drafts');
 	});
 
 	afterEach(() => {
@@ -120,5 +128,67 @@ describe('MkPostForm (editNote)', () => {
 			assert.isNull(footer.querySelector(`.${icon}`), icon);
 		}
 		assert.isNotNull(footer.querySelector('.ti-eye-off'));
+	});
+
+	test('書きかけの本文と CW を下書きに保存し、開き直すと復元する', async () => {
+		const note = makeNote({ text: 'before' });
+		let result = renderForm(note);
+		await settle();
+
+		await fireEvent.update(result.getByTestId('post-form-text'), 'draft');
+		assert.strictEqual(editDraft()?.data.text, 'draft');
+
+		cleanup();
+		result = renderForm(note);
+		await settle();
+
+		assert.strictEqual((result.getByTestId('post-form-text') as HTMLTextAreaElement).value, 'draft');
+		assert.isFalse((result.getByTestId('post-form-submit') as HTMLButtonElement).disabled);
+	});
+
+	test('元のノートと同じに戻すと下書きを消す', async () => {
+		const result = renderForm(makeNote({ text: 'before' }));
+		await settle();
+
+		await fireEvent.update(result.getByTestId('post-form-text'), 'draft');
+		assert.isDefined(editDraft());
+		await fireEvent.update(result.getByTestId('post-form-text'), 'before');
+		assert.isUndefined(editDraft());
+	});
+
+	test('保存すると下書きを消す', async () => {
+		const note = makeNote({ text: 'before' });
+		misskeyApiMock.mockImplementation(async (endpoint: string) => endpoint === 'notes/update' ? { ...note, text: 'after', updatedAt: '2026-10-20T01:00:00.000Z' } : []);
+		const result = renderForm(note);
+		await settle();
+
+		await fireEvent.update(result.getByTestId('post-form-text'), 'after');
+		assert.isDefined(editDraft());
+		await fireEvent.click(result.getByTestId('post-form-submit'));
+
+		await waitFor(() => assert.isNotEmpty(result.emitted('posted') ?? []));
+		assert.isUndefined(editDraft());
+	});
+
+	test('下書きの後にノートが編集されていたら、下書きを使わずに消す', async () => {
+		miLocalStorage.setItem('drafts', JSON.stringify({
+			'edit:note1': { updatedAt: '2026-10-20T00:30:00.000Z', data: { text: 'old draft', useCw: false, cw: null } },
+		}));
+		const result = renderForm(makeNote({ text: 'edited elsewhere', updatedAt: '2026-10-20T01:00:00.000Z' }));
+		await settle();
+
+		assert.strictEqual((result.getByTestId('post-form-text') as HTMLTextAreaElement).value, 'edited elsewhere');
+		assert.isUndefined(editDraft());
+	});
+
+	test('ほかのノートや新規の下書きは使わない', async () => {
+		miLocalStorage.setItem('drafts', JSON.stringify({
+			'note:me': { updatedAt: '2026-10-20T02:00:00.000Z', data: { text: 'new note draft', useCw: false, cw: null } },
+			'edit:note2': { updatedAt: '2026-10-20T02:00:00.000Z', data: { text: 'other note draft', useCw: false, cw: null } },
+		}));
+		const result = renderForm(makeNote({ text: 'before' }));
+		await settle();
+
+		assert.strictEqual((result.getByTestId('post-form-text') as HTMLTextAreaElement).value, 'before');
 	});
 });
