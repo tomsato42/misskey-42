@@ -4929,10 +4929,6 @@ export interface Locale extends ILocale {
      */
     "noteEditEmpty": string;
     /**
-     * 本文と注釈を編集できます。添付ファイル・投票・公開範囲などは投稿したときのままです
-     */
-    "noteEditInfo": string;
-    /**
      * 編集履歴
      */
     "noteEditHistory": string;

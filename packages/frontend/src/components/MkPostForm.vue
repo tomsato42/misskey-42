@@ -52,7 +52,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-if="editNote != null">
 		<MkNoteSimple v-if="editNote.reply" :class="$style.targetNote" :note="editNote.reply"/>
 		<MkNoteSimple v-if="editNote.renote" :class="$style.targetNote" :note="editNote.renote"/>
-		<MkInfo :class="$style.editInfo">{{ i18n.ts.noteEditInfo }}</MkInfo>
 	</template>
 	<div v-if="quoteId" :class="$style.withQuote"><i class="ti ti-quote"></i> {{ i18n.ts.quoteAttached }}<button @click="quoteId = null; renoteTargetNote = null;"><i class="ti ti-x"></i></button></div>
 	<div v-if="visibility === 'specified' && editNote == null" :class="$style.toSpecified">
@@ -2060,10 +2059,6 @@ html[data-color-scheme=light] .preview {
 }
 
 .scheduledAt {
-	margin: 0 20px 16px 20px;
-}
-
-.editInfo {
 	margin: 0 20px 16px 20px;
 }
 
