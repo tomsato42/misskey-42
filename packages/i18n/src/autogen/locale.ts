@@ -14332,6 +14332,14 @@ export interface Locale extends ILocale {
          */
         "autoSignupDescription": string;
         /**
+         * ログインすると、{documents}に同意したものとみなされます。
+         */
+        "agreementOnLogin": ParameterizedString<"documents">;
+        /**
+         * と
+         */
+        "agreementDocumentsSeparator": string;
+        /**
          * 管理者ログイン
          */
         "passwordLogin": string;

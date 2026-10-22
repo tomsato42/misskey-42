@@ -21,6 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-school"></i> {{ i18n.ts._intra.loginWithIntra }}
 			</MkButton>
 			<p :class="$style.intraCaption">{{ i18n.ts._intra.autoSignupDescription }}</p>
+			<MkIntraLoginAgreement :tosUrl="instance.tosUrl" :privacyPolicyUrl="instance.privacyPolicyUrl"/>
 		</div>
 
 		<!-- 42 にログインできなくなった人 (ブラックホールなど) は、登録しておいたパスキーでログインする。管理者ログインを開いているときは下にあるので出さない -->
@@ -94,6 +95,7 @@ import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import MkIntraLoginAgreement from '@/components/MkIntraLoginAgreement.vue';
 
 const props = withDefaults(defineProps<{
 	message?: string,

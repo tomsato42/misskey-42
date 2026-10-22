@@ -3831,6 +3831,8 @@ _pairRecruitment:
 _intra:
   loginWithIntra: "42 でログイン"
   autoSignupDescription: "42 のアカウントで初めてログインすると、このサーバーのアカウントが自動で作成されます。"
+  agreementOnLogin: "ログインすると、{documents}に同意したものとみなされます。"
+  agreementDocumentsSeparator: "と"
   passwordLogin: "管理者ログイン"
   passwordLoginDescription: "管理者・モデレーターと、パスワードでのログインを許可されたユーザーだけが使えます。"
   loggingIn: "ログインしています"

@@ -376,6 +376,22 @@ intra:
 
 アイコンは次の毎時の同期 (毎時 15 分) で、アイコンが未設定のコアリションのロールに付きます。管理画面でアイコンを設定したロールは上書きしません。
 
+### 利用規約とプライバシーポリシー
+
+`deploy/instance-assets/legal/` の HTML を `/home/misskey/42times-assets/legal/` に置き、nginx の `/instance-assets/` から配信します。未ログインの人にもログインの前に読めるように、Misskey のページ機能ではなく静的なファイルにしています。main にマージした後、VPS で次を実行します (改定したときも同じ)。
+
+```sh
+mkdir -p /home/misskey/42times-assets/legal
+for f in terms.html privacy.html style.css; do
+  curl -fsSL "https://raw.githubusercontent.com/tomsato42/misskey-42/main/deploy/instance-assets/legal/$f" \
+    -o "/home/misskey/42times-assets/legal/$f" && echo "saved $f"
+done
+chmod 644 /home/misskey/42times-assets/legal/*
+curl -sI https://42times.kinachan.com/instance-assets/legal/terms.html | head -1
+```
+
+初めて置いたときは、コントロールパネル → 全般 の「利用規約URL」に `https://42times.kinachan.com/instance-assets/legal/terms.html`、「プライバシーポリシーURL」に `https://42times.kinachan.com/instance-assets/legal/privacy.html` を入れます。ログインの画面のボタンの下に同意の文とリンクが出ます (`MkIntraLoginAgreement.vue`)。改定したときはお知らせで告知します。`/instance-assets/` は 7 日キャッシュされるので、改定の直後は古い版が見えることがあります。
+
 ## バックアップ
 
 misskey ユーザーの crontab から、毎日 3:15 (日本時間。VPS のタイムゾーンは JST) に `backup.sh` を実行します。1 回の実行で `42times-<日本時間の YYYYmmdd-HHMMSS>.tar` を 1 つ作り、VPS の `/home/misskey/42times-backups/` と R2 のバケット `42times-backups` の両方に置きます。どちらも 7 日分を残します。

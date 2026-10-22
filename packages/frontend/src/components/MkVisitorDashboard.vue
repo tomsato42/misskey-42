@@ -27,6 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="_gaps_s" :class="$style.mainActions">
 				<MkButton :class="$style.mainAction" full rounded gradate data-testid="signup" style="margin-right: 12px;" @click="signup()">{{ i18n.ts.joinThisServer }}</MkButton>
 				<p v-if="instance.intraLoginEnabled" :class="$style.intraCaption">{{ i18n.ts._intra.autoSignupDescription }}</p>
+				<MkIntraLoginAgreement v-if="instance.intraLoginEnabled" :tosUrl="instance.tosUrl" :privacyPolicyUrl="instance.privacyPolicyUrl"/>
 				<MkButton :class="$style.mainAction" full rounded type="a" target="_blank" rel="noopener" href="https://misskey-hub.net/servers/">{{ i18n.ts.exploreOtherServers }}</MkButton>
 				<MkButton :class="$style.mainAction" full rounded data-testid="signin" @click="signin()">{{ i18n.ts.login }}</MkButton>
 			</div>
@@ -64,6 +65,7 @@ import XSignupDialog from '@/components/MkSignupDialog.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import MkInfo from '@/components/MkInfo.vue';
+import MkIntraLoginAgreement from '@/components/MkIntraLoginAgreement.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
