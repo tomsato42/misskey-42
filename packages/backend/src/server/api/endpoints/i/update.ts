@@ -176,6 +176,7 @@ export const paramDef = {
 		publicReactions: { type: 'boolean' },
 		carefulBot: { type: 'boolean' },
 		autoAcceptFollowed: { type: 'boolean' },
+		pairInvitationsEnabled: { type: 'boolean' },
 		noCrawle: { type: 'boolean' },
 		preventAiLearning: { type: 'boolean' },
 		requireSigninToViewContents: { type: 'boolean' },
@@ -217,6 +218,15 @@ export const paramDef = {
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,
 				test: notificationRecieveConfig,
+				pairJoinRequested: notificationRecieveConfig,
+				pairAccepted: notificationRecieveConfig,
+				pairClosed: notificationRecieveConfig,
+				pairInvited: notificationRecieveConfig,
+				pairApplicationCancelled: notificationRecieveConfig,
+				intraProjectFinished: notificationRecieveConfig,
+				intraProjectsRefreshed: notificationRecieveConfig,
+				intraLevelUp: notificationRecieveConfig,
+				acquaintanceJoined: notificationRecieveConfig,
 			},
 		},
 		emailNotificationTypes: { type: 'array', items: {
@@ -351,6 +361,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.isBot === 'boolean') updates.isBot = ps.isBot;
 			if (typeof ps.carefulBot === 'boolean') profileUpdates.carefulBot = ps.carefulBot;
 			if (typeof ps.autoAcceptFollowed === 'boolean') profileUpdates.autoAcceptFollowed = ps.autoAcceptFollowed;
+			if (typeof ps.pairInvitationsEnabled === 'boolean') profileUpdates.pairInvitationsEnabled = ps.pairInvitationsEnabled;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;
 			if (typeof ps.preventAiLearning === 'boolean') profileUpdates.preventAiLearning = ps.preventAiLearning;
 			if (typeof ps.requireSigninToViewContents === 'boolean') updates.requireSigninToViewContents = ps.requireSigninToViewContents;

@@ -8,7 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 	{{ i18n.ts.deletedNote }}
 </div>
 <div v-else-if="!muted" :class="[$style.root, { [$style.children]: depth > 1 }]">
-	<div :class="$style.main">
+	<div v-if="lineAbove" :class="[$style.threadLine, $style.threadLineAbove]"></div>
+	<div v-if="lineBelow" :class="[$style.threadLine, $style.threadLineBelow]"></div>
+	<div :class="[$style.main, { [$style.clickable]: clickToOpen }]" @click="onClick">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
 		<MkAvatar :class="$style.avatar" :user="note.user" link preview/>
 		<div :class="$style.body">
@@ -54,6 +56,7 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { userPage } from '@/filters/user.js';
 import { checkWordMute } from '@/utility/check-word-mute.js';
+import { useRouter } from '@/router.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note | null;
@@ -61,9 +64,21 @@ const props = withDefaults(defineProps<{
 
 	// how many notes are in between this one and the note being viewed in detail
 	depth?: number;
+
+	// タイムラインのリプライ元のように、クリックでそのノートを開く
+	clickToOpen?: boolean;
+
+	// スレッドの前後のノートとアイコンを縦線でつなぐ
+	lineAbove?: boolean;
+	lineBelow?: boolean;
 }>(), {
 	depth: 1,
+	clickToOpen: false,
+	lineAbove: false,
+	lineBelow: false,
 });
+
+const router = useRouter();
 
 const muted = ref(props.note && $i ? checkWordMute(props.note, $i, $i.mutedWords) : false);
 
@@ -77,6 +92,23 @@ if (props.detail && props.note) {
 	}).then(res => {
 		replies.value = res;
 	});
+}
+
+// リンク・ボタン・折りたたみ (画像と投票) の中のクリックは、それぞれの動作を優先する
+const INTERACTIVE_SELECTOR = 'a, button, input, textarea, select, label, details, video, audio, [role="button"]';
+
+function onClick(ev: MouseEvent) {
+	if (!props.clickToOpen || props.note == null) return;
+	if (ev.target instanceof Element && ev.target.closest(INTERACTIVE_SELECTOR) != null) return;
+	// 文字を選択しているときは開かない
+	if ((window.getSelection()?.toString() ?? '') !== '') return;
+
+	const path = notePage(props.note);
+	if (ev.metaKey || ev.ctrlKey) {
+		window.open(path, '_blank', 'noopener');
+		return;
+	}
+	router.pushByPath(path);
 }
 </script>
 
@@ -94,6 +126,29 @@ if (props.detail && props.note) {
 
 .main {
 	display: flex;
+}
+
+.clickable {
+	cursor: pointer;
+}
+
+// アイコン (38px) の中心を通る縦線
+.threadLine {
+	position: absolute;
+	left: calc(32px + 19px - 1px);
+	width: 2px;
+	background: var(--MI_THEME-divider);
+	pointer-events: none;
+}
+
+.threadLineAbove {
+	top: 0;
+	height: calc(16px - 4px);
+}
+
+.threadLineBelow {
+	top: calc(16px + 38px + 4px);
+	bottom: 0;
 }
 
 .colorBar {
@@ -153,6 +208,18 @@ if (props.detail && props.note) {
 		&.children {
 			padding: 10px 0 0 8px;
 		}
+	}
+
+	.threadLine {
+		left: calc(16px + 19px - 1px);
+	}
+
+	.threadLineAbove {
+		height: calc(14px - 4px);
+	}
+
+	.threadLineBelow {
+		top: calc(14px + 38px + 4px);
 	}
 }
 

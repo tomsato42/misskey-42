@@ -23,11 +23,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkA v-else :to="notePage(note)">
 			<MkTime :time="note.createdAt" colored/>
 		</MkA>
-		<span v-if="note.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[note.visibility]">
-			<i v-if="note.visibility === 'home'" class="ti ti-home"></i>
-			<i v-else-if="note.visibility === 'followers'" class="ti ti-lock"></i>
-			<i v-else-if="note.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
+		<span v-if="shownVisibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[shownVisibility]">
+			<i v-if="shownVisibility === 'home'" class="ti ti-home"></i>
+			<i v-else-if="shownVisibility === 'followers'" class="ti ti-lock"></i>
+			<i v-else-if="shownVisibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 		</span>
+		<span v-if="(updatedAt ?? note.updatedAt) != null" style="margin-left: 0.5em;" :title="i18n.ts.edited"><i class="ti ti-pencil"></i></span>
 		<span v-if="note.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 		<span v-if="note.channel" style="margin-left: 0.5em;" :title="note.channel.name"><i class="ti ti-device-tv"></i></span>
 	</div>
@@ -35,16 +36,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject } from 'vue';
+import { computed, inject } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
 import { DI } from '@/di.js';
 
-defineProps<{
+const props = defineProps<{
 	note: Misskey.entities.Note;
+	/** 42times: 編集した日時。編集をその場で反映するときに渡す (無ければ note のもの) */
+	updatedAt?: string | null;
+	/** 42times: 公開範囲。編集をその場で反映するときに渡す (無ければ note のもの) */
+	visibility?: Misskey.entities.Note['visibility'];
 }>();
+
+const shownVisibility = computed(() => props.visibility ?? props.note.visibility);
 
 const mock = inject(DI.mock, false);
 </script>

@@ -32,6 +32,7 @@ describe('NoteCreateService', () => {
 			renote: null,
 			threadId: null,
 			text: null,
+			updatedAt: null,
 			name: null,
 			cw: null,
 			userId: 'some-user-id',

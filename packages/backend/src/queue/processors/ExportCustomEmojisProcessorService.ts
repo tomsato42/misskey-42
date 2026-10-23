@@ -98,7 +98,7 @@ export class ExportCustomEmojisProcessorService {
 			let downloaded = false;
 
 			try {
-				await this.downloadService.downloadUrl(emoji.originalUrl, emojiPath);
+				await this.downloadService.downloadUrl(emoji.originalUrl, emojiPath, { attachMediaGateCookie: true });
 				downloaded = true;
 			} catch (e) { // TODO: 何度か再試行
 				this.logger.error(e instanceof Error ? e : new Error(e as string));

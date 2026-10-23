@@ -12,6 +12,8 @@ import type { MiAccessToken } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { MiLocalUser } from '@/models/User.js';
 import { UserService } from '@/core/UserService.js';
+import { isIntraMode } from '@/core/intra/intra-visitor.js';
+import type { Config } from '@/config.js';
 import { AuthenticateService, AuthenticationError } from './AuthenticateService.js';
 import MainStreamConnection, { ConnectionRequest } from './stream/Connection.js';
 import type * as http from 'node:http';
@@ -24,6 +26,9 @@ export class StreamingApiServerService {
 	#cleanConnectionsIntervalId: NodeJS.Timeout | null = null;
 
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.redisForSub)
 		private redisForSub: Redis.Redis,
 
@@ -73,6 +78,16 @@ export class StreamingApiServerService {
 				} else {
 					socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
 				}
+				socket.destroy();
+				return;
+			}
+
+			// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインの訪問者にストリーミングを使わせない
+			if (user == null && isIntraMode(this.config)) {
+				socket.write([
+					'HTTP/1.1 401 Unauthorized',
+					'WWW-Authenticate: Bearer realm="Misskey"',
+				].join('\r\n') + '\r\n\r\n');
 				socket.destroy();
 				return;
 			}

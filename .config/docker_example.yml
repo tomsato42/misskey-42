@@ -208,6 +208,23 @@ id: 'aidx'
 #  options:
 #    dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0'
 
+#   ┌──────────────────┐
+#───┘ 42 intra 連携 └────────────────────────────────────────────
+
+# 42 intra の OAuth2 アプリケーションの設定です。
+# このセクションが無い場合、42 intra 連携の機能は全体が無効になります。
+# 42 intra 側でアプリケーションを登録するときは、リダイレクト URI に
+# `{url}/api/intra/callback` (例: https://example.tld/api/intra/callback) を指定してください。
+# clientSecret は秘密情報です。実際の値をリポジトリにコミットしないでください。
+
+#intra:
+#  clientId: 'your-client-id'
+#  clientSecret: 'your-client-secret'
+#  # 在籍判定とレベルの取得に使う cursus の ID (省略時は 21 = 42cursus)
+#  #cursusId: 21
+#  # 42 API のベース URL (省略時は https://api.intra.42.fr)
+#  #apiBaseUrl: https://api.intra.42.fr
+
 #   ┌─────────────────────┐
 #───┘ Other configuration └─────────────────────────────────────
 

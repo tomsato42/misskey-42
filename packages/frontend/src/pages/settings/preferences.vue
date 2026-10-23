@@ -183,6 +183,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<MkButton v-else danger @click="removePinnedList()"><i class="ti ti-trash"></i> {{ i18n.ts.remove }}</MkButton>
 								</MkFolder>
 							</SearchMarker>
+
+							<SearchMarker :keywords="['pinned', 'role', 'timeline', 'tab']">
+								<MkFolder>
+									<template #label><SearchLabel>{{ i18n.ts._roleTimeline.pinnedRoles }}</SearchLabel></template>
+									<template #caption><SearchText>{{ i18n.ts._roleTimeline.pinnedRolesDescription }}</SearchText></template>
+									<div class="_gaps_s">
+										<div v-for="role in prefer.r.pinnedRoles.value" :key="role.id" :class="$style.pinnedRole">
+											<i class="ti ti-badges"></i>
+											<MkA :to="`/roles/${role.id}`" :class="$style.pinnedRoleName">{{ role.name }}</MkA>
+											<button v-tooltip="i18n.ts.remove" class="_button" :class="$style.pinnedRoleRemove" :aria-label="i18n.ts.remove" @click="unpinRole(role.id)"><i class="ti ti-x"></i></button>
+										</div>
+										<MkButton @click="pinRole()"><i class="ti ti-plus"></i> {{ i18n.ts.add }}</MkButton>
+									</div>
+								</MkFolder>
+							</SearchMarker>
 						</div>
 
 						<hr>
@@ -384,7 +399,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 											</MkSelect>
 										</MkPreferenceContainer>
 
-										<MkPreferenceContainer k="defaultNoteLocalOnly">
+										<MkPreferenceContainer v-if="!instance.intraLoginEnabled" k="defaultNoteLocalOnly">
 											<MkSwitch v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
 										</MkPreferenceContainer>
 									</div>
@@ -891,6 +906,7 @@ import { instance } from '@/instance.js';
 import { ensureSignin } from '@/i.js';
 import { genId } from '@/utility/id.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
+import { addPinnedRole, removePinnedRole } from '@/utility/pinned-roles.js';
 
 const $i = ensureSignin();
 
@@ -1081,6 +1097,29 @@ function removePinnedList() {
 	prefer.commit('pinnedUserLists', []);
 }
 
+async function pinRole() {
+	// ロールのタイムラインは公開かつ「ロールのユーザーを見つけやすくする」ロールだけが見られるので、roles/list (その条件のロール) から選ぶ
+	const roles = (await misskeyApi('roles/list')).filter(r => !prefer.s.pinnedRoles.some(p => p.id === r.id));
+	if (roles.length === 0) {
+		os.alert({ type: 'info', text: i18n.ts._roleTimeline.noRolesToAdd });
+		return;
+	}
+	const { canceled, result: roleId } = await os.select({
+		title: i18n.ts._roleTimeline.selectRole,
+		items: roles.map(x => ({
+			value: x.id, label: x.name,
+		})),
+	});
+	if (canceled || roleId == null) return;
+
+	const role = roles.find(x => x.id === roleId)!;
+	prefer.commit('pinnedRoles', [...addPinnedRole(prefer.s.pinnedRoles, role)]);
+}
+
+function unpinRole(roleId: string) {
+	prefer.commit('pinnedRoles', [...removePinnedRole(prefer.s.pinnedRoles, roleId)]);
+}
+
 function enableAllDataSaver() {
 	const g = { ...prefer.s.dataSaver };
 
@@ -1138,3 +1177,29 @@ definePage(() => ({
 	icon: 'ti ti-adjustments',
 }));
 </script>
+
+<style lang="scss" module>
+.pinnedRole {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.pinnedRoleName {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pinnedRoleRemove {
+	padding: 4px 8px;
+	opacity: 0.7;
+
+	&:hover {
+		opacity: 1;
+		color: var(--MI_THEME-error);
+	}
+}
+</style>

@@ -36,6 +36,21 @@ import {
 	MiGalleryPost,
 	MiHashtag,
 	MiInstance,
+	MiIntraRole,
+	MiCalendarEvent,
+	MiCalendarEventSubscription,
+	MiCalendarEventNote,
+	MiCalendarEventReminder,
+	MiCalendarEventInvitation,
+	MiIntraProject,
+	MiIntraCohort,
+	MiIntraUserProgress,
+	MiIntraProjectResult,
+	MiIntraProjectNote,
+	MiIntraLevelNote,
+	MiNoteHistory,
+	MiPairRecruitment,
+	MiPairMember,
 	MiMeta,
 	MiModerationLog,
 	MiMuting,
@@ -544,6 +559,96 @@ const $reversiGamesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $intraRolesRepository: Provider = {
+	provide: DI.intraRolesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraRole).extend(miRepository as MiRepository<MiIntraRole>),
+	inject: [DI.db],
+};
+
+const $calendarEventsRepository: Provider = {
+	provide: DI.calendarEventsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEvent).extend(miRepository as MiRepository<MiCalendarEvent>),
+	inject: [DI.db],
+};
+
+const $calendarEventSubscriptionsRepository: Provider = {
+	provide: DI.calendarEventSubscriptionsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventSubscription).extend(miRepository as MiRepository<MiCalendarEventSubscription>),
+	inject: [DI.db],
+};
+
+const $calendarEventNotesRepository: Provider = {
+	provide: DI.calendarEventNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventNote).extend(miRepository as MiRepository<MiCalendarEventNote>),
+	inject: [DI.db],
+};
+
+const $calendarEventRemindersRepository: Provider = {
+	provide: DI.calendarEventRemindersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventReminder).extend(miRepository as MiRepository<MiCalendarEventReminder>),
+	inject: [DI.db],
+};
+
+const $calendarEventInvitationsRepository: Provider = {
+	provide: DI.calendarEventInvitationsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiCalendarEventInvitation).extend(miRepository as MiRepository<MiCalendarEventInvitation>),
+	inject: [DI.db],
+};
+
+const $intraProjectsRepository: Provider = {
+	provide: DI.intraProjectsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraProject).extend(miRepository as MiRepository<MiIntraProject>),
+	inject: [DI.db],
+};
+
+const $intraCohortsRepository: Provider = {
+	provide: DI.intraCohortsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraCohort).extend(miRepository as MiRepository<MiIntraCohort>),
+	inject: [DI.db],
+};
+
+const $intraUserProgressesRepository: Provider = {
+	provide: DI.intraUserProgressesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraUserProgress).extend(miRepository as MiRepository<MiIntraUserProgress>),
+	inject: [DI.db],
+};
+
+const $intraProjectResultsRepository: Provider = {
+	provide: DI.intraProjectResultsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraProjectResult).extend(miRepository as MiRepository<MiIntraProjectResult>),
+	inject: [DI.db],
+};
+
+const $intraProjectNotesRepository: Provider = {
+	provide: DI.intraProjectNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraProjectNote).extend(miRepository as MiRepository<MiIntraProjectNote>),
+	inject: [DI.db],
+};
+
+const $intraLevelNotesRepository: Provider = {
+	provide: DI.intraLevelNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiIntraLevelNote).extend(miRepository as MiRepository<MiIntraLevelNote>),
+	inject: [DI.db],
+};
+
+const $noteHistoriesRepository: Provider = {
+	provide: DI.noteHistoriesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiNoteHistory).extend(miRepository as MiRepository<MiNoteHistory>),
+	inject: [DI.db],
+};
+
+const $pairRecruitmentsRepository: Provider = {
+	provide: DI.pairRecruitmentsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairRecruitment).extend(miRepository as MiRepository<MiPairRecruitment>),
+	inject: [DI.db],
+};
+
+const $pairMembersRepository: Provider = {
+	provide: DI.pairMembersRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiPairMember).extend(miRepository as MiRepository<MiPairMember>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -623,6 +728,21 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
+		$calendarEventInvitationsRepository,
+		$intraProjectsRepository,
+		$intraCohortsRepository,
+		$intraUserProgressesRepository,
+		$intraProjectResultsRepository,
+		$intraProjectNotesRepository,
+		$intraLevelNotesRepository,
+		$noteHistoriesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -701,6 +821,21 @@ const $reversiGamesRepository: Provider = {
 		$chatApprovalsRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$intraRolesRepository,
+		$calendarEventsRepository,
+		$calendarEventSubscriptionsRepository,
+		$calendarEventNotesRepository,
+		$calendarEventRemindersRepository,
+		$calendarEventInvitationsRepository,
+		$intraProjectsRepository,
+		$intraCohortsRepository,
+		$intraUserProgressesRepository,
+		$intraProjectResultsRepository,
+		$intraProjectNotesRepository,
+		$intraLevelNotesRepository,
+		$noteHistoriesRepository,
+		$pairRecruitmentsRepository,
+		$pairMembersRepository,
 	],
 })
 export class RepositoryModule {

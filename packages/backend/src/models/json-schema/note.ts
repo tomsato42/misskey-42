@@ -22,6 +22,12 @@ export const packedNoteSchema = {
 			optional: true, nullable: true,
 			format: 'date-time',
 		},
+		updatedAt: {
+			type: 'string',
+			optional: true, nullable: false,
+			format: 'date-time',
+			description: '42times: When the text or CW was last edited. Absent if never edited.',
+		},
 		text: {
 			type: 'string',
 			optional: false, nullable: true,
@@ -43,6 +49,13 @@ export const packedNoteSchema = {
 		replyId: {
 			type: 'string',
 			optional: true, nullable: true,
+			format: 'id',
+			example: 'xxxxxxxxxx',
+		},
+		// 42times: スレッドの最初のノートの ID。リプライのときだけある
+		threadId: {
+			type: 'string',
+			optional: true, nullable: false,
 			format: 'id',
 			example: 'xxxxxxxxxx',
 		},
@@ -264,6 +277,32 @@ export const packedNoteSchema = {
 		myReaction: {
 			type: 'string',
 			optional: true, nullable: true,
+		},
+
+		// 42times: ノートが紐づいているカレンダーのイベント。紐づいていなければ無い
+		calendarEvent: {
+			type: 'object',
+			optional: true, nullable: false,
+			ref: 'CalendarEventLite',
+		},
+
+		// 42times: ノートに付けた 42 intra の課題の結果。付いていなければ無い
+		intraProjectResult: {
+			type: 'object',
+			optional: true, nullable: false,
+			ref: 'IntraProjectNote',
+		},
+
+		// 42times: ノートに付けた 42 intra のレベル (投稿した時点の値)。付いていなければ無い
+		intraLevel: {
+			type: 'object',
+			optional: true, nullable: false,
+			properties: {
+				level: {
+					type: 'integer',
+					optional: false, nullable: false,
+				},
+			},
 		},
 	},
 } as const;

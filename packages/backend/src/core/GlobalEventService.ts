@@ -111,7 +111,10 @@ export interface NoteEventTypes {
 	};
 	updated: {
 		cw: string | null;
-		text: string;
+		text: string | null;
+		visibility: 'public' | 'home' | 'followers' | 'specified';
+		/** 公開範囲だけ変えたときは編集した日時が変わらない (一度も編集していなければ null) */
+		updatedAt: Date | null;
 	};
 	reacted: {
 		reaction: string;

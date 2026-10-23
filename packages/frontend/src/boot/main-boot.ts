@@ -29,9 +29,22 @@ import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { unisonReload } from '@/utility/unison-reload.js';
 import { isBirthday } from '@/utility/is-birthday.js';
+import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
+import { addCalendarToMenu } from '@/utility/calendar-menu.js';
+import { addProjectShareToMenu } from '@/utility/intra-project-result-menu.js';
+import { addPinnedRole, findCohortRole, replaceCohortRole } from '@/utility/pinned-roles.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 export async function mainBoot() {
+	// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインならどの URL でもログイン画面だけを出す
+	const intraSigninOnly = isIntraSigninOnly();
+
 	const { isClientUpdated, lastVersion } = await common(async () => {
+		// ?ui= などでも変えられないように、ほかの UI の選択より前に決める
+		if (intraSigninOnly) {
+			return createApp(await import('@/ui/intra-signin.vue').then(x => x.default));
+		}
+
 		let uiStyle = ui;
 		const searchParams = new URLSearchParams(window.location.search);
 
@@ -98,11 +111,86 @@ export async function mainBoot() {
 	}
 
 	if ($i) {
+		// 42times: カレンダーを足す前から使っている人のメニューにも、カレンダーを一度だけ足す。
+		// menu の既定値は初回の読み込みで profile に保存されるので、既定値を変えただけでは既存の人に出ない。
+		// 同期 (syncEnabled) している menu をクラウドの値で上書きされないよう、クラウドの値の取得を待ってから行う
+		prefer.cloudReady.then(() => {
+			if (prefer.s['calendar.menuItemAdded']) return;
+			const menu = addCalendarToMenu(prefer.s.menu);
+			if (menu !== prefer.s.menu) prefer.commit('menu', [...menu]);
+			prefer.commit('calendar.menuItemAdded', true);
+		}).catch(err => {
+			// 取得に失敗したときは次の読み込みでやり直す
+			console.error(err);
+		});
+
+		// 42times: 点数を共有する前から使っている人のメニューにも、「点数を共有」を一度だけ足す (カレンダーと同じ理由でクラウドの値を待つ)
+		if (instance.intraLoginEnabled) {
+			prefer.cloudReady.then(() => {
+				if (prefer.s['intraProjectResult.menuItemAdded']) return;
+				const menu = addProjectShareToMenu(prefer.s.menu);
+				if (menu !== prefer.s.menu) prefer.commit('menu', [...menu]);
+				prefer.commit('intraProjectResult.menuItemAdded', true);
+			}).catch(err => {
+				console.error(err);
+			});
+		}
+
+		// 42times: タイムラインのタブに、同期 (入学時期) のロールを一度だけ足す。
+		// 入学時期のロールが付いていない人 (本科に入る前など) は、付いてから足す。
+		// 入学時期の決め方が変わってロールが変わったら、足した古いロールを新しいロールに差し替える (ユーザーが外していれば足さない)
+		if (instance.intraLoginEnabled) {
+			prefer.cloudReady.then(async () => {
+				const cohortRole = findCohortRole(await misskeyApi('i/intra-roles'));
+				if (cohortRole == null) return;
+				if (!prefer.s['roleTimeline.cohortRoleAdded']) {
+					const roles = addPinnedRole(prefer.s.pinnedRoles, cohortRole);
+					if (roles !== prefer.s.pinnedRoles) prefer.commit('pinnedRoles', [...roles]);
+					prefer.commit('roleTimeline.cohortRoleAdded', true);
+					prefer.commit('roleTimeline.cohortRoleId', cohortRole.id);
+					return;
+				}
+				if (prefer.s['roleTimeline.cohortRoleId'] === cohortRole.id) return;
+				const roles = replaceCohortRole(prefer.s.pinnedRoles, prefer.s['roleTimeline.cohortRoleId'], cohortRole);
+				if (roles !== prefer.s.pinnedRoles) prefer.commit('pinnedRoles', [...roles]);
+				prefer.commit('roleTimeline.cohortRoleId', cohortRole.id);
+			}).catch(err => {
+				// 取得に失敗したときは次の読み込みでやり直す
+				console.error(err);
+			});
+		}
+
 		store.loaded.then(async () => {
 			if (store.s.accountSetupWizard !== -1) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {
 					closed: () => dispose(),
 				});
+			} else if (instance.intraLoginEnabled === true && !store.s.featureTutorialShown) {
+				// 42times: カレンダーとペア募集を足す前から使っている人にも、使い方の紹介を一度だけ出す。
+				// 初期設定が終わってから出す (初期設定からチュートリアルに進んだ人は、そこで見たことになる)
+				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkTutorialDialog.vue')), {
+					newFeatures: true,
+				}, {
+					closed: () => dispose(),
+				});
+			} else if (instance.intraLoginEnabled === true && !store.s.projectShareTutorialShown) {
+				// 42times: カレンダーとペア募集の紹介の後に加わった「点数を共有」の紹介を、紹介を見た人にも一度だけ出す
+				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkTutorialDialog.vue')), {
+					projectShareOnly: true,
+				}, {
+					closed: () => dispose(),
+				});
+			} else if (instance.intraLoginEnabled === true && !store.s.passkeyNoticeShown && $i?.intra != null && ($i.securityKeysList?.length ?? 0) === 0) {
+				// 42times: 42 にログインできなくなる (ブラックホール) 前にパスキーを作るよう、今いる人にも一度だけ案内する。
+				// チュートリアルの最初のページで案内を見た人には出さない
+				store.set('passkeyNoticeShown', true);
+				const { canceled } = await confirm({
+					type: 'warning',
+					text: i18n.ts._intra.passkeyNotice,
+					okText: i18n.ts._intra.createPasskey,
+					cancelText: i18n.ts.later,
+				});
+				if (!canceled) mainRouter.push('/settings/security');
 			}
 		});
 
@@ -408,7 +496,10 @@ export async function mainBoot() {
 			allowRepeat: true,
 		},
 	} as const satisfies Keymap;
-	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	// ログイン画面だけの状態ではルーターのページを出さないので、ショートカットを登録しない
+	if (!intraSigninOnly) {
+		window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	}
 
 	initializeSw();
 }

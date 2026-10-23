@@ -170,6 +170,9 @@ describe('FileServerService', () => {
 			videoProcessingService,
 			internalStorageService,
 			loggerService,
+			// テスト用の設定では mediaGate が無効なので、ユーザーの状態の確認には使われない
+			{} as any,
+			{} as any,
 		);
 
 		fastify = Fastify();
@@ -194,6 +197,9 @@ describe('FileServerService', () => {
 			videoProcessingService,
 			internalStorageService,
 			loggerService,
+			// テスト用の設定では mediaGate が無効なので、ユーザーの状態の確認には使われない
+			{} as any,
+			{} as any,
 		);
 		externalFastify = Fastify();
 		await externalFastify.register(fastifyStatic, {

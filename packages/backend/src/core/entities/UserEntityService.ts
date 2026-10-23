@@ -543,6 +543,13 @@ export class UserEntityService implements OnModuleInit {
 				description: profile!.description,
 				location: profile!.location,
 				birthday: profile!.birthday,
+				// 数値の intraId は公開しない。ブラックホール期日などを学外に見せないため、未ログインの閲覧者には返さない
+				intra: meId != null && profile!.intraId != null && profile!.intraLogin != null ? {
+					login: profile!.intraLogin,
+					poolYearMonth: profile!.intraPoolYearMonth,
+					blackholedAt: profile!.intraBlackholedAt ? profile!.intraBlackholedAt.toISOString() : null,
+					paceDeadlineAt: profile!.intraPaceDeadlineAt ? profile!.intraPaceDeadlineAt.toISOString() : null,
+				} : null,
 				lang: profile!.lang,
 				fields: profile!.fields,
 				verifiedLinks: profile!.verifiedLinks,
@@ -594,6 +601,7 @@ export class UserEntityService implements OnModuleInit {
 				autoSensitive: profile!.autoSensitive,
 				carefulBot: profile!.carefulBot,
 				autoAcceptFollowed: profile!.autoAcceptFollowed,
+				pairInvitationsEnabled: profile!.pairInvitationsEnabled,
 				noCrawle: profile!.noCrawle,
 				preventAiLearning: profile!.preventAiLearning,
 				isExplorable: user.isExplorable,
@@ -624,18 +632,17 @@ export class UserEntityService implements OnModuleInit {
 			...(opts.includeSecrets ? {
 				email: profile!.email,
 				emailVerified: profile!.emailVerified,
-				securityKeysList: profile!.twoFactorEnabled
-					? this.userSecurityKeysRepository.find({
-						where: {
-							userId: user.id,
-						},
-						select: {
-							id: true,
-							name: true,
-							lastUsed: true,
-						},
-					})
-					: [],
+				// 42times: intra で作ったアカウントは二要素認証 (TOTP) なしでパスキーを登録できるので、二要素認証の有無にかかわらず返す
+				securityKeysList: this.userSecurityKeysRepository.find({
+					where: {
+						userId: user.id,
+					},
+					select: {
+						id: true,
+						name: true,
+						lastUsed: true,
+					},
+				}),
 			} : {}),
 
 			...(relation ? {

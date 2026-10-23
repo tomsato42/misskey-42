@@ -181,6 +181,29 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 							case 'reaction':
 								client = await swos.openNote(data.body.note.id, loginId);
 								break;
+							case 'calendarEventReminder':
+							case 'calendarEventUpdated':
+							case 'calendarEventInvited':
+								// 42times: カレンダーの通知はイベントのページを開く
+								client = await swos.openClient('push', `/calendar/events/${data.body.event.id}`, loginId);
+								break;
+							case 'intraProjectFinished':
+							case 'intraProjectsRefreshed':
+								// 42times: 課題の通知は、点数を共有の画面を開く
+								client = await swos.openClient('push', '/projects', loginId);
+								break;
+							case 'intraLevelUp':
+								// 42times: 投稿するボタンは通知の一覧にあるので、通知の一覧を開く
+								client = await swos.openClient('push', '/my/notifications', loginId);
+								break;
+							case 'pairJoinRequested':
+							case 'pairAccepted':
+							case 'pairClosed':
+							case 'pairInvited':
+							case 'pairApplicationCancelled':
+								// ペア募集の通知は募集のページを開く
+								client = await swos.openClient('push', `/pair/${data.body.pairRecruitment.id}`, loginId);
+								break;
 							default:
 								if ('note' in data.body) {
 									client = await swos.openNote(data.body.note.id, loginId);

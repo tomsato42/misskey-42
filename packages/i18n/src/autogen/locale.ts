@@ -4925,6 +4925,18 @@ export interface Locale extends ILocale {
      */
     "edited": string;
     /**
+     * 本文を空にはできません
+     */
+    "noteEditEmpty": string;
+    /**
+     * 編集履歴
+     */
+    "noteEditHistory": string;
+    /**
+     * 最初
+     */
+    "noteEditHistoryOriginal": string;
+    /**
      * 通知の受信設定
      */
     "notificationRecieveConfig": string;
@@ -6840,6 +6852,190 @@ export interface Locale extends ILocale {
              */
             "doItToContinue": string;
         };
+        "_calendar": {
+            /**
+             * カレンダー
+             */
+            "title": string;
+            /**
+             * 学内のイベントを、みんなでひとつのカレンダーにまとめられます。気になるイベントを購読しておくと、近づいたときに通知が届きます。
+             */
+            "description": string;
+            /**
+             * 試しに「購読」を押してみましょう(練習なので実際には購読されません)
+             */
+            "trySubscribing": string;
+            /**
+             * これで、イベントの1週間前・前日・当日に通知が届きます
+             */
+            "subscribed": string;
+            /**
+             * イベントを作る
+             */
+            "create": string;
+            /**
+             * カレンダーの日付を押すと作れます
+             */
+            "createDescription": string;
+            /**
+             * 購読する
+             */
+            "subscribe": string;
+            /**
+             * どの通知を受け取るかは、設定の「カレンダー」で選べます
+             */
+            "subscribeDescription": string;
+            /**
+             * カレンダー連携
+             */
+            "feed": string;
+            /**
+             * Googleカレンダーや Appleカレンダーにも表示できます
+             */
+            "feedDescription": string;
+            /**
+             * メニューの「カレンダー」からいつでも開けます。
+             */
+            "whereToOpen": string;
+            "_exampleEvent": {
+                /**
+                 * Libft 勉強会
+                 */
+                "title": string;
+                /**
+                 * 2F ラウンジ
+                 */
+                "location": string;
+            };
+        };
+        "_pairRecruitment": {
+            /**
+             * ペア募集
+             */
+            "title": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せます。42 intra の進み具合から、今取り組める課題だけが選べます。
+             */
+            "description": string;
+            /**
+             * 試しに「参加したい」を押してみましょう(練習なので実際には送られません)
+             */
+            "tryJoining": string;
+            /**
+             * 募集した人が承認すると、メンバーに決まって通知が届きます
+             */
+            "joined": string;
+            /**
+             * 募集する
+             */
+            "step1": string;
+            /**
+             * 課題・人数・始める時期を選んで募集
+             */
+            "step1Description": string;
+            /**
+             * 参加したい
+             */
+            "step2": string;
+            /**
+             * 気になる募集に参加希望を送る
+             */
+            "step2Description": string;
+            /**
+             * 承認
+             */
+            "step3": string;
+            /**
+             * 募集した人が承認してメンバーが決まる
+             */
+            "step3Description": string;
+            /**
+             * メニューの「ペア募集」から募集の一覧を開けます。
+             */
+            "whereToOpen": string;
+            "_exampleRecruitment": {
+                /**
+                 * サーバー側を一緒に作れる人を探しています。平日の夜に進めたいです。
+                 */
+                "comment": string;
+            };
+        };
+        "_projectShare": {
+            /**
+             * 点数を共有
+             */
+            "title": string;
+            /**
+             * 終わった課題の点数を、intra と同じ見た目のカードにして投稿できます。合否に関係なく、一度取り組んだ課題なら投稿できます。
+             */
+            "description": string;
+            /**
+             * 試しに「投稿する」を押してみましょう(練習なので実際には投稿されません)
+             */
+            "tryPosting": string;
+            /**
+             * 点数・outstanding の星・チームのメンバーが付いたノートになります
+             */
+            "posted": string;
+            /**
+             * 課題が終わる
+             */
+            "step1": string;
+            /**
+             * 点数が付くと通知が届く
+             */
+            "step1Description": string;
+            /**
+             * 投稿する
+             */
+            "step2": string;
+            /**
+             * 通知か「点数を共有」から投稿
+             */
+            "step2Description": string;
+            /**
+             * 再取得
+             */
+            "step3": string;
+            /**
+             * すぐ反映したいときは「再取得」を押す
+             */
+            "step3Description": string;
+            /**
+             * メニューの「点数を共有」から終わった課題の一覧を開けます。
+             */
+            "whereToOpen": string;
+        };
+        "_newFeatures": {
+            /**
+             * 新しい機能
+             */
+            "title": string;
+            /**
+             * 新しい機能が使えるようになりました
+             */
+            "heading": string;
+            /**
+             * {name} に「カレンダー」「ペア募集」「点数を共有」が加わりました。1分ほどで使い方を紹介します。
+             */
+            "description": ParameterizedString<"name">;
+            /**
+             * 学内のイベントを共有して、購読すると通知が届く
+             */
+            "calendarDescription": string;
+            /**
+             * 2人以上で取り組む課題の仲間を探せる
+             */
+            "pairRecruitmentDescription": string;
+            /**
+             * 終わった課題の点数を投稿できる
+             */
+            "projectShareDescription": string;
+            /**
+             * 使い方を見る
+             */
+            "showMe": string;
+        };
         "_done": {
             /**
              * チュートリアルは終了です🎉
@@ -7964,6 +8160,36 @@ export interface Locale extends ILocale {
                  * これくらいの　おべんとばこに　🤯　🤯　ちょっとつめて
                  */
                 "flavor": string;
+            };
+            "_intraReferral1": {
+                /**
+                 * ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから1人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral5": {
+                /**
+                 * 勧誘大使
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから5人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral10": {
+                /**
+                 * 42times 公認サポーター
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから10人が登録した
+                 */
+                "description": string;
             };
         };
     };
@@ -10004,6 +10230,10 @@ export interface Locale extends ILocale {
          * ダイレクトメッセージ
          */
         "chat": string;
+        /**
+         * 近日のイベント
+         */
+        "upcomingCalendarEvents": string;
     };
     "_widgetOptions": {
         /**
@@ -11004,6 +11234,62 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * {project} のペア募集に参加希望が届きました
+         */
+        "pairJoinRequestedText": ParameterizedString<"project">;
+        /**
+         * {project} のペア募集への参加が承認されました
+         */
+        "pairAcceptedText": ParameterizedString<"project">;
+        /**
+         * ペア募集が締め切られました
+         */
+        "pairClosed": string;
+        /**
+         * {project} のペア募集: {reason}
+         */
+        "pairClosedText": ParameterizedString<"project" | "reason">;
+        /**
+         * {project} のペア募集に招待されました
+         */
+        "pairInvitedText": ParameterizedString<"project">;
+        /**
+         * {project} のペア募集の課題が変わり、参加希望が取り下げになりました
+         */
+        "pairApplicationCancelledText": ParameterizedString<"project">;
+        /**
+         * 課題が終わりました
+         */
+        "intraProjectFinished": string;
+        /**
+         * 課題の取得が終わりました
+         */
+        "intraProjectsRefreshed": string;
+        /**
+         * 課題を取得できませんでした
+         */
+        "intraProjectsRefreshFailed": string;
+        /**
+         * レベルが上がりました
+         */
+        "intraLevelUp": string;
+        /**
+         * Lv.{level} になりました！
+         */
+        "intraLevelUpShareText": ParameterizedString<"level">;
+        /**
+         * もしかして知り合い？
+         */
+        "acquaintanceSuggested": string;
+        /**
+         * 2次元コードを読み込んだ相手です。プロフィールからフォローできます
+         */
+        "acquaintanceSuggestedText": string;
+        /**
+         * あなたの2次元コードから登録しました
+         */
+        "acquaintanceJoined": string;
         "_types": {
             /**
              * すべて
@@ -11089,6 +11375,58 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * イベントのリマインド
+             */
+            "calendarEventReminder": string;
+            /**
+             * イベントの日時の変更・中止
+             */
+            "calendarEventUpdated": string;
+            /**
+             * イベントへの招待
+             */
+            "calendarEventInvited": string;
+            /**
+             * ペア募集への参加希望
+             */
+            "pairJoinRequested": string;
+            /**
+             * ペア募集への参加の承認
+             */
+            "pairAccepted": string;
+            /**
+             * ペア募集の締め切り
+             */
+            "pairClosed": string;
+            /**
+             * ペア募集への招待
+             */
+            "pairInvited": string;
+            /**
+             * ペア募集の参加希望の取り下げ(課題の変更)
+             */
+            "pairApplicationCancelled": string;
+            /**
+             * 課題の結果
+             */
+            "intraProjectFinished": string;
+            /**
+             * 課題の再取得
+             */
+            "intraProjectsRefreshed": string;
+            /**
+             * レベルアップ
+             */
+            "intraLevelUp": string;
+            /**
+             * 2次元コードを見せてくれた人の案内
+             */
+            "acquaintanceSuggested": string;
+            /**
+             * 2次元コードからの登録
+             */
+            "acquaintanceJoined": string;
         };
         "_actions": {
             /**
@@ -11660,6 +11998,14 @@ export interface Locale extends ILocale {
          * プロキシアカウントの説明を更新
          */
         "updateProxyAccountDescription": string;
+        /**
+         * パスワードログインの例外許可を変更
+         */
+        "updateIntraPasswordLoginAllowed": string;
+        /**
+         * パスキーの登録リンクを発行
+         */
+        "issueIntraPasskeySetup": string;
     };
     "_fileViewer": {
         /**
@@ -12369,6 +12715,26 @@ export interface Locale extends ILocale {
                  * ドラッグ＆ドロップされた{count}個のファイルをドライブにアップロードします。実行しますか？
                  */
                 "confirmUploadEmojisDescription": ParameterizedString<"count">;
+                /**
+                 * 貼り付けて登録
+                 */
+                "pasteToRegister": string;
+                /**
+                 * ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」でコピーした行、または画像の URL (1 行に 1 つ。名前はファイル名になります)
+                 */
+                "pasteDialogLabel": string;
+                /**
+                 * 登録できる絵文字が見つかりませんでした。ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」で、画像の列から行をコピーしてください。
+                 */
+                "noPastedEmojis": string;
+                /**
+                 * 貼り付けた{total}件のうち{count}件の絵文字を、画像をこのサーバーに取り込んで登録します。よろしいですか？（ロールは引き継ぎません。一度の操作で登録可能な絵文字は{max}件までです）
+                 */
+                "confirmRegisterPastedEmojisDescription": ParameterizedString<"total" | "count" | "max">;
+                /**
+                 * 同じ名前の絵文字がすでにあります
+                 */
+                "pastedEmojiNameAlreadyExists": string;
             };
         };
     };
@@ -13377,5 +13743,1809 @@ export interface Locale extends ILocale {
          * MFM
          */
         "mfm": string;
+    };
+    "_pairRecruitment": {
+        /**
+         * ペア募集
+         */
+        "title": string;
+        /**
+         * ペア募集の一覧に戻る
+         */
+        "backToList": string;
+        /**
+         * ペアを募集する
+         */
+        "newTitle": string;
+        /**
+         * 募集する
+         */
+        "recruit": string;
+        /**
+         * 募集中
+         */
+        "tabOpen": string;
+        /**
+         * 自分の募集
+         */
+        "tabMine": string;
+        /**
+         * 参加中
+         */
+        "tabJoined": string;
+        /**
+         * 課題で絞り込む
+         */
+        "filterByProject": string;
+        /**
+         * すべての課題
+         */
+        "allProjects": string;
+        /**
+         * {name} (募集 {n}件)
+         */
+        "projectWithOpenCount": ParameterizedString<"name" | "n">;
+        /**
+         * 自分が取り組める課題だけ
+         */
+        "onlyWorkable": string;
+        /**
+         * 募集中の募集はまだありません
+         */
+        "emptyOpen": string;
+        /**
+         * まだ募集していません
+         */
+        "emptyMine": string;
+        /**
+         * 参加希望を送った募集はありません
+         */
+        "emptyJoined": string;
+        /**
+         * 参加したい
+         */
+        "join": string;
+        /**
+         * 取り下げる
+         */
+        "withdraw": string;
+        /**
+         * 参加希望を取り下げますか？
+         */
+        "withdrawConfirm": string;
+        /**
+         * メッセージを送る
+         */
+        "sendMessage": string;
+        /**
+         * チームのチャット
+         */
+        "openTeamChat": string;
+        /**
+         * 承認
+         */
+        "accept": string;
+        /**
+         * 見送る
+         */
+        "reject": string;
+        /**
+         * {name} さんの参加希望を見送りますか？見送った人は、この募集にもう一度参加希望を送れません。
+         */
+        "rejectConfirm": ParameterizedString<"name">;
+        /**
+         * 締め切る
+         */
+        "close": string;
+        /**
+         * この募集を締め切りますか？参加希望を送った人とメンバーに通知されます。
+         */
+        "closeConfirm": string;
+        /**
+         * {n}人 ・ あと{m}人
+         */
+        "teamSizeAndRemaining": ParameterizedString<"n" | "m">;
+        /**
+         * {current}/{n}
+         */
+        "memberFraction": ParameterizedString<"current" | "n">;
+        /**
+         * あと{n}人
+         */
+        "remaining": ParameterizedString<"n">;
+        /**
+         * {n}人
+         */
+        "teamSizeN": ParameterizedString<"n">;
+        /**
+         * {n}人で取り組む課題
+         */
+        "groupSizeProject": ParameterizedString<"n">;
+        /**
+         * {min}〜{max}人で取り組む課題
+         */
+        "groupSizeRangeProject": ParameterizedString<"min" | "max">;
+        /**
+         * {user} が募集
+         */
+        "recruitedBy": ParameterizedString<"user">;
+        /**
+         * {date}から
+         */
+        "startFrom": ParameterizedString<"date">;
+        /**
+         * あと{n}日で締め切り
+         */
+        "expiresInDays": ParameterizedString<"n">;
+        /**
+         * まもなく締め切り
+         */
+        "expiresSoon": string;
+        /**
+         * 締め切り({reason})
+         */
+        "closedWithReason": ParameterizedString<"reason">;
+        /**
+         * 告知のノート
+         */
+        "announcementNote": string;
+        /**
+         * 42 intra の課題のページ
+         */
+        "intraProjectPage": string;
+        /**
+         * 募集した人の intra の課題のページ
+         */
+        "ownerIntraProjectPage": string;
+        /**
+         * 参加希望 {n}件
+         */
+        "pendingCount": ParameterizedString<"n">;
+        /**
+         * メンバー
+         */
+        "members": string;
+        /**
+         * 募集した人
+         */
+        "owner": string;
+        /**
+         * 次に取り組む課題
+         */
+        "project": string;
+        /**
+         * 次に取り組む課題(いくつでも)
+         */
+        "projects": string;
+        /**
+         * 2つ以上選ぶと、参加する人が希望する課題を選べます。
+         */
+        "projectsCaption": string;
+        /**
+         * 選んだ課題のどれでも組める人数だけ選べます。
+         */
+        "teamSizeCaption": string;
+        /**
+         * 選んだ課題に共通して組める人数がありません。
+         */
+        "noCommonTeamSizeInfo": string;
+        /**
+         * {n}つの課題から
+         */
+        "fromNProjects": ParameterizedString<"n">;
+        /**
+         * {name} {n}人
+         */
+        "projectWantedCount": ParameterizedString<"name" | "n">;
+        /**
+         * 希望する課題を選択
+         */
+        "selectWantedProjects": string;
+        /**
+         * どれでもいい
+         */
+        "anyProject": string;
+        /**
+         * 参加希望を送る
+         */
+        "sendApplication": string;
+        /**
+         * 希望する課題
+         */
+        "wantedProjects": string;
+        /**
+         * 編集
+         */
+        "edit": string;
+        /**
+         * ペア募集を編集する
+         */
+        "editTitle": string;
+        /**
+         * 保存
+         */
+        "save": string;
+        /**
+         * {names} を外しますか？その課題だけを希望している人の参加希望は取り下げになり、通知が届きます。
+         */
+        "removeProjectConfirm": ParameterizedString<"names">;
+        /**
+         * 取り組める人を招待
+         */
+        "invite": string;
+        /**
+         * 取り組める人を招待
+         */
+        "inviteTitle": string;
+        /**
+         * どれか
+         */
+        "inviteAll": string;
+        /**
+         * 名前や intra のログインで探す
+         */
+        "searchInvitees": string;
+        /**
+         * {n}人に招待を送る
+         */
+        "sendInvitations": ParameterizedString<"n">;
+        /**
+         * 招待を送りました
+         */
+        "invitationsSent": string;
+        /**
+         * 招待中
+         */
+        "invitations": string;
+        /**
+         * 返事待ち
+         */
+        "invitationWaiting": string;
+        /**
+         * 見送られました
+         */
+        "invitationDeclined": string;
+        /**
+         * 取り消す
+         */
+        "cancelInvitation": string;
+        /**
+         * {name} への招待を取り消しますか？
+         */
+        "cancelInvitationConfirm": ParameterizedString<"name">;
+        /**
+         * {user} から招待されています
+         */
+        "invitedNotice": ParameterizedString<"user">;
+        /**
+         * 今回は見送る
+         */
+        "declineInvitation": string;
+        /**
+         * この招待を見送りますか？
+         */
+        "declineConfirm": string;
+        /**
+         * ペア募集の招待を受け取る
+         */
+        "receiveInvitations": string;
+        /**
+         * オフにすると、ほかの人の「取り組める人を招待」に表示されなくなります。
+         */
+        "receiveInvitationsDescription": string;
+        /**
+         * 共有
+         */
+        "share": string;
+        /**
+         * 募集を共有
+         */
+        "shareTitle": string;
+        /**
+         * 文章をコピー
+         */
+        "copyText": string;
+        /**
+         * リンクだけコピー
+         */
+        "copyLinkOnly": string;
+        /**
+         * このペア募集を見るには、ログインしてください。
+         */
+        "loginRequired": string;
+        "_shareTemplate": {
+            /**
+             * [名前]
+             */
+            "name": string;
+            /**
+             * [課題]
+             */
+            "project": string;
+            /**
+             * {projects}どちらでも
+             */
+            "projectAny": ParameterizedString<"projects">;
+            /**
+             * [期間]
+             */
+            "period": string;
+            /**
+             * [人数]
+             */
+            "teamSize": string;
+            /**
+             * {n}人で取り組みます(現在{current}人、あと{remaining}人)
+             */
+            "teamSizeText": ParameterizedString<"n" | "current" | "remaining">;
+            /**
+             * [現状]
+             */
+            "status": string;
+            /**
+             * 未着手
+             */
+            "notStarted": string;
+            /**
+             * 進行中
+             */
+            "inProgress": string;
+            /**
+             * [活動可能時間など]
+             */
+            "availableTime": string;
+            /**
+             * [意気込み]
+             */
+            "motivation": string;
+            /**
+             * [募集のページ]
+             */
+            "link": string;
+        };
+        /**
+         * 人数(自分を含む)
+         */
+        "teamSize": string;
+        /**
+         * 始める時期
+         */
+        "startTiming": string;
+        /**
+         * 始める日
+         */
+        "startDate": string;
+        /**
+         * ひとこと
+         */
+        "comment": string;
+        /**
+         * タイムラインにも告知する
+         */
+        "announce": string;
+        /**
+         * 募集のカードを付けたノートを投稿します
+         */
+        "announceDescription": string;
+        /**
+         * 選べる課題がありません。キャンパスが分からないときは、42 でログインし直してください。
+         */
+        "noProjects": string;
+        /**
+         * 今取り組める 2 人以上の課題がありません。未解放か完了済みの課題には募集できません。
+         */
+        "noWorkableProjects": string;
+        /**
+         * ペア募集
+         */
+        "cardTitle": string;
+        /**
+         * 参加可能
+         */
+        "joinable": string;
+        /**
+         * 参加不可
+         */
+        "notJoinable": string;
+        "_viewerState": {
+            /**
+             * あなたは取り組めます
+             */
+            "available": string;
+            /**
+             * 進行中
+             */
+            "in_progress": string;
+            /**
+             * 完了済み
+             */
+            "finished": string;
+            /**
+             * まだ取り組めません
+             */
+            "locked": string;
+        };
+        "_memberState": {
+            /**
+             * 取り組める
+             */
+            "available": string;
+            /**
+             * 進行中
+             */
+            "in_progress": string;
+            /**
+             * 完了済み
+             */
+            "finished": string;
+            /**
+             * 未解放
+             */
+            "locked": string;
+        };
+        "_startTiming": {
+            /**
+             * 今すぐ
+             */
+            "now": string;
+            /**
+             * 来週から
+             */
+            "nextWeek": string;
+            /**
+             * 来月から
+             */
+            "nextMonth": string;
+            /**
+             * 日付を指定
+             */
+            "date": string;
+        };
+        "_closedReason": {
+            /**
+             * メンバーがそろった
+             */
+            "full": string;
+            /**
+             * 締め切った
+             */
+            "manual": string;
+            /**
+             * 期限切れ
+             */
+            "expired": string;
+        };
+        "_closedNotification": {
+            /**
+             * メンバーがそろいました
+             */
+            "full": string;
+            /**
+             * 募集した人が締め切りました
+             */
+            "manual": string;
+            /**
+             * 期限が過ぎました
+             */
+            "expired": string;
+        };
+        "_myStatus": {
+            /**
+             * 参加希望を送りました
+             */
+            "pending": string;
+            /**
+             * 参加が決まりました
+             */
+            "accepted": string;
+            /**
+             * 見送られました
+             */
+            "rejected": string;
+        };
+        "_memberStatus": {
+            /**
+             * 参加希望
+             */
+            "pending": string;
+            /**
+             * 参加
+             */
+            "accepted": string;
+            /**
+             * 見送り
+             */
+            "rejected": string;
+            /**
+             * 取り下げ
+             */
+            "withdrawn": string;
+            /**
+             * 招待中
+             */
+            "invited": string;
+            /**
+             * 招待を見送り
+             */
+            "declined": string;
+        };
+        "_errors": {
+            /**
+             * ペア募集を使えません。
+             */
+            "unavailable": string;
+            /**
+             * キャンパスが分かりません。42 でログインし直してください。
+             */
+            "noCampus": string;
+            /**
+             * この課題はあなたのキャンパスにありません。
+             */
+            "noSuchProject": string;
+            /**
+             * この課題は 2 人以上で取り組む課題ではありません。
+             */
+            "notPairProject": string;
+            /**
+             * 人数がこの課題の範囲を超えています。
+             */
+            "invalidTeamSize": string;
+            /**
+             * 始める日を正しく指定してください(今日から 1 年以内)。
+             */
+            "invalidStartDate": string;
+            /**
+             * ひとことが長すぎます。
+             */
+            "commentTooLong": string;
+            /**
+             * あなたはこの課題に取り組めません(未解放か完了済み)。
+             */
+            "projectNotAvailable": string;
+            /**
+             * 募集中の募集が多すぎます。いずれかを締め切ってから募集してください。
+             */
+            "tooManyOpenRecruitments": string;
+            /**
+             * 募集が見つかりません。
+             */
+            "noSuchRecruitment": string;
+            /**
+             * この募集は締め切られています。
+             */
+            "recruitmentClosed": string;
+            /**
+             * 自分の募集には参加できません。
+             */
+            "cannotApplyOwn": string;
+            /**
+             * 参加希望はもう送っています。
+             */
+            "alreadyApplied": string;
+            /**
+             * この募集への参加は見送られています。
+             */
+            "rejectedBefore": string;
+            /**
+             * 募集した人だけが操作できます。
+             */
+            "notOwner": string;
+            /**
+             * 参加希望が見つかりません。
+             */
+            "noSuchApplication": string;
+            /**
+             * この人は今この課題に取り組めないため、承認できません。
+             */
+            "applicantNotAvailable": string;
+            /**
+             * メンバーがそろっています。
+             */
+            "full": string;
+            /**
+             * この募集に参加希望を送っていません。
+             */
+            "notMember": string;
+            /**
+             * この募集には参加できません。
+             */
+            "blocked": string;
+            /**
+             * タイムラインへの告知には、ノートを投稿する権限が必要です。
+             */
+            "announcePermissionDenied": string;
+            /**
+             * まとめられる課題は 4 つまでです。
+             */
+            "tooManyProjects": string;
+            /**
+             * 課題を選んでください。
+             */
+            "invalidProjects": string;
+            /**
+             * 選んだ課題に共通して組める人数がありません。
+             */
+            "noCommonTeamSize": string;
+            /**
+             * 希望する課題を選んでください。
+             */
+            "invalidWantedProjects": string;
+            /**
+             * 参加が決まった人が希望する課題をすべて外すことはできません。
+             */
+            "memberWouldLoseProject": string;
+            /**
+             * 参加が決まった人数より少なくはできません。
+             */
+            "teamSizeBelowMembers": string;
+            /**
+             * この募集から送れる招待の数を超えています。
+             */
+            "tooManyInvitations": string;
+            /**
+             * 招待できない人が含まれています。
+             */
+            "cannotInvite": string;
+            /**
+             * 招待されていません。
+             */
+            "notInvited": string;
+        };
+    };
+    "_intra": {
+        /**
+         * 42 でログイン
+         */
+        "loginWithIntra": string;
+        /**
+         * 42 のアカウントで初めてログインすると、このサーバーのアカウントが自動で作成されます。
+         */
+        "autoSignupDescription": string;
+        /**
+         * 2次元コードを読み込みました。42 でログインすると、コードを見せてくれた人のページが開きます。
+         */
+        "qrInviteDescription": string;
+        /**
+         * ログインすると、{documents}に同意したものとみなされます。
+         */
+        "agreementOnLogin": ParameterizedString<"documents">;
+        /**
+         * と
+         */
+        "agreementDocumentsSeparator": string;
+        /**
+         * 管理者ログイン
+         */
+        "passwordLogin": string;
+        /**
+         * 管理者・モデレーターと、パスワードでのログインを許可されたユーザーだけが使えます。
+         */
+        "passwordLoginDescription": string;
+        /**
+         * ログインしています
+         */
+        "loggingIn": string;
+        /**
+         * もう一度 42 でログイン
+         */
+        "loginAgain": string;
+        /**
+         * ログインを完了できませんでした。もう一度お試しください。
+         */
+        "exchangeFailed": string;
+        /**
+         * ログインに失敗しました。もう一度お試しください。
+         */
+        "unknownError": string;
+        "_errors": {
+            /**
+             * 42cursus 在籍者とスタッフだけが登録できます。
+             */
+            "notEligible": string;
+            /**
+             * アカウントが凍結されています。
+             */
+            "suspended": string;
+            /**
+             * ユーザー名が使用済みのため作成できません。管理者に連絡してください。
+             */
+            "usernameTaken": string;
+            /**
+             * ログインの有効期限が切れたか、別のタブで操作されました。もう一度お試しください。
+             */
+            "invalidState": string;
+            /**
+             * 42 との通信に失敗しました。時間をおいてお試しください。
+             */
+            "intraError": string;
+        };
+        /**
+         * 42 intra
+         */
+        "intraAccount": string;
+        /**
+         * Piscine
+         */
+        "poolYearMonth": string;
+        /**
+         * BH
+         */
+        "blackholedAt": string;
+        /**
+         * ペース期日
+         */
+        "paceDeadlineAt": string;
+        /**
+         * 42 intra のユーザー ID
+         */
+        "intraId": string;
+        /**
+         * パスワードログインを許可
+         */
+        "passwordLoginAllowed": string;
+        /**
+         * 42 intra 連携が有効なときでも、このユーザーがパスワードやパスキーでログインできるようにします。管理者とモデレーターはこの設定に関係なくログインできます。
+         */
+        "passwordLoginAllowedDescription": string;
+        /**
+         * このユーザーにパスワードでのログインを許可しますか？
+         */
+        "allowPasswordLoginConfirm": string;
+        /**
+         * このユーザーのパスワードでのログインの許可を取り消しますか？
+         */
+        "disallowPasswordLoginConfirm": string;
+        /**
+         * 42 intra 連携が有効なため、連合は無効に固定されています。
+         */
+        "federationLocked": string;
+        /**
+         * 42 intra 連携が有効なため、利用形態は「グループサーバー」に固定されています。新しいアカウントは、42 のアカウントで初めてログインしたときにだけ作成されます。
+         */
+        "serverUseLocked": string;
+        /**
+         * 42 intra 連携が有効なため、ログインしていないユーザーにはコンテンツを公開しない設定に固定されています。
+         */
+        "ugcVisibilityLocked": string;
+        /**
+         * 注意: BHになった場合ログインできなくなります。パスキーを作成しましょう。
+         */
+        "passkeyNotice": string;
+        /**
+         * パスキーを作成
+         */
+        "createPasskey": string;
+        /**
+         * ブラックホールなどで 42 にログインできなくなった人は、登録しておいたパスキーでログインできます。
+         */
+        "passkeyLoginDescription": string;
+        /**
+         * パスキーを登録しておくと、ブラックホールなどで 42 にログインできなくなってもログインできます。登録と削除の前に、42 でログインし直して本人確認をします。
+         */
+        "passkeyInfo": string;
+        /**
+         * 本人確認のため、42 でログインし直します。終わるとこの画面に戻ります。
+         */
+        "reauthRequired": string;
+        /**
+         * 本人確認ができました。続けてパスキーを登録しますか？
+         */
+        "reauthDone": string;
+        /**
+         * 本人確認ができました。10 分以内に、もう一度操作してください。
+         */
+        "reauthDoneRetry": string;
+        /**
+         * このアカウントとは別の 42 のアカウントでログインされました。このアカウントの 42 のアカウントでログインし直してください。
+         */
+        "reauthMismatch": string;
+        /**
+         * 本人確認ができませんでした。もう一度お試しください。
+         */
+        "reauthFailed": string;
+        /**
+         * 42 のログイン名
+         */
+        "intraLogin": string;
+        /**
+         * アカウントを作成
+         */
+        "accountCreated": string;
+        /**
+         * 42 のアカウントに結び付けていない
+         */
+        "accountNotLinked": string;
+        /**
+         * 管理者が手動で確認
+         */
+        "manuallyVerified": string;
+        /**
+         * 42 のログイン名から作成
+         */
+        "createAccountFromIntra": string;
+        /**
+         * 42 にログインできない人 (ブラックホールなど) のアカウントを用意し、パスキーの登録リンクを発行します。アカウントが既にあれば、リンクだけを発行します。本人であることを確かめてから発行してください。
+         */
+        "createAccountFromIntraDescription": string;
+        /**
+         * 42 の API に問い合わせられませんでした。
+         */
+        "verifyIntraError": string;
+        /**
+         * このログイン名の 42 のユーザーが見つかりませんでした。
+         */
+        "verifyNotFound": string;
+        /**
+         * このユーザーには 42cursus の在籍記録がありません。
+         */
+        "verifyNotEligible": string;
+        /**
+         * 別の方法で在籍を確かめた場合は、このまま作成できます。42 のユーザーが取れないときは、42 のアカウントに結び付けずに (ロールの同期なしで) 作成します。
+         */
+        "manualVerifyConfirm": string;
+        /**
+         * 手動で確認して作成
+         */
+        "manualVerifyOk": string;
+        /**
+         * このログイン名のユーザー名は既に使われています。既存のアカウントなら、そのユーザーの管理画面からリンクを発行してください。
+         */
+        "manualUsernameTaken": string;
+        /**
+         * ほかの管理者のアカウントにはパスキーの登録リンクを発行できません。
+         */
+        "cannotIssueForAdmin": string;
+        /**
+         * パスキーの登録リンクを発行
+         */
+        "issuePasskeySetup": string;
+        /**
+         * このアカウントにパスキーを登録できるリンクを発行しますか？リンクを知っている人は、このアカウントにログインできるようになります。
+         */
+        "issuePasskeySetupConfirm": string;
+        /**
+         * パスキーの登録リンクを発行しました
+         */
+        "passkeySetupLinkIssued": string;
+        /**
+         * @{username} のリンクです。{date} まで、1 回だけ使えます。本人だけに渡してください。(クリップボードにコピーしました)
+         */
+        "passkeySetupLinkDescription": ParameterizedString<"username" | "date">;
+        /**
+         * パスキーを作成
+         */
+        "passkeySetupTitle": string;
+        /**
+         * アカウント: @{username}
+         */
+        "passkeySetupFor": ParameterizedString<"username">;
+        /**
+         * このアカウントで使うパスキーを作成します。作成すると、42 にログインできなくても、ログイン画面の「パスキーでログイン」からログインできます。
+         */
+        "passkeySetupDescription": string;
+        /**
+         * リンクが無効か、有効期限が切れています。管理者に新しいリンクを発行してもらってください。
+         */
+        "passkeySetupInvalid": string;
+        /**
+         * パスキーを作成できませんでした。もう一度お試しください。
+         */
+        "passkeySetupFailed": string;
+        /**
+         * パスキー
+         */
+        "passkeyDefaultName": string;
+    };
+    "_roleTimeline": {
+        /**
+         * タイムラインに表示するロール
+         */
+        "pinnedRoles": string;
+        /**
+         * 選んだロールのタイムラインを、タイムラインの上のタブに表示します。
+         */
+        "pinnedRolesDescription": string;
+        /**
+         * ロールを選択
+         */
+        "selectRole": string;
+        /**
+         * 追加できるロールがありません
+         */
+        "noRolesToAdd": string;
+        /**
+         * タイムラインのタブに追加
+         */
+        "addToTimelineTabs": string;
+        /**
+         * タイムラインのタブから外す
+         */
+        "removeFromTimelineTabs": string;
+    };
+    "_calendar": {
+        /**
+         * カレンダー
+         */
+        "calendar": string;
+        /**
+         * カレンダーに戻る
+         */
+        "backToCalendar": string;
+        /**
+         * イベント
+         */
+        "event": string;
+        /**
+         * すべて
+         */
+        "all": string;
+        /**
+         * 購読中
+         */
+        "subscribed": string;
+        /**
+         * 自分が作成
+         */
+        "mine": string;
+        /**
+         * 購読していない
+         */
+        "notSubscribed": string;
+        /**
+         * カレンダー連携
+         */
+        "feed": string;
+        /**
+         * イベントを作成
+         */
+        "createEvent": string;
+        /**
+         * イベントを編集
+         */
+        "editEvent": string;
+        /**
+         * この日にイベントを作成
+         */
+        "createEventOnThisDay": string;
+        /**
+         * 前の月
+         */
+        "prevMonth": string;
+        /**
+         * 次の月
+         */
+        "nextMonth": string;
+        /**
+         * {year}年{month}月
+         */
+        "yearMonth": ParameterizedString<"year" | "month">;
+        /**
+         * {month}月{day}日({weekday})
+         */
+        "monthDay": ParameterizedString<"month" | "day" | "weekday">;
+        /**
+         * 終日
+         */
+        "allDay": string;
+        /**
+         * {start}〜{end}
+         */
+        "timeRange": ParameterizedString<"start" | "end">;
+        /**
+         * {start}〜
+         */
+        "timeFrom": ParameterizedString<"start">;
+        /**
+         * 他 {n} 件
+         */
+        "moreEvents": ParameterizedString<"n">;
+        /**
+         * あと{n}日
+         */
+        "daysLeft": ParameterizedString<"n">;
+        /**
+         * 中止
+         */
+        "canceled": string;
+        /**
+         * このイベントは中止されました
+         */
+        "eventCanceled": string;
+        /**
+         * {user} が作成
+         */
+        "createdBy": ParameterizedString<"user">;
+        /**
+         * {n}人が購読中
+         */
+        "subscribersCount": ParameterizedString<"n">;
+        /**
+         * 購読
+         */
+        "subscribe": string;
+        /**
+         * 購読を解除
+         */
+        "unsubscribe": string;
+        /**
+         * 作成したイベントは購読を解除できません
+         */
+        "cannotUnsubscribeOwn": string;
+        /**
+         * #{tag} で投稿する
+         */
+        "postWithHashtag": ParameterizedString<"tag">;
+        /**
+         * カレンダーに追加
+         */
+        "addToCalendar": string;
+        /**
+         * このイベントのノート
+         */
+        "notesOfEvent": string;
+        /**
+         * イベントを中止
+         */
+        "cancelEvent": string;
+        /**
+         * 「{x}」を中止しますか？中止すると元に戻せません。
+         */
+        "cancelConfirm": ParameterizedString<"x">;
+        /**
+         * このイベントは中止されています。
+         */
+        "alreadyCanceled": string;
+        /**
+         * イベント名
+         */
+        "eventTitle": string;
+        /**
+         * 日付
+         */
+        "date": string;
+        /**
+         * 開始時刻
+         */
+        "startTime": string;
+        /**
+         * 終了時刻
+         */
+        "endTime": string;
+        /**
+         * 省略できます。開始と同じ日の中で指定します。
+         */
+        "endTimeDescription": string;
+        /**
+         * ハッシュタグ
+         */
+        "hashtag": string;
+        /**
+         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。このハッシュタグの付いたノートとそのリプライはイベントページに表示されます。
+         */
+        "hashtagDescription": string;
+        /**
+         * イベントを告知
+         */
+        "announceEvent": string;
+        /**
+         * 告知をやめる
+         */
+        "stopAnnouncing": string;
+        /**
+         * 告知してノート
+         */
+        "announceAndNote": string;
+        /**
+         * イベントに紐づける
+         */
+        "linkEvent": string;
+        /**
+         * 紐づけを外す
+         */
+        "unlinkEvent": string;
+        /**
+         * {event} に紐づけ
+         */
+        "linkedToEvent": ParameterizedString<"event">;
+        /**
+         * 紐づけるイベント
+         */
+        "eventToLink": string;
+        /**
+         * 今後のイベントはありません
+         */
+        "noUpcomingEvents": string;
+        /**
+         * ダイレクトのノートは、イベントの告知や紐づけができません。このまま投稿すると、イベントの情報は送られません。
+         */
+        "unavailableForSpecified": string;
+        /**
+         * 予約投稿では、イベントの告知や紐づけができません。このまま予約すると、イベントの情報は保存されません。
+         */
+        "unavailableForScheduled": string;
+        /**
+         * 下書きにはイベントの情報は保存されません。保存しますか？
+         */
+        "draftWithoutEvent": string;
+        /**
+         * 購読 {n}人
+         */
+        "subscribersShort": ParameterizedString<"n">;
+        /**
+         * イベントのページを開く
+         */
+        "openEvent": string;
+        /**
+         * 表示する件数
+         */
+        "widgetLimit": string;
+        /**
+         * 表示するイベント
+         */
+        "widgetFilter": string;
+        /**
+         * {before} → {after}
+         */
+        "scheduleChange": ParameterizedString<"before" | "after">;
+        /**
+         * {month}月のイベント
+         */
+        "monthEvents": ParameterizedString<"month">;
+        /**
+         * {n}件
+         */
+        "eventsCount": ParameterizedString<"n">;
+        /**
+         * この月のイベントはありません
+         */
+        "noEventsThisMonth": string;
+        /**
+         * 今日 ・ {date}
+         */
+        "todayWithDate": ParameterizedString<"date">;
+        /**
+         * 全員以外に公開
+         */
+        "restrictedVisibility": string;
+        /**
+         * 管理人ビューにする
+         */
+        "moderatorViewTurnOn": string;
+        /**
+         * 管理人ビューをやめる
+         */
+        "moderatorViewTurnOff": string;
+        /**
+         * 管理人ビューです。公開範囲の外のイベントも表示しています
+         */
+        "moderatorViewNotice": string;
+        /**
+         * 公開範囲の外
+         */
+        "outsideVisibility": string;
+        /**
+         * 公開範囲の外のイベントを管理人ビューで表示しています。購読とノートの紐づけはできません
+         */
+        "outsideVisibilityNotice": string;
+        /**
+         * 管理人ビューで開く
+         */
+        "openInModeratorView": string;
+        /**
+         * 公開範囲
+         */
+        "visibility": string;
+        /**
+         * イベントの公開範囲
+         */
+        "eventVisibility": string;
+        /**
+         * すべてのユーザーのカレンダーに表示されます。
+         */
+        "visibilityPublicCaption": string;
+        /**
+         * あなたのフォロワーだけが見られます。あとからフォローした人も見られます。
+         */
+        "visibilityFollowersCaption": string;
+        /**
+         * あなたと相互フォローの人だけが見られます。
+         */
+        "visibilityMutualCaption": string;
+        /**
+         * 作成したあと、イベントページの「招待」から人やリストに通知を送れます。
+         */
+        "inviteFromEventPage": string;
+        /**
+         * 作成すると、{n}人に招待の通知が届きます。ここで追加した人だけが見られます。
+         */
+        "willInviteUsers": ParameterizedString<"n">;
+        /**
+         * 作成すると、リストのメンバー{n}人に招待の通知が届きます。あとからリストに追加した人も見られます (通知は届きません)。
+         */
+        "willInviteListMembers": ParameterizedString<"n">;
+        /**
+         * 保存すると、新しく見られるようになった人に招待の通知が届きます。範囲の外になった人の購読は外れます。
+         */
+        "willInviteNewAudience": string;
+        /**
+         * 招待する人
+         */
+        "invitees": string;
+        /**
+         * 招待する人を追加
+         */
+        "addInvitee": string;
+        /**
+         * {user} を外す
+         */
+        "removeInvitee": ParameterizedString<"user">;
+        /**
+         * リスト
+         */
+        "userList": string;
+        /**
+         * リストがありません。リストを作るとメンバーに公開できます。
+         */
+        "noUserLists": string;
+        /**
+         * {name} ({n}人)
+         */
+        "listWithCount": ParameterizedString<"name" | "n">;
+        /**
+         * ノートは「{note}」ですが、イベントは「{event}」の人にだけ表示されます。ほかの人にはノートだけが表示され、イベントのカードは出ません。
+         */
+        "narrowerThanNote": ParameterizedString<"note" | "event">;
+        /**
+         * ノートに合わせる
+         */
+        "matchNoteVisibility": string;
+        /**
+         * {user} のフォロワーに公開
+         */
+        "visibleToFollowersOf": ParameterizedString<"user">;
+        /**
+         * {user} と相互フォローのユーザーに公開
+         */
+        "visibleToMutualsOf": ParameterizedString<"user">;
+        /**
+         * 指定したユーザーに公開
+         */
+        "visibleToSpecified": string;
+        /**
+         * 指定したユーザー ({n}人) に公開
+         */
+        "visibleToSpecifiedCount": ParameterizedString<"n">;
+        /**
+         * リストのメンバーに公開
+         */
+        "visibleToList": string;
+        /**
+         * リスト「{name}」のメンバーに公開
+         */
+        "visibleToNamedList": ParameterizedString<"name">;
+        /**
+         * 購読者 {n}人
+         */
+        "subscribersWithCount": ParameterizedString<"n">;
+        /**
+         * 購読者の一覧を開く
+         */
+        "openSubscribers": string;
+        /**
+         * 作成者
+         */
+        "creator": string;
+        /**
+         * フォロー中
+         */
+        "followingUsers": string;
+        /**
+         * 作成者のほかに購読している人はいません
+         */
+        "noSubscribers": string;
+        /**
+         * 招待
+         */
+        "invite": string;
+        /**
+         * イベントに招待
+         */
+        "inviteToEvent": string;
+        /**
+         * ユーザー
+         */
+        "inviteUsers": string;
+        /**
+         * リスト
+         */
+        "inviteList": string;
+        /**
+         * 名前・ログイン名で検索
+         */
+        "searchUsers": string;
+        /**
+         * あなたのリスト
+         */
+        "yourLists": string;
+        /**
+         * 購読中
+         */
+        "inviteStatusSubscribed": string;
+        /**
+         * 招待済み
+         */
+        "inviteStatusInvited": string;
+        /**
+         * 公開範囲の外
+         */
+        "inviteStatusUnavailable": string;
+        /**
+         * 購読中 (送りません)
+         */
+        "inviteBreakdownSubscribed": string;
+        /**
+         * 招待済み (送りません)
+         */
+        "inviteBreakdownInvited": string;
+        /**
+         * 公開範囲の外 (送れません)
+         */
+        "inviteBreakdownUnavailable": string;
+        /**
+         * 招待を送る人
+         */
+        "inviteBreakdownSend": string;
+        /**
+         * {n}人に招待を送ります
+         */
+        "willSendInvites": ParameterizedString<"n">;
+        /**
+         * 招待する人を選んでください
+         */
+        "selectInvitees": string;
+        /**
+         * リストを選んでください
+         */
+        "selectUserList": string;
+        /**
+         * 招待を送る
+         */
+        "sendInvites": string;
+        /**
+         * {n}人に招待を送りました
+         */
+        "invitesSent": ParameterizedString<"n">;
+        /**
+         * 招待を送る人はいませんでした
+         */
+        "noInvitesSent": string;
+        /**
+         * 招待した人には、あなたの名前で通知が届きます。同じ人に送れるのは1回だけです。
+         */
+        "inviteNotice": string;
+        /**
+         * このイベントは「{visibility}」に公開されています。見られない人には送れません。
+         */
+        "inviteLimitedNotice": ParameterizedString<"visibility">;
+        /**
+         * {user} さんから招待されています
+         */
+        "invitedBy": ParameterizedString<"user">;
+        /**
+         * {n}人
+         */
+        "usersCount": ParameterizedString<"n">;
+        "_visibility": {
+            /**
+             * 全員
+             */
+            "public": string;
+            /**
+             * すべてのユーザーに公開
+             */
+            "publicDescription": string;
+            /**
+             * フォロワー
+             */
+            "followers": string;
+            /**
+             * 自分のフォロワーに公開
+             */
+            "followersDescription": string;
+            /**
+             * 相互フォロー
+             */
+            "mutual": string;
+            /**
+             * 相互フォローのユーザーに公開
+             */
+            "mutualDescription": string;
+            /**
+             * 指定ユーザー
+             */
+            "specified": string;
+            /**
+             * 指定したユーザーに公開
+             */
+            "specifiedDescription": string;
+            /**
+             * リスト
+             */
+            "list": string;
+            /**
+             * リストのメンバーに公開
+             */
+            "listDescription": string;
+        };
+        "_notification": {
+            /**
+             * 1週間後のイベント
+             */
+            "week": string;
+            /**
+             * 明日のイベント
+             */
+            "day": string;
+            /**
+             * 今日のイベント
+             */
+            "today": string;
+            /**
+             * 日時が変更されました
+             */
+            "rescheduled": string;
+            /**
+             * 中止されました
+             */
+            "canceled": string;
+            /**
+             * イベントに招待されました
+             */
+            "invited": string;
+            /**
+             * 購読しました
+             */
+            "subscribedFromNotification": string;
+        };
+        "_notificationSettings": {
+            /**
+             * イベント
+             */
+            "title": string;
+            /**
+             * カレンダーのイベントの通知
+             */
+            "caption": string;
+            /**
+             * 1週間前に通知
+             */
+            "week": string;
+            /**
+             * 開始の7日前の 9:00
+             */
+            "weekCaption": string;
+            /**
+             * 前日に通知
+             */
+            "day": string;
+            /**
+             * 開始の前日の 9:00
+             */
+            "dayCaption": string;
+            /**
+             * 当日に通知
+             */
+            "today": string;
+            /**
+             * 当日の 9:00。開始が 9:00 までなら開始の1時間前
+             */
+            "todayCaption": string;
+            /**
+             * 日時の変更・中止を通知
+             */
+            "changes": string;
+            /**
+             * 購読しているイベントの日時が変わったときや、中止になったとき
+             */
+            "changesCaption": string;
+            /**
+             * 招待の通知
+             */
+            "invited": string;
+            /**
+             * 指定ユーザー・リストに公開されたイベントや、イベントページの「招待」で招待されたとき
+             */
+            "invitedCaption": string;
+        };
+        "_feed": {
+            /**
+             * Googleカレンダー、Appleカレンダー、Outlook などに 42times のイベントを表示できます。予定はカレンダーアプリが定期的に読み込み直すので、反映まで数時間から1日ほどかかることがあります。
+             */
+            "description": string;
+            /**
+             * 購読中のイベント
+             */
+            "subscribed": string;
+            /**
+             * 購読しているイベントと、自分が作成したイベント
+             */
+            "subscribedCaption": string;
+            /**
+             * すべてのイベント
+             */
+            "all": string;
+            /**
+             * 42times にある、あなたが見られるすべてのイベント
+             */
+            "allCaption": string;
+            /**
+             * 購読中のイベントの配信URL
+             */
+            "subscribedUrl": string;
+            /**
+             * すべてのイベントの配信URL
+             */
+            "allUrl": string;
+            /**
+             * Googleカレンダーに追加
+             */
+            "addToGoogle": string;
+            /**
+             * Apple・Outlook で開く
+             */
+            "openInApps": string;
+            /**
+             * このURLを知っている人は、ログインしなくてもイベントを見られます。他の人に教えないでください。
+             */
+            "warning": string;
+            /**
+             * URLを作り直す
+             */
+            "regenerate": string;
+            /**
+             * 今のURLは使えなくなります。カレンダーアプリにも追加し直してください
+             */
+            "regenerateCaption": string;
+            /**
+             * URLを作り直しますか？今のURLは使えなくなり、カレンダーアプリにも新しいURLで追加し直す必要があります。
+             */
+            "regenerateConfirm": string;
+            /**
+             * カレンダーアプリへの追加方法
+             */
+            "howToAdd": string;
+            /**
+             * Googleカレンダー: 「Googleカレンダーに追加」を押すか、Googleカレンダーの「他のカレンダー」→「URLで追加」にURLを貼り付けます。
+             */
+            "howToGoogle": string;
+            /**
+             * Appleカレンダー: 「Apple・Outlook で開く」を押すか、「ファイル」→「新規照会カレンダー」にURLを貼り付けます。
+             */
+            "howToApple": string;
+            /**
+             * Outlook: 「予定表を追加」→「Webから購読」にURLを貼り付けます。
+             */
+            "howToOutlook": string;
+        };
+        "_weekdayShort": {
+            /**
+             * 日
+             */
+            "sunday": string;
+            /**
+             * 月
+             */
+            "monday": string;
+            /**
+             * 火
+             */
+            "tuesday": string;
+            /**
+             * 水
+             */
+            "wednesday": string;
+            /**
+             * 木
+             */
+            "thursday": string;
+            /**
+             * 金
+             */
+            "friday": string;
+            /**
+             * 土
+             */
+            "saturday": string;
+        };
+        "_errors": {
+            /**
+             * イベント名を入力してください。
+             */
+            "titleRequired": string;
+            /**
+             * イベント名は{max}文字以内で入力してください。
+             */
+            "titleTooLong": ParameterizedString<"max">;
+            /**
+             * 場所は{max}文字以内で入力してください。
+             */
+            "locationTooLong": ParameterizedString<"max">;
+            /**
+             * 説明は{max}文字以内で入力してください。
+             */
+            "descriptionTooLong": ParameterizedString<"max">;
+            /**
+             * ハッシュタグとして使えない文字が含まれています。
+             */
+            "invalidHashtag": string;
+            /**
+             * ハッシュタグは{max}文字以内で入力してください。
+             */
+            "hashtagTooLong": ParameterizedString<"max">;
+            /**
+             * 日付を正しく入力してください。
+             */
+            "invalidDate": string;
+            /**
+             * 開始時刻を正しく入力してください。
+             */
+            "invalidStartTime": string;
+            /**
+             * 終了時刻を正しく入力してください。
+             */
+            "invalidEndTime": string;
+            /**
+             * 開始時刻を入力するか、終日にしてください。
+             */
+            "startTimeRequired": string;
+            /**
+             * 終了時刻は開始時刻より後にしてください。
+             */
+            "endNotAfterStart": string;
+            /**
+             * 終了時刻は開始と同じ日の中で指定してください。
+             */
+            "endNotSameDay": string;
+            /**
+             * 月の指定が正しくありません。
+             */
+            "invalidMonth": string;
+            /**
+             * ダイレクトのノートはイベントに紐づけられません。
+             */
+            "cannotLinkSpecified": string;
+            /**
+             * 本文の無いリノートはイベントに紐づけられません。
+             */
+            "cannotLinkPureRenote": string;
+            /**
+             * 招待する人を1人以上追加してください。
+             */
+            "visibleUsersRequired": string;
+            /**
+             * 招待する人は{max}人までです。
+             */
+            "tooManyVisibleUsers": ParameterizedString<"max">;
+            /**
+             * リストを選んでください。
+             */
+            "userListRequired": string;
+            /**
+             * このリストは使えません。自分のリストを選んでください。
+             */
+            "invalidUserList": string;
+        };
+    };
+    "_intraLevel": {
+        /**
+         * 42 intra のレベル
+         */
+        "caption": string;
+        /**
+         * 42 intra のレベル {level}
+         */
+        "label": ParameterizedString<"level">;
+        /**
+         * レベルを外す
+         */
+        "remove": string;
+        "_errors": {
+            /**
+             * このレベルにはまだ届いていません。
+             */
+            "notReached": string;
+        };
+    };
+    "_intraProjectResult": {
+        /**
+         * 点数を共有
+         */
+        "share": string;
+        /**
+         * 課題を外す
+         */
+        "removeProject": string;
+        /**
+         * 投稿する
+         */
+        "post": string;
+        /**
+         * success
+         */
+        "success": string;
+        /**
+         * fail
+         */
+        "fail": string;
+        /**
+         * /100
+         */
+        "outOf": string;
+        /**
+         * outstanding {n}
+         */
+        "outstanding": ParameterizedString<"n">;
+        /**
+         * 点数の付いた課題がありません
+         */
+        "noResults": string;
+        /**
+         * 再取得
+         */
+        "refresh": string;
+        /**
+         * 取得中
+         */
+        "refreshing": string;
+        /**
+         * 課題の点数とレベルは下書きと予約投稿には保存されません。
+         */
+        "notSavedInDraft": string;
+        /**
+         * {project} {score}点 {result}
+         */
+        "scoreLabel": ParameterizedString<"project" | "score" | "result">;
+        /**
+         * 合格
+         */
+        "passed": string;
+        /**
+         * 不合格
+         */
+        "failed": string;
+        /**
+         * {n}回目の提出
+         */
+        "attempt": ParameterizedString<"n">;
+        /**
+         * 最新
+         */
+        "latest": string;
+        /**
+         * 共有する提出
+         */
+        "submission": string;
+        "_errors": {
+            /**
+             * この課題の結果が見つかりません。
+             */
+            "noSuchResult": string;
+            /**
+             * 本文の無いリノートには課題を付けられません。
+             */
+            "cannotAttachToPureRenote": string;
+            /**
+             * 42 intra と連携していません。
+             */
+            "notLinked": string;
+            /**
+             * 取得中です。終わったら通知が届きます。
+             */
+            "refreshInProgress": string;
+            /**
+             * 少し待ってからもう一度押してください。
+             */
+            "refreshTooSoon": string;
+        };
     };
 }

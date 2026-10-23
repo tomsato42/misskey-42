@@ -46,6 +46,8 @@ import type {
 	AdminEmojiAddRequest,
 	AdminEmojiAddResponse,
 	AdminEmojiAddAliasesBulkRequest,
+	AdminEmojiAddFromUrlRequest,
+	AdminEmojiAddFromUrlResponse,
 	AdminEmojiCopyRequest,
 	AdminEmojiCopyResponse,
 	AdminEmojiDeleteRequest,
@@ -69,6 +71,11 @@ import type {
 	AdminGetTableStatsResponse,
 	AdminGetUserIpsRequest,
 	AdminGetUserIpsResponse,
+	AdminIntraCreateAccountRequest,
+	AdminIntraCreateAccountResponse,
+	AdminIntraIssuePasskeySetupRequest,
+	AdminIntraIssuePasskeySetupResponse,
+	AdminIntraSetPasswordLoginAllowedRequest,
 	AdminInviteCreateRequest,
 	AdminInviteCreateResponse,
 	AdminInviteListRequest,
@@ -179,6 +186,33 @@ import type {
 	BubbleGameRankingRequest,
 	BubbleGameRankingResponse,
 	BubbleGameRegisterRequest,
+	CalendarEventsCancelRequest,
+	CalendarEventsCancelResponse,
+	CalendarEventsCreateRequest,
+	CalendarEventsCreateResponse,
+	CalendarEventsDeleteRequest,
+	CalendarEventsInvitationStatusesRequest,
+	CalendarEventsInvitationStatusesResponse,
+	CalendarEventsInviteRequest,
+	CalendarEventsInviteResponse,
+	CalendarEventsLinkNoteRequest,
+	CalendarEventsListRequest,
+	CalendarEventsListResponse,
+	CalendarEventsNotesRequest,
+	CalendarEventsNotesResponse,
+	CalendarEventsShowRequest,
+	CalendarEventsShowResponse,
+	CalendarEventsSubscribeRequest,
+	CalendarEventsSubscribeResponse,
+	CalendarEventsSubscribersRequest,
+	CalendarEventsSubscribersResponse,
+	CalendarEventsUnlinkNoteRequest,
+	CalendarEventsUnsubscribeRequest,
+	CalendarEventsUnsubscribeResponse,
+	CalendarEventsUpcomingRequest,
+	CalendarEventsUpcomingResponse,
+	CalendarEventsUpdateRequest,
+	CalendarEventsUpdateResponse,
 	ChannelsCreateRequest,
 	ChannelsCreateResponse,
 	ChannelsFavoriteRequest,
@@ -419,6 +453,11 @@ import type {
 	IAppsResponse,
 	IAuthorizedAppsRequest,
 	IAuthorizedAppsResponse,
+	ICalendarFeedResponse,
+	ICalendarFeedRegenerateResponse,
+	ICalendarNotificationSettingsResponse,
+	ICalendarNotificationSettingsUpdateRequest,
+	ICalendarNotificationSettingsUpdateResponse,
 	IChangePasswordRequest,
 	IClaimAchievementRequest,
 	IDeleteAccountRequest,
@@ -434,6 +473,9 @@ import type {
 	IImportFollowingRequest,
 	IImportMutingRequest,
 	IImportUserListsRequest,
+	IIntraRolesResponse,
+	IIntraProjectResultsResponse,
+	IIntraStartReauthResponse,
 	IMoveRequest,
 	IMoveResponse,
 	INotificationsRequest,
@@ -518,6 +560,8 @@ import type {
 	NotesFeaturedResponse,
 	NotesGlobalTimelineRequest,
 	NotesGlobalTimelineResponse,
+	NotesHistoryRequest,
+	NotesHistoryResponse,
 	NotesHybridTimelineRequest,
 	NotesHybridTimelineResponse,
 	NotesLocalTimelineRequest,
@@ -552,6 +596,8 @@ import type {
 	NotesTranslateRequest,
 	NotesTranslateResponse,
 	NotesUnrenoteRequest,
+	NotesUpdateRequest,
+	NotesUpdateResponse,
 	NotesUserListTimelineRequest,
 	NotesUserListTimelineResponse,
 	NotificationsCreateRequest,
@@ -565,6 +611,35 @@ import type {
 	PagesShowResponse,
 	PagesUnlikeRequest,
 	PagesUpdateRequest,
+	PairRecruitmentsAcceptRequest,
+	PairRecruitmentsAcceptResponse,
+	PairRecruitmentsApplyRequest,
+	PairRecruitmentsApplyResponse,
+	PairRecruitmentsCancelInvitationRequest,
+	PairRecruitmentsCancelInvitationResponse,
+	PairRecruitmentsCloseRequest,
+	PairRecruitmentsCloseResponse,
+	PairRecruitmentsCreateRequest,
+	PairRecruitmentsCreateResponse,
+	PairRecruitmentsDeclineRequest,
+	PairRecruitmentsDeclineResponse,
+	PairRecruitmentsInviteRequest,
+	PairRecruitmentsInviteResponse,
+	PairRecruitmentsInviteCandidatesRequest,
+	PairRecruitmentsInviteCandidatesResponse,
+	PairRecruitmentsListRequest,
+	PairRecruitmentsListResponse,
+	PairRecruitmentsOpenChatRequest,
+	PairRecruitmentsOpenChatResponse,
+	PairRecruitmentsProjectsResponse,
+	PairRecruitmentsRejectRequest,
+	PairRecruitmentsRejectResponse,
+	PairRecruitmentsShowRequest,
+	PairRecruitmentsShowResponse,
+	PairRecruitmentsUpdateRequest,
+	PairRecruitmentsUpdateResponse,
+	PairRecruitmentsWithdrawRequest,
+	PairRecruitmentsWithdrawResponse,
 	PingResponse,
 	PinnedUsersResponse,
 	PromoReadRequest,
@@ -699,6 +774,7 @@ export type Endpoints = {
 	'admin/drive/show-file': { req: AdminDriveShowFileRequest; res: AdminDriveShowFileResponse };
 	'admin/emoji/add': { req: AdminEmojiAddRequest; res: AdminEmojiAddResponse };
 	'admin/emoji/add-aliases-bulk': { req: AdminEmojiAddAliasesBulkRequest; res: EmptyResponse };
+	'admin/emoji/add-from-url': { req: AdminEmojiAddFromUrlRequest; res: AdminEmojiAddFromUrlResponse };
 	'admin/emoji/copy': { req: AdminEmojiCopyRequest; res: AdminEmojiCopyResponse };
 	'admin/emoji/delete': { req: AdminEmojiDeleteRequest; res: EmptyResponse };
 	'admin/emoji/delete-bulk': { req: AdminEmojiDeleteBulkRequest; res: EmptyResponse };
@@ -718,6 +794,9 @@ export type Endpoints = {
 	'admin/get-index-stats': { req: EmptyRequest; res: AdminGetIndexStatsResponse };
 	'admin/get-table-stats': { req: EmptyRequest; res: AdminGetTableStatsResponse };
 	'admin/get-user-ips': { req: AdminGetUserIpsRequest; res: AdminGetUserIpsResponse };
+	'admin/intra/create-account': { req: AdminIntraCreateAccountRequest; res: AdminIntraCreateAccountResponse };
+	'admin/intra/issue-passkey-setup': { req: AdminIntraIssuePasskeySetupRequest; res: AdminIntraIssuePasskeySetupResponse };
+	'admin/intra/set-password-login-allowed': { req: AdminIntraSetPasswordLoginAllowedRequest; res: EmptyResponse };
 	'admin/invite/create': { req: AdminInviteCreateRequest; res: AdminInviteCreateResponse };
 	'admin/invite/list': { req: AdminInviteListRequest; res: AdminInviteListResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
@@ -792,6 +871,21 @@ export type Endpoints = {
 	'blocking/list': { req: BlockingListRequest; res: BlockingListResponse };
 	'bubble-game/ranking': { req: BubbleGameRankingRequest; res: BubbleGameRankingResponse };
 	'bubble-game/register': { req: BubbleGameRegisterRequest; res: EmptyResponse };
+	'calendar/events/cancel': { req: CalendarEventsCancelRequest; res: CalendarEventsCancelResponse };
+	'calendar/events/create': { req: CalendarEventsCreateRequest; res: CalendarEventsCreateResponse };
+	'calendar/events/delete': { req: CalendarEventsDeleteRequest; res: EmptyResponse };
+	'calendar/events/invitation-statuses': { req: CalendarEventsInvitationStatusesRequest; res: CalendarEventsInvitationStatusesResponse };
+	'calendar/events/invite': { req: CalendarEventsInviteRequest; res: CalendarEventsInviteResponse };
+	'calendar/events/link-note': { req: CalendarEventsLinkNoteRequest; res: EmptyResponse };
+	'calendar/events/list': { req: CalendarEventsListRequest; res: CalendarEventsListResponse };
+	'calendar/events/notes': { req: CalendarEventsNotesRequest; res: CalendarEventsNotesResponse };
+	'calendar/events/show': { req: CalendarEventsShowRequest; res: CalendarEventsShowResponse };
+	'calendar/events/subscribe': { req: CalendarEventsSubscribeRequest; res: CalendarEventsSubscribeResponse };
+	'calendar/events/subscribers': { req: CalendarEventsSubscribersRequest; res: CalendarEventsSubscribersResponse };
+	'calendar/events/unlink-note': { req: CalendarEventsUnlinkNoteRequest; res: EmptyResponse };
+	'calendar/events/unsubscribe': { req: CalendarEventsUnsubscribeRequest; res: CalendarEventsUnsubscribeResponse };
+	'calendar/events/upcoming': { req: CalendarEventsUpcomingRequest; res: CalendarEventsUpcomingResponse };
+	'calendar/events/update': { req: CalendarEventsUpdateRequest; res: CalendarEventsUpdateResponse };
 	'channels/create': { req: ChannelsCreateRequest; res: ChannelsCreateResponse };
 	'channels/favorite': { req: ChannelsFavoriteRequest; res: EmptyResponse };
 	'channels/featured': { req: EmptyRequest; res: ChannelsFeaturedResponse };
@@ -939,6 +1033,10 @@ export type Endpoints = {
 	'i/2fa/update-key': { req: I2faUpdateKeyRequest; res: EmptyResponse };
 	'i/apps': { req: IAppsRequest; res: IAppsResponse };
 	'i/authorized-apps': { req: IAuthorizedAppsRequest; res: IAuthorizedAppsResponse };
+	'i/calendar-feed': { req: EmptyRequest; res: ICalendarFeedResponse };
+	'i/calendar-feed/regenerate': { req: EmptyRequest; res: ICalendarFeedRegenerateResponse };
+	'i/calendar-notification-settings': { req: EmptyRequest; res: ICalendarNotificationSettingsResponse };
+	'i/calendar-notification-settings/update': { req: ICalendarNotificationSettingsUpdateRequest; res: ICalendarNotificationSettingsUpdateResponse };
 	'i/change-password': { req: IChangePasswordRequest; res: EmptyResponse };
 	'i/claim-achievement': { req: IClaimAchievementRequest; res: EmptyResponse };
 	'i/delete-account': { req: IDeleteAccountRequest; res: EmptyResponse };
@@ -958,6 +1056,10 @@ export type Endpoints = {
 	'i/import-following': { req: IImportFollowingRequest; res: EmptyResponse };
 	'i/import-muting': { req: IImportMutingRequest; res: EmptyResponse };
 	'i/import-user-lists': { req: IImportUserListsRequest; res: EmptyResponse };
+	'i/intra-roles': { req: EmptyRequest; res: IIntraRolesResponse };
+	'i/intra/project-results': { req: EmptyRequest; res: IIntraProjectResultsResponse };
+	'i/intra/refresh-project-results': { req: EmptyRequest; res: EmptyResponse };
+	'i/intra/start-reauth': { req: EmptyRequest; res: IIntraStartReauthResponse };
 	'i/move': { req: IMoveRequest; res: IMoveResponse };
 	'i/notifications': { req: INotificationsRequest; res: INotificationsResponse };
 	'i/notifications-grouped': { req: INotificationsGroupedRequest; res: INotificationsGroupedResponse };
@@ -1010,6 +1112,7 @@ export type Endpoints = {
 	'notes/favorites/delete': { req: NotesFavoritesDeleteRequest; res: EmptyResponse };
 	'notes/featured': { req: NotesFeaturedRequest; res: NotesFeaturedResponse };
 	'notes/global-timeline': { req: NotesGlobalTimelineRequest; res: NotesGlobalTimelineResponse };
+	'notes/history': { req: NotesHistoryRequest; res: NotesHistoryResponse };
 	'notes/hybrid-timeline': { req: NotesHybridTimelineRequest; res: NotesHybridTimelineResponse };
 	'notes/local-timeline': { req: NotesLocalTimelineRequest; res: NotesLocalTimelineResponse };
 	'notes/mentions': { req: NotesMentionsRequest; res: NotesMentionsResponse };
@@ -1030,6 +1133,7 @@ export type Endpoints = {
 	'notes/timeline': { req: NotesTimelineRequest; res: NotesTimelineResponse };
 	'notes/translate': { req: NotesTranslateRequest; res: NotesTranslateResponse };
 	'notes/unrenote': { req: NotesUnrenoteRequest; res: EmptyResponse };
+	'notes/update': { req: NotesUpdateRequest; res: NotesUpdateResponse };
 	'notes/user-list-timeline': { req: NotesUserListTimelineRequest; res: NotesUserListTimelineResponse };
 	'notifications/create': { req: NotificationsCreateRequest; res: EmptyResponse };
 	'notifications/flush': { req: EmptyRequest; res: EmptyResponse };
@@ -1043,6 +1147,21 @@ export type Endpoints = {
 	'pages/show': { req: PagesShowRequest; res: PagesShowResponse };
 	'pages/unlike': { req: PagesUnlikeRequest; res: EmptyResponse };
 	'pages/update': { req: PagesUpdateRequest; res: EmptyResponse };
+	'pair-recruitments/accept': { req: PairRecruitmentsAcceptRequest; res: PairRecruitmentsAcceptResponse };
+	'pair-recruitments/apply': { req: PairRecruitmentsApplyRequest; res: PairRecruitmentsApplyResponse };
+	'pair-recruitments/cancel-invitation': { req: PairRecruitmentsCancelInvitationRequest; res: PairRecruitmentsCancelInvitationResponse };
+	'pair-recruitments/close': { req: PairRecruitmentsCloseRequest; res: PairRecruitmentsCloseResponse };
+	'pair-recruitments/create': { req: PairRecruitmentsCreateRequest; res: PairRecruitmentsCreateResponse };
+	'pair-recruitments/decline': { req: PairRecruitmentsDeclineRequest; res: PairRecruitmentsDeclineResponse };
+	'pair-recruitments/invite': { req: PairRecruitmentsInviteRequest; res: PairRecruitmentsInviteResponse };
+	'pair-recruitments/invite-candidates': { req: PairRecruitmentsInviteCandidatesRequest; res: PairRecruitmentsInviteCandidatesResponse };
+	'pair-recruitments/list': { req: PairRecruitmentsListRequest; res: PairRecruitmentsListResponse };
+	'pair-recruitments/open-chat': { req: PairRecruitmentsOpenChatRequest; res: PairRecruitmentsOpenChatResponse };
+	'pair-recruitments/projects': { req: EmptyRequest; res: PairRecruitmentsProjectsResponse };
+	'pair-recruitments/reject': { req: PairRecruitmentsRejectRequest; res: PairRecruitmentsRejectResponse };
+	'pair-recruitments/show': { req: PairRecruitmentsShowRequest; res: PairRecruitmentsShowResponse };
+	'pair-recruitments/update': { req: PairRecruitmentsUpdateRequest; res: PairRecruitmentsUpdateResponse };
+	'pair-recruitments/withdraw': { req: PairRecruitmentsWithdrawRequest; res: PairRecruitmentsWithdrawResponse };
 	'ping': { req: EmptyRequest; res: PingResponse };
 	'pinned-users': { req: EmptyRequest; res: PinnedUsersResponse };
 	'promo/read': { req: PromoReadRequest; res: EmptyResponse };

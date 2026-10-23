@@ -37,6 +37,19 @@ export const notificationTypes = [
 	'test',
 	'login',
 	'createToken',
+	'calendarEventReminder',
+	'calendarEventUpdated',
+	'calendarEventInvited',
+	'pairJoinRequested',
+	'pairAccepted',
+	'pairClosed',
+	'pairInvited',
+	'pairApplicationCancelled',
+	'intraProjectFinished',
+	'intraProjectsRefreshed',
+	'intraLevelUp',
+	'acquaintanceSuggested',
+	'acquaintanceJoined',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
@@ -190,6 +203,8 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'updateIntraPasswordLoginAllowed',
+	'issueIntraPasskeySetup',
 ] as const;
 
 export const rolePolicies = [
@@ -537,5 +552,20 @@ export type ModerationLogPayloads = {
 	updateProxyAccountDescription: {
 		before: string | null;
 		after: string | null;
-	}
+	};
+	updateIntraPasswordLoginAllowed: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		before: boolean;
+		after: boolean;
+	};
+	issueIntraPasskeySetup: {
+		userId: string;
+		userUsername: string;
+		intraLogin: string | null;
+		created: boolean;
+		linked: boolean | null;
+		manuallyVerified: boolean | null;
+	};
 };

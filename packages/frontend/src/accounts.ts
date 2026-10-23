@@ -16,6 +16,9 @@ import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import { $i } from '@/i.js';
 import { signout } from '@/signout.js';
+import { instance } from '@/instance.js';
+import { startIntraLogin } from '@/utility/intra-login.js';
+import { refreshMediaSession } from '@/utility/media-session.js';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -44,6 +47,15 @@ async function addAccount(host: string, user: Misskey.entities.MeDetailed, token
 		store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + user.id]: user });
 		prefer.commit('accounts', [...prefer.s.accounts, [host, { id: user.id, username: user.username }]]);
 	}
+}
+
+/**
+ * 42times: ログイン中のアカウントがアカウントの一覧に無ければ足す。
+ * 一覧に無いままほかのアカウントに切り替えると、元のアカウントに戻れなくなるため
+ */
+export async function ensureCurrentAccountListed() {
+	if ($i == null) return;
+	await addAccount(host, $i, $i.token);
 }
 
 export async function removeAccount(host: string, id: AccountWithToken['id']) {
@@ -183,6 +195,9 @@ export async function login(token: AccountWithToken['token'], redirect?: string)
 
 	await addAccount(host, me, token);
 
+	// 再読み込みした後の画面で画像が表示されるよう、先に画像・添付ファイル用の Cookie を切り替えておく
+	await refreshMediaSession(token, me.id);
+
 	if (redirect) {
 		// 他のタブは再読み込みするだけ
 		reloadChannel.postMessage(null);
@@ -317,6 +332,12 @@ export async function getAccountMenu(opts: {
 			}, {
 				text: i18n.ts.createAccount,
 				action: () => {
+					// intra 連携が有効なときは通常の登録を受け付けないので、42 のログインへ移る (初回ログインでアカウントが作成される)
+					if (instance.intraLoginEnabled) {
+						startIntraLogin();
+						return;
+					}
+
 					getAccountWithSignupDialog().then(res => {
 						if (res != null) {
 							switchAccount(host, res.id);

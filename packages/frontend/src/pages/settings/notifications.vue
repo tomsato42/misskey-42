@@ -38,6 +38,41 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</FormSection>
 
 		<FormSection>
+			<SearchMarker :keywords="['calendar', 'event', 'reminder', 'invite', 'notification']">
+				<MkFolder>
+					<template #icon><SearchIcon><i class="ti ti-calendar-event"></i></SearchIcon></template>
+					<template #label><SearchLabel>{{ i18n.ts._calendar._notificationSettings.title }}</SearchLabel></template>
+					<template #caption><SearchText>{{ i18n.ts._calendar._notificationSettings.caption }}</SearchText></template>
+
+					<div v-if="calendarNotificationSettings != null" class="_gaps_m">
+						<MkSwitch :modelValue="calendarNotificationSettings.invited" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('invited', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.invited }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.invitedCaption }}</template>
+						</MkSwitch>
+						<MkSwitch :modelValue="calendarNotificationSettings.week" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('week', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.week }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.weekCaption }}</template>
+						</MkSwitch>
+						<MkSwitch :modelValue="calendarNotificationSettings.day" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('day', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.day }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.dayCaption }}</template>
+						</MkSwitch>
+						<MkSwitch :modelValue="calendarNotificationSettings.today" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('today', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.today }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.todayCaption }}</template>
+						</MkSwitch>
+						<MkSwitch :modelValue="calendarNotificationSettings.changes" :disabled="savingCalendarNotificationSettings" @update:modelValue="v => updateCalendarNotificationSettings('changes', v)">
+							<template #label>{{ i18n.ts._calendar._notificationSettings.changes }}</template>
+							<template #caption>{{ i18n.ts._calendar._notificationSettings.changesCaption }}</template>
+						</MkSwitch>
+					</div>
+					<MkError v-else-if="calendarNotificationSettingsError" @retry="fetchCalendarNotificationSettings()"/>
+					<MkLoading v-else/>
+				</MkFolder>
+			</SearchMarker>
+		</FormSection>
+
+		<FormSection>
 			<SearchMarker
 				:keywords="['notify', 'hide', 'user']"
 			>
@@ -98,6 +133,7 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
+import { instance } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
@@ -107,6 +143,7 @@ import { Paginator } from '@/utility/paginator.js';
 import MkPagination from '@/components/MkPagination.vue';
 import { userPage } from '@/filters/user.js';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
+import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js';
 
 const $i = ensureSignin();
 
@@ -132,16 +169,55 @@ const notifyUserPaginator = markRaw(new Paginator('following/list', {
 	},
 }));
 
-const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted'] as const satisfies (typeof notificationTypes[number])[];
+// 42times: カレンダーの通知は calendarNotificationSettings (下の「イベント」) で切り替えるので、ここには出さない。
+// acquaintanceSuggested は登録したときに一度だけ届くので、設定に出さない
+const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited', 'acquaintanceSuggested'] as const satisfies (typeof notificationTypes[number])[];
 
-const configurableNotificationTypes = notificationTypes.filter(type => !nonConfigurableNotificationTypes.includes(type as any)) as Exclude<typeof notificationTypes[number], typeof nonConfigurableNotificationTypes[number]>[];
+// ペア募集の通知は学内SNSモード (42 intra ログイン) でだけ届くので、それ以外では設定に出さない
+const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed', 'pairInvited', 'pairApplicationCancelled', 'intraProjectFinished', 'intraProjectsRefreshed', 'intraLevelUp', 'acquaintanceJoined'] satisfies (typeof notificationTypes[number])[];
 
-const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed'] as const satisfies (typeof notificationTypes[number])[];
+const configurableNotificationTypes = notificationTypes.filter(type => !nonConfigurableNotificationTypes.includes(type as any) && (instance.intraLoginEnabled === true || !intraOnlyNotificationTypes.includes(type))) as Exclude<typeof notificationTypes[number], typeof nonConfigurableNotificationTypes[number]>[];
+
+const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectFinished', 'intraProjectsRefreshed', 'intraLevelUp', 'acquaintanceJoined'] as const satisfies (typeof notificationTypes[number])[];
 
 const allowButton = useTemplateRef('allowButton');
 const pushRegistrationInServer = computed(() => allowButton.value?.pushRegistrationInServer);
 const sendReadMessage = computed(() => pushRegistrationInServer.value?.sendReadMessage || false);
 const userLists = await misskeyApi('users/lists/list');
+
+//#region 42times: カレンダーのイベントの通知
+const calendarNotificationSettings = ref<Misskey.entities.CalendarNotificationSettings | null>(null);
+const calendarNotificationSettingsError = ref(false);
+const savingCalendarNotificationSettings = ref(false);
+
+async function fetchCalendarNotificationSettings() {
+	calendarNotificationSettingsError.value = false;
+	try {
+		calendarNotificationSettings.value = await misskeyApi('i/calendar-notification-settings');
+	} catch (err) {
+		console.error(err);
+		calendarNotificationSettingsError.value = true;
+	}
+}
+
+fetchCalendarNotificationSettings();
+
+async function updateCalendarNotificationSettings(key: keyof Misskey.entities.CalendarNotificationSettings, value: boolean) {
+	if (calendarNotificationSettings.value == null || savingCalendarNotificationSettings.value) return;
+	const previous = calendarNotificationSettings.value;
+	// 先に切り替えて見せ、失敗したら戻す
+	calendarNotificationSettings.value = { ...previous, [key]: value };
+	savingCalendarNotificationSettings.value = true;
+	try {
+		calendarNotificationSettings.value = await misskeyApi('i/calendar-notification-settings/update', { [key]: value });
+	} catch (err) {
+		calendarNotificationSettings.value = previous;
+		os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+	} finally {
+		savingCalendarNotificationSettings.value = false;
+	}
+}
+//#endregion
 
 async function readAllNotifications() {
 	await os.apiWithDialog('notifications/mark-all-as-read', {});

@@ -94,7 +94,7 @@ export class ImportCustomEmojisProcessorService {
 
 		try {
 			fs.writeFileSync(destPath, '', 'binary');
-			await this.downloadService.downloadUrl(file.url, destPath);
+			await this.downloadService.downloadUrl(file.url, destPath, { attachMediaGateCookie: true });
 		} catch (e) { // TODO: 何度か再試行
 			if (e instanceof Error || typeof e === 'string') {
 				this.logger.error(e);

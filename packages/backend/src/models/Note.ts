@@ -67,6 +67,13 @@ export class MiNote {
 	})
 	public text: string | null;
 
+	// 42times: 本文・CW を編集した日時。編集していなければ null
+	@Column('timestamp with time zone', {
+		nullable: true,
+		comment: 'The updated date of the Note.',
+	})
+	public updatedAt: Date | null;
+
 	@Column('varchar', {
 		length: 256, nullable: true,
 	})

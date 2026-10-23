@@ -7,13 +7,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="[$style.root, { [$style.contentVisibilityAuto]: contentVisibilityAuto }]">
 	<div :class="$style.head">
 		<MkAvatar v-if="['pollEnded', 'note'].includes(notification.type) && 'note' in notification" :class="$style.icon" :user="notification.note.user" link preview/>
-		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
+		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'createToken', 'scheduledNotePosted', 'scheduledNotePostFailed', 'pairClosed', 'intraProjectsRefreshed', 'intraLevelUp'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
+		<div v-else-if="notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated'" :class="[$style.icon, $style.icon_calendar]"><i class="ti ti-calendar-event" style="line-height: 1;"></i></div>
+		<div v-else-if="notification.type === 'intraProjectFinished'" :class="[$style.icon, $style.icon_intraProject]">
+			<MkIntraProjectResultTile :finalMark="notification.intraProjectResult.finalMark" :validated="notification.intraProjectResult.validated" small/>
+		</div>
 		<MkAvatar v-else-if="'user' in notification" :class="$style.icon" :user="notification.user" link preview/>
 		<img v-else-if="'icon' in notification && notification.icon != null" :class="[$style.icon, $style.icon_app]" :src="notification.icon" alt=""/>
 		<div
+			v-if="notification.type !== 'intraProjectFinished'"
 			:class="[$style.subIcon, {
 				[$style.t_follow]: notification.type === 'follow',
 				[$style.t_followRequestAccepted]: notification.type === 'followRequestAccepted',
@@ -31,6 +36,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_createToken]: notification.type === 'createToken',
 				[$style.t_chatRoomInvitationReceived]: notification.type === 'chatRoomInvitationReceived',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
+				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited',
+				[$style.t_intraProjectsRefreshed]: notification.type === 'intraProjectsRefreshed',
+				[$style.t_intraLevelUp]: notification.type === 'intraLevelUp',
+				[$style.t_acquaintanceSuggested]: notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined',
+				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled',
 			}]"
 		>
 			<i v-if="notification.type === 'follow'" class="ti ti-plus"></i>
@@ -48,6 +58,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
 			<i v-else-if="notification.type === 'createToken'" class="ti ti-key"></i>
 			<i v-else-if="notification.type === 'chatRoomInvitationReceived'" class="ti ti-messages"></i>
+			<i v-else-if="notification.type === 'calendarEventReminder'" class="ti ti-clock"></i>
+			<i v-else-if="notification.type === 'calendarEventUpdated' && notification.updateKind === 'canceled'" class="ti ti-calendar-x"></i>
+			<i v-else-if="notification.type === 'calendarEventUpdated'" class="ti ti-calendar-time"></i>
+			<i v-else-if="notification.type === 'calendarEventInvited'" class="ti ti-calendar-plus"></i>
+			<i v-else-if="notification.type === 'pairJoinRequested'" class="ti ti-hand-stop"></i>
+			<i v-else-if="notification.type === 'pairAccepted'" class="ti ti-check"></i>
+			<i v-else-if="notification.type === 'pairClosed'" class="ti ti-users-group"></i>
+			<i v-else-if="notification.type === 'pairInvited'" class="ti ti-user-plus"></i>
+			<i v-else-if="notification.type === 'pairApplicationCancelled'" class="ti ti-arrow-back-up"></i>
+			<i v-else-if="notification.type === 'intraProjectsRefreshed' && notification.failed" class="ti ti-alert-triangle"></i>
+			<i v-else-if="notification.type === 'intraProjectsRefreshed'" class="ti ti-refresh"></i>
+			<i v-else-if="notification.type === 'intraLevelUp'" class="ti ti-trending-up"></i>
+			<i v-else-if="notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined'" class="ti ti-qrcode"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -73,6 +96,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'login'">{{ i18n.ts._notification.login }}</span>
 			<span v-else-if="notification.type === 'createToken'">{{ i18n.ts._notification.createToken }}</span>
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
+			<span v-else-if="notification.type === 'calendarEventReminder'">{{ getCalendarReminderHeading(notification.reminderKind) }}</span>
+			<span v-else-if="notification.type === 'calendarEventUpdated'">{{ getCalendarUpdateHeading(notification.updateKind) }}</span>
+			<span v-else-if="notification.type === 'pairClosed'">{{ i18n.ts._notification.pairClosed }}</span>
+			<span v-else-if="notification.type === 'intraProjectFinished'">{{ i18n.ts._notification.intraProjectFinished }}</span>
+			<span v-else-if="notification.type === 'intraProjectsRefreshed'">{{ i18n.ts._intraProjectResult.share }}</span>
+			<span v-else-if="notification.type === 'intraLevelUp'">{{ i18n.ts._notification.intraLevelUp }}</span>
+			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited' || notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
@@ -126,9 +156,79 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkA v-else-if="notification.type === 'exportCompleted'" :class="$style.text" :to="`/my/drive/file/${notification.fileId}`">
 				{{ i18n.ts.showFile }}
 			</MkA>
+			<MkA v-else-if="notification.type === 'calendarEventReminder'" :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+				<b :class="$style.calendarLine">{{ notification.event.title }}</b>
+				<span :class="$style.calendarLine">{{ formatCalendarScheduleAndLocation(notification.event) }}</span>
+			</MkA>
+			<MkA v-else-if="notification.type === 'calendarEventUpdated'" :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+				<b :class="[$style.calendarLine, { [$style.calendarCanceled]: notification.updateKind === 'canceled' }]">{{ notification.event.title }}</b>
+				<span v-if="notification.updateKind === 'rescheduled' && notification.previousSchedule != null" :class="$style.calendarLine">
+					{{ i18n.tsx._calendar.scheduleChange({ before: formatCalendarSchedule(notification.previousSchedule), after: formatCalendarSchedule(notification.schedule) }) }}
+				</span>
+				<span v-else :class="$style.calendarLine">{{ formatCalendarSchedule(notification.schedule) }}</span>
+			</MkA>
+			<template v-else-if="notification.type === 'calendarEventInvited'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._calendar._notification.invited }}</span>
+				<MkA :class="$style.calendarText" :to="`/calendar/events/${notification.event.id}`">
+					<b :class="[$style.calendarLine, { [$style.calendarCanceled]: notification.event.isCanceled }]">{{ notification.event.title }}</b>
+					<span :class="$style.calendarLine">{{ formatCalendarScheduleAndLocation(notification.event) }}</span>
+				</MkA>
+				<!-- 通知の一覧ではその場で購読できる。購読済み (別の画面で購読したときを含む) なら状態だけ出す -->
+				<template v-if="full && !notification.event.isCanceled">
+					<div v-if="invitationSubscribed || notification.event.isSubscribed === true" :class="$style.calendarSubscribed">
+						<i class="ti ti-bell-ringing"></i> {{ invitationSubscribed ? i18n.ts._calendar._notification.subscribedFromNotification : i18n.ts._calendar.subscribed }}
+					</div>
+					<div v-else :class="$style.followRequestCommands">
+						<MkButton :class="$style.followRequestCommandButton" rounded primary :disabled="subscribingInvitation" @click="subscribeInvitation()"><i class="ti ti-bell"></i> {{ i18n.ts._calendar.subscribe }}</MkButton>
+					</div>
+				</template>
+			</template>
+			<MkA v-else-if="notification.type === 'pairJoinRequested'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairJoinRequestedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairAccepted'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairAcceptedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairInvited'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairInvitedText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairApplicationCancelled'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairApplicationCancelledText({ project: notification.pairRecruitment.projectName }) }}
+			</MkA>
+			<MkA v-else-if="notification.type === 'pairClosed'" :class="$style.text" :to="`/pair/${notification.pairRecruitment.id}`">
+				{{ i18n.tsx._notification.pairClosedText({ project: notification.pairRecruitment.projectName, reason: i18n.ts._pairRecruitment._closedNotification[notification.reason] }) }}
+			</MkA>
+			<template v-else-if="notification.type === 'intraProjectFinished'">
+				<b :class="[$style.text, $style.intraProjectName]">{{ notification.intraProjectResult.projectName }}</b>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="shareIntraProjectResult(notification.intraProjectResult.id)">{{ i18n.ts._intraProjectResult.post }}</MkButton>
+				</div>
+			</template>
+			<template v-else-if="notification.type === 'intraLevelUp'">
+				<b :class="[$style.text, $style.intraProjectName]">Lv.{{ notification.level }}</b>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="shareIntraLevelUp(notification.level)">{{ i18n.ts._intraProjectResult.post }}</MkButton>
+				</div>
+			</template>
+			<MkA v-else-if="notification.type === 'intraProjectsRefreshed'" :class="$style.text" to="/projects">
+				{{ notification.failed ? i18n.ts._notification.intraProjectsRefreshFailed : i18n.ts._notification.intraProjectsRefreshed }}
+			</MkA>
 			<MkA v-else-if="notification.type === 'createToken'" :class="$style.text" to="/settings/apps">
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>
 			</MkA>
+			<template v-else-if="notification.type === 'acquaintanceSuggested'">
+				<b :class="$style.text">{{ i18n.ts._notification.acquaintanceSuggested }}</b>
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._notification.acquaintanceSuggestedText }}</span>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary type="routerLink" :to="userPage(notification.user)"><i class="ti ti-user"></i> {{ i18n.ts.profile }}</MkButton>
+				</div>
+			</template>
+			<template v-else-if="notification.type === 'acquaintanceJoined'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._notification.acquaintanceJoined }}</span>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary type="routerLink" :to="userPage(notification.user)"><i class="ti ti-user"></i> {{ i18n.ts.profile }}</MkButton>
+				</div>
+			</template>
 			<template v-else-if="notification.type === 'follow'">
 				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotNewFollower }}</span>
 			</template>
@@ -180,12 +280,16 @@ import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkIntraProjectResultTile from '@/components/MkIntraProjectResultTile.vue';
+import { shareIntraLevelUp, shareIntraProjectResult } from '@/utility/intra-project-result.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { ensureSignin } from '@/i.js';
+import { formatCalendarSchedule, formatCalendarScheduleAndLocation, getCalendarApiErrorMessage, getCalendarReminderHeading, getCalendarUpdateHeading } from '@/utility/calendar-event-messages.js';
+import * as os from '@/os.js';
 
 const $i = ensureSignin();
 
@@ -227,6 +331,23 @@ const rejectFollowRequest = () => {
 	followRequestDone.value = true;
 	misskeyApi('following/requests/reject', { userId: props.notification.user.id });
 };
+
+// 42times: 招待の通知から購読する
+const invitationSubscribed = ref(false);
+const subscribingInvitation = ref(false);
+
+async function subscribeInvitation() {
+	if (props.notification.type !== 'calendarEventInvited' || subscribingInvitation.value) return;
+	subscribingInvitation.value = true;
+	try {
+		await misskeyApi('calendar/events/subscribe', { eventId: props.notification.event.id });
+		invitationSubscribed.value = true;
+	} catch (err) {
+		os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+	} finally {
+		subscribingInvitation.value = false;
+	}
+}
 
 function getActualReactedUsersCount(notification: Misskey.entities.Notification) {
 	if (notification.type !== 'reaction:grouped') return 0;
@@ -303,6 +424,28 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	border-radius: 6px;
 }
 
+// 42times: カレンダーの通知には送り手のユーザーがいないので、アバターの代わりにカレンダーのアイコンを出す
+.icon_calendar {
+	display: grid;
+	place-items: center;
+	border-radius: 100%;
+	font-size: 18px;
+	background: var(--MI_THEME-buttonBg);
+}
+
+.icon_intraProject {
+	display: grid;
+	place-items: center;
+
+	> span {
+		width: 100%;
+	}
+}
+
+.intraProjectName {
+	color: #00898b;
+}
+
 .subIcon {
 	position: absolute;
 	z-index: 1;
@@ -324,7 +467,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	}
 }
 
-.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest {
+.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest, .t_acquaintanceSuggested {
 	background: var(--eventFollow);
 	pointer-events: none;
 }
@@ -364,7 +507,8 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
-.t_achievementEarned {
+.t_achievementEarned,
+.t_intraLevelUp {
 	background: var(--eventAchievement);
 	pointer-events: none;
 }
@@ -394,9 +538,37 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
+.t_calendar,
+.t_intraProjectsRefreshed {
+	background: var(--eventOther);
+	pointer-events: none;
+}
+
+.t_pair {
+	background: var(--eventOther);
+	pointer-events: none;
+}
+
 .tail {
 	flex: 1;
 	min-width: 0;
+}
+
+.calendarText {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+}
+
+.calendarLine {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.calendarCanceled {
+	text-decoration: line-through;
 }
 
 .header {
@@ -451,6 +623,12 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 }
 .followRequestCommandButton {
 	flex: 1;
+}
+
+.calendarSubscribed {
+	margin-top: 8px;
+	font-weight: bold;
+	color: var(--MI_THEME-accent);
 }
 
 .reactionsItem {

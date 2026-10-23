@@ -13,6 +13,7 @@ import type { UserProfilesRepository, UserSecurityKeysRepository } from '@/model
 import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 
 export const meta = {
 	requireCredential: true,
@@ -20,6 +21,12 @@ export const meta = {
 	secure: true,
 
 	errors: {
+		intraReauthRequired: {
+			message: 'Verify yourself by signing in to 42 intra again.',
+			code: 'INTRA_REAUTH_REQUIRED',
+			id: '994b4dc6-4744-4f2f-8920-aa7d00bee67a',
+		},
+
 		incorrectPassword: {
 			message: 'Incorrect password.',
 			code: 'INCORRECT_PASSWORD',
@@ -52,7 +59,7 @@ export const paramDef = {
 		name: { type: 'string', minLength: 1, maxLength: 30 },
 		credential: { type: 'object' },
 	},
-	required: ['password', 'name', 'credential'],
+	required: ['name', 'credential'],
 } as const;
 
 // eslint-disable-next-line import/no-default-export
@@ -69,6 +76,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private userAuthService: UserAuthService,
 		private userEntityService: UserEntityService,
 		private globalEventService: GlobalEventService,
+		private intraAuthService: IntraAuthService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const token = ps.token;
@@ -86,13 +94,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				}
 			}
 
-			const passwordMatched = await bcrypt.compare(ps.password, profile.password ?? '');
-			if (!passwordMatched) {
-				throw new ApiError(meta.errors.incorrectPassword);
-			}
+			// 42 intra で作ったアカウントはパスワードを持たないので、パスワード (と TOTP の登録) の代わりに 42 での本人確認を求める
+			const usesIntraReauth = this.intraAuthService.usesIntraReauth(profile);
+			if (usesIntraReauth) {
+				if (!await this.intraAuthService.hasRecentReauth(me.id)) {
+					throw new ApiError(meta.errors.intraReauthRequired);
+				}
+			} else {
+				const passwordMatched = await bcrypt.compare(ps.password ?? '', profile.password ?? '');
+				if (!passwordMatched) {
+					throw new ApiError(meta.errors.incorrectPassword);
+				}
 
-			if (!profile.twoFactorEnabled) {
-				throw new ApiError(meta.errors.twoFactorNotEnabled);
+				if (!profile.twoFactorEnabled) {
+					throw new ApiError(meta.errors.twoFactorNotEnabled);
+				}
 			}
 
 			const keyInfo = await this.webAuthnService.verifyRegistration(me.id, ps.credential);
@@ -108,6 +124,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				credentialBackedUp: keyInfo.credentialBackedUp,
 				transports: keyInfo.transports,
 			});
+
+			// パスワードを持たないので、パスキーはパスワードレスログインにしか使えない。登録したらすぐ使えるようにする
+			if (usesIntraReauth && !profile.usePasswordLessLogin) {
+				await this.userProfilesRepository.update(me.id, {
+					usePasswordLessLogin: true,
+				});
+			}
 
 			// Publish meUpdated event
 			this.globalEventService.publishMainStream(me.id, 'meUpdated', await this.userEntityService.pack(me.id, me, {

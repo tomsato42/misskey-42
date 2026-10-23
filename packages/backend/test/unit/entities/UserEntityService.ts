@@ -52,6 +52,8 @@ import { ReactionService } from '@/core/ReactionService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { ChatService } from '@/core/ChatService.js';
+import { CalendarEventEntityService } from '@/core/entities/CalendarEventEntityService.js';
+import { IntraProjectNoteEntityService } from '@/core/entities/IntraProjectNoteEntityService.js';
 
 process.env.NODE_ENV = 'test';
 
@@ -175,6 +177,8 @@ describe('UserEntityService', () => {
 				ReactionsBufferingService,
 				NotificationService,
 				ChatService,
+				CalendarEventEntityService,
+				IntraProjectNoteEntityService,
 			];
 
 			app = await Test.createTestingModule({
@@ -247,6 +251,27 @@ describe('UserEntityService', () => {
 			expect(actual.birthday).toBe('2000-01-01');
 			// is detail and me
 			expect(actual.achievements).toEqual(achievements);
+		});
+
+		test('42 intra の情報はログインしている閲覧者にだけ返す', async () => {
+			const me = await createUser();
+			const who = await createUser({}, {
+				intraId: Math.floor(Math.random() * 1_000_000_000),
+				intraLogin: 'blobcat',
+				intraPoolYearMonth: '2307',
+				intraBlackholedAt: new Date('2030-01-01T00:00:00.000Z'),
+			});
+
+			const asSignedIn = await service.pack(who, me, { schema: 'UserDetailedNotMe' }) as any;
+			expect(asSignedIn.intra).toEqual({
+				login: 'blobcat',
+				poolYearMonth: '2307',
+				blackholedAt: '2030-01-01T00:00:00.000Z',
+				paceDeadlineAt: null,
+			});
+
+			const asAnonymous = await service.pack(who, null, { schema: 'UserDetailedNotMe' }) as any;
+			expect(asAnonymous.intra).toBeNull();
 		});
 
 		test('alsoKnownAs as string does not throw', async () => {

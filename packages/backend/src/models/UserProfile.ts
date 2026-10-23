@@ -9,6 +9,8 @@ import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiPage } from './Page.js';
 import { MiUserList } from './UserList.js';
+import { DEFAULT_CALENDAR_NOTIFICATION_SETTINGS } from './CalendarEvent.js';
+import type { CalendarNotificationSettings } from './CalendarEvent.js';
 
 // TODO: このテーブルで管理している情報すべてレジストリで管理するようにしても良いかも
 //       ただ、「emailVerified が true なユーザーを find する」のようなクエリは書けなくなるからウーン
@@ -278,6 +280,77 @@ export class MiUserProfile {
 		unlockedAt: number;
 	}[];
 
+	//#region 42 intra
+	// intra の数値ユーザー ID。login は再利用されることがあるため、本人の同一性はこの値で判定する
+	@Index({ unique: true })
+	@Column('integer', {
+		nullable: true,
+	})
+	public intraId: number | null;
+
+	@Column('varchar', {
+		length: 32, nullable: true,
+	})
+	public intraLogin: string | null;
+
+	// ピシン(入学選考)の年月 (YYMM)
+	@Column('varchar', {
+		length: 4, nullable: true,
+	})
+	public intraPoolYearMonth: string | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraBlackholedAt: Date | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraPaceDeadlineAt: Date | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+	})
+	public intraSyncedAt: Date | null;
+
+	// 管理者・モデレーター以外でもパスワードログインを例外的に許可するか
+	@Column('boolean', {
+		default: false,
+	})
+	public intraPasswordLoginAllowed: boolean;
+
+	// 2次元コードから登録したときの、コードを見せた人 (招待した人) のユーザー ID。招待した人数の実績に使う
+	@Index()
+	@Column('varchar', {
+		length: 32, nullable: true,
+	})
+	public intraReferrerId: MiUser['id'] | null;
+	//#endregion
+
+	//#region calendar
+	// カレンダー配信 (iCalendar) の URL に含める推測できない鍵。作り直せる
+	@Index({ unique: true })
+	@Column('varchar', {
+		length: 64, nullable: true,
+	})
+	public calendarFeedToken: string | null;
+
+	// 購読しているイベントの通知を種類ごとに受け取るか
+	@Column('jsonb', {
+		default: { ...DEFAULT_CALENDAR_NOTIFICATION_SETTINGS },
+	})
+	public calendarNotificationSettings: CalendarNotificationSettings;
+	//#endregion
+
+	//#region pair recruitment
+	// ペア募集の招待を受け取るか。受け取らない人は招待の候補に出さない
+	@Column('boolean', {
+		default: true,
+	})
+	public pairInvitationsEnabled: boolean;
+	//#endregion
+
 	//#region Denormalized fields
 	@Index()
 	@Column('varchar', {
@@ -375,4 +448,13 @@ export const ACHIEVEMENT_TYPES = [
 	'tutorialCompleted',
 	'bubbleGameExplodingHead',
 	'bubbleGameDoubleExplodingHead',
+	// 42times: 2次元コードから登録した人数。backend が付けるので i/claim-achievement では付けられない
+	'intraReferral1',
+	'intraReferral5',
+	'intraReferral10',
 ] as const;
+
+/**
+ * 42times: backend だけが付ける実績 (i/claim-achievement では付けられない)
+ */
+export const SERVER_ONLY_ACHIEVEMENT_TYPES: readonly typeof ACHIEVEMENT_TYPES[number][] = ['intraReferral1', 'intraReferral5', 'intraReferral10'];

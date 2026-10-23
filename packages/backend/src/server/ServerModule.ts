@@ -51,6 +51,9 @@ import { ReversiChannel } from './api/stream/channels/reversi.js';
 import { ReversiGameChannel } from './api/stream/channels/reversi-game.js';
 import { NoteStreamingHidingService } from './api/stream/NoteStreamingHidingService.js';
 import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.js';
+import { IntraAuthApiService } from './api/IntraAuthApiService.js';
+import { MediaSessionApiService } from './api/MediaSessionApiService.js';
+import { CalendarFeedServerService } from './CalendarFeedServerService.js';
 
 @Module({
 	imports: [
@@ -78,6 +81,9 @@ import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.j
 		RateLimiterService,
 		SigninApiService,
 		SigninWithPasskeyApiService,
+		IntraAuthApiService,
+		MediaSessionApiService,
+		CalendarFeedServerService,
 		SigninService,
 		SignupApiService,
 		StreamingApiServerService,

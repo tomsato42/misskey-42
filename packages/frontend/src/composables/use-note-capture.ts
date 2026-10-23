@@ -16,10 +16,19 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
 import { globalEvents } from '@/events.js';
 
+// 42times: ノートを編集したとき。公開範囲だけ変えたときは編集した日時が付かない (一度も編集していなければ null)
+type NoteUpdatedContext = {
+	text: string | null;
+	cw: string | null;
+	visibility: Misskey.entities.Note['visibility'];
+	updatedAt: string | null;
+};
+
 export const noteEvents = new EventEmitter<{
 	[ev: `reacted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; reaction: string; emoji?: { name: string; url: string; } | null; }) => void;
 	[ev: `unreacted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; reaction: string; emoji?: { name: string; url: string; } | null; }) => void;
 	[ev: `pollVoted:${string}`]: (ctx: { userId: Misskey.entities.User['id']; choice: number; }) => void;
+	[ev: `updated:${string}`]: (ctx: NoteUpdatedContext) => void;
 }>();
 
 const fetchEvent = new EventEmitter<{
@@ -154,6 +163,16 @@ function realtimeSubscribe(props: {
 				globalEvents.emit('noteDeleted', id);
 				break;
 			}
+
+			case 'updated': {
+				noteEvents.emit(`updated:${id}`, {
+					text: body.text,
+					cw: body.cw,
+					visibility: body.visibility,
+					updatedAt: body.updatedAt,
+				});
+				break;
+			}
 		}
 	}
 
@@ -186,6 +205,11 @@ export type ReactiveNoteData = {
 	reactionEmojis: Misskey.entities.Note['reactionEmojis'];
 	myReaction: Misskey.entities.Note['myReaction'];
 	pollChoices: NonNullable<Misskey.entities.Note['poll']>['choices'];
+	// 42times: 編集で変わる
+	text: Misskey.entities.Note['text'];
+	cw: Misskey.entities.Note['cw'];
+	visibility: Misskey.entities.Note['visibility'];
+	updatedAt: Misskey.entities.Note['updatedAt'];
 };
 
 const noReaction = Symbol();
@@ -215,11 +239,16 @@ export function useNoteCapture(props: {
 		reactionEmojis: note.reactionEmojis,
 		myReaction: note.myReaction,
 		pollChoices: note.poll?.choices ?? [],
+		text: note.text,
+		cw: note.cw,
+		visibility: note.visibility,
+		updatedAt: note.updatedAt,
 	});
 
 	noteEvents.on(`reacted:${note.id}`, onReacted);
 	noteEvents.on(`unreacted:${note.id}`, onUnreacted);
 	noteEvents.on(`pollVoted:${note.id}`, onPollVoted);
+	noteEvents.on(`updated:${note.id}`, onUpdated);
 
 	// 操作がダブっていないかどうかを簡易的に記録するためのMap
 	const reactionUserMap = new Map<Misskey.entities.User['id'], string | typeof noReaction>();
@@ -281,6 +310,18 @@ export function useNoteCapture(props: {
 		$note.pollChoices = choices;
 	}
 
+	function onUpdated(ctx: NoteUpdatedContext): void {
+		$note.text = ctx.text;
+		$note.cw = ctx.cw;
+		$note.visibility = ctx.visibility;
+		$note.updatedAt = ctx.updatedAt ?? undefined;
+		// メニュー (コピーや編集) は元のノートを見るので、そちらも合わせる
+		note.text = ctx.text;
+		note.cw = ctx.cw;
+		note.visibility = ctx.visibility;
+		note.updatedAt = ctx.updatedAt ?? undefined;
+	}
+
 	function subscribe() {
 		if (mock) {
 			// モックモードでは購読しない
@@ -303,6 +344,7 @@ export function useNoteCapture(props: {
 		noteEvents.off(`reacted:${note.id}`, onReacted);
 		noteEvents.off(`unreacted:${note.id}`, onUnreacted);
 		noteEvents.off(`pollVoted:${note.id}`, onPollVoted);
+		noteEvents.off(`updated:${note.id}`, onUpdated);
 	});
 
 	// 投稿からある程度経過している(=タイムラインを遡って表示した)ノートは、イベントが発生する可能性が低いためそもそも購読しない
