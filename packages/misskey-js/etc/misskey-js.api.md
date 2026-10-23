@@ -173,6 +173,12 @@ type AdminDriveShowFileResponse = operations['admin___drive___show-file']['respo
 type AdminEmojiAddAliasesBulkRequest = operations['admin___emoji___add-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiAddFromUrlRequest = operations['admin___emoji___add-from-url']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiAddFromUrlResponse = operations['admin___emoji___add-from-url']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiAddRequest = operations['admin___emoji___add']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1693,6 +1699,8 @@ declare namespace entities {
         AdminEmojiAddRequest,
         AdminEmojiAddResponse,
         AdminEmojiAddAliasesBulkRequest,
+        AdminEmojiAddFromUrlRequest,
+        AdminEmojiAddFromUrlResponse,
         AdminEmojiCopyRequest,
         AdminEmojiCopyResponse,
         AdminEmojiDeleteRequest,

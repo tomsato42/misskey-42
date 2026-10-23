@@ -286,6 +286,15 @@ export type paths = {
          */
         post: operations['admin___emoji___add-aliases-bulk'];
     };
+    '/admin/emoji/add-from-url': {
+        /**
+         * admin/emoji/add-from-url
+         * @description Download an image from the specified URL and register it as a local custom emoji. The file is not stored in anyone's drive.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___add-from-url'];
+    };
     '/admin/emoji/copy': {
         /**
          * admin/emoji/copy
@@ -9056,6 +9065,78 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___add-from-url': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    name: string;
+                    url: string;
+                    /** @description Use `null` to reset the category. */
+                    category?: string | null;
+                    aliases?: string[];
+                    license?: string | null;
+                    isSensitive?: boolean;
+                    localOnly?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['EmojiDetailed'];
                 };
             };
             /** @description Client error */
