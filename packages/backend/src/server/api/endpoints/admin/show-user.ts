@@ -121,6 +121,7 @@ export const meta = {
 					intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
 					intraLevelUp: { optional: true, ...notificationRecieveConfig },
 					acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
+					acquaintanceJoined: { optional: true, ...notificationRecieveConfig },
 				},
 			},
 			isModerator: {

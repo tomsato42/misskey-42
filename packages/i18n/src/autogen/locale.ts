@@ -11256,6 +11256,10 @@ export interface Locale extends ILocale {
          * 2次元コードを読み込んだ相手です。プロフィールからフォローできます
          */
         "acquaintanceSuggestedText": string;
+        /**
+         * あなたの2次元コードから登録しました
+         */
+        "acquaintanceJoined": string;
         "_types": {
             /**
              * すべて
@@ -11389,6 +11393,10 @@ export interface Locale extends ILocale {
              * 2次元コードを見せてくれた人の案内
              */
             "acquaintanceSuggested": string;
+            /**
+             * 2次元コードからの登録
+             */
+            "acquaintanceJoined": string;
         };
         "_actions": {
             /**

@@ -2973,6 +2973,7 @@ _notification:
   intraLevelUpShareText: "Lv.{level} になりました！"
   acquaintanceSuggested: "もしかして知り合い？"
   acquaintanceSuggestedText: "2次元コードを読み込んだ相手です。プロフィールからフォローできます"
+  acquaintanceJoined: "あなたの2次元コードから登録しました"
 
   _types:
     all: "すべて"
@@ -3008,6 +3009,7 @@ _notification:
     intraProjectsRefreshed: "課題の再取得"
     intraLevelUp: "レベルアップ"
     acquaintanceSuggested: "2次元コードを見せてくれた人の案内"
+    acquaintanceJoined: "2次元コードからの登録"
 
   _actions:
     followBack: "フォローバック"

@@ -49,6 +49,7 @@ export const notificationTypes = [
 	'intraProjectsRefreshed',
 	'intraLevelUp',
 	'acquaintanceSuggested',
+	'acquaintanceJoined',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;

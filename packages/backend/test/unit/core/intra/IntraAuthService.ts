@@ -519,13 +519,16 @@ describe('IntraAuthService', () => {
 			expect(redis.store.get(`intra:state:${invalid}`)).toBe('1');
 		});
 
-		test('アカウントを作ったら、コードを見せた人を知り合いかもしれないと通知する', async () => {
+		test('アカウントを作ったら、コードを見せた人を知り合いかもしれないと通知し、コードを見せた人にも登録を通知する', async () => {
 			addUser('referrer1', 'referrer');
 			const state = await authorizeWithReferrer('referrer1');
 			loginCodeOf(await callbackUrl('authcode', state, state));
 
 			const created = users.rows.find(u => u.username === 'tomoki_2307')!;
-			expect(notifications).toEqual([{ notifieeId: created.id, type: 'acquaintanceSuggested', notifierId: 'referrer1' }]);
+			expect(notifications).toEqual([
+				{ notifieeId: created.id, type: 'acquaintanceSuggested', notifierId: 'referrer1' },
+				{ notifieeId: 'referrer1', type: 'acquaintanceJoined', notifierId: created.id },
+			]);
 		});
 
 		test('すでにアカウントがある人には通知しない', async () => {

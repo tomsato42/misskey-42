@@ -360,7 +360,7 @@ export class IntraAuthService {
 	}
 
 	/**
-	 * 2次元コードを読み込んで登録した人に、コードを見せた人を「知り合いかも」と通知する。
+	 * 2次元コードを読み込んで登録した人に、コードを見せた人を「知り合いかも」と通知し、コードを見せた人にも登録したことを通知する。
 	 * コードを見せた人が見つからない (凍結・削除された) ときは何もしない。失敗してもログインは続ける
 	 */
 	@bindThis
@@ -371,6 +371,7 @@ export class IntraAuthService {
 			if (referrer == null || referrer.isSuspended || referrer.isDeleted) return;
 
 			this.notificationService.createNotification(user.id, 'acquaintanceSuggested', {}, referrer.id);
+			this.notificationService.createNotification(referrer.id, 'acquaintanceJoined', {}, user.id);
 		} catch (err) {
 			this.logger.error(`Failed to suggest referrer ${referrerId} to user ${user.id}: ${err instanceof Error ? err.message : String(err)}`);
 		}
