@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <!--
 42 intra 連携が有効なとき (学内SNSモード) に、未ログインの訪問者へ見せる唯一の画面。
-どの URL を開いてもこの画面だけを表示し、ルーターのページは読み込まない (/intra-complete だけは sub-boot の通常の画面で表示する)
+どの URL を開いてもこの画面だけを表示し、ルーターのページは読み込まない (/intra-complete と /intra-passkey-setup だけは sub-boot の通常の画面で表示する)
 -->
 
 <template>

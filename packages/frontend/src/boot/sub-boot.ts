@@ -11,7 +11,7 @@ import { isIntraSigninOnly } from '@/utility/intra-visitor.js';
 
 export async function subBoot() {
 	const { isClientUpdated } = await common(async () => {
-		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインなら /intra-complete 以外ではログイン画面だけを出す
+		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインなら /intra-complete・/intra-passkey-setup 以外ではログイン画面だけを出す
 		if (isIntraSigninOnly()) {
 			return createApp(await import('@/ui/intra-signin.vue').then(x => x.default));
 		}
