@@ -2971,6 +2971,8 @@ _notification:
   intraProjectsRefreshFailed: "課題を取得できませんでした"
   intraLevelUp: "レベルが上がりました"
   intraLevelUpShareText: "Lv.{level} になりました！"
+  acquaintanceSuggested: "もしかして知り合い？"
+  acquaintanceSuggestedText: "2次元コードを読み込んだ相手です。プロフィールからフォローできます"
 
   _types:
     all: "すべて"
@@ -3005,6 +3007,7 @@ _notification:
     intraProjectFinished: "課題の結果"
     intraProjectsRefreshed: "課題の再取得"
     intraLevelUp: "レベルアップ"
+    acquaintanceSuggested: "2次元コードを見せてくれた人の案内"
 
   _actions:
     followBack: "フォローバック"
@@ -3831,6 +3834,7 @@ _pairRecruitment:
 _intra:
   loginWithIntra: "42 でログイン"
   autoSignupDescription: "42 のアカウントで初めてログインすると、このサーバーのアカウントが自動で作成されます。"
+  qrInviteDescription: "2次元コードを読み込みました。42 でログインすると、コードを見せてくれた人のページが開きます。"
   agreementOnLogin: "ログインすると、{documents}に同意したものとみなされます。"
   agreementDocumentsSeparator: "と"
   passwordLogin: "管理者ログイン"

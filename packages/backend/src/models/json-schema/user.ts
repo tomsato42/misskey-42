@@ -666,6 +666,8 @@ export const packedMeDetailedOnlySchema = {
 				intraProjectFinished: { optional: true, ...notificationRecieveConfig },
 				intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
 				intraLevelUp: { optional: true, ...notificationRecieveConfig },
+				// 42times: 登録したときに一度だけ届くので、i/update では設定できない
+				acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

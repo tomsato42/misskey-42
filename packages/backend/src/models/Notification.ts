@@ -233,6 +233,12 @@ export type MiNotification = {
 	createdAt: string;
 	/** 上がった後のレベル (整数) */
 	level: number;
+} | {
+	/** 42times: 2次元コードを読み込んで登録した。notifier はコードを見せた人 */
+	type: 'acquaintanceSuggested';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
 };
 
 export type MiGroupedNotification = MiNotification | {

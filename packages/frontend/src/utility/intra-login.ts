@@ -14,7 +14,8 @@ const RETURN_PATH_KEY = 'intraLoginReturnPath';
  * 42 intra の認可画面へページ遷移する。
  * backend が state を Cookie に保存してから 42 へリダイレクトするので、fetch ではなくページごと移動する。
  * 初めてログインした 42 のユーザーには、backend がアカウントを自動で作成する。
- * 今いるページ (共有されたペア募集のページなど) は、ログインの後に戻れるよう覚えておく
+ * 今いるページ (共有されたペア募集のページなど) は、ログインの後に戻れるよう覚えておく。
+ * 2次元コードから来たときは、戻る先がコードを見せた人のページになる
  */
 export function startIntraLogin(): void {
 	const path = `${window.location.pathname}${window.location.search}`;
@@ -27,7 +28,19 @@ export function startIntraLogin(): void {
 	} catch {
 		// sessionStorage が使えなければトップページに戻る
 	}
-	window.location.href = `${apiUrl}/intra/authorize`;
+	// 2次元コードから来た人は、コードを見せた人を backend に伝える (アカウントを作ったら、その人を通知で案内する)
+	const referrerId = getQrReferrerId(window.location.pathname);
+	window.location.href = referrerId != null
+		? `${apiUrl}/intra/authorize?ref=${encodeURIComponent(referrerId)}`
+		: `${apiUrl}/intra/authorize`;
+}
+
+/**
+ * 2次元コードの URL (/users/<ユーザー ID>) なら、そのユーザー ID を返す。それ以外は null
+ */
+export function getQrReferrerId(pathname: string): string | null {
+	const match = /^\/users\/([0-9a-zA-Z]{1,32})\/?$/.exec(pathname);
+	return match != null ? match[1] : null;
 }
 
 /**

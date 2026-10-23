@@ -21,6 +21,7 @@ import {
 	isIntraToken,
 	isSameIntraToken,
 	isSignupConflictError,
+	parseIntraReferrerId,
 } from '@/core/intra/intra-auth.js';
 
 describe('intra-auth', () => {
@@ -99,6 +100,16 @@ describe('intra-auth', () => {
 	test('buildIntraCompleteUrl / buildIntraErrorUrl', () => {
 		expect(buildIntraCompleteUrl('https://example.com', 'abc-_')).toBe('https://example.com/intra-complete/abc-_');
 		expect(buildIntraErrorUrl('https://example.com', 'not_eligible')).toBe('https://example.com/intra-complete/error?reason=not_eligible');
+	});
+
+	test('parseIntraReferrerId は英数字のユーザー ID だけを受け付ける', () => {
+		expect(parseIntraReferrerId('9zzzzzzzzz')).toBe('9zzzzzzzzz');
+		expect(parseIntraReferrerId('ABCdef0123')).toBe('ABCdef0123');
+		expect(parseIntraReferrerId(undefined)).toBeNull();
+		expect(parseIntraReferrerId('')).toBeNull();
+		expect(parseIntraReferrerId('abc:def')).toBeNull();
+		expect(parseIntraReferrerId('a'.repeat(33))).toBeNull();
+		expect(parseIntraReferrerId(['abc'])).toBeNull();
 	});
 
 	describe('isSignupConflictError', () => {

@@ -19,7 +19,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<img :src="instance.iconUrl || '/favicon.ico'" alt="" :class="$style.icon"/>
 					<h1 :class="$style.title">{{ instanceName }}</h1>
 				</div>
-				<div :class="$style.signin">
+				<div :class="$style.signin" class="_gaps_m">
+					<!-- 2次元コードから来た人には、ログインするとコードを見せた人のページが開くことを伝える -->
+					<MkInfo v-if="fromQr">{{ i18n.ts._intra.qrInviteDescription }}</MkInfo>
 					<MkSignin :autoSet="true"/>
 				</div>
 			</main>
@@ -34,7 +36,12 @@ import { instanceName } from '@@/js/config.js';
 import XCommon from './_common_/common.vue';
 import XSetup from '@/pages/welcome.setup.vue';
 import MkSignin from '@/components/MkSignin.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import { instance } from '@/instance.js';
+import { i18n } from '@/i18n.js';
+import { getQrReferrerId } from '@/utility/intra-login.js';
+
+const fromQr = getQrReferrerId(window.location.pathname) != null;
 
 window.document.title = instanceName;
 </script>

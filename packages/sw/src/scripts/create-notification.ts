@@ -297,6 +297,15 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'acquaintanceSuggested':
+					// 42times: 2次元コードを読み込んで登録した人に、コードを見せた人を案内する (クリックすると sw.ts の既定の処理でその人のページを開く)
+					return [i18n.ts._notification.acquaintanceSuggested, {
+						body: `${getUserName(data.body.user)}: ${i18n.ts._notification.acquaintanceSuggestedText}`,
+						icon: data.body.user.avatarUrl ?? undefined,
+						badge: iconUrl('user-plus'),
+						data,
+					}];
+
 				case 'pairJoinRequested':
 					return [i18n.tsx._notification.pairJoinRequestedText({ project: data.body.pairRecruitment.projectName }), {
 						body: getUserName(data.body.user),

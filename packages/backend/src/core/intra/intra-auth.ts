@@ -161,6 +161,16 @@ export function buildIntraPasskeySetupUrl(baseUrl: string, token: string): strin
 	return `${baseUrl}/intra-passkey-setup/${encodeURIComponent(token)}`;
 }
 
+/** 2次元コードを見せた人 (招待した人) のユーザー ID として受け付ける形式。Misskey の ID は英数字だけ */
+const INTRA_REFERRER_ID_PATTERN = /^[0-9a-zA-Z]{1,32}$/;
+
+/**
+ * authorize のクエリで受け取った、2次元コードを見せた人のユーザー ID を確かめる。形式が違えば null
+ */
+export function parseIntraReferrerId(value: unknown): string | null {
+	return typeof value === 'string' && INTRA_REFERRER_ID_PATTERN.test(value) ? value : null;
+}
+
 /** 42 のログイン名として受け付ける形式 */
 export const INTRA_LOGIN_PATTERN = /^[a-zA-Z0-9-]{1,32}$/;
 

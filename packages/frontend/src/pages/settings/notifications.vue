@@ -169,8 +169,9 @@ const notifyUserPaginator = markRaw(new Paginator('following/list', {
 	},
 }));
 
-// 42times: カレンダーの通知は calendarNotificationSettings (下の「イベント」) で切り替えるので、ここには出さない
-const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited'] as const satisfies (typeof notificationTypes[number])[];
+// 42times: カレンダーの通知は calendarNotificationSettings (下の「イベント」) で切り替えるので、ここには出さない。
+// acquaintanceSuggested は登録したときに一度だけ届くので、設定に出さない
+const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'test', 'exportCompleted', 'calendarEventReminder', 'calendarEventUpdated', 'calendarEventInvited', 'acquaintanceSuggested'] as const satisfies (typeof notificationTypes[number])[];
 
 // ペア募集の通知は学内SNSモード (42 intra ログイン) でだけ届くので、それ以外では設定に出さない
 const intraOnlyNotificationTypes: readonly string[] = ['pairJoinRequested', 'pairAccepted', 'pairClosed', 'pairInvited', 'pairApplicationCancelled', 'intraProjectFinished', 'intraProjectsRefreshed', 'intraLevelUp'] satisfies (typeof notificationTypes[number])[];

@@ -92,6 +92,7 @@ describe('IntraAuthService', () => {
 	let beforeSignup: (() => void) | null;
 	let syncCalls: { userId: string; intraId: number }[];
 	let syncFails: boolean;
+	let notifications: { notifieeId: string; type: string; notifierId: string | null | undefined }[];
 	let meta: { rootUserId: string | null };
 	let config: Partial<Config>;
 	let service: IntraAuthService;
@@ -132,6 +133,7 @@ describe('IntraAuthService', () => {
 		beforeSignup = null;
 		syncCalls = [];
 		syncFails = false;
+		notifications = [];
 		meta = { rootUserId: 'root' };
 		config = {
 			url: BASE_URL,
@@ -155,6 +157,11 @@ describe('IntraAuthService', () => {
 		const fakeRoleService = {
 			isModerator: async (user: { id: string }) => moderators.has(user.id),
 		};
+		const fakeNotificationService = {
+			createNotification: (notifieeId: string, type: string, _data: unknown, notifierId?: string | null) => {
+				notifications.push({ notifieeId, type, notifierId });
+			},
+		};
 		const noop = () => {};
 		const fakeLoggerService = {
 			getLogger: () => ({ info: noop, warn: noop, error: noop, debug: noop }),
@@ -171,6 +178,7 @@ describe('IntraAuthService', () => {
 			fakeSignupService as any,
 			fakeRoleService as any,
 			fakeLoggerService as any,
+			fakeNotificationService as any,
 		);
 	});
 
@@ -494,6 +502,52 @@ describe('IntraAuthService', () => {
 			const state = await startReauth('intra');
 			expect(await callbackUrl('authcode', state, null)).toBe(`${BASE_URL}/intra-complete/error?reason=invalid_state`);
 			expect(await service.hasRecentReauth('intra')).toBe(false);
+		});
+	});
+
+	describe('2次元コードから来た人', () => {
+		async function authorizeWithReferrer(referrerId: unknown): Promise<string> {
+			const { state } = await service.createAuthorizeUrl(referrerId);
+			return state;
+		}
+
+		test('state にコードを見せた人のユーザー ID を残す。形式が違えば残さない', async () => {
+			const state = await authorizeWithReferrer('referrer1');
+			expect(redis.store.get(`intra:state:${state}`)).toBe('ref:referrer1');
+
+			const invalid = await authorizeWithReferrer('ref:x');
+			expect(redis.store.get(`intra:state:${invalid}`)).toBe('1');
+		});
+
+		test('アカウントを作ったら、コードを見せた人を知り合いかもしれないと通知する', async () => {
+			addUser('referrer1', 'referrer');
+			const state = await authorizeWithReferrer('referrer1');
+			loginCodeOf(await callbackUrl('authcode', state, state));
+
+			const created = users.rows.find(u => u.username === 'tomoki_2307')!;
+			expect(notifications).toEqual([{ notifieeId: created.id, type: 'acquaintanceSuggested', notifierId: 'referrer1' }]);
+		});
+
+		test('すでにアカウントがある人には通知しない', async () => {
+			addUser('referrer1', 'referrer');
+			addUser('existing', 'tomoki_2307', { intraId: 1000 });
+			const state = await authorizeWithReferrer('referrer1');
+			loginCodeOf(await callbackUrl('authcode', state, state));
+
+			expect(notifications).toEqual([]);
+		});
+
+		test('コードを見せた人がいない・凍結・削除されたときは通知しないが、ログインはできる', async () => {
+			addUser('suspended1', 'suspended', {}, { isSuspended: true });
+			addUser('deleted1', 'deleted', {}, { isDeleted: true });
+
+			for (const [referrerId, login] of [['missing1', 'a'], ['suspended1', 'b'], ['deleted1', 'c']]) {
+				intraUser = createIntraUser({ id: 2000 + users.rows.length, login });
+				const state = await authorizeWithReferrer(referrerId);
+				loginCodeOf(await callbackUrl('authcode', state, state));
+			}
+
+			expect(notifications).toEqual([]);
 		});
 	});
 });
