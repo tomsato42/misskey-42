@@ -14,6 +14,7 @@ import type { MiUserProfile } from '@/models/UserProfile.js';
 import { SignupService } from '@/core/SignupService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { AchievementService } from '@/core/AchievementService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
@@ -34,6 +35,7 @@ import {
 	isIntraToken,
 	isSameIntraToken,
 	isSignupConflictError,
+	getIntraReferralAchievements,
 	parseIntraReferrerId,
 } from './intra-auth.js';
 import type { IntraAuthFailureReason, IntraReauthResult } from './intra-auth.js';
@@ -95,6 +97,7 @@ export class IntraAuthService {
 		private roleService: RoleService,
 		private loggerService: LoggerService,
 		private notificationService: NotificationService,
+		private achievementService: AchievementService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-auth');
 	}
@@ -361,6 +364,7 @@ export class IntraAuthService {
 
 	/**
 	 * 2次元コードを読み込んで登録した人に、コードを見せた人を「知り合いかも」と通知し、コードを見せた人にも登録したことを通知する。
+	 * 登録した人にコードを見せた人を残し、コードを見せた人には登録した人数の実績を付ける。
 	 * コードを見せた人が見つからない (凍結・削除された) ときは何もしない。失敗してもログインは続ける
 	 */
 	@bindThis
@@ -372,6 +376,12 @@ export class IntraAuthService {
 
 			this.notificationService.createNotification(user.id, 'acquaintanceSuggested', {}, referrer.id);
 			this.notificationService.createNotification(referrer.id, 'acquaintanceJoined', {}, user.id);
+
+			await this.userProfilesRepository.update({ userId: user.id }, { intraReferrerId: referrer.id });
+			const count = await this.userProfilesRepository.countBy({ intraReferrerId: referrer.id });
+			for (const achievement of getIntraReferralAchievements(count)) {
+				await this.achievementService.create(referrer.id, achievement);
+			}
 		} catch (err) {
 			this.logger.error(`Failed to suggest referrer ${referrerId} to user ${user.id}: ${err instanceof Error ? err.message : String(err)}`);
 		}
