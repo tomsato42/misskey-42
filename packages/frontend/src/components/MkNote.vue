@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender }]"
 	tabindex="0"
 >
-	<MkNoteSub v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote?.reply ?? null" :class="$style.replyTo" :clickToOpen="true"/>
+	<MkNoteReplyContext v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
 	<div v-if="isRenote" :class="$style.renote">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
@@ -214,7 +214,7 @@ import { DI } from '@/di.js';
 import type { Keymap } from '@/utility/hotkey.js';
 
 // コンポーネント外部の依存関係
-import MkNoteSub from '@/components/MkNoteSub.vue';
+import MkNoteReplyContext from '@/components/MkNoteReplyContext.vue';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
