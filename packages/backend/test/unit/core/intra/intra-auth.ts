@@ -20,6 +20,7 @@ import {
 	getCookieValue,
 	isIntraToken,
 	isSameIntraToken,
+	getIntraReferralAchievements,
 	isSignupConflictError,
 	parseIntraReferrerId,
 } from '@/core/intra/intra-auth.js';
@@ -110,6 +111,14 @@ describe('intra-auth', () => {
 		expect(parseIntraReferrerId('abc:def')).toBeNull();
 		expect(parseIntraReferrerId('a'.repeat(33))).toBeNull();
 		expect(parseIntraReferrerId(['abc'])).toBeNull();
+	});
+
+	test('getIntraReferralAchievements は 1・5・10 人で実績を返す', () => {
+		expect(getIntraReferralAchievements(0)).toEqual([]);
+		expect(getIntraReferralAchievements(1)).toEqual(['intraReferral1']);
+		expect(getIntraReferralAchievements(4)).toEqual(['intraReferral1']);
+		expect(getIntraReferralAchievements(5)).toEqual(['intraReferral1', 'intraReferral5']);
+		expect(getIntraReferralAchievements(12)).toEqual(['intraReferral1', 'intraReferral5', 'intraReferral10']);
 	});
 
 	describe('isSignupConflictError', () => {

@@ -6,7 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { AchievementService } from '@/core/AchievementService.js';
-import { ACHIEVEMENT_TYPES } from '@/models/UserProfile.js';
+import { ACHIEVEMENT_TYPES, SERVER_ONLY_ACHIEVEMENT_TYPES } from '@/models/UserProfile.js';
 
 export const meta = {
 	requireCredential: true,
@@ -28,6 +28,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private achievementService: AchievementService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42times: 招待した人数の実績は backend が数えて付けるので、クライアントからは付けられない
+			if (SERVER_ONLY_ACHIEVEMENT_TYPES.includes(ps.name)) return;
 			await this.achievementService.create(me.id, ps.name);
 		});
 	}

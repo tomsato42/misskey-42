@@ -8161,6 +8161,36 @@ export interface Locale extends ILocale {
                  */
                 "flavor": string;
             };
+            "_intraReferral1": {
+                /**
+                 * ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから1人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral5": {
+                /**
+                 * 勧誘大使
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから5人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral10": {
+                /**
+                 * 42times 公認サポーター
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから10人が登録した
+                 */
+                "description": string;
+            };
         };
     };
     "_role": {

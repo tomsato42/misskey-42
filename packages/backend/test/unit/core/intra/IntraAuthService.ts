@@ -58,6 +58,10 @@ class FakeRepository<T extends Record<string, any>> {
 		return this.rows.find(r => matches(r, where)) ?? null;
 	}
 
+	public async countBy(where: Record<string, unknown>) {
+		return this.rows.filter(r => matches(r, where)).length;
+	}
+
 	public async update(where: Record<string, unknown>, set: Partial<T>) {
 		for (const row of this.rows) {
 			if (matches(row, where)) Object.assign(row, set);
@@ -93,6 +97,7 @@ describe('IntraAuthService', () => {
 	let syncCalls: { userId: string; intraId: number }[];
 	let syncFails: boolean;
 	let notifications: { notifieeId: string; type: string; notifierId: string | null | undefined }[];
+	let achievements: { userId: string; type: string }[];
 	let meta: { rootUserId: string | null };
 	let config: Partial<Config>;
 	let service: IntraAuthService;
@@ -134,6 +139,7 @@ describe('IntraAuthService', () => {
 		syncCalls = [];
 		syncFails = false;
 		notifications = [];
+		achievements = [];
 		meta = { rootUserId: 'root' };
 		config = {
 			url: BASE_URL,
@@ -162,6 +168,12 @@ describe('IntraAuthService', () => {
 				notifications.push({ notifieeId, type, notifierId });
 			},
 		};
+		const fakeAchievementService = {
+			create: async (userId: string, type: string) => {
+				if (achievements.some(a => a.userId === userId && a.type === type)) return;
+				achievements.push({ userId, type });
+			},
+		};
 		const noop = () => {};
 		const fakeLoggerService = {
 			getLogger: () => ({ info: noop, warn: noop, error: noop, debug: noop }),
@@ -179,6 +191,7 @@ describe('IntraAuthService', () => {
 			fakeRoleService as any,
 			fakeLoggerService as any,
 			fakeNotificationService as any,
+			fakeAchievementService as any,
 		);
 	});
 
@@ -531,6 +544,25 @@ describe('IntraAuthService', () => {
 			]);
 		});
 
+		test('登録した人にコードを見せた人を残し、登録した人数で実績を付ける', async () => {
+			addUser('referrer1', 'referrer');
+
+			for (let i = 0; i < 5; i++) {
+				intraUser = createIntraUser({ id: 3000 + i, login: `newcomer${i}` });
+				const state = await authorizeWithReferrer('referrer1');
+				loginCodeOf(await callbackUrl('authcode', state, state));
+				if (i === 0) {
+					expect(achievements).toEqual([{ userId: 'referrer1', type: 'intraReferral1' }]);
+				}
+			}
+
+			expect(profiles.rows.filter(p => (p as FakeProfile & { intraReferrerId?: string }).intraReferrerId === 'referrer1')).toHaveLength(5);
+			expect(achievements).toEqual([
+				{ userId: 'referrer1', type: 'intraReferral1' },
+				{ userId: 'referrer1', type: 'intraReferral5' },
+			]);
+		});
+
 		test('すでにアカウントがある人には通知しない', async () => {
 			addUser('referrer1', 'referrer');
 			addUser('existing', 'tomoki_2307', { intraId: 1000 });
@@ -551,6 +583,7 @@ describe('IntraAuthService', () => {
 			}
 
 			expect(notifications).toEqual([]);
+			expect(achievements).toEqual([]);
 		});
 	});
 });

@@ -171,6 +171,20 @@ export function parseIntraReferrerId(value: unknown): string | null {
 	return typeof value === 'string' && INTRA_REFERRER_ID_PATTERN.test(value) ? value : null;
 }
 
+/** 2次元コードから登録した人数と、その人数で付ける実績 */
+const INTRA_REFERRAL_ACHIEVEMENTS = [
+	{ count: 1, achievement: 'intraReferral1' },
+	{ count: 5, achievement: 'intraReferral5' },
+	{ count: 10, achievement: 'intraReferral10' },
+] as const;
+
+/**
+ * 2次元コードから登録した人数で付けるべき実績 (付いているものも含めて、その人数までのすべて)
+ */
+export function getIntraReferralAchievements(count: number): (typeof INTRA_REFERRAL_ACHIEVEMENTS[number]['achievement'])[] {
+	return INTRA_REFERRAL_ACHIEVEMENTS.filter(x => count >= x.count).map(x => x.achievement);
+}
+
 /** 42 のログイン名として受け付ける形式 */
 export const INTRA_LOGIN_PATTERN = /^[a-zA-Z0-9-]{1,32}$/;
 

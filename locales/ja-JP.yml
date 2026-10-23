@@ -2119,6 +2119,15 @@ _achievements:
       title: "ダブル🤯"
       description: "バブルゲームで最も大きいモノを2つ同時に出した"
       flavor: "これくらいの　おべんとばこに　🤯　🤯　ちょっとつめて"
+    _intraReferral1:
+      title: "ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!"
+      description: "あなたの2次元コードから1人が登録した"
+    _intraReferral5:
+      title: "勧誘大使"
+      description: "あなたの2次元コードから5人が登録した"
+    _intraReferral10:
+      title: "42times 公認サポーター"
+      description: "あなたの2次元コードから10人が登録した"
 
 _role:
   new: "ロールの作成"
