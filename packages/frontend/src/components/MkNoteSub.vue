@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	{{ i18n.ts.deletedNote }}
 </div>
 <div v-else-if="!muted" :class="[$style.root, { [$style.children]: depth > 1 }]">
+	<div v-if="lineAbove" :class="[$style.threadLine, $style.threadLineAbove]"></div>
+	<div v-if="lineBelow" :class="[$style.threadLine, $style.threadLineBelow]"></div>
 	<div :class="[$style.main, { [$style.clickable]: clickToOpen }]" @click="onClick">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
 		<MkAvatar :class="$style.avatar" :user="note.user" link preview/>
@@ -65,9 +67,15 @@ const props = withDefaults(defineProps<{
 
 	// タイムラインのリプライ元のように、クリックでそのノートを開く
 	clickToOpen?: boolean;
+
+	// スレッドの前後のノートとアイコンを縦線でつなぐ
+	lineAbove?: boolean;
+	lineBelow?: boolean;
 }>(), {
 	depth: 1,
 	clickToOpen: false,
+	lineAbove: false,
+	lineBelow: false,
 });
 
 const router = useRouter();
@@ -122,6 +130,25 @@ function onClick(ev: MouseEvent) {
 
 .clickable {
 	cursor: pointer;
+}
+
+// アイコン (38px) の中心を通る縦線
+.threadLine {
+	position: absolute;
+	left: calc(32px + 19px - 1px);
+	width: 2px;
+	background: var(--MI_THEME-divider);
+	pointer-events: none;
+}
+
+.threadLineAbove {
+	top: 0;
+	height: calc(16px - 4px);
+}
+
+.threadLineBelow {
+	top: calc(16px + 38px + 4px);
+	bottom: 0;
 }
 
 .colorBar {
@@ -181,6 +208,18 @@ function onClick(ev: MouseEvent) {
 		&.children {
 			padding: 10px 0 0 8px;
 		}
+	}
+
+	.threadLine {
+		left: calc(16px + 19px - 1px);
+	}
+
+	.threadLineAbove {
+		height: calc(14px - 4px);
+	}
+
+	.threadLineBelow {
+		top: calc(14px + 38px + 4px);
 	}
 }
 

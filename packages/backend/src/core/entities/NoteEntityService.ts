@@ -434,6 +434,7 @@ export class NoteEntityService implements OnModuleInit {
 			fileIds: note.fileIds,
 			files: packedFiles != null ? this.packAttachedFiles(note.fileIds, packedFiles) : this.driveFileEntityService.packManyByIds(note.fileIds),
 			replyId: note.replyId,
+			threadId: note.threadId ?? undefined, // 42times: タイムラインでスレッドの最初のノートを出すため
 			renoteId: note.renoteId,
 			channelId: note.channelId ?? undefined,
 			channel: channel ? {

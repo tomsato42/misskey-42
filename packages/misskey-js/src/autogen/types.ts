@@ -4996,6 +4996,11 @@ export type components = {
              * Format: id
              * @example xxxxxxxxxx
              */
+            threadId?: string;
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
             renoteId?: string | null;
             reply?: components['schemas']['Note'] | null;
             renote?: components['schemas']['Note'] | null;
