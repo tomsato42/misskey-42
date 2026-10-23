@@ -4,8 +4,8 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { NotesRepository } from '@/models/_.js';
-import { MiCalendarEventNote } from '@/models/CalendarEventNote.js';
+import { Brackets } from 'typeorm';
+import type { CalendarEventNotesRepository, NotesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QueryService } from '@/core/QueryService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
@@ -21,7 +21,7 @@ export const meta = {
 
 	kind: 'read:account',
 
-	description: 'List notes linked to a calendar event, newest first. Notes the viewer cannot see (visibility, blocking, muting) are excluded.',
+	description: 'List notes of a calendar event, newest first: notes linked to the event, notes with the event\'s hashtag, and direct replies to either of them. Notes the viewer cannot see (visibility, blocking, muting) are excluded.',
 
 	res: {
 		type: 'array',
@@ -60,6 +60,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
+		@Inject(DI.calendarEventNotesRepository)
+		private calendarEventNotesRepository: CalendarEventNotesRepository,
+
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
 		private calendarEventService: CalendarEventService,
@@ -68,9 +71,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const event = await this.calendarEventService.findById(ps.eventId);
 			if (event == null || !await this.calendarEventService.canView(event, me, { moderatorView: ps.moderatorView })) throw new ApiError(meta.errors.noSuchEvent);
 
-			// 紐づけの表は公開範囲を見ていないので、タイムラインと同じ条件で閲覧者が見てよいノートに絞る (notes/search-by-tag と同じ)
+			// イベントのノートは、紐づけたノート・イベントのハッシュタグが付いたノートと、そのどちらかへの直接のリプライ
+			const linkedNoteIds = this.calendarEventNotesRepository.createQueryBuilder('calendarEventNote')
+				.select('calendarEventNote.noteId')
+				.where('calendarEventNote.eventId = :eventId');
+			const taggedNoteIds = this.notesRepository.createQueryBuilder('taggedNote')
+				.select('taggedNote.id')
+				.where(':eventTag <@ taggedNote.tags');
+
+			// 紐づけの表やタグは公開範囲を見ていないので、タイムラインと同じ条件で閲覧者が見てよいノートに絞る (notes/search-by-tag と同じ)
 			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
-				.innerJoin(MiCalendarEventNote, 'calendarEventNote', 'calendarEventNote.noteId = note.id AND calendarEventNote.eventId = :eventId', { eventId: event.id })
+				.andWhere(new Brackets(qb => {
+					qb.where(`note.id IN (${linkedNoteIds.getQuery()})`)
+						.orWhere(`note.replyId IN (${linkedNoteIds.getQuery()})`);
+					// ハッシュタグは保存するときに normalizeForSearch 済みで、note.tags と同じ形
+					if (event.hashtag != null) {
+						qb.orWhere(':eventTag <@ note.tags', { eventTag: [event.hashtag] })
+							.orWhere(`note.replyId IN (${taggedNoteIds.getQuery()})`);
+					}
+				}))
+				.setParameter('eventId', event.id)
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')

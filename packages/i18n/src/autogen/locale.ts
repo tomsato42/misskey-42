@@ -14770,7 +14770,7 @@ export interface Locale extends ILocale {
          */
         "hashtag": string;
         /**
-         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。
+         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。このハッシュタグの付いたノートとそのリプライはイベントページに表示されます。
          */
         "hashtagDescription": string;
         /**
