@@ -12720,17 +12720,17 @@ export interface Locale extends ILocale {
                  */
                 "pasteToRegister": string;
                 /**
-                 * ほかのサーバーの「カスタム絵文字(ベータ)」でコピーした行、または画像の URL (1 行に 1 つ)
+                 * ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」でコピーした行、または画像の URL (1 行に 1 つ。名前はファイル名になります)
                  */
                 "pasteDialogLabel": string;
                 /**
-                 * 登録できる絵文字が見つかりませんでした。ほかのサーバーの「カスタム絵文字(ベータ)」の登録済みの一覧で、画像の列から行をコピーしてください。
+                 * 登録できる絵文字が見つかりませんでした。ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」で、画像の列から行をコピーしてください。
                  */
                 "noPastedEmojis": string;
                 /**
-                 * 貼り付けた{count}件の絵文字を、画像をこのサーバーに取り込んで登録します。よろしいですか？（ロールは引き継ぎません。一度の操作で登録可能な絵文字は{max}件までです）
+                 * 貼り付けた{total}件のうち{count}件の絵文字を、画像をこのサーバーに取り込んで登録します。よろしいですか？（ロールは引き継ぎません。一度の操作で登録可能な絵文字は{max}件までです）
                  */
-                "confirmRegisterPastedEmojisDescription": ParameterizedString<"count" | "max">;
+                "confirmRegisterPastedEmojisDescription": ParameterizedString<"total" | "count" | "max">;
                 /**
                  * 同じ名前の絵文字がすでにあります
                  */

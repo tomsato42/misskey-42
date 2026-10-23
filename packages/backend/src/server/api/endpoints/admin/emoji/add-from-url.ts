@@ -5,11 +5,12 @@
 
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { MiDriveFile } from '@/models/_.js';
+import type { MiDriveFile, MiEmoji } from '@/models/_.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { DriveService } from '@/core/DriveService.js';
 import { EmojiEntityService } from '@/core/entities/EmojiEntityService.js';
 import { FILE_TYPE_IMAGE } from '@/const.js';
+import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { ApiError } from '../../../error.js';
 
 export const meta = {
@@ -93,19 +94,28 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.unsupportedFileType);
 			}
 
-			const emoji = await this.customEmojiService.add({
-				originalUrl: driveFile.url,
-				publicUrl: driveFile.webpublicUrl ?? driveFile.url,
-				fileType: driveFile.webpublicType ?? driveFile.type,
-				name: ps.name,
-				category: ps.category ?? null,
-				aliases: ps.aliases ?? [],
-				host: null,
-				license: ps.license ?? null,
-				isSensitive: ps.isSensitive ?? false,
-				localOnly: ps.localOnly ?? false,
-				roleIdsThatCanBeUsedThisEmojiAsReaction: [],
-			}, me);
+			let emoji: MiEmoji;
+			try {
+				emoji = await this.customEmojiService.add({
+					originalUrl: driveFile.url,
+					publicUrl: driveFile.webpublicUrl ?? driveFile.url,
+					fileType: driveFile.webpublicType ?? driveFile.type,
+					name: ps.name,
+					category: ps.category ?? null,
+					aliases: ps.aliases ?? [],
+					host: null,
+					license: ps.license ?? null,
+					isSensitive: ps.isSensitive ?? false,
+					localOnly: ps.localOnly ?? false,
+					// ロールの ID はサーバーごとに違うので、ほかのサーバーから持ってきた絵文字には付けない
+					roleIdsThatCanBeUsedThisEmojiAsReaction: [],
+				}, me);
+			} catch (err) {
+				// 同じ名前を同時に登録したときなど。誰のドライブにも無いファイルなので、ここで消さないと残り続ける
+				await this.driveService.deleteFileSync(driveFile);
+				if (isDuplicateKeyValueError(err)) throw new ApiError(meta.errors.duplicateName);
+				throw err;
+			}
 
 			return this.emojiEntityService.packDetailed(emoji);
 		});

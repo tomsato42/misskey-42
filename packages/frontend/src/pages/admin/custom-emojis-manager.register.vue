@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_buttonsCenter">
 			<MkButton primary rounded @click="onFileSelectClicked">{{ i18n.ts.upload }}</MkButton>
 			<MkButton primary rounded @click="onDriveSelectClicked">{{ i18n.ts.fromDrive }}</MkButton>
-			<MkButton primary rounded @click="onPasteClicked">{{ i18n.ts._customEmojisManager._local._register.pasteToRegister }}</MkButton>
+			<MkButton primary rounded :disabled="pasting" @click="onPasteClicked">{{ i18n.ts._customEmojisManager._local._register.pasteToRegister }}</MkButton>
 		</div>
 
 		<div v-if="gridItems.length > 0" :class="$style.gridArea">
@@ -241,6 +241,8 @@ const {
 });
 const directoryToCategory = ref<boolean>(false);
 const registerButtonDisabled = ref<boolean>(false);
+// 貼り付けて登録している間は、同じ名前を並行して送らないようにボタンを押せなくする
+const pasting = ref<boolean>(false);
 const requestLogs = ref<RequestLogItem[]>([]);
 const isDragOver = ref<boolean>(false);
 
@@ -320,6 +322,15 @@ async function readPastedText(): Promise<string | null> {
 
 // ほかのサーバーでコピーした絵文字を、一覧に足さずにそのまま登録する (画像はサーバーが取り込み、誰のドライブにも入れない)
 async function onPasteClicked() {
+	pasting.value = true;
+	try {
+		await pasteAndRegister();
+	} finally {
+		pasting.value = false;
+	}
+}
+
+async function pasteAndRegister() {
 	const text = await readPastedText();
 	if (text == null) return;
 
@@ -332,16 +343,18 @@ async function onPasteClicked() {
 		return;
 	}
 
+	const targets = emojis.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT);
 	const dialogSelection = await os.confirm({
 		type: 'info',
 		text: i18n.tsx._customEmojisManager._local._register.confirmRegisterPastedEmojisDescription({
-			count: emojis.length,
+			total: emojis.length,
+			count: targets.length,
 			max: MAXIMUM_EMOJI_REGISTER_COUNT,
 		}),
 	});
 	if (dialogSelection.canceled) return;
 
-	const result = await os.promiseDialog(mapWithConcurrency(emojis.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT), EMOJI_REGISTER_CONCURRENCY, registerPastedEmoji));
+	const result = await os.promiseDialog(mapWithConcurrency(targets, EMOJI_REGISTER_CONCURRENCY, registerPastedEmoji));
 	await showRegisterResult(result);
 }
 

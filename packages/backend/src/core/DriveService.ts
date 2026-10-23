@@ -847,9 +847,18 @@ export class DriveService {
 
 		const isModeratorDeleter = deleter != null && await this.roleService.isModerator(deleter);
 
-		// ローカルのファイルを消したら、そのファイルを画像にした絵文字も消す (画像が無いまま残さない)
+		// ローカルのファイルを消したら、そのファイルを画像にした絵文字も消す (画像が無いまま残さない)。
+		// 絵文字を管理できない人が自分のファイルを消して絵文字を消せないよう、持ち主の無いファイル
+		// (admin/emoji/copy・add-from-url で取り込んだもの) か、絵文字を管理できる人が消したときだけにする
 		if (!isExpired && file.userHost == null && !file.isLink) {
-			await this.customEmojiService.deleteByOriginalUrl(file.url, isModeratorDeleter ? deleter : undefined);
+			const canDeleteEmojis = file.userId == null || (deleter != null && (isModeratorDeleter || (await this.roleService.getUserPolicies(deleter.id)).canManageCustomEmojis));
+			if (canDeleteEmojis) {
+				try {
+					await this.customEmojiService.deleteByOriginalUrl(file.url, deleter);
+				} catch (err) {
+					this.deleteLogger.error(`Failed to delete custom emojis of the file ${file.id}`, err as Error);
+				}
+			}
 		}
 
 		if (deleter && isModeratorDeleter && (file.userId !== deleter.id)) {
