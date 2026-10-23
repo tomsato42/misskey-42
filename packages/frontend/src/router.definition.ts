@@ -48,6 +48,10 @@ export const ROUTE_DEF = [{
 	path: '/@:acct/:page?',
 	component: page(() => import('@/pages/user/index.vue')),
 }, {
+	// 42times: 2次元コードの URL。学内SNSモードの backend はユーザーのページへリダイレクトしないので、ここで移る
+	path: '/users/:userId',
+	component: intraPage(() => import('@/pages/user-by-id.vue')),
+}, {
 	name: 'note',
 	path: '/notes/:noteId/:initialTab?',
 	component: page(() => import('@/pages/note.vue')),

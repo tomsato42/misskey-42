@@ -11248,6 +11248,18 @@ export interface Locale extends ILocale {
          * Lv.{level} になりました！
          */
         "intraLevelUpShareText": ParameterizedString<"level">;
+        /**
+         * もしかして知り合い？
+         */
+        "acquaintanceSuggested": string;
+        /**
+         * 2次元コードを読み込んだ相手です。プロフィールからフォローできます
+         */
+        "acquaintanceSuggestedText": string;
+        /**
+         * あなたの2次元コードから登録しました
+         */
+        "acquaintanceJoined": string;
         "_types": {
             /**
              * すべて
@@ -11377,6 +11389,14 @@ export interface Locale extends ILocale {
              * レベルアップ
              */
             "intraLevelUp": string;
+            /**
+             * 2次元コードを見せてくれた人の案内
+             */
+            "acquaintanceSuggested": string;
+            /**
+             * 2次元コードからの登録
+             */
+            "acquaintanceJoined": string;
         };
         "_actions": {
             /**
@@ -14331,6 +14351,10 @@ export interface Locale extends ILocale {
          * 42 のアカウントで初めてログインすると、このサーバーのアカウントが自動で作成されます。
          */
         "autoSignupDescription": string;
+        /**
+         * 2次元コードを読み込みました。42 でログインすると、コードを見せてくれた人のページが開きます。
+         */
+        "qrInviteDescription": string;
         /**
          * ログインすると、{documents}に同意したものとみなされます。
          */

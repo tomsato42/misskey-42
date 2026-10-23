@@ -578,11 +578,9 @@ export class ClientServerService {
 		});
 
 		fastify.get<{ Params: { user: string; } }>('/users/:user', async (request, reply) => {
-			// リダイレクト先からユーザー ID に対応するユーザー名がわかってしまうので、学内SNSモードではリダイレクトしない
-			if (intraMode) {
-				reply.code(404);
-				return;
-			}
+			// リダイレクト先からユーザー ID に対応するユーザー名がわかってしまうので、学内SNSモードではリダイレクトしない。
+			// 2次元コードはこの URL なので、SPA を返してフロントエンドでユーザーのページへ移る (未ログインならログイン画面になる)
+			if (intraMode) return await renderBase(reply);
 
 			const user = await this.usersRepository.findOneBy({
 				id: request.params.user,

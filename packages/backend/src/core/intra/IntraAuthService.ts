@@ -13,6 +13,7 @@ import type { MiLocalUser } from '@/models/User.js';
 import type { MiUserProfile } from '@/models/UserProfile.js';
 import { SignupService } from '@/core/SignupService.js';
 import { RoleService } from '@/core/RoleService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
@@ -33,6 +34,7 @@ import {
 	isIntraToken,
 	isSameIntraToken,
 	isSignupConflictError,
+	parseIntraReferrerId,
 } from './intra-auth.js';
 import type { IntraAuthFailureReason, IntraReauthResult } from './intra-auth.js';
 import type { IntraProfile, IntraUser } from './intra-user.js';
@@ -42,9 +44,13 @@ type IntraConfig = NonNullable<Config['intra']>;
 /** 42 から受け取る認可コードの長さの上限。実際の値はこれよりずっと短い */
 const MAX_AUTHORIZATION_CODE_LENGTH = 1024;
 
-/** Redis に保存する state の値。ログインのときは '1'、本人確認のときはこの接頭辞にユーザー ID を続ける */
+/**
+ * Redis に保存する state の値。ログインのときは '1'、本人確認のときはこの接頭辞にユーザー ID を続ける。
+ * 2次元コードから来た人のログインのときは、コードを見せた人のユーザー ID を接頭辞に続ける
+ */
 const LOGIN_STATE_VALUE = '1';
 const REAUTH_STATE_PREFIX = 'reauth:';
+const REFERRER_STATE_PREFIX = 'ref:';
 
 export class IntraAuthError extends Error {
 	constructor(public reason: IntraAuthFailureReason, message: string) {
@@ -88,6 +94,7 @@ export class IntraAuthService {
 		private signupService: SignupService,
 		private roleService: RoleService,
 		private loggerService: LoggerService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.loggerService.getLogger('intra-auth');
 	}
@@ -185,10 +192,12 @@ export class IntraAuthService {
 	/**
 	 * state を発行し、42 の認可画面の URL を返す。
 	 * 呼び出し側は state をブラウザの Cookie にも保存すること (callback で照合する)
+	 * @param referrerId 2次元コードから来た人のときは、コードを見せた人のユーザー ID。この人のアカウントを作ったら、その人を知り合いかもしれないと通知する
 	 */
 	@bindThis
-	public async createAuthorizeUrl(): Promise<{ url: string; state: string }> {
-		return await this.createAuthorizeUrlFor(LOGIN_STATE_VALUE);
+	public async createAuthorizeUrl(referrerId?: unknown): Promise<{ url: string; state: string }> {
+		const referrer = parseIntraReferrerId(referrerId);
+		return await this.createAuthorizeUrlFor(referrer != null ? REFERRER_STATE_PREFIX + referrer : LOGIN_STATE_VALUE);
 	}
 
 	@bindThis
@@ -221,7 +230,11 @@ export class IntraAuthService {
 				return { url, loginCode: null };
 			}
 
-			const user = await this.authenticate(code);
+			const { user, created } = await this.authenticate(code);
+
+			if (created && stateValue.startsWith(REFERRER_STATE_PREFIX)) {
+				await this.suggestReferrer(user, stateValue.slice(REFERRER_STATE_PREFIX.length));
+			}
 
 			const loginCode = generateIntraToken();
 			await this.redisClient.set(`intra:login:${loginCode}`, user.id, 'EX', INTRA_LOGIN_CODE_TTL_SEC);
@@ -320,7 +333,7 @@ export class IntraAuthService {
 	}
 
 	@bindThis
-	private async authenticate(code: unknown): Promise<MiLocalUser> {
+	private async authenticate(code: unknown): Promise<{ user: MiLocalUser; created: boolean }> {
 		const intra = this.getIntraConfig();
 
 		this.assertAuthorizationCode(code);
@@ -340,10 +353,28 @@ export class IntraAuthService {
 
 		const existing = await this.findUserByIntraId(profile.intraId);
 		if (existing != null) {
-			return await this.loginExistingUser(existing, intraUser, profile);
+			return { user: await this.loginExistingUser(existing, intraUser, profile), created: false };
 		}
 
-		return await this.createUser(intraUser, profile);
+		return { user: await this.createUser(intraUser, profile), created: true };
+	}
+
+	/**
+	 * 2次元コードを読み込んで登録した人に、コードを見せた人を「知り合いかも」と通知し、コードを見せた人にも登録したことを通知する。
+	 * コードを見せた人が見つからない (凍結・削除された) ときは何もしない。失敗してもログインは続ける
+	 */
+	@bindThis
+	private async suggestReferrer(user: MiLocalUser, referrerId: string): Promise<void> {
+		try {
+			if (referrerId === user.id) return;
+			const referrer = await this.usersRepository.findOneBy({ id: referrerId, host: IsNull() }) as MiLocalUser | null;
+			if (referrer == null || referrer.isSuspended || referrer.isDeleted) return;
+
+			this.notificationService.createNotification(user.id, 'acquaintanceSuggested', {}, referrer.id);
+			this.notificationService.createNotification(referrer.id, 'acquaintanceJoined', {}, user.id);
+		} catch (err) {
+			this.logger.error(`Failed to suggest referrer ${referrerId} to user ${user.id}: ${err instanceof Error ? err.message : String(err)}`);
+		}
 	}
 
 	@bindThis

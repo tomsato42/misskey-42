@@ -35,6 +35,8 @@
  * intraProjectFinished - 42 intra の課題の結果が出た (42times)
  * intraProjectsRefreshed - 自分で頼んだ 42 intra の課題の再取得が終わった (42times)
  * intraLevelUp - 42 intra のレベルが上がった (42times)
+ * acquaintanceSuggested - 2次元コードを読み込んで登録したので、コードを見せた人を知り合いかもしれないと案内する (42times)
+ * acquaintanceJoined - 自分の2次元コードを読み込んだ人が登録した (42times)
  */
 export const notificationTypes = [
 	'note',
@@ -68,6 +70,8 @@ export const notificationTypes = [
 	'intraProjectFinished',
 	'intraProjectsRefreshed',
 	'intraLevelUp',
+	'acquaintanceSuggested',
+	'acquaintanceJoined',
 ] as const;
 
 export const groupedNotificationTypes = [

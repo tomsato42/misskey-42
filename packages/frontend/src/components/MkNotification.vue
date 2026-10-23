@@ -39,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_calendar]: notification.type === 'calendarEventReminder' || notification.type === 'calendarEventUpdated' || notification.type === 'calendarEventInvited',
 				[$style.t_intraProjectsRefreshed]: notification.type === 'intraProjectsRefreshed',
 				[$style.t_intraLevelUp]: notification.type === 'intraLevelUp',
+				[$style.t_acquaintanceSuggested]: notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined',
 				[$style.t_pair]: notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled',
 			}]"
 		>
@@ -69,6 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'intraProjectsRefreshed' && notification.failed" class="ti ti-alert-triangle"></i>
 			<i v-else-if="notification.type === 'intraProjectsRefreshed'" class="ti ti-refresh"></i>
 			<i v-else-if="notification.type === 'intraLevelUp'" class="ti ti-trending-up"></i>
+			<i v-else-if="notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined'" class="ti ti-qrcode"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -100,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'intraProjectFinished'">{{ i18n.ts._notification.intraProjectFinished }}</span>
 			<span v-else-if="notification.type === 'intraProjectsRefreshed'">{{ i18n.ts._intraProjectResult.share }}</span>
 			<span v-else-if="notification.type === 'intraLevelUp'">{{ i18n.ts._notification.intraLevelUp }}</span>
-			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
+			<MkA v-else-if="notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' || notification.type === 'calendarEventInvited' || notification.type === 'acquaintanceSuggested' || notification.type === 'acquaintanceJoined'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
@@ -214,6 +216,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkA v-else-if="notification.type === 'createToken'" :class="$style.text" to="/settings/apps">
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>
 			</MkA>
+			<template v-else-if="notification.type === 'acquaintanceSuggested'">
+				<b :class="$style.text">{{ i18n.ts._notification.acquaintanceSuggested }}</b>
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._notification.acquaintanceSuggestedText }}</span>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary type="routerLink" :to="userPage(notification.user)"><i class="ti ti-user"></i> {{ i18n.ts.profile }}</MkButton>
+				</div>
+			</template>
+			<template v-else-if="notification.type === 'acquaintanceJoined'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts._notification.acquaintanceJoined }}</span>
+				<div v-if="full" :class="$style.followRequestCommands">
+					<MkButton :class="$style.followRequestCommandButton" rounded primary type="routerLink" :to="userPage(notification.user)"><i class="ti ti-user"></i> {{ i18n.ts.profile }}</MkButton>
+				</div>
+			</template>
 			<template v-else-if="notification.type === 'follow'">
 				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotNewFollower }}</span>
 			</template>
@@ -452,7 +467,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	}
 }
 
-.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest {
+.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest, .t_acquaintanceSuggested {
 	background: var(--eventFollow);
 	pointer-events: none;
 }

@@ -226,6 +226,7 @@ export const paramDef = {
 				intraProjectFinished: notificationRecieveConfig,
 				intraProjectsRefreshed: notificationRecieveConfig,
 				intraLevelUp: notificationRecieveConfig,
+				acquaintanceJoined: notificationRecieveConfig,
 			},
 		},
 		emailNotificationTypes: { type: 'array', items: {

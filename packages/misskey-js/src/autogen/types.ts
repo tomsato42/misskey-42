@@ -4854,6 +4854,24 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                acquaintanceSuggested?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                acquaintanceJoined?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -5479,6 +5497,26 @@ export type components = {
             type: 'intraLevelUp';
             /** @description The 42 intra level (integer part) after leveling up. */
             level: number;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceSuggested';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceJoined';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
         };
         DriveFile: {
             /**
@@ -13305,6 +13343,24 @@ export interface operations {
                                 userListId: string;
                             };
                             intraLevelUp?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            acquaintanceSuggested?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            acquaintanceJoined?: {
                                 /** @enum {string} */
                                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                             } | {
@@ -29663,8 +29719,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -29748,8 +29804,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -31169,6 +31225,15 @@ export interface operations {
                             userListId: string;
                         };
                         intraLevelUp?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        acquaintanceJoined?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {
