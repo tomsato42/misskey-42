@@ -1493,7 +1493,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * List notes linked to a calendar event, newest first. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
+     * List notes of a calendar event, newest first: notes linked to the event, notes with the event's hashtag, and direct replies to either of them. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */

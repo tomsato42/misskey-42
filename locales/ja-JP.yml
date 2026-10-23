@@ -3944,7 +3944,7 @@ _calendar:
   endTime: "終了時刻"
   endTimeDescription: "省略できます。開始と同じ日の中で指定します。"
   hashtag: "ハッシュタグ"
-  hashtagDescription: "1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。"
+  hashtagDescription: "1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。このハッシュタグの付いたノートとそのリプライはイベントページに表示されます。"
   announceEvent: "イベントを告知"
   stopAnnouncing: "告知をやめる"
   announceAndNote: "告知してノート"
