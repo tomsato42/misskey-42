@@ -350,6 +350,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Download an image from the specified URL and register it as a local custom emoji. The file is not stored in anyone's drive.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+     */
+    request<E extends 'admin/emoji/add-from-url', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*

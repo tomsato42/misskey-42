@@ -12715,6 +12715,26 @@ export interface Locale extends ILocale {
                  * ドラッグ＆ドロップされた{count}個のファイルをドライブにアップロードします。実行しますか？
                  */
                 "confirmUploadEmojisDescription": ParameterizedString<"count">;
+                /**
+                 * 貼り付けて登録
+                 */
+                "pasteToRegister": string;
+                /**
+                 * ほかのサーバーの「カスタム絵文字(ベータ)」でコピーした行、または画像の URL (1 行に 1 つ)
+                 */
+                "pasteDialogLabel": string;
+                /**
+                 * 登録できる絵文字が見つかりませんでした。ほかのサーバーの「カスタム絵文字(ベータ)」の登録済みの一覧で、画像の列から行をコピーしてください。
+                 */
+                "noPastedEmojis": string;
+                /**
+                 * 貼り付けた{count}件の絵文字を、画像をこのサーバーに取り込んで登録します。よろしいですか？（ロールは引き継ぎません。一度の操作で登録可能な絵文字は{max}件までです）
+                 */
+                "confirmRegisterPastedEmojisDescription": ParameterizedString<"count" | "max">;
+                /**
+                 * 同じ名前の絵文字がすでにあります
+                 */
+                "pastedEmojiNameAlreadyExists": string;
             };
         };
     };

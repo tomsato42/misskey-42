@@ -40,6 +40,7 @@ export * as 'admin/drive/cleanup' from './endpoints/admin/drive/cleanup.js';
 export * as 'admin/drive/files' from './endpoints/admin/drive/files.js';
 export * as 'admin/drive/show-file' from './endpoints/admin/drive/show-file.js';
 export * as 'admin/emoji/add' from './endpoints/admin/emoji/add.js';
+export * as 'admin/emoji/add-from-url' from './endpoints/admin/emoji/add-from-url.js';
 export * as 'admin/emoji/add-aliases-bulk' from './endpoints/admin/emoji/add-aliases-bulk.js';
 export * as 'admin/emoji/copy' from './endpoints/admin/emoji/copy.js';
 export * as 'admin/emoji/delete' from './endpoints/admin/emoji/delete.js';

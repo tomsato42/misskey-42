@@ -44,6 +44,7 @@ import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { UtilityService } from '@/core/UtilityService.js';
+import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 
 type AddFileArgs = {
 	/** User who wish to add file */
@@ -131,6 +132,7 @@ export class DriveService {
 		private perUserDriveChart: PerUserDriveChart,
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
+		private customEmojiService: CustomEmojiService,
 	) {
 		const logger = new Logger('drive', 'blue');
 		this.registerLogger = logger.createSubLogger('register', 'yellow');
@@ -843,7 +845,14 @@ export class DriveService {
 			this.globalEventService.publishDriveStream(file.userId, 'fileDeleted', file.id);
 		}
 
-		if (deleter && await this.roleService.isModerator(deleter) && (file.userId !== deleter.id)) {
+		const isModeratorDeleter = deleter != null && await this.roleService.isModerator(deleter);
+
+		// ローカルのファイルを消したら、そのファイルを画像にした絵文字も消す (画像が無いまま残さない)
+		if (!isExpired && file.userHost == null && !file.isLink) {
+			await this.customEmojiService.deleteByOriginalUrl(file.url, isModeratorDeleter ? deleter : undefined);
+		}
+
+		if (deleter && isModeratorDeleter && (file.userId !== deleter.id)) {
 			const user = file.userId ? await this.usersRepository.findOneByOrFail({ id: file.userId }) : null;
 			this.moderationLogService.log(deleter, 'deleteDriveFile', {
 				fileId: file.id,

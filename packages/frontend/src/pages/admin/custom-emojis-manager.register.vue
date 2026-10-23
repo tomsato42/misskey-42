@@ -35,6 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_buttonsCenter">
 			<MkButton primary rounded @click="onFileSelectClicked">{{ i18n.ts.upload }}</MkButton>
 			<MkButton primary rounded @click="onDriveSelectClicked">{{ i18n.ts.fromDrive }}</MkButton>
+			<MkButton primary rounded @click="onPasteClicked">{{ i18n.ts._customEmojisManager._local._register.pasteToRegister }}</MkButton>
 		</div>
 
 		<div v-if="gridItems.length > 0" :class="$style.gridArea">
@@ -60,7 +61,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script setup lang="ts">
 import * as Misskey from 'misskey-js';
 import { computed, onMounted, ref, useCssModule } from 'vue';
-import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
+import type { PastedEmoji, RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
 import type { GridCellValidationEvent, GridCellValueChangeEvent, GridEvent } from '@/components/grid/grid-event.js';
 import type { DroppedFile } from '@/utility/file-drop.js';
 import type { GridSetting } from '@/components/grid/grid.js';
@@ -69,6 +70,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import {
 	emptyStrToEmptyArray,
 	emptyStrToNull,
+	mapWithConcurrency,
+	parsePastedEmojis,
 	roleIdsParser,
 } from '@/pages/admin/custom-emojis-manager.impl.js';
 import MkGrid from '@/components/grid/MkGrid.vue';
@@ -84,10 +87,13 @@ import { extractDroppedItems, flattenDroppedFiles } from '@/utility/file-drop.js
 import XRegisterLogs from '@/pages/admin/custom-emojis-manager.logs.vue';
 import { copyGridDataToClipboard } from '@/components/grid/grid-utils.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
+import { customEmojisMap } from '@/custom-emojis.js';
 
 import { prefer } from '@/preferences.js';
 
-const MAXIMUM_EMOJI_REGISTER_COUNT = 100;
+const MAXIMUM_EMOJI_REGISTER_COUNT = 256;
+// サーバーの負荷を避けるため、登録のリクエストは同時にこの件数までにする
+const EMOJI_REGISTER_CONCURRENCY = 4;
 
 type FolderItem = {
 	id?: string;
@@ -248,30 +254,32 @@ async function onRegistryClicked() {
 		return;
 	}
 
-	const items = gridItems.value;
-	const upload = () => {
-		return items.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT)
-			.map(item =>
-				misskeyApi(
-					'admin/emoji/add', {
-						name: item.name,
-						category: emptyStrToNull(item.category),
-						aliases: emptyStrToEmptyArray(item.aliases),
-						license: emptyStrToNull(item.license),
-						isSensitive: item.isSensitive,
-						localOnly: item.localOnly,
-						roleIdsThatCanBeUsedThisEmojiAsReaction: item.roleIdsThatCanBeUsedThisEmojiAsReaction.map(it => it.id),
-						fileId: item.fileId!,
-					})
-					.then(() => ({ item, success: true, err: undefined }))
-					.catch(err => ({ item, success: false, err })),
-			);
-	};
+	const items = gridItems.value.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT);
+	const result = await os.promiseDialog(mapWithConcurrency(items, EMOJI_REGISTER_CONCURRENCY, item =>
+		misskeyApi(
+			'admin/emoji/add', {
+				name: item.name,
+				category: emptyStrToNull(item.category),
+				aliases: emptyStrToEmptyArray(item.aliases),
+				license: emptyStrToNull(item.license),
+				isSensitive: item.isSensitive,
+				localOnly: item.localOnly,
+				roleIdsThatCanBeUsedThisEmojiAsReaction: item.roleIdsThatCanBeUsedThisEmojiAsReaction.map(it => it.id),
+				fileId: item.fileId!,
+			})
+			.then(() => ({ item, success: true, err: undefined }))
+			.catch(err => ({ item, success: false, err })),
+	));
 
-	const result = await os.promiseDialog(Promise.all(upload()));
-	const failedItems = result.filter(it => !it.success);
+	await showRegisterResult(result);
 
-	if (failedItems.length > 0) {
+	// 登録に成功したものは一覧から除く
+	const successItems = result.filter(it => it.success).map(it => it.item);
+	gridItems.value = gridItems.value.filter(it => !successItems.includes(it));
+}
+
+async function showRegisterResult(result: { item: { url: string, name: string }, success: boolean, err: unknown }[]) {
+	if (result.some(it => !it.success)) {
 		await os.alert({
 			type: 'error',
 			title: i18n.ts.somethingHappened,
@@ -283,12 +291,77 @@ async function onRegistryClicked() {
 		failed: !it.success,
 		url: it.item.url,
 		name: it.item.name,
-		error: it.err ? JSON.stringify(it.err) : undefined,
+		error: it.err == null ? undefined : typeof it.err === 'string' ? it.err : JSON.stringify(it.err),
 	}));
+}
 
-	// 登録に成功したものは一覧から除く
-	const successItems = result.filter(it => it.success).map(it => it.item);
-	gridItems.value = gridItems.value.filter(it => !successItems.includes(it));
+/**
+ * クリップボードを直接読み、読めない (許可されない・非対応) か絵文字が見つからなければ、貼り付ける欄を出す
+ */
+async function readPastedText(): Promise<string | null> {
+	try {
+		const text = await navigator.clipboard.readText();
+		if (parsePastedEmojis(text).length > 0) return text;
+	} catch (err) {
+		console.warn(err);
+	}
+
+	const { canceled, result } = await os.form(i18n.ts._customEmojisManager._local._register.pasteToRegister, {
+		text: {
+			type: 'string',
+			label: i18n.ts._customEmojisManager._local._register.pasteDialogLabel,
+			multiline: true,
+			required: true,
+		},
+	});
+	if (canceled) return null;
+	return result.text;
+}
+
+// ほかのサーバーでコピーした絵文字を、一覧に足さずにそのまま登録する (画像はサーバーが取り込み、誰のドライブにも入れない)
+async function onPasteClicked() {
+	const text = await readPastedText();
+	if (text == null) return;
+
+	const emojis = parsePastedEmojis(text);
+	if (emojis.length === 0) {
+		await os.alert({
+			type: 'warning',
+			text: i18n.ts._customEmojisManager._local._register.noPastedEmojis,
+		});
+		return;
+	}
+
+	const dialogSelection = await os.confirm({
+		type: 'info',
+		text: i18n.tsx._customEmojisManager._local._register.confirmRegisterPastedEmojisDescription({
+			count: emojis.length,
+			max: MAXIMUM_EMOJI_REGISTER_COUNT,
+		}),
+	});
+	if (dialogSelection.canceled) return;
+
+	const result = await os.promiseDialog(mapWithConcurrency(emojis.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT), EMOJI_REGISTER_CONCURRENCY, registerPastedEmoji));
+	await showRegisterResult(result);
+}
+
+async function registerPastedEmoji(item: PastedEmoji) {
+	// 同じ名前の絵文字があればサーバーに送らない (画像を取り込む手間を省く)
+	if (customEmojisMap.has(item.name)) {
+		return { item, success: false, err: i18n.ts._customEmojisManager._local._register.pastedEmojiNameAlreadyExists };
+	}
+
+	return misskeyApi('admin/emoji/add-from-url', {
+		url: item.url,
+		name: item.name,
+		category: item.category,
+		aliases: item.aliases,
+		license: item.license,
+		isSensitive: item.isSensitive,
+		localOnly: item.localOnly,
+	})
+		.then(() => ({ item, success: true, err: undefined }))
+		.catch(err => ({ item, success: false, err }));
 }
 
 async function onClearClicked() {
