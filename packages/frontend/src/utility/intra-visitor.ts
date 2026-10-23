@@ -10,9 +10,10 @@ import { $i } from '@/i.js';
 import { instance } from '@/instance.js';
 
 /**
- * 学内SNSモードで未ログインでも表示するページ (42 ログインの戻り先)
+ * 学内SNSモードで未ログインでも表示するページ (42 ログインの戻り先と、管理者が発行したパスキーの登録リンク)。
+ * パスキーの登録リンクは 42 にログインできない人が未ログインで開くので、ログイン画面にすると登録できない
  */
-const INTRA_VISITOR_ALLOWED_PATHS = ['/intra-complete'];
+const INTRA_VISITOR_ALLOWED_PATHS = ['/intra-complete', '/intra-passkey-setup'];
 
 /**
  * ログイン画面だけを表示すべきか
