@@ -84,10 +84,14 @@ export class IntraSyncService {
 	 * ユーザーのプロフィールとロールを intra の情報に合わせる。
 	 * intra と連携していないユーザーには何もしない
 	 * @param intraUser 取得済みの intra のユーザー情報 (ログイン直後など)。省略すると 42 API から取得し、コアリションのロールが付いていれば所属を取り直さない
+	 * @param opts.skipAppRequests true のときは、アプリトークンでの 42 API のリクエスト (コアリションの所属・課題の状態) をしない。
+	 * アプリトークンのリクエストは毎時のジョブなどと 1 本の列に並び、42 API の制限で長く待つことがあるため、ログインの応答を待たせないときに使う。
+	 * コアリションのロールは付けも外しもせず、課題の状態も更新しない
 	 */
 	@bindThis
-	public async syncUser(userId: MiUser['id'], intraUser?: IntraUser): Promise<void> {
+	public async syncUser(userId: MiUser['id'], intraUser?: IntraUser, opts: { skipAppRequests?: boolean } = {}): Promise<void> {
 		const intra = this.getIntraConfig();
+		const skipAppRequests = opts.skipAppRequests === true && intraUser != null;
 		// ログインのとき (intraUser を渡されたとき) だけ、コアリションの所属を取り直す
 		const refreshCoalition = intraUser != null;
 
@@ -122,7 +126,9 @@ export class IntraSyncService {
 		const updatedProfile = await this.userProfilesRepository.findOneByOrFail({ userId });
 		await this.cacheService.userProfileCache.set(userId, updatedProfile);
 
-		await this.syncRoles(userId, intraUser.id, extracted, refreshCoalition);
+		await this.syncRoles(userId, intraUser.id, extracted, refreshCoalition, skipAppRequests);
+
+		if (skipAppRequests) return;
 
 		try {
 			await this.intraProjectService.syncUserProgress(userId, intraUser, extracted.campus?.id ?? null);
@@ -170,9 +176,10 @@ export class IntraSyncService {
 	 * intra_role で管理しているロールの付与・解除を、intra の情報に合わせる。
 	 * レベルが上がって新しいレベルのロールを付けたら intraLevelUp を通知する
 	 * @param refreshCoalition コアリションのロールが既に付いていても所属を取り直すか。コアリションは変わらないので、ログインのときだけ取り直す
+	 * @param skipCoalition true のときはコアリションの所属を取得せず、コアリションのロールを付けも外しもしない
 	 */
 	@bindThis
-	private async syncRoles(userId: MiUser['id'], intraId: number, profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, refreshCoalition: boolean): Promise<void> {
+	private async syncRoles(userId: MiUser['id'], intraId: number, profile: Pick<IntraProfile, 'level' | 'campus' | 'poolYearMonth' | 'poolNameYearMonth' | 'cursusBeginAt'>, refreshCoalition: boolean, skipCoalition: boolean): Promise<void> {
 		const intakeYearMonth = await this.intraCohortService.getIntakeYearMonth(profile.campus?.id ?? null, profile.cursusBeginAt);
 
 		const now = Date.now();
@@ -192,7 +199,7 @@ export class IntraSyncService {
 
 		let coalition: IntraCoalition | null = null;
 		// false のときは、コアリションのロールを付けも外しもしない
-		let coalitionKnown = refreshCoalition || !hasCoalitionRole;
+		let coalitionKnown = !skipCoalition && (refreshCoalition || !hasCoalitionRole);
 		if (coalitionKnown) {
 			try {
 				coalition = await this.intraCoalitionService.getUserCoalition(intraId, profile.campus?.id ?? null);

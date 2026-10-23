@@ -454,14 +454,21 @@ export class IntraAuthService {
 
 	/**
 	 * intra でのログイン (新規作成・既存ユーザー) が成功した直後に呼ばれる。
-	 * ロールとプロフィールを同期する。同期に失敗してもログインは続ける
+	 * ロールとプロフィールを同期する。同期に失敗してもログインは続ける。
+	 * 42 API にアプリトークンで問い合わせる同期 (コアリションの所属・課題の状態) は、毎時のジョブなどと同じ列に並んで
+	 * 42 API の制限で長く待つことがあり、callback の応答 (と、その後のログインの完了) が遅れるので、待たずに後で行う
 	 */
 	@bindThis
 	private async onLoggedIn(context: IntraLoginContext): Promise<void> {
+		const { user, intraUser, profile } = context;
 		try {
-			await this.intraSyncService.syncUser(context.user.id, context.intraUser);
+			await this.intraSyncService.syncUser(user.id, intraUser, { skipAppRequests: true });
 		} catch (err) {
-			this.logger.error(`Failed to sync user ${context.user.id} with intra user ${context.profile.intraId}: ${err instanceof Error ? err.message : String(err)}`);
+			this.logger.error(`Failed to sync user ${user.id} with intra user ${profile.intraId}: ${err instanceof Error ? err.message : String(err)}`);
 		}
+
+		this.intraSyncService.syncUser(user.id, intraUser).catch(err => {
+			this.logger.error(`Failed to sync user ${user.id} with intra user ${profile.intraId} in background: ${err instanceof Error ? err.message : String(err)}`);
+		});
 	}
 }

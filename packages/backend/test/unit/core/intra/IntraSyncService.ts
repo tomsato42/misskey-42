@@ -420,6 +420,31 @@ describe('IntraSyncService', () => {
 		expect(roleNamesOf('u2')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
 	});
 
+	test('skipAppRequests のときは、コアリションの所属と課題の状態を取得せず、ほかのロールとプロフィールは同期する', async () => {
+		addProfile('u1', { intraId: 1000, intraLogin: 'old' });
+		const fuji = addManagedRole('coalition', '301', 'Fuji');
+		assign('u1', fuji);
+		coalitions.set(1000, { id: 302, name: 'Kaze', color: null });
+
+		await service.syncUser('u1', createIntraUser(), { skipAppRequests: true });
+
+		expect(coalitionCalls).toEqual([]);
+		expect(progressSyncCalls).toEqual([]);
+		expect(profiles[0].intraLogin).toBe('tomoki');
+		// コアリションのロールは付けも外しもしない
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Fuji', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
+	test('skipAppRequests のときは、コアリションのロールが無くても付けない', async () => {
+		addProfile('u1', { intraId: 1000 });
+		coalitions.set(1000, { id: 301, name: 'Fuji', color: null });
+
+		await service.syncUser('u1', createIntraUser(), { skipAppRequests: true });
+
+		expect(coalitionCalls).toEqual([]);
+		expect(roleNamesOf('u1')).toEqual(['Cursus 23/10', 'Lv.5', 'Piscine 23/07', 'Tokyo']);
+	});
+
 	test('ログインのときは、コアリションのロールが付いていても所属を取り直す', async () => {
 		addProfile('u1', { intraId: 1000 });
 		const fuji = addManagedRole('coalition', '301', 'Fuji');
