@@ -94,7 +94,7 @@ describe('IntraAuthService', () => {
 	let intraApiFails: boolean;
 	let moderators: Set<string>;
 	let beforeSignup: (() => void) | null;
-	let syncCalls: { userId: string; intraId: number }[];
+	let syncCalls: { userId: string; intraId: number; skipAppRequests: boolean }[];
 	let syncFails: boolean;
 	let notifications: { notifieeId: string; type: string; notifierId: string | null | undefined }[];
 	let achievements: { userId: string; type: string }[];
@@ -155,8 +155,8 @@ describe('IntraAuthService', () => {
 			getMe: async () => structuredClone(intraUser),
 		};
 		const fakeIntraSyncService = {
-			syncUser: async (userId: string, intraUserArg: IntraUser) => {
-				syncCalls.push({ userId, intraId: intraUserArg.id });
+			syncUser: async (userId: string, intraUserArg: IntraUser, opts?: { skipAppRequests?: boolean }) => {
+				syncCalls.push({ userId, intraId: intraUserArg.id, skipAppRequests: opts?.skipAppRequests === true });
 				if (syncFails) throw new Error('sync failed');
 			},
 		};
@@ -372,25 +372,43 @@ describe('IntraAuthService', () => {
 		expect(failed.loginCode).toBeNull();
 	});
 
-	test('ログインに成功したら、取得済みの intra ユーザー情報で同期する', async () => {
+	test('ログインに成功したら、取得済みの intra ユーザー情報で同期する (42 API を使う同期は応答の後で行う)', async () => {
 		addUser('existing', 'tomoki_2307', { intraId: 1000 });
 		const state = await authorizeAndGetState();
 		loginCodeOf(await callbackUrl('authcode', state, state));
-		expect(syncCalls).toEqual([{ userId: 'existing', intraId: 1000 }]);
+		expect(syncCalls).toEqual([
+			{ userId: 'existing', intraId: 1000, skipAppRequests: true },
+			{ userId: 'existing', intraId: 1000, skipAppRequests: false },
+		]);
 
 		// 新規作成のときも同期する
 		intraUser = createIntraUser({ id: 2000, login: 'newcomer' });
 		const state2 = await authorizeAndGetState();
 		loginCodeOf(await callbackUrl('authcode', state2, state2));
-		expect(syncCalls).toHaveLength(2);
-		expect(syncCalls[1].intraId).toBe(2000);
+		expect(syncCalls).toHaveLength(4);
+		expect(syncCalls.slice(2).map(c => [c.intraId, c.skipAppRequests])).toEqual([[2000, true], [2000, false]]);
+	});
+
+	test('42 API を使う同期の完了を待たずにログインのコードを返す', async () => {
+		let release!: () => void;
+		const pending = new Promise<void>(resolve => { release = resolve; });
+		const original = service['intraSyncService'].syncUser;
+		service['intraSyncService'].syncUser = async (userId: string, intraUserArg: IntraUser, opts?: { skipAppRequests?: boolean }) => {
+			await original(userId, intraUserArg, opts);
+			if (opts?.skipAppRequests !== true) await pending;
+		};
+
+		const state = await authorizeAndGetState();
+		const code = loginCodeOf(await callbackUrl('authcode', state, state));
+		expect((await service.consumeLoginCode(code, code))?.id).toBe(users.rows[0].id);
+		release();
 	});
 
 	test('同期に失敗してもログインは成功する', async () => {
 		syncFails = true;
 		const state = await authorizeAndGetState();
 		const code = loginCodeOf(await callbackUrl('authcode', state, state));
-		expect(syncCalls).toHaveLength(1);
+		expect(syncCalls).toHaveLength(2);
 		expect((await service.consumeLoginCode(code, code))?.id).toBe(users.rows[0].id);
 	});
 
