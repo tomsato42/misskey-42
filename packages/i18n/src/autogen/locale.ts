@@ -15618,10 +15618,6 @@ export interface Locale extends ILocale {
          */
         "suggestingCount": ParameterizedString<"count">;
         /**
-         * 提案
-         */
-        "suggest": string;
-        /**
          * 再提案
          */
         "resuggest": string;

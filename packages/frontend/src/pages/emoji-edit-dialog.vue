@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkInput v-model="category" :datalist="customEmojiCategories.filter(x => x != null)">
 					<template #label>{{ i18n.ts.category }}</template>
 				</MkInput>
-				<MkButton v-if="suggestedCategory != null && suggestedCategory !== category" small rounded style="margin-top: -8px;" @click="category = suggestedCategory">
+				<MkButton v-if="suggestedCategory != null && suggestedCategory !== category" small rounded :class="$style.suggestButton" @click="category = suggestedCategory">
 					<i class="ti ti-sparkles"></i> {{ i18n.tsx._emojiTagging.useSuggestedCategory({ name: suggestedCategory }) }}
 				</MkButton>
 				<MkInput v-model="aliases" autocapitalize="off">
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.setMultipleBySeparatingWithSpace }}
 					</template>
 				</MkInput>
-				<MkButton v-if="taggingAvailable" small rounded :wait="suggesting" :disabled="!canSuggest" style="margin-top: -8px;" @click="suggest">
+				<MkButton v-if="taggingAvailable" small rounded :wait="suggesting" :disabled="!canSuggest" :class="$style.suggestButton" @click="suggest">
 					<i class="ti ti-sparkles"></i> {{ suggestedHistory.length > 0 ? i18n.ts._emojiTagging.resuggest : i18n.ts._emojiTagging.title }}
 				</MkButton>
 				<MkInput v-model="license" :mfmAutocomplete="true">
@@ -265,6 +265,10 @@ async function del() {
 </script>
 
 <style lang="scss" module>
+.suggestButton {
+	margin-top: -8px;
+}
+
 .imgs {
 	display: flex;
 	gap: 8px;

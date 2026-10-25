@@ -439,7 +439,7 @@ export const meta = {
 			anthropicApiKeyHint: {
 				type: 'string',
 				optional: false, nullable: true,
-				description: 'The last 4 characters of the Claude (Anthropic) API key, or `null` if no key is set. The key itself is never returned.',
+				description: 'The last 4 characters of the Claude (Anthropic) API key (`****` for a very short key), or `null` if no key is set. The key itself is never returned.',
 			},
 			anthropicModel: {
 				type: 'string',

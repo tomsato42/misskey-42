@@ -88,7 +88,9 @@ export function emojiTaggingErrorMessage(err: unknown): string {
 		case 'EMOJI_TAGGING_NOT_CONFIGURED': return i18n.ts._emojiTagging._errors.notConfigured;
 		case 'FAILED_TO_LOAD_IMAGE': return i18n.ts._emojiTagging._errors.failedToLoadImage;
 		case 'INVALID_API_KEY': return i18n.ts._emojiTagging._errors.invalidApiKey;
-		case 'CLAUDE_RATE_LIMITED': return i18n.ts._emojiTagging._errors.rateLimited;
+		case 'CLAUDE_RATE_LIMITED':
+		case 'RATE_LIMIT_EXCEEDED':
+			return i18n.ts._emojiTagging._errors.rateLimited;
 		case 'CLAUDE_REFUSED': return i18n.ts._emojiTagging._errors.refused;
 		case 'CLAUDE_FAILED': return i18n.ts._emojiTagging._errors.failed;
 		default: return i18n.ts.somethingHappened;

@@ -391,7 +391,7 @@ export type paths = {
          * admin/emoji/suggest-tags
          * @description Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
          *
-         *     **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
          */
         post: operations['admin___emoji___suggest-tags'];
     };
@@ -400,7 +400,7 @@ export type paths = {
          * admin/emoji/test-tagging
          * @description Check that the Claude API key and model in the server settings can be used for suggesting emoji tags. No tokens are used.
          *
-         *     **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
          */
         post: operations['admin___emoji___test-tagging'];
     };
@@ -11065,7 +11065,7 @@ export interface operations {
                         backgroundImageUrl: string | null;
                         deeplAuthKey: string | null;
                         deeplIsPro: boolean;
-                        /** @description The last 4 characters of the Claude (Anthropic) API key, or `null` if no key is set. The key itself is never returned. */
+                        /** @description The last 4 characters of the Claude (Anthropic) API key (`****` for a very short key), or `null` if no key is set. The key itself is never returned. */
                         anthropicApiKeyHint: string | null;
                         /** @enum {string} */
                         anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';

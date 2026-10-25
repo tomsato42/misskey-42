@@ -9,7 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { DriveFilesRepository, EmojisRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { EmojiTagSuggestionService } from '@/core/emoji-tagging/EmojiTagSuggestionService.js';
-import { MAX_EXCLUDED_TAGS, MAX_HINT_LENGTH, collectCategories } from '@/core/emoji-tagging/emoji-tagging.js';
+import { MAX_CURRENT_TAGS, MAX_EXCLUDED_TAGS, MAX_HINT_LENGTH, MAX_PROMPT_NAME_LENGTH, collectCategories } from '@/core/emoji-tagging/emoji-tagging.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { emojiTaggingApiErrors, withEmojiTaggingApiErrors } from '@/server/api/emoji-tagging-errors.js';
 import { ApiError } from '../../../error.js';
@@ -22,11 +22,13 @@ export const meta = {
 	requireCredential: true,
 	// 費用がかかるので、絵文字を管理できる人やモデレーターではなく管理者だけ
 	requireAdmin: true,
-	kind: 'read:admin:emoji',
+	// 何も保存しないが Claude の費用がかかるので、読み取りだけの権限では呼べないようにする
+	kind: 'write:admin:emoji',
 
+	// 画面からは同時に 4 件ずつ送る。速いモデルでも引っかからない程度にし、Claude 側の上限は Claude のエラーで分かる
 	limit: {
 		duration: 1000 * 60,
-		max: 60,
+		max: 300,
 	},
 
 	errors: {
@@ -89,7 +91,7 @@ export const paramDef = {
 					type: 'object',
 					properties: {
 						fileId: { type: 'string', format: 'misskey:id' },
-						name: { type: 'string' },
+						name: { type: 'string', minLength: 1, maxLength: MAX_PROMPT_NAME_LENGTH },
 					},
 					required: ['fileId', 'name'],
 				},
@@ -98,17 +100,18 @@ export const paramDef = {
 		{
 			type: 'object',
 			properties: {
-				category: { type: 'string', nullable: true },
+				category: { type: 'string', nullable: true, maxLength: MAX_PROMPT_NAME_LENGTH },
 				currentTags: {
 					type: 'array',
 					description: 'Tags the emoji already has. They are not suggested again. Defaults to the aliases of the emoji.',
-					items: { type: 'string' },
+					maxItems: MAX_CURRENT_TAGS,
+					items: { type: 'string', maxLength: MAX_PROMPT_NAME_LENGTH },
 				},
 				excludedTags: {
 					type: 'array',
 					description: 'Tags suggested before. Claude suggests other words instead.',
 					maxItems: MAX_EXCLUDED_TAGS,
-					items: { type: 'string' },
+					items: { type: 'string', maxLength: MAX_PROMPT_NAME_LENGTH },
 				},
 				hint: { type: 'string', nullable: true, maxLength: MAX_HINT_LENGTH },
 			},

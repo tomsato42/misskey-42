@@ -29,13 +29,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 
 		<div v-if="runTotal > 0" :class="$style.progress">
-			<div :class="$style.progressBar"><div :class="$style.progressFill" :style="{ width: `${runDone / runTotal * 100}%` }"></div></div>
+			<div :class="$style.progressBar" role="progressbar" :aria-valuenow="runDone" aria-valuemin="0" :aria-valuemax="runTotal" :aria-label="i18n.ts._emojiTagging.title"><div :class="$style.progressFill" :style="{ width: `${runDone / runTotal * 100}%` }"></div></div>
 			<span>{{ i18n.tsx._emojiTagging.progress({ done: runDone, total: runTotal }) }}</span>
 		</div>
 
 		<div v-if="selectedRows.length > 0" :class="$style.bulkBar">
 			<span>{{ i18n.tsx._emojiTagging.selectedCount({ count: selectedRows.length }) }}</span>
-			<MkInput v-model="bulkHint" small :placeholder="i18n.ts._emojiTagging.hint" :class="$style.bulkHint" @enter="resuggestSelected"/>
+			<MkInput v-model="bulkHint" small :class="$style.bulkHint" @enter="resuggestSelected">
+				<template #label>{{ i18n.ts._emojiTagging.hint }}</template>
+			</MkInput>
 			<MkButton small primary @click="resuggestSelected">{{ i18n.ts._emojiTagging.resuggestSelected }}</MkButton>
 		</div>
 
@@ -47,12 +49,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 			ref="listEl"
 			:class="$style.list"
 			tabindex="0"
+			role="listbox"
+			:aria-label="i18n.ts._emojiTagging.tabTitle"
+			:aria-activedescendant="visibleRows[activeIndex] != null ? `emoji-tagging-row-${visibleRows[activeIndex].emoji.id}` : undefined"
 			@keydown="onKeydown"
 		>
 			<div
 				v-for="(row, i) in visibleRows"
+				:id="`emoji-tagging-row-${row.emoji.id}`"
 				:key="row.emoji.id"
 				:ref="el => setRowEl(row.emoji.id, el)"
+				role="option"
+				:aria-selected="i === activeIndex"
+				:aria-label="row.emoji.name"
 				:class="[$style.row, { [$style.active]: i === activeIndex, [$style.applied]: row.status === 'applied' }]"
 				@click="activeIndex = i"
 			>
@@ -70,14 +79,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</span>
 						<span :class="$style.rowButtons">
 							<MkButton small :disabled="row.status === 'loading' || row.status === 'applying'" @click.stop="resuggest(row)">{{ i18n.ts._emojiTagging.resuggest }}</MkButton>
-							<MkButton small :disabled="row.status === 'loading'" @click.stop="openHint(row)"><i class="ti ti-message-2"></i></MkButton>
+							<MkButton small iconOnly :disabled="row.status === 'loading'" :aria-label="i18n.ts._emojiTagging.hint" :title="i18n.ts._emojiTagging.hint" @click.stop="openHint(row)"><i class="ti ti-message-2"></i></MkButton>
 							<MkButton v-if="row.status !== 'applied'" small primary :disabled="current(row) == null || row.status === 'loading' || row.status === 'applying'" @click.stop="apply(row)">{{ i18n.ts._emojiTagging.apply }}</MkButton>
 							<span v-else :class="$style.appliedLabel"><i class="ti ti-check"></i> {{ i18n.ts._emojiTagging.applied }}</span>
 						</span>
 					</div>
 
-					<div :class="$style.chips">
+					<div v-if="row.emoji.aliases.length > 0" :class="$style.chips">
+						<span :class="$style.chipsLabel">{{ i18n.ts._emojiTagging.currentTags }}</span>
 						<span v-for="tag in row.emoji.aliases" :key="`c-${tag}`" :class="[$style.chip, $style.chipCurrent]">{{ tag }}</span>
+					</div>
+					<div v-if="current(row) != null || row.status === 'loading'" :class="$style.chips">
+						<span :class="$style.chipsLabel">{{ i18n.ts._emojiTagging.suggestedTags }}</span>
 						<template v-if="current(row) != null">
 							<span v-for="tag in current(row)!.tags" :key="`s-${tag}`" :class="$style.chip">{{ tag }}</span>
 							<span v-if="current(row)!.tags.length === 0" :class="$style.note">{{ i18n.ts._emojiTagging.noSuggestedTags }}</span>
@@ -87,14 +100,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 					<div v-if="current(row)?.category != null && current(row)!.category!.name !== row.emoji.category" :class="$style.category">
 						<MkSwitch v-model="row.applyCategory" :disabled="row.status === 'applied'">
-							{{ i18n.tsx._emojiTagging.changeCategory({ name: current(row)!.category!.name }) }}
-							<span v-if="current(row)!.category!.isNew" :class="$style.newBadge">{{ i18n.ts._emojiTagging.newCategory }}</span>
+							<template #label>
+								{{ i18n.tsx._emojiTagging.changeCategory({ name: current(row)!.category!.name }) }}
+								<span v-if="current(row)!.category!.isNew" :class="$style.newBadge">{{ i18n.ts._emojiTagging.newCategory }}</span>
+							</template>
 						</MkSwitch>
 						<span v-if="row.emoji.category" :class="$style.note">{{ i18n.ts.category }}: {{ row.emoji.category }}</span>
 					</div>
 
 					<div v-if="row.hintOpen" :class="$style.hintBox">
-						<MkInput :ref="el => setHintEl(row.emoji.id, el)" v-model="row.hint" small :placeholder="i18n.ts._emojiTagging.hint" :class="$style.hintInput" @enter="resuggest(row)"/>
+						<MkInput :ref="el => setHintEl(row.emoji.id, el)" v-model="row.hint" small :class="$style.hintInput" @enter="resuggest(row)">
+							<template #label>{{ i18n.ts._emojiTagging.hint }}</template>
+						</MkInput>
 						<MkButton small primary :disabled="row.status === 'loading'" @click.stop="resuggest(row)">{{ i18n.ts._emojiTagging.resuggestThisRow }}</MkButton>
 					</div>
 
@@ -261,9 +278,9 @@ async function suggestRow(row: Row, hint: string | null) {
 	row.error = null;
 	try {
 		const excludedTags = [...new Set(row.history.flatMap(it => it.tags))].slice(-MAX_EXCLUDED_TAGS);
+		// 今のタグはサーバーが絵文字から取る (反映した分も入っている)
 		const suggestion = await suggestEmojiTags({
 			emojiId: row.emoji.id,
-			currentTags: row.emoji.aliases,
 			excludedTags,
 			hint: hint != null && hint.trim() !== '' ? hint.trim() : null,
 		});
@@ -375,7 +392,7 @@ async function moveActive(delta: number) {
 async function onKeydown(ev: KeyboardEvent) {
 	// ヒントの欄に入力しているときやボタンを押すときは、行の操作にしない
 	const el = ev.target as HTMLElement | null;
-	if (el != null && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'BUTTON' || el.isContentEditable)) {
+	if (el != null && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.closest('button, a, [role="button"]') != null || el.isContentEditable)) {
 		if (ev.key === 'Escape') listEl.value?.focus();
 		return;
 	}
@@ -603,6 +620,11 @@ onMounted(async () => {
 	gap: 6px;
 }
 
+.chipsLabel {
+	font-size: 0.8em;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+}
+
 .chip {
 	padding: 2px 10px;
 	border-radius: 999px;
@@ -637,7 +659,7 @@ onMounted(async () => {
 .hintBox {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
+	align-items: flex-end;
 	gap: 8px;
 }
 

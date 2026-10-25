@@ -70,6 +70,8 @@ describe('emojiTaggingErrorMessage', () => {
 	test('エラーの code ごとの文にする', () => {
 		expect(emojiTaggingErrorMessage({ code: 'INVALID_API_KEY' })).toBe(i18n.ts._emojiTagging._errors.invalidApiKey);
 		expect(emojiTaggingErrorMessage({ code: 'CLAUDE_RATE_LIMITED' })).toBe(i18n.ts._emojiTagging._errors.rateLimited);
+		// このサーバーの API の上限も同じ文にする
+		expect(emojiTaggingErrorMessage({ code: 'RATE_LIMIT_EXCEEDED' })).toBe(i18n.ts._emojiTagging._errors.rateLimited);
 	});
 
 	test('知らないエラーは一般の文にする', () => {

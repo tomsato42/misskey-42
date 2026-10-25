@@ -70,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</SearchMarker>
 
 							<div class="_buttons">
-								<MkButton primary @click="save_anthropic">Save</MkButton>
+								<MkButton primary @click="save_anthropic">{{ i18n.ts.save }}</MkButton>
 								<MkButton :disabled="anthropicApiKeyHint == null" @click="test_anthropic">{{ i18n.ts._emojiTagging.testConnection }}</MkButton>
 								<MkButton danger :disabled="anthropicApiKeyHint == null" @click="delete_anthropic">{{ i18n.ts._emojiTagging.deleteKey }}</MkButton>
 							</div>

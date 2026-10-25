@@ -474,7 +474,7 @@ declare module '../api.js' {
     /**
      * Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
      */
     request<E extends 'admin/emoji/suggest-tags', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -485,7 +485,7 @@ declare module '../api.js' {
     /**
      * Check that the Claude API key and model in the server settings can be used for suggesting emoji tags. No tokens are used.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
      */
     request<E extends 'admin/emoji/test-tagging', P extends Endpoints[E]['req']>(
       endpoint: E,

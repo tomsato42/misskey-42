@@ -21,6 +21,10 @@ export function toEmojiTaggingModel(model: string): EmojiTaggingModel {
 export const MAX_SUGGESTED_TAGS = 15;
 /** 1 つのタグの最大文字数 (Misskey の aliases に上限は無いが、長い語は検索に使われない) */
 export const MAX_TAG_LENGTH = 32;
+/** 絵文字の名前とカテゴリの最大文字数 (プロンプトに入れるもの) */
+export const MAX_PROMPT_NAME_LENGTH = 128;
+/** 今のタグとして受け取る最大数 */
+export const MAX_CURRENT_TAGS = 100;
 /** ヒントの最大文字数 */
 export const MAX_HINT_LENGTH = 200;
 /** 再提案で除く語として受け取る最大数 (それまでの提案を何回分か渡す) */
@@ -141,7 +145,7 @@ export function normalizeSuggestedTags(raw: unknown, options: { name: string; cu
 export function maskApiKey(key: string | null): string | null {
 	if (key == null || key === '') return null;
 	// 短すぎるキーは末尾だけでも大半が見えてしまうので出さない
-	return key.length < 12 ? '' : key.slice(-4);
+	return key.length < 12 ? '****' : key.slice(-4);
 }
 
 export type SuggestedCategory = {

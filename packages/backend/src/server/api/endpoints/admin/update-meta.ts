@@ -132,6 +132,7 @@ export const paramDef = {
 		anthropicApiKey: {
 			type: 'string',
 			nullable: true,
+			maxLength: 1024,
 			description: 'Use `null` or an empty string to delete the key.',
 		},
 		anthropicModel: { type: 'string', enum: EMOJI_TAGGING_MODELS },

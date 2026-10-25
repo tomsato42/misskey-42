@@ -4163,7 +4163,6 @@ _emojiTagging:
   suggestOnUpload: "タグとカテゴリを Claude に提案させる"
   suggestOnUploadCaption: "画像を追加したときに、タグとカテゴリの欄を埋めます。入力済みのカテゴリは変えません。"
   suggestingCount: "{count} 件を提案中…"
-  suggest: "提案"
   resuggest: "再提案"
   resuggestRows: "選んだ行のタグとカテゴリを提案し直す"
   resuggestSelected: "選んだものを再提案"

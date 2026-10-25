@@ -108,7 +108,8 @@ export class EmojiTagSuggestionService {
 			const png = await this.imageProcessingService.convertToPng(path, EMOJI_TAGGING_IMAGE_SIZE, EMOJI_TAGGING_IMAGE_SIZE);
 			return Buffer.from(png.data).toString('base64');
 		} catch (err) {
-			this.logger.warn(`Failed to load the emoji image: ${url}`, { error: err });
+			// 取得のエラーにはメディア用 Cookie を含むリクエストの内容が入ることがあるので、文だけを残す
+			this.logger.warn(`Failed to load the emoji image: ${url}: ${err instanceof Error ? err.message : String(err)}`);
 			throw new EmojiTaggingError('FAILED_TO_LOAD_IMAGE', 'Failed to load the emoji image.');
 		} finally {
 			cleanup();

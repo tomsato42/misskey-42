@@ -7,13 +7,14 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { describe, beforeAll, test } from 'vitest';
-import { api, castAsError, initTestDb, signup, successfulApiCall } from '../utils.js';
+import { api, castAsError, initTestDb, role, signup, successfulApiCall } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 // Claude の API には繋がないので、キーの保存と権限だけを確かめる
 describe('絵文字のタグの提案', () => {
 	let root: misskey.entities.SignupResponse;
 	let alice: misskey.entities.SignupResponse;
+	let moderator: misskey.entities.SignupResponse;
 
 	const apiKey = 'sk-ant-api03-e2e-test-key-Qx7A';
 
@@ -21,6 +22,9 @@ describe('絵文字のタグの提案', () => {
 		await initTestDb(true);
 		root = await signup({ username: 'root' });
 		alice = await signup({ username: 'alice' });
+		moderator = await signup({ username: 'moderator' });
+		const moderatorRole = await role(root, { isModerator: true, target: 'manual' });
+		await api('admin/roles/assign', { userId: moderator.id, roleId: moderatorRole.id }, root);
 	}, 1000 * 60 * 2);
 
 	test('キーが無ければ admin/meta は null を返し、モデルは既定', async () => {
@@ -35,9 +39,16 @@ describe('絵文字のタグの提案', () => {
 		assert.strictEqual(castAsError(res.body as any).error.code, 'EMOJI_TAGGING_NOT_CONFIGURED');
 	});
 
-	test('管理者でなければ使えない', async () => {
-		const res = await api('admin/emoji/suggest-tags', { fileId: 'xxxxxxxxxx', name: 'happy' }, alice);
-		assert.strictEqual(res.status, 403);
+	test('管理者でなければ、モデレーターでも使えない', async () => {
+		for (const user of [alice, moderator]) {
+			assert.strictEqual((await api('admin/emoji/suggest-tags', { fileId: 'xxxxxxxxxx', name: 'happy' }, user)).status, 403);
+			assert.strictEqual((await api('admin/emoji/test-tagging', {}, user)).status, 403);
+		}
+	});
+
+	test('選べないモデルは保存できない', async () => {
+		const res = await api('admin/update-meta', { anthropicModel: 'claude-3-opus' as any }, root);
+		assert.strictEqual(res.status, 400);
 	});
 
 	test('無い絵文字には NO_SUCH_EMOJI', async () => {
@@ -54,8 +65,13 @@ describe('絵文字のタグの提案', () => {
 		assert.strictEqual(meta.anthropicModel, 'claude-haiku-5-5');
 		assert.ok(!JSON.stringify(meta).includes(apiKey));
 
-		const logs = await successfulApiCall({ endpoint: 'admin/show-moderation-logs', parameters: { type: 'updateServerSettings', limit: 1 }, user: root });
-		assert.ok(logs.length === 1);
+		// モデレーションログは応答の後に書かれることがあるので、現れるまで待つ
+		let logs: misskey.entities.AdminShowModerationLogsResponse = [];
+		for (let i = 0; i < 50 && logs.length === 0; i++) {
+			logs = await successfulApiCall({ endpoint: 'admin/show-moderation-logs', parameters: { type: 'updateServerSettings', search: 'claude-haiku-5-5', limit: 1 }, user: root });
+			if (logs.length === 0) await new Promise(resolve => setTimeout(resolve, 100));
+		}
+		assert.strictEqual(logs.length, 1);
 		assert.ok(!JSON.stringify(logs[0]).includes(apiKey));
 	});
 

@@ -120,6 +120,6 @@ describe('maskApiKey', () => {
 	test('無ければ null、短すぎれば空', () => {
 		expect(maskApiKey(null)).toBeNull();
 		expect(maskApiKey('')).toBeNull();
-		expect(maskApiKey('short')).toBe('');
+		expect(maskApiKey('short')).toBe('****');
 	});
 });

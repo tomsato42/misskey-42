@@ -15,7 +15,7 @@ export const meta = {
 
 	requireCredential: true,
 	requireAdmin: true,
-	kind: 'read:admin:emoji',
+	kind: 'write:admin:emoji',
 
 	limit: {
 		duration: 1000 * 60,
