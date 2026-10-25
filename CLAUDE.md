@@ -8,7 +8,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 
 ## このフォーク (misskey-42) 固有の補足
 
-42 intra ログイン専用の学内SNS (`https://42times.kinachan.com`)。ベースは upstream tag 2026.10.0。リモートは `origin` = tomsato42/misskey-42 (public。Actions の無料枠のため。ソースコードのリンクもここを指す)、`upstream` = misskey-dev/misskey (push 無効)。コミットのメールは noreply (`git config --local` 済み)。リポジトリが public なので、VPS の接続先 (`DEPLOY_*`) も Variables ではなく Secrets に置く (Variables はログで伏せ字にならない)。upstream のワークフローのうち `pull_request_target` のものやリリース・Docker Hub 用のものは `gh workflow disable` で止めている。`gh` は `-R tomsato42/misskey-42` を付けるか `gh repo set-default` 済みの状態で使う (付けないと upstream を見ることがある)。
+42 intra ログイン専用の学内SNS (`https://42times.kinachan.com`)。ベースは upstream tag 2026.10.1。リモートは `origin` = tomsato42/misskey-42 (public。Actions の無料枠のため。ソースコードのリンクもここを指す)、`upstream` = misskey-dev/misskey (push 無効)。コミットのメールは noreply (`git config --local` 済み)。リポジトリが public なので、VPS の接続先 (`DEPLOY_*`) も Variables ではなく Secrets に置く (Variables はログで伏せ字にならない)。upstream のワークフローのうち `pull_request_target` のものやリリース・Docker Hub 用のものは `gh workflow disable` で止めている。`gh` は `-R tomsato42/misskey-42` を付けるか `gh repo set-default` 済みの状態で使う (付けないと upstream を見ることがある)。
 
 ### 機能の場所とスイッチ
 - `config.intra` (`packages/backend/src/config.ts`) があると「学内SNSモード」。無ければ upstream と同じ挙動 (upstream の e2e を壊さないため、制限はすべてこの条件の内側に置く)。フロントは meta の `intraLoginEnabled` で判定する
