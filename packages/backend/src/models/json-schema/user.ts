@@ -528,6 +528,14 @@ export const packedMeDetailedOnlySchema = {
 			nullable: false, optional: false,
 			description: 'ペア募集の招待を受け取るか (42times)',
 		},
+		followApprovalLocalSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
+		followApprovalRemoteSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,
