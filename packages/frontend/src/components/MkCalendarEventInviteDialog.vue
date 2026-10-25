@@ -123,7 +123,7 @@ import type { Tab } from '@/components/MkTab.vue';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
 import { i18n } from '@/i18n.js';
-import { acct } from '@/filters/user.js';
+import { acct } from '@@/js/user.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { dayOfWeek, parseCalendarDate } from '@/utility/calendar.js';
 import { formatCalendarScheduleAndLocation, getCalendarApiErrorMessage, getCalendarVisibilityLabel, getWeekdayShortLabel } from '@/utility/calendar-event-messages.js';

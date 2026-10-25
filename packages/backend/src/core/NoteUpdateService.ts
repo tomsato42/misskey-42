@@ -26,7 +26,8 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { publicOnlyTimelines, resolveEditedVisibility } from '@/core/note-edit-visibility.js';
 import type { EditableNoteVisibility } from '@/core/note-edit-visibility.js';
 import { extractHashtags } from '@/misc/extract-hashtags.js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
+import { extractUrlsForKeyWordCheck } from '@/misc/extract-urls-for-keyword-check.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 
 export type NoteEdit = {
@@ -93,7 +94,7 @@ export class NoteUpdateService {
 		const rawTags = extractHashtags(tokens)
 			.filter(tag => Array.from(tag).length <= 128)
 			.splice(0, 32);
-		const tags = rawTags.map(tag => normalizeForSearch(tag));
+		const tags = rawTags.map(tag => normalizeTag(tag));
 		// 編集した日時 (「編集済み」と履歴) は本文か CW を変えたときだけ付ける
 		const now = new Date();
 		const updatedAt = textChanged ? now : note.updatedAt;
@@ -122,7 +123,7 @@ export class NoteUpdateService {
 		// (フォロワーから公開・ホームに広げたときは、付いているハッシュタグをすべて新しく付けたものとして数える)
 		if (visibility === 'public' || visibility === 'home') {
 			const wasCounted = note.visibility === 'public' || note.visibility === 'home';
-			const addedTags = rawTags.filter(tag => !wasCounted || !note.tags.includes(normalizeForSearch(tag)));
+			const addedTags = rawTags.filter(tag => !wasCounted || !note.tags.includes(normalizeTag(tag)));
 			if (addedTags.length > 0) this.hashtagService.updateHashtags(user, addedTags);
 		}
 
@@ -156,7 +157,9 @@ export class NoteUpdateService {
 
 		let canPublic = true;
 		if (requested === 'public') {
-			canPublic = !this.utilityService.isKeyWordIncluded(edit.cw ?? edit.text ?? '', this.meta.sensitiveWords)
+			// 作成時と同じく、本文中の URL を正規化したものも判定に含める
+			const sensitiveWordsTarget = edit.cw ?? edit.text ?? '';
+			canPublic = !(this.meta.sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), this.meta.sensitiveWords))
 				&& (await this.roleService.getUserPolicies(note.userId)).canPublicNote !== false;
 		}
 

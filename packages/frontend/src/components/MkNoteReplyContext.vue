@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkNoteSub from '@/components/MkNoteSub.vue';
-import { notePage } from '@/filters/note.js';
+import { notePage } from '@@/js/note.js';
 import { i18n } from '@/i18n.js';
 import { fetchThreadRoot, getReplyContext } from '@/utility/reply-context.js';
 
