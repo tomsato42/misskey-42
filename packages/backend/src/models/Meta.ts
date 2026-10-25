@@ -379,6 +379,21 @@ export class MiMeta {
 	})
 	public deeplIsPro: boolean;
 
+	/**
+	 * 絵文字のタグの提案に使う Claude (Anthropic) の API キー。管理者だけが使う
+	 */
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public anthropicApiKey: string | null;
+
+	@Column('varchar', {
+		length: 128,
+		default: 'claude-sonnet-5-5',
+	})
+	public anthropicModel: string;
+
 	@Column('varchar', {
 		length: 1024,
 		nullable: true,

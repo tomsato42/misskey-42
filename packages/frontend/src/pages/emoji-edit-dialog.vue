@@ -39,6 +39,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkInput v-model="category" :datalist="customEmojiCategories.filter(x => x != null)">
 					<template #label>{{ i18n.ts.category }}</template>
 				</MkInput>
+				<MkButton v-if="suggestedCategory != null && suggestedCategory !== category" small rounded style="margin-top: -8px;" @click="category = suggestedCategory">
+					<i class="ti ti-sparkles"></i> {{ i18n.tsx._emojiTagging.useSuggestedCategory({ name: suggestedCategory }) }}
+				</MkButton>
 				<MkInput v-model="aliases" autocapitalize="off">
 					<template #label>{{ i18n.ts.tags }}</template>
 					<template #caption>
@@ -46,6 +49,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.setMultipleBySeparatingWithSpace }}
 					</template>
 				</MkInput>
+				<MkButton v-if="taggingAvailable" small rounded :wait="suggesting" :disabled="!canSuggest" style="margin-top: -8px;" @click="suggest">
+					<i class="ti ti-sparkles"></i> {{ suggestedHistory.length > 0 ? i18n.ts._emojiTagging.resuggest : i18n.ts._emojiTagging.title }}
+				</MkButton>
 				<MkInput v-model="license" :mfmAutocomplete="true">
 					<template #label>{{ i18n.ts.license }}</template>
 				</MkInput>
@@ -93,6 +99,7 @@ import { customEmojiCategories } from '@/custom-emojis.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import { selectFile } from '@/utility/drive.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
+import { emojiTaggingErrorMessage, isEmojiTaggingAvailable, parseTags, replaceSuggestedTags, suggestEmojiTags } from '@/utility/emoji-tagging.js';
 
 const props = defineProps<{
 	emoji?: Misskey.entities.EmojiDetailed,
@@ -117,6 +124,45 @@ const file = ref<Misskey.entities.DriveFile>();
 watch(roleIdsThatCanBeUsedThisEmojiAsReaction, async () => {
 	rolesThatCanBeUsedThisEmojiAsReaction.value = (await Promise.all(roleIdsThatCanBeUsedThisEmojiAsReaction.value.map((id) => misskeyApi('admin/roles/show', { roleId: id }).catch(() => null)))).filter(x => x != null);
 }, { immediate: true });
+
+const taggingAvailable = ref(false);
+const suggesting = ref(false);
+/** 出した提案のタグ。再提案ではこれを除かせ、タグの欄ではこれだけを差し替える */
+const suggestedHistory = ref<string[][]>([]);
+const suggestedCategory = ref<string | null>(null);
+const canSuggest = computed(() => file.value != null ? name.value !== '' : props.emoji != null);
+
+isEmojiTaggingAvailable().then(available => {
+	taggingAvailable.value = available;
+});
+
+async function suggest() {
+	suggesting.value = true;
+	try {
+		const cell = parseTags(aliases.value);
+		const previous = suggestedHistory.value.at(-1) ?? [];
+		const target = file.value != null
+			? { fileId: file.value.id, name: name.value }
+			: { emojiId: props.emoji!.id };
+		const result = await suggestEmojiTags({
+			...target,
+			category: category.value === '' ? null : category.value,
+			currentTags: cell.filter(it => !previous.includes(it)),
+			excludedTags: [...new Set(suggestedHistory.value.flat())],
+		});
+		aliases.value = replaceSuggestedTags(cell, previous, result.tags).join(' ');
+		suggestedHistory.value.push(result.tags);
+		if (result.category != null) {
+			// カテゴリが空なら埋め、入っていれば押して変えられるようにする
+			if (category.value === '') category.value = result.category.name;
+			else suggestedCategory.value = result.category.name;
+		}
+	} catch (err) {
+		os.alert({ type: 'error', text: emojiTaggingErrorMessage(err) });
+	} finally {
+		suggesting.value = false;
+	}
+}
 
 const imgUrl = computed(() => file.value ? file.value.url : props.emoji ? props.emoji.url : null);
 

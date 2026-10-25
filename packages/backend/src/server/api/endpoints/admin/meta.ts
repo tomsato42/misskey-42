@@ -10,6 +10,7 @@ import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
+import { EMOJI_TAGGING_MODELS, maskApiKey, toEmojiTaggingModel } from '@/core/emoji-tagging/emoji-tagging.js';
 
 export const meta = {
 	tags: ['meta'],
@@ -435,6 +436,16 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			anthropicApiKeyHint: {
+				type: 'string',
+				optional: false, nullable: true,
+				description: 'The last 4 characters of the Claude (Anthropic) API key, or `null` if no key is set. The key itself is never returned.',
+			},
+			anthropicModel: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: EMOJI_TAGGING_MODELS,
+			},
 			defaultDarkTheme: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -737,6 +748,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				objectStorageS3ForcePathStyle: instance.objectStorageS3ForcePathStyle,
 				deeplAuthKey: instance.deeplAuthKey,
 				deeplIsPro: instance.deeplIsPro,
+				anthropicApiKeyHint: maskApiKey(instance.anthropicApiKey),
+				anthropicModel: toEmojiTaggingModel(instance.anthropicModel),
 				enableIpLogging: instance.enableIpLogging,
 				enableActiveEmailValidation: instance.enableActiveEmailValidation,
 				enableVerifymailApi: instance.enableVerifymailApi,

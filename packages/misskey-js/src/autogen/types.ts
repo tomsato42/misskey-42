@@ -386,6 +386,24 @@ export type paths = {
          */
         post: operations['admin___emoji___set-license-bulk'];
     };
+    '/admin/emoji/suggest-tags': {
+        /**
+         * admin/emoji/suggest-tags
+         * @description Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+         */
+        post: operations['admin___emoji___suggest-tags'];
+    };
+    '/admin/emoji/test-tagging': {
+        /**
+         * admin/emoji/test-tagging
+         * @description Check that the Claude API key and model in the server settings can be used for suggesting emoji tags. No tokens are used.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:emoji*
+         */
+        post: operations['admin___emoji___test-tagging'];
+    };
     '/admin/emoji/update': {
         /**
          * admin/emoji/update
@@ -9850,6 +9868,163 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___suggest-tags': {
+        requestBody: {
+            content: {
+                'application/json': ({
+                    /** Format: misskey:id */
+                    emojiId: string;
+                } | {
+                    /** Format: misskey:id */
+                    fileId: string;
+                    name: string;
+                }) & {
+                    category?: string | null;
+                    /** @description Tags the emoji already has. They are not suggested again. Defaults to the aliases of the emoji. */
+                    currentTags?: string[];
+                    /** @description Tags suggested before. Claude suggests other words instead. */
+                    excludedTags?: string[];
+                    hint?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        tags: string[];
+                        category: {
+                            name: string;
+                            /** @description Whether the category does not exist yet. */
+                            isNew: boolean;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___test-tagging': {
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___emoji___update: {
         requestBody: {
             content: {
@@ -10890,6 +11065,10 @@ export interface operations {
                         backgroundImageUrl: string | null;
                         deeplAuthKey: string | null;
                         deeplIsPro: boolean;
+                        /** @description The last 4 characters of the Claude (Anthropic) API key, or `null` if no key is set. The key itself is never returned. */
+                        anthropicApiKeyHint: string | null;
+                        /** @enum {string} */
+                        anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
                         defaultDarkTheme: string | null;
                         defaultLightTheme: string | null;
                         clientOptions: components['schemas']['MetaClientOptions'];
@@ -14471,6 +14650,10 @@ export interface operations {
                     langs?: string[];
                     deeplAuthKey?: string | null;
                     deeplIsPro?: boolean;
+                    /** @description Use `null` or an empty string to delete the key. */
+                    anthropicApiKey?: string | null;
+                    /** @enum {string} */
+                    anthropicModel?: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
                     enableEmail?: boolean;
                     email?: string | null;
                     smtpSecure?: boolean;

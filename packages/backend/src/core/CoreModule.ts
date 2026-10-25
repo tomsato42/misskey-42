@@ -172,6 +172,7 @@ import { IntraProjectNoteEntityService } from './entities/IntraProjectNoteEntity
 import { IntraCoalitionService } from './intra/IntraCoalitionService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
 import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
+import { EmojiTagSuggestionService } from './emoji-tagging/EmojiTagSuggestionService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -347,6 +348,7 @@ const $IntraProjectNoteEntityService: Provider = { provide: 'IntraProjectNoteEnt
 const $IntraCoalitionService: Provider = { provide: 'IntraCoalitionService', useExisting: IntraCoalitionService };
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
 const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
+const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionService', useExisting: EmojiTagSuggestionService };
 //#endregion
 
 @Module({
@@ -522,6 +524,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
+		EmojiTagSuggestionService,
 		QueueService,
 		TelemetryService,
 
@@ -693,6 +696,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
+		$EmojiTagSuggestionService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -865,6 +869,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		IntraCoalitionService,
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
+		EmojiTagSuggestionService,
 		QueueService,
 		TelemetryService,
 
@@ -1034,6 +1039,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 		$IntraCoalitionService,
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
+		$EmojiTagSuggestionService,
 		$TelemetryService,
 		//#endregion
 	],
