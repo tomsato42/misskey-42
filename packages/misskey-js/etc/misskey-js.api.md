@@ -224,6 +224,12 @@ type AdminEmojiSetCategoryBulkRequest = operations['admin___emoji___set-category
 type AdminEmojiSetLicenseBulkRequest = operations['admin___emoji___set-license-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiSuggestTagsRequest = operations['admin___emoji___suggest-tags']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiSuggestTagsResponse = operations['admin___emoji___suggest-tags']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiUpdateRequest = operations['admin___emoji___update']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1724,6 +1730,8 @@ declare namespace entities {
         AdminEmojiSetAliasesBulkRequest,
         AdminEmojiSetCategoryBulkRequest,
         AdminEmojiSetLicenseBulkRequest,
+        AdminEmojiSuggestTagsRequest,
+        AdminEmojiSuggestTagsResponse,
         AdminEmojiUpdateRequest,
         AdminFederationDeleteAllFilesRequest,
         AdminFederationRefreshRemoteInstanceMetadataRequest,

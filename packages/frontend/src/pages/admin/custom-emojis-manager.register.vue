@@ -20,6 +20,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts._customEmojisManager._local._register.directoryToCategoryLabel }}</template>
 					<template #caption>{{ i18n.ts._customEmojisManager._local._register.directoryToCategoryCaption }}</template>
 				</MkSwitch>
+
+				<MkSwitch v-if="taggingAvailable" v-model="suggestOnUpload">
+					<template #label>{{ i18n.ts._emojiTagging.suggestOnUpload }}</template>
+					<template #caption>{{ i18n.ts._emojiTagging.suggestOnUploadCaption }}</template>
+				</MkSwitch>
 			</div>
 		</MkFolder>
 
@@ -36,6 +41,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkButton primary rounded @click="onFileSelectClicked">{{ i18n.ts.upload }}</MkButton>
 			<MkButton primary rounded @click="onDriveSelectClicked">{{ i18n.ts.fromDrive }}</MkButton>
 			<MkButton primary rounded :disabled="pasting" @click="onPasteClicked">{{ i18n.ts._customEmojisManager._local._register.pasteToRegister }}</MkButton>
+		</div>
+
+		<div v-if="suggestingCount > 0" :class="$style.suggesting">
+			<MkLoading :inline="true" :em="true"/>{{ i18n.tsx._emojiTagging.suggestingCount({ count: suggestingCount }) }}
 		</div>
 
 		<div v-if="gridItems.length > 0" :class="$style.gridArea">
@@ -88,6 +97,14 @@ import XRegisterLogs from '@/pages/admin/custom-emojis-manager.logs.vue';
 import { copyGridDataToClipboard } from '@/components/grid/grid-utils.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { customEmojisMap } from '@/custom-emojis.js';
+import {
+	EMOJI_TAGGING_CONCURRENCY,
+	emojiTaggingErrorMessage,
+	isEmojiTaggingAvailable,
+	parseTags,
+	replaceSuggestedTags,
+	suggestEmojiTags,
+} from '@/utility/emoji-tagging.js';
 
 import { prefer } from '@/preferences.js';
 
@@ -112,6 +129,8 @@ type GridItem = {
 	localOnly: boolean;
 	roleIdsThatCanBeUsedThisEmojiAsReaction: { id: string, name: string }[];
 	type: string | null;
+	/** Claude が提案したタグ。再提案のとき、これだけを差し替えて、人が書き足したタグは残す */
+	suggestedTags: string[];
 };
 
 function setupGrid(): GridSetting {
@@ -141,6 +160,12 @@ function setupGrid(): GridSetting {
 			// 行のコンテキストメニュー設定
 			contextMenuFactory: (row, context) => {
 				return [
+					...(taggingAvailable.value ? [{
+						type: 'button' as const,
+						text: i18n.ts._emojiTagging.resuggestRows,
+						icon: 'ti ti-sparkles',
+						action: () => suggestForItems(context.rangedRows.map(it => gridItems.value[it.index]).filter(it => it != null), true),
+					}] : []),
 					{
 						type: 'button',
 						text: i18n.ts._customEmojisManager._gridCommon.copySelectionRows,
@@ -212,6 +237,12 @@ function setupGrid(): GridSetting {
 			// セルのコンテキストメニュー設定
 			contextMenuFactory: (col, row, value, context) => {
 				return [
+					...(taggingAvailable.value ? [{
+						type: 'button' as const,
+						text: i18n.ts._emojiTagging.resuggestRows,
+						icon: 'ti ti-sparkles',
+						action: () => suggestForItems([...new Set(context.rangedCells.map(it => gridItems.value[it.row.index]))].filter(it => it != null), true),
+					}] : []),
 					{
 						type: 'button',
 						text: i18n.ts._customEmojisManager._gridCommon.copySelectionRanges,
@@ -244,6 +275,9 @@ const registerButtonDisabled = ref<boolean>(false);
 // 貼り付けて登録している間は、同じ名前を並行して送らないようにボタンを押せなくする
 const pasting = ref<boolean>(false);
 const requestLogs = ref<RequestLogItem[]>([]);
+const taggingAvailable = ref(false);
+const suggestOnUpload = ref(true);
+const suggestingCount = ref(0);
 const isDragOver = ref<boolean>(false);
 
 async function onRegistryClicked() {
@@ -396,14 +430,57 @@ async function onFileSelectClicked() {
 		// nameConverter: (file) => file.name.replace(/\.[a-zA-Z0-9]+$/, ''),
 	});
 
-	gridItems.value.push(...driveFiles.map(fromDriveFile));
+	addDriveFiles(driveFiles);
 }
 
 async function onDriveSelectClicked() {
 	const driveFiles = await chooseDriveFile({
 		multiple: true,
 	});
-	gridItems.value.push(...driveFiles.map(fromDriveFile));
+	addDriveFiles(driveFiles);
+}
+
+function addDriveFiles(driveFiles: Misskey.entities.DriveFile[]) {
+	const items = driveFiles.map(fromDriveFile);
+	gridItems.value.push(...items);
+	if (taggingAvailable.value && suggestOnUpload.value) {
+		suggestForItems(items, false);
+	}
+}
+
+/**
+ * Claude にタグとカテゴリを提案させ、表に入れる。カテゴリは空のときだけ埋める
+ * @param resuggest 再提案。前の提案を除いて別の語を出させる
+ */
+async function suggestForItems(targets: GridItem[], resuggest: boolean) {
+	// push した後の要素はリアクティブなプロキシなので、一覧から取り直して書き換える
+	const items = targets.map(target => gridItems.value.find(it => it.fileId === target.fileId)).filter(it => it != null);
+	suggestingCount.value += items.length;
+	let failure: unknown = null;
+
+	await mapWithConcurrency(items, EMOJI_TAGGING_CONCURRENCY, async item => {
+		try {
+			const cell = parseTags(item.aliases);
+			const result = await suggestEmojiTags({
+				fileId: item.fileId,
+				name: item.name,
+				category: item.category === '' ? null : item.category,
+				currentTags: cell.filter(it => !item.suggestedTags.includes(it)),
+				excludedTags: resuggest ? item.suggestedTags : [],
+			});
+			item.aliases = replaceSuggestedTags(cell, item.suggestedTags, result.tags).join(' ');
+			item.suggestedTags = result.tags;
+			if (item.category === '' && result.category != null) item.category = result.category.name;
+		} catch (err) {
+			failure = err;
+		} finally {
+			suggestingCount.value--;
+		}
+	});
+
+	if (failure != null) {
+		os.toast(emojiTaggingErrorMessage(failure));
+	}
 }
 
 function onGridEvent(event: GridEvent) {
@@ -441,6 +518,7 @@ function fromDriveFile(it: Misskey.entities.DriveFile): GridItem {
 		localOnly: false,
 		roleIdsThatCanBeUsedThisEmojiAsReaction: [],
 		type: it.type,
+		suggestedTags: [],
 	};
 }
 
@@ -450,6 +528,9 @@ async function refreshUploadFolders() {
 }
 
 onMounted(async () => {
+	isEmojiTaggingAvailable().then(available => {
+		taggingAvailable.value = available;
+	});
 	await refreshUploadFolders();
 });
 </script>
@@ -457,6 +538,15 @@ onMounted(async () => {
 <style module lang="scss">
 .violationRow {
 	background-color: var(--MI_THEME-infoWarnBg);
+}
+
+.suggesting {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+	font-size: 0.9em;
 }
 
 .gridArea {

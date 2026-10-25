@@ -11,6 +11,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
 import { INTRA_FIXED_META } from '@/core/intra/intra-visitor.js';
+import { EMOJI_TAGGING_MODELS, maskApiKey } from '@/core/emoji-tagging/emoji-tagging.js';
 import type { Config } from '@/config.js';
 
 export const meta = {
@@ -128,6 +129,13 @@ export const paramDef = {
 		},
 		deeplAuthKey: { type: 'string', nullable: true },
 		deeplIsPro: { type: 'boolean' },
+		anthropicApiKey: {
+			type: 'string',
+			nullable: true,
+			maxLength: 1024,
+			description: 'Use `null` or an empty string to delete the key.',
+		},
+		anthropicModel: { type: 'string', enum: EMOJI_TAGGING_MODELS },
 		enableEmail: { type: 'boolean' },
 		email: { type: 'string', nullable: true },
 		smtpSecure: { type: 'boolean' },
@@ -632,6 +640,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.deeplIsPro = ps.deeplIsPro;
 			}
 
+			if (ps.anthropicApiKey !== undefined) {
+				const key = ps.anthropicApiKey?.trim() ?? '';
+				set.anthropicApiKey = key === '' ? null : key;
+			}
+
+			if (ps.anthropicModel !== undefined) {
+				set.anthropicModel = ps.anthropicModel;
+			}
+
 			if (ps.enableIpLogging !== undefined) {
 				set.enableIpLogging = ps.enableIpLogging;
 			}
@@ -828,9 +845,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const after = await this.metaService.fetch(true);
 
+			// モデレーションログはモデレーターも見られるので、Claude の API キーは末尾 4 文字だけ残す
 			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
+				before: { ...before, anthropicApiKey: maskApiKey(before.anthropicApiKey) },
+				after: { ...after, anthropicApiKey: maskApiKey(after.anthropicApiKey) },
 			});
 		});
 	}

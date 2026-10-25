@@ -15635,4 +15635,240 @@ export interface Locale extends ILocale {
             "refreshTooSoon": string;
         };
     };
+    "_emojiTagging": {
+        /**
+         * タグとカテゴリの提案
+         */
+        "title": string;
+        /**
+         * タグの提案
+         */
+        "tabTitle": string;
+        /**
+         * 絵文字のタグとカテゴリの提案に使います。使えるのは管理者だけです。
+         */
+        "serviceDescription": string;
+        /**
+         * API キー
+         */
+        "apiKey": string;
+        /**
+         * 保存したキーは表示しません。空のまま保存すると今のキーを残します。
+         */
+        "apiKeyCaption": string;
+        /**
+         * 登録済み (末尾 {hint})
+         */
+        "apiKeyConfigured": ParameterizedString<"hint">;
+        /**
+         * 未登録
+         */
+        "apiKeyNotConfigured": string;
+        /**
+         * モデル
+         */
+        "model": string;
+        /**
+         * 接続を確かめる
+         */
+        "testConnection": string;
+        /**
+         * Claude に接続できました。
+         */
+        "testSucceeded": string;
+        /**
+         * キーを削除
+         */
+        "deleteKey": string;
+        /**
+         * Claude の API キーを削除しますか？
+         */
+        "deleteKeyConfirm": string;
+        /**
+         * 管理画面の「外部サービス」で Claude の API キーを登録すると使えます。
+         */
+        "notConfigured": string;
+        /**
+         * 外部サービスを開く
+         */
+        "openSettings": string;
+        /**
+         * タグとカテゴリを Claude に提案させる
+         */
+        "suggestOnUpload": string;
+        /**
+         * 画像を追加したときに、タグとカテゴリの欄を埋めます。入力済みのカテゴリは変えません。
+         */
+        "suggestOnUploadCaption": string;
+        /**
+         * {count} 件を提案中…
+         */
+        "suggestingCount": ParameterizedString<"count">;
+        /**
+         * 再提案
+         */
+        "resuggest": string;
+        /**
+         * 選んだ行のタグとカテゴリを提案し直す
+         */
+        "resuggestRows": string;
+        /**
+         * 選んだものを再提案
+         */
+        "resuggestSelected": string;
+        /**
+         * この行を再提案
+         */
+        "resuggestThisRow": string;
+        /**
+         * ヒント
+         */
+        "hint": string;
+        /**
+         * 反映
+         */
+        "apply": string;
+        /**
+         * 反映済み
+         */
+        "applied": string;
+        /**
+         * 提案済みをすべて反映 ({count})
+         */
+        "applyAll": ParameterizedString<"count">;
+        /**
+         * 提案を始める ({count} 件)
+         */
+        "start": ParameterizedString<"count">;
+        /**
+         * 止める
+         */
+        "stop": string;
+        /**
+         * 対象
+         */
+        "target": string;
+        /**
+         * タグが無いもの
+         */
+        "targetNoTags": string;
+        /**
+         * タグが 2 個以下
+         */
+        "targetFewTags": string;
+        /**
+         * タグが 5 個以下
+         */
+        "targetSomeTags": string;
+        /**
+         * すべて
+         */
+        "targetAll": string;
+        /**
+         * すべてのカテゴリ
+         */
+        "allCategories": string;
+        /**
+         * カテゴリ未設定
+         */
+        "noCategory": string;
+        /**
+         * いまのタグ
+         */
+        "currentTags": string;
+        /**
+         * 提案
+         */
+        "suggestedTags": string;
+        /**
+         * 新規
+         */
+        "newCategory": string;
+        /**
+         * カテゴリも「{name}」にする
+         */
+        "changeCategory": ParameterizedString<"name">;
+        /**
+         * カテゴリを「{name}」にする
+         */
+        "useSuggestedCategory": ParameterizedString<"name">;
+        /**
+         * 提案 {index} / {count}
+         */
+        "history": ParameterizedString<"index" | "count">;
+        /**
+         * 前の提案
+         */
+        "previousSuggestion": string;
+        /**
+         * 次の提案
+         */
+        "nextSuggestion": string;
+        /**
+         * {count} 件を選択中
+         */
+        "selectedCount": ParameterizedString<"count">;
+        /**
+         * {done} / {total} 件
+         */
+        "progress": ParameterizedString<"done" | "total">;
+        /**
+         * 対象の絵文字がありません。
+         */
+        "noTargets": string;
+        /**
+         * 新しいタグは提案されませんでした。
+         */
+        "noSuggestedTags": string;
+        /**
+         * 行を移動
+         */
+        "keyMove": string;
+        /**
+         * 再提案
+         */
+        "keyResuggest": string;
+        /**
+         * ヒントを書いて再提案
+         */
+        "keyHint": string;
+        /**
+         * 前の提案に戻る
+         */
+        "keyHistory": string;
+        /**
+         * 選ぶ
+         */
+        "keySelect": string;
+        /**
+         * 反映して次へ
+         */
+        "keyApply": string;
+        "_errors": {
+            /**
+             * Claude の API キーが登録されていません。
+             */
+            "notConfigured": string;
+            /**
+             * 絵文字の画像を読み込めませんでした。
+             */
+            "failedToLoadImage": string;
+            /**
+             * Claude の API キーが正しくありません。
+             */
+            "invalidApiKey": string;
+            /**
+             * 利用の上限に達しました。しばらくしてから試してください。
+             */
+            "rateLimited": string;
+            /**
+             * Claude がこの絵文字への提案を断りました。
+             */
+            "refused": string;
+            /**
+             * Claude からタグを受け取れませんでした。
+             */
+            "failed": string;
+        };
+    };
 }

@@ -52,6 +52,8 @@ export * as 'admin/emoji/remove-aliases-bulk' from './endpoints/admin/emoji/remo
 export * as 'admin/emoji/set-aliases-bulk' from './endpoints/admin/emoji/set-aliases-bulk.js';
 export * as 'admin/emoji/set-category-bulk' from './endpoints/admin/emoji/set-category-bulk.js';
 export * as 'admin/emoji/set-license-bulk' from './endpoints/admin/emoji/set-license-bulk.js';
+export * as 'admin/emoji/suggest-tags' from './endpoints/admin/emoji/suggest-tags.js';
+export * as 'admin/emoji/test-tagging' from './endpoints/admin/emoji/test-tagging.js';
 export * as 'admin/emoji/update' from './endpoints/admin/emoji/update.js';
 export * as 'admin/federation/delete-all-files' from './endpoints/admin/federation/delete-all-files.js';
 export * as 'admin/federation/refresh-remote-instance-metadata' from './endpoints/admin/federation/refresh-remote-instance-metadata.js';
