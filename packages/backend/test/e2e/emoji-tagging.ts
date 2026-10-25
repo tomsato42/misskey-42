@@ -22,7 +22,7 @@ describe('絵文字のタグの提案', () => {
 		await initTestDb(true);
 		root = await signup({ username: 'root' });
 		alice = await signup({ username: 'alice' });
-		moderator = await signup({ username: 'moderator' });
+		moderator = await signup({ username: 'carol' });
 		const moderatorRole = await role(root, { isModerator: true, target: 'manual' });
 		await api('admin/roles/assign', { userId: moderator.id, roleId: moderatorRole.id }, root);
 	}, 1000 * 60 * 2);
