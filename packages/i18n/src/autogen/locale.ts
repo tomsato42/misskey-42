@@ -15883,6 +15883,16 @@ export interface Locale extends ILocale {
             "failed": string;
         };
     };
+    "_noteTranslation": {
+        /**
+         * 翻訳済みのノートは最初から訳を表示
+         */
+        "showCachedTranslations": string;
+        /**
+         * 誰かが翻訳したノートは、自分で翻訳しなくても訳を表示します。
+         */
+        "showCachedTranslationsDescription": string;
+    };
     "_emojiCategoryMerge": {
         /**
          * カテゴリをまとめる

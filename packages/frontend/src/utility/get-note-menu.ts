@@ -16,6 +16,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { store } from '@/store.js';
 import { miLocalStorage } from '@/local-storage.js';
+import { rememberTranslation, translationTargetLang } from '@/utility/cached-translation.js';
 import { getUserMenu } from '@/utility/get-user-menu.js';
 import { clipsCache, favoritedChannelsCache } from '@/cache.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
@@ -347,9 +348,10 @@ export function getNoteMenu(props: {
 			try {
 				const res = await misskeyApi('notes/translate', {
 					noteId: appearNote.id,
-					targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
+					targetLang: translationTargetLang(),
 				});
 				props.translation.value = res;
+				if (res != null) rememberTranslation(appearNote, res);
 			} catch (err) {
 				// 失敗したら「翻訳中」のまま止まらないようにし、理由を出す (Claude で訳すときは混んでいると失敗する)
 				os.alert({ type: 'error', text: err instanceof Error ? err.message : (err as { message?: string }).message ?? i18n.ts.somethingHappened });

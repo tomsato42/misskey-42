@@ -599,6 +599,8 @@ import type {
 	NotesTimelineResponse,
 	NotesTranslateRequest,
 	NotesTranslateResponse,
+	NotesTranslationsRequest,
+	NotesTranslationsResponse,
 	NotesUnrenoteRequest,
 	NotesUpdateRequest,
 	NotesUpdateResponse,
@@ -1139,6 +1141,7 @@ export type Endpoints = {
 	'notes/thread-muting/delete': { req: NotesThreadMutingDeleteRequest; res: EmptyResponse };
 	'notes/timeline': { req: NotesTimelineRequest; res: NotesTimelineResponse };
 	'notes/translate': { req: NotesTranslateRequest; res: NotesTranslateResponse };
+	'notes/translations': { req: NotesTranslationsRequest; res: NotesTranslationsResponse };
 	'notes/unrenote': { req: NotesUnrenoteRequest; res: EmptyResponse };
 	'notes/update': { req: NotesUpdateRequest; res: NotesUpdateResponse };
 	'notes/user-list-timeline': { req: NotesUserListTimelineRequest; res: NotesUserListTimelineResponse };

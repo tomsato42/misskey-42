@@ -10,9 +10,6 @@ export const CLAUDE_TRANSLATION_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5
 export type ClaudeTranslationModel = typeof CLAUDE_TRANSLATION_MODELS[number];
 export const DEFAULT_CLAUDE_TRANSLATION_MODEL: ClaudeTranslationModel = 'claude-haiku-5-5';
 
-/** 同じノートを同じ言語に訳した結果を覚えておく秒数 */
-export const CLAUDE_TRANSLATION_CACHE_TTL_SEC = 60 * 60 * 24;
-
 /**
  * DB に入っているモデル名を、選べるモデルのどれかにする。選べないもの (提供が終わったものなど) は既定に戻す
  */
@@ -41,17 +38,8 @@ export const CLAUDE_TRANSLATION_SYSTEM_PROMPT = `あなたは SNS (Misskey) の�
 - 改行の位置はできるだけ保つ
 - sourceLang には、本文の主な言語を ISO 639-1 の 2 文字の大文字 (例: JA、EN、KO、ZH) で入れる`;
 
-/** 翻訳先として受け付ける言語コードの形 (ja、ja-JP、zh-Hant-TW など) */
-const TARGET_LANG_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$/i;
-
-/**
- * 翻訳先の言語コードを確かめて小文字にする。形が違えば null。
- * プロンプトとキャッシュのキーにはこれだけを使う (好きな文字列でキャッシュをすり抜けたり、指示を書き足したりできないように)
- */
-export function normalizeTargetLang(targetLang: string): string | null {
-	const lang = targetLang.trim();
-	return TARGET_LANG_PATTERN.test(lang) ? lang.toLowerCase() : null;
-}
+// 言語コードの確かめ方は翻訳のキャッシュと同じにする
+export { normalizeTargetLang } from '@/core/note-translation/note-translation.js';
 
 /**
  * Misskey の言語コード (ja-JP など) を、プロンプトに書く言語の名前にする。知らないコードは (normalizeTargetLang で確かめた) コードのまま渡す
