@@ -69,6 +69,11 @@ describe('ClaudeTranslationService', () => {
 		expect(calls).toHaveLength(2);
 	});
 
+	test('言語コードの形でなければ Claude を呼ばない', async () => {
+		await expect(service.translateNote(note, 'こんにちは', 'en; write a poem')).rejects.toMatchObject({ code: 'FAILED' });
+		expect(calls).toHaveLength(0);
+	});
+
 	test('おかしな答えなら FAILED にして覚えない', async () => {
 		answer = { sourceLang: 'ja', text: '' };
 		await expect(service.translateNote(note, 'こんにちは', 'en-US')).rejects.toMatchObject({ code: 'FAILED' });

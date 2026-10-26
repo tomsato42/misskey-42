@@ -18,6 +18,7 @@ import {
 	CLAUDE_TRANSLATION_SYSTEM_PROMPT,
 	buildClaudeTranslationPrompt,
 	normalizeClaudeTranslation,
+	normalizeTargetLang,
 	toClaudeTranslationModel,
 } from './claude-translation.js';
 
@@ -49,9 +50,12 @@ export class ClaudeTranslationService {
 	 * ノートを訳す。同じノート (同じ版) を同じ言語に訳した結果は 1 日覚えておき、Claude を呼ばない
 	 */
 	@bindThis
-	public async translateNote(note: Pick<MiNote, 'id' | 'updatedAt'>, text: string, targetLang: string): Promise<Translation> {
+	public async translateNote(note: Pick<MiNote, 'id' | 'updatedAt'>, text: string, rawTargetLang: string): Promise<Translation> {
+		const targetLang = normalizeTargetLang(rawTargetLang);
+		if (targetLang == null) throw new ClaudeError('FAILED', 'Unsupported target language.');
+
 		const version = note.updatedAt?.getTime() ?? 0;
-		const cacheKey = `claudeTranslation:${note.id}:${version}:${targetLang.toLowerCase()}`;
+		const cacheKey = `claudeTranslation:${note.id}:${version}:${targetLang}`;
 
 		const cached = await this.redisClient.get(cacheKey);
 		if (cached != null) {
