@@ -10,22 +10,23 @@ import { describe, beforeAll, test } from 'vitest';
 import { api, castAsError, initTestDb, role, signup, successfulApiCall, uploadFile } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
+// 同じファイルのテストは同じデータベースを使うので、利用者はファイル全体で一度だけ作る
+let root: misskey.entities.SignupResponse;
+let alice: misskey.entities.SignupResponse;
+let moderator: misskey.entities.SignupResponse;
+
+beforeAll(async () => {
+	await initTestDb(true);
+	root = await signup({ username: 'root' });
+	alice = await signup({ username: 'alice' });
+	moderator = await signup({ username: 'carol' });
+	const moderatorRole = await role(root, { isModerator: true, target: 'manual' });
+	await api('admin/roles/assign', { userId: moderator.id, roleId: moderatorRole.id }, root);
+}, 1000 * 60 * 2);
+
 // Claude の API には繋がないので、キーの保存と権限だけを確かめる
 describe('絵文字のタグの提案', () => {
-	let root: misskey.entities.SignupResponse;
-	let alice: misskey.entities.SignupResponse;
-	let moderator: misskey.entities.SignupResponse;
-
 	const apiKey = 'sk-ant-api03-e2e-test-key-Qx7A';
-
-	beforeAll(async () => {
-		await initTestDb(true);
-		root = await signup({ username: 'root' });
-		alice = await signup({ username: 'alice' });
-		moderator = await signup({ username: 'carol' });
-		const moderatorRole = await role(root, { isModerator: true, target: 'manual' });
-		await api('admin/roles/assign', { userId: moderator.id, roleId: moderatorRole.id }, root);
-	}, 1000 * 60 * 2);
 
 	test('キーが無ければ admin/meta は null を返し、モデルは既定', async () => {
 		const meta = await successfulApiCall({ endpoint: 'admin/meta', parameters: {}, user: root });
@@ -83,14 +84,7 @@ describe('絵文字のタグの提案', () => {
 });
 
 describe('カテゴリをまとめる', () => {
-	let root: misskey.entities.SignupResponse;
-	let alice: misskey.entities.SignupResponse;
-
 	beforeAll(async () => {
-		await initTestDb(true);
-		root = await signup({ username: 'root' });
-		alice = await signup({ username: 'alice' });
-
 		const file = (await uploadFile(root)).body!;
 		for (const [name, category] of [['blob_a', 'blob'], ['blob_b', 'blob'], ['other_a', 'other']] as const) {
 			await successfulApiCall({ endpoint: 'admin/emoji/add', parameters: { name, category, fileId: file.id, aliases: [] }, user: root });
