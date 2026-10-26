@@ -447,6 +447,11 @@ export const meta = {
 				optional: false, nullable: false,
 				enum: EMOJI_TAGGING_MODELS,
 			},
+			anthropicEmojiTaggingInstructions: {
+				type: 'string',
+				optional: false, nullable: true,
+				description: 'Instructions added to every emoji tag and category suggestion.',
+			},
 			anthropicTranslationEnabled: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -761,6 +766,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				deeplIsPro: instance.deeplIsPro,
 				anthropicApiKeyHint: maskApiKey(instance.anthropicApiKey),
 				anthropicModel: toEmojiTaggingModel(instance.anthropicModel),
+				anthropicEmojiTaggingInstructions: instance.anthropicEmojiTaggingInstructions,
 				anthropicTranslationEnabled: instance.anthropicTranslationEnabled,
 				anthropicTranslationModel: toClaudeTranslationModel(instance.anthropicTranslationModel),
 				enableIpLogging: instance.enableIpLogging,

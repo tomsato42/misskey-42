@@ -11,7 +11,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
 import { INTRA_FIXED_META } from '@/core/intra/intra-visitor.js';
-import { EMOJI_TAGGING_MODELS, maskApiKey } from '@/core/emoji-tagging/emoji-tagging.js';
+import { EMOJI_TAGGING_MODELS, MAX_INSTRUCTIONS_LENGTH, maskApiKey } from '@/core/emoji-tagging/emoji-tagging.js';
 import { CLAUDE_TRANSLATION_MODELS } from '@/core/anthropic/claude-translation.js';
 import type { Config } from '@/config.js';
 
@@ -137,6 +137,12 @@ export const paramDef = {
 			description: 'Use `null` or an empty string to delete the key.',
 		},
 		anthropicModel: { type: 'string', enum: EMOJI_TAGGING_MODELS },
+		anthropicEmojiTaggingInstructions: {
+			type: 'string',
+			nullable: true,
+			maxLength: MAX_INSTRUCTIONS_LENGTH,
+			description: 'Instructions added to every emoji tag and category suggestion. Use `null` or an empty string to remove them.',
+		},
 		anthropicTranslationEnabled: { type: 'boolean' },
 		anthropicTranslationModel: { type: 'string', enum: CLAUDE_TRANSLATION_MODELS },
 		enableEmail: { type: 'boolean' },
@@ -650,6 +656,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.anthropicModel !== undefined) {
 				set.anthropicModel = ps.anthropicModel;
+			}
+
+			if (ps.anthropicEmojiTaggingInstructions !== undefined) {
+				const instructions = ps.anthropicEmojiTaggingInstructions?.trim() ?? '';
+				set.anthropicEmojiTaggingInstructions = instructions === '' ? null : instructions;
 			}
 
 			if (ps.anthropicTranslationEnabled !== undefined) {

@@ -27,6 +27,9 @@ export const CLAUDE_TRANSLATION_MODELS = [
 	{ value: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
 ] as const;
 
+/** すべての提案に添える指示の最大文字数。backend の MAX_INSTRUCTIONS_LENGTH と同じ */
+export const MAX_INSTRUCTIONS_LENGTH = 2000;
+
 /** 提案のリクエストを同時に送る数 */
 export const EMOJI_TAGGING_CONCURRENCY = 4;
 

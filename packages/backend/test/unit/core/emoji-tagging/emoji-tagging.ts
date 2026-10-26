@@ -9,6 +9,7 @@ import {
 	MAX_SUGGESTED_TAGS,
 	buildCategoryListPrompt,
 	buildEmojiTaggingPrompt,
+	buildInstructionsPrompt,
 	summarizeCategories,
 	maskApiKey,
 	normalizeSuggestedCategory,
@@ -124,6 +125,19 @@ describe('buildEmojiTaggingPrompt', () => {
 		expect(prompt).not.toContain('今付いているタグ');
 		expect(prompt).not.toContain('前に提案');
 		expect(prompt).not.toContain('ヒント');
+	});
+});
+
+describe('buildInstructionsPrompt', () => {
+	test('指示があれば、決まりより優先させる文にする', () => {
+		const prompt = buildInstructionsPrompt('  ablob はアニメーションのカテゴリへ  ');
+		expect(prompt).toContain('こちらを優先する');
+		expect(prompt).toContain('\nablob はアニメーションのカテゴリへ');
+	});
+
+	test('無い・空なら null', () => {
+		expect(buildInstructionsPrompt(null)).toBeNull();
+		expect(buildInstructionsPrompt('  ')).toBeNull();
 	});
 });
 

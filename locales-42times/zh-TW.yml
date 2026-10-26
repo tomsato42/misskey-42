@@ -615,6 +615,7 @@ _emojiTagging:
   resuggestSelected: "重新建議所選項目"
   resuggestThisRow: "重新建議此行"
   hint: "提示"
+  instructions: "套用於所有建議的指示"
   apply: "套用"
   applied: "已套用"
   applyAll: "套用所有建議（{count}）"
@@ -654,7 +655,6 @@ _emojiTagging:
     failed: "無法從 Claude 取得標籤。"
 _noteTranslation:
   showCachedTranslations: "已翻譯的貼文一開始就顯示譯文"
-  showCachedTranslationsDescription: "有人翻譯過的貼文，即使自己沒有翻譯也會顯示譯文。"
 _emojiCategoryMerge:
   title: "合併類別"
   from: "要廢除的類別"

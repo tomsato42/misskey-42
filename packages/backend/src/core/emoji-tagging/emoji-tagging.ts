@@ -27,6 +27,8 @@ export const MAX_PROMPT_NAME_LENGTH = 128;
 export const MAX_CURRENT_TAGS = 100;
 /** ヒントの最大文字数 */
 export const MAX_HINT_LENGTH = 200;
+/** すべての提案に添える指示の最大文字数 (meta の列の長さと同じ) */
+export const MAX_INSTRUCTIONS_LENGTH = 2000;
 /** 再提案で除く語として受け取る最大数 (それまでの提案を何回分か渡す) */
 export const MAX_EXCLUDED_TAGS = 100;
 /** カテゴリ名の最大文字数 */
@@ -108,6 +110,15 @@ export function buildCategoryListPrompt(categories: CategorySummary[]): string {
 	if (categories.length === 0) return '今あるカテゴリ: (まだ無い)';
 	const lines = categories.slice(0, MAX_PROMPT_CATEGORIES).map(it => `- ${it.name} (${it.count} 件。例: ${it.examples.join(', ')})`);
 	return `今あるカテゴリ:\n${lines.join('\n')}`;
+}
+
+/**
+ * 管理者がすべての提案に添える指示をプロンプトの文にする。無ければ null。どの絵文字でも同じなので、カテゴリ一覧と一緒にキャッシュする
+ */
+export function buildInstructionsPrompt(instructions: string | null): string | null {
+	const text = instructions?.trim() ?? '';
+	if (text === '') return null;
+	return `管理者からの指示 (上のタグとカテゴリの決まりと食い違うときは、こちらを優先する):\n${text.slice(0, MAX_INSTRUCTIONS_LENGTH)}`;
 }
 
 export type EmojiTaggingRequest = {

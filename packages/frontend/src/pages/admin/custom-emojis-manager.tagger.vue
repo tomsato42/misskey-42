@@ -13,6 +13,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkInfo>
 
 	<div v-else class="_gaps">
+		<MkFolder :defaultOpen="savedInstructions !== ''">
+			<template #icon><i class="ti ti-message-2"></i></template>
+			<template #label>{{ i18n.ts._emojiTagging.instructions }}</template>
+			<div class="_gaps_s">
+				<MkTextarea v-model="instructions">
+					<template #caption>{{ instructions.trim().length }} / {{ MAX_INSTRUCTIONS_LENGTH }}</template>
+				</MkTextarea>
+				<div>
+					<MkButton primary :disabled="instructions.trim() === savedInstructions || instructions.trim().length > MAX_INSTRUCTIONS_LENGTH" @click="saveInstructions">{{ i18n.ts.save }}</MkButton>
+				</div>
+			</div>
+		</MkFolder>
+
 		<div :class="$style.toolbar">
 			<MkSelect v-model="target" :items="targetDef" :class="$style.toolbarSelect">
 				<template #label>{{ i18n.ts._emojiTagging.target }}</template>
@@ -142,6 +155,8 @@ import type { ComponentPublicInstance } from 'vue';
 import type { EmojiTaggingTarget, EmojiTagSuggestion } from '@/utility/emoji-tagging.js';
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInfo from '@/components/MkInfo.vue';
@@ -152,6 +167,7 @@ import { useMkSelect } from '@/composables/use-mkselect.js';
 import { mapWithConcurrency } from '@/pages/admin/custom-emojis-manager.impl.js';
 import {
 	EMOJI_TAGGING_CONCURRENCY,
+	MAX_INSTRUCTIONS_LENGTH,
 	emojiTaggingErrorMessage,
 	isEmojiTaggingAvailable,
 	matchesTaggingTarget,
@@ -188,6 +204,9 @@ const runDone = ref(0);
 const runTotal = ref(0);
 const applyingAll = ref(false);
 const bulkHint = ref('');
+/** すべての提案に添える指示 (meta に保存し、登録タブの自動提案にも効く) */
+const instructions = ref('');
+const savedInstructions = ref('');
 const activeIndex = ref(0);
 const listEl = shallowRef<HTMLElement | null>(null);
 const rowEls = new Map<string, HTMLElement>();
@@ -443,11 +462,24 @@ async function onKeydown(ev: KeyboardEvent) {
 	}
 }
 
+async function loadInstructions() {
+	const meta = await misskeyApi('admin/meta');
+	savedInstructions.value = meta.anthropicEmojiTaggingInstructions ?? '';
+	instructions.value = savedInstructions.value;
+}
+
+async function saveInstructions() {
+	const value = instructions.value.trim();
+	await os.apiWithDialog('admin/update-meta', { anthropicEmojiTaggingInstructions: value });
+	savedInstructions.value = value;
+	instructions.value = value;
+}
+
 onMounted(async () => {
 	available.value = await isEmojiTaggingAvailable();
 	if (!available.value) return;
 	try {
-		await loadEmojis();
+		await Promise.all([loadEmojis(), loadInstructions()]);
 	} finally {
 		loading.value = false;
 	}

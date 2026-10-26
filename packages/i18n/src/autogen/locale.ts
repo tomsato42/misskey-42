@@ -15737,6 +15737,10 @@ export interface Locale extends ILocale {
          */
         "hint": string;
         /**
+         * すべての提案への指示
+         */
+        "instructions": string;
+        /**
          * 反映
          */
         "apply": string;
@@ -15888,10 +15892,6 @@ export interface Locale extends ILocale {
          * 翻訳済みのノートは最初から訳を表示
          */
         "showCachedTranslations": string;
-        /**
-         * 誰かが翻訳したノートは、自分で翻訳しなくても訳を表示します。
-         */
-        "showCachedTranslationsDescription": string;
     };
     "_emojiCategoryMerge": {
         /**

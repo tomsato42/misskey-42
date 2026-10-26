@@ -4194,6 +4194,7 @@ _emojiTagging:
   resuggestSelected: "選んだものを再提案"
   resuggestThisRow: "この行を再提案"
   hint: "ヒント"
+  instructions: "すべての提案への指示"
   apply: "反映"
   applied: "反映済み"
   applyAll: "提案済みをすべて反映 ({count})"
@@ -4233,7 +4234,6 @@ _emojiTagging:
     failed: "Claude からタグを受け取れませんでした。"
 _noteTranslation:
   showCachedTranslations: "翻訳済みのノートは最初から訳を表示"
-  showCachedTranslationsDescription: "誰かが翻訳したノートは、自分で翻訳しなくても訳を表示します。"
 _emojiCategoryMerge:
   title: "カテゴリをまとめる"
   from: "廃止するカテゴリ"
