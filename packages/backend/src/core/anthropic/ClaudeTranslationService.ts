@@ -4,16 +4,13 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
-import type { MiNote } from '@/models/Note.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { AnthropicService, ClaudeError } from './AnthropicService.js';
 import {
-	CLAUDE_TRANSLATION_CACHE_TTL_SEC,
 	CLAUDE_TRANSLATION_SCHEMA,
 	CLAUDE_TRANSLATION_SYSTEM_PROMPT,
 	buildClaudeTranslationPrompt,
@@ -32,9 +29,6 @@ export class ClaudeTranslationService {
 		@Inject(DI.meta)
 		private meta: MiMeta,
 
-		@Inject(DI.redis)
-		private redisClient: Redis.Redis,
-
 		private anthropicService: AnthropicService,
 		private loggerService: LoggerService,
 	) {
@@ -47,21 +41,12 @@ export class ClaudeTranslationService {
 	}
 
 	/**
-	 * ノートを訳す。同じノート (同じ版) を同じ言語に訳した結果は 1 日覚えておき、Claude を呼ばない
+	 * ノートの本文を訳す。訳した結果を覚えておくのは呼び出し側 (NoteTranslationCacheService)
 	 */
 	@bindThis
-	public async translateNote(note: Pick<MiNote, 'id' | 'updatedAt'>, text: string, rawTargetLang: string): Promise<Translation> {
+	public async translate(text: string, rawTargetLang: string): Promise<Translation> {
 		const targetLang = normalizeTargetLang(rawTargetLang);
 		if (targetLang == null) throw new ClaudeError('FAILED', 'Unsupported target language.');
-
-		const version = note.updatedAt?.getTime() ?? 0;
-		const cacheKey = `claudeTranslation:${note.id}:${version}:${targetLang}`;
-
-		const cached = await this.redisClient.get(cacheKey);
-		if (cached != null) {
-			const parsed = normalizeClaudeTranslation(JSON.parse(cached));
-			if (parsed != null) return parsed;
-		}
 
 		const raw = await this.anthropicService.createJson({
 			model: toClaudeTranslationModel(this.meta.anthropicTranslationModel),
@@ -77,7 +62,6 @@ export class ClaudeTranslationService {
 			throw new ClaudeError('FAILED', 'Claude returned no translation.');
 		}
 
-		await this.redisClient.set(cacheKey, JSON.stringify(translation), 'EX', CLAUDE_TRANSLATION_CACHE_TTL_SEC);
 		return translation;
 	}
 

@@ -175,6 +175,7 @@ import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntitySe
 import { EmojiTagSuggestionService } from './emoji-tagging/EmojiTagSuggestionService.js';
 import { AnthropicService } from './anthropic/AnthropicService.js';
 import { ClaudeTranslationService } from './anthropic/ClaudeTranslationService.js';
+import { NoteTranslationCacheService } from './note-translation/NoteTranslationCacheService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -353,6 +354,7 @@ const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntit
 const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionService', useExisting: EmojiTagSuggestionService };
 const $AnthropicService: Provider = { provide: 'AnthropicService', useExisting: AnthropicService };
 const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService', useExisting: ClaudeTranslationService };
+const $NoteTranslationCacheService: Provider = { provide: 'NoteTranslationCacheService', useExisting: NoteTranslationCacheService };
 //#endregion
 
 @Module({
@@ -531,6 +533,7 @@ const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService
 		EmojiTagSuggestionService,
 		AnthropicService,
 		ClaudeTranslationService,
+		NoteTranslationCacheService,
 		QueueService,
 		TelemetryService,
 
@@ -705,6 +708,7 @@ const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService
 		$EmojiTagSuggestionService,
 		$AnthropicService,
 		$ClaudeTranslationService,
+		$NoteTranslationCacheService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -880,6 +884,7 @@ const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService
 		EmojiTagSuggestionService,
 		AnthropicService,
 		ClaudeTranslationService,
+		NoteTranslationCacheService,
 		QueueService,
 		TelemetryService,
 
@@ -1052,6 +1057,7 @@ const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService
 		$EmojiTagSuggestionService,
 		$AnthropicService,
 		$ClaudeTranslationService,
+		$NoteTranslationCacheService,
 		$TelemetryService,
 		//#endregion
 	],

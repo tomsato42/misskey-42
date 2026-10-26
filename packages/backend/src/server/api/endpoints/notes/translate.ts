@@ -12,6 +12,8 @@ import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ClaudeTranslationService } from '@/core/anthropic/ClaudeTranslationService.js';
 import { ClaudeError } from '@/core/anthropic/AnthropicService.js';
+import { NoteTranslationCacheService } from '@/core/note-translation/NoteTranslationCacheService.js';
+import { normalizeTargetLang } from '@/core/note-translation/note-translation.js';
 import { MiMeta } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
@@ -81,6 +83,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private httpRequestService: HttpRequestService,
 		private roleService: RoleService,
 		private claudeTranslationService: ClaudeTranslationService,
+		private noteTranslationCacheService: NoteTranslationCacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const policies = await this.roleService.getUserPolicies(me.id);
@@ -112,49 +115,65 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				return;
 			}
 
-			if (this.claudeTranslationService.isEnabled) {
-				try {
-					return await this.claudeTranslationService.translateNote(note, text, ps.targetLang);
-				} catch (err) {
-					if (err instanceof ClaudeError) throw new ApiError(meta.errors.translationFailed);
-					throw err;
-				}
+			// 同じノート (同じ版) を同じ言語に訳したことがあれば、翻訳の API を呼ばずにそれを返す
+			const lang = normalizeTargetLang(ps.targetLang);
+			if (lang != null) {
+				const cached = await this.noteTranslationCacheService.get(note, lang);
+				if (cached != null) return cached;
 			}
 
-			if (this.serverSettings.deeplAuthKey == null) {
-				throw new ApiError(meta.errors.unavailable);
-			}
-
-			let targetLang = ps.targetLang;
-			if (targetLang.includes('-')) targetLang = targetLang.split('-')[0];
-
-			const params = new URLSearchParams();
-			params.append('text', text);
-			params.append('target_lang', targetLang);
-
-			const endpoint = this.serverSettings.deeplIsPro ? 'https://api.deepl.com/v2/translate' : 'https://api-free.deepl.com/v2/translate';
-
-			const res = await this.httpRequestService.send(endpoint, {
-				method: 'POST',
-				headers: {
-					'Authorization': `DeepL-Auth-Key ${this.serverSettings.deeplAuthKey}`,
-					'Content-Type': 'application/x-www-form-urlencoded',
-					Accept: 'application/json, */*',
-				},
-				body: params.toString(),
-			});
-
-			const json = (await res.json()) as {
-				translations: {
-					detected_source_language: string;
-					text: string;
-				}[];
-			};
-
-			return {
-				sourceLang: json.translations[0].detected_source_language,
-				text: json.translations[0].text,
-			};
+			const translation = await this.translate(text, ps.targetLang);
+			if (lang != null) await this.noteTranslationCacheService.set(note, lang, translation);
+			return translation;
 		});
+	}
+
+	/**
+	 * 設定に合わせて DeepL か Claude で訳す
+	 */
+	private async translate(text: string, rawTargetLang: string): Promise<{ sourceLang: string; text: string }> {
+		if (this.claudeTranslationService.isEnabled) {
+			try {
+				return await this.claudeTranslationService.translate(text, rawTargetLang);
+			} catch (err) {
+				if (err instanceof ClaudeError) throw new ApiError(meta.errors.translationFailed);
+				throw err;
+			}
+		}
+
+		if (this.serverSettings.deeplAuthKey == null) {
+			throw new ApiError(meta.errors.unavailable);
+		}
+
+		let targetLang = rawTargetLang;
+		if (targetLang.includes('-')) targetLang = targetLang.split('-')[0];
+
+		const params = new URLSearchParams();
+		params.append('text', text);
+		params.append('target_lang', targetLang);
+
+		const endpoint = this.serverSettings.deeplIsPro ? 'https://api.deepl.com/v2/translate' : 'https://api-free.deepl.com/v2/translate';
+
+		const res = await this.httpRequestService.send(endpoint, {
+			method: 'POST',
+			headers: {
+				'Authorization': `DeepL-Auth-Key ${this.serverSettings.deeplAuthKey}`,
+				'Content-Type': 'application/x-www-form-urlencoded',
+				Accept: 'application/json, */*',
+			},
+			body: params.toString(),
+		});
+
+		const json = (await res.json()) as {
+			translations: {
+				detected_source_language: string;
+				text: string;
+			}[];
+		};
+
+		return {
+			sourceLang: json.translations[0].detected_source_language,
+			text: json.translations[0].text,
+		};
 	}
 }

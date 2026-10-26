@@ -228,6 +228,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</MkPreferenceContainer>
 								</SearchMarker>
 
+								<SearchMarker v-if="isCachedTranslationAvailable()" :keywords="['translate', 'translation', 'show']">
+									<MkPreferenceContainer k="showCachedTranslations">
+										<MkSwitch v-model="showCachedTranslations">
+											<template #label><SearchLabel>{{ i18n.ts._noteTranslation.showCachedTranslations }}</SearchLabel></template>
+											<template #caption><SearchText>{{ i18n.ts._noteTranslation.showCachedTranslationsDescription }}</SearchText></template>
+										</MkSwitch>
+									</MkPreferenceContainer>
+								</SearchMarker>
+
 								<SearchMarker :keywords="['reaction', 'confirm']">
 									<MkPreferenceContainer k="confirmOnReact">
 										<MkSwitch v-model="confirmOnReact">
@@ -903,6 +912,7 @@ import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { globalEvents } from '@/events.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { instance } from '@/instance.js';
+import { isCachedTranslationAvailable } from '@/utility/cached-translation.js';
 import { ensureSignin } from '@/i.js';
 import { genId } from '@/utility/id.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
@@ -925,6 +935,7 @@ const showClipButtonInNoteFooter = prefer.model('showClipButtonInNoteFooter');
 const collapseRenotes = prefer.model('collapseRenotes');
 const advancedMfm = prefer.model('advancedMfm');
 const showReactionsCount = prefer.model('showReactionsCount');
+const showCachedTranslations = prefer.model('showCachedTranslations');
 const enableQuickAddMfmFunction = prefer.model('enableQuickAddMfmFunction');
 const forceShowAds = prefer.model('forceShowAds');
 const loadRawImages = prefer.model('loadRawImages');

@@ -201,6 +201,10 @@ export const PREF_DEF = definePreferences({
 	collapseRenotes: {
 		default: true,
 	},
+	// 42times: 誰かが翻訳したノートは、最初から訳を出す
+	showCachedTranslations: {
+		default: true,
+	},
 	menu: {
 		default: [
 			'notifications',

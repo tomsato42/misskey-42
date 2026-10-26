@@ -4231,6 +4231,9 @@ _emojiTagging:
     rateLimited: "利用の上限に達しました。しばらくしてから試してください。"
     refused: "Claude がこの絵文字への提案を断りました。"
     failed: "Claude からタグを受け取れませんでした。"
+_noteTranslation:
+  showCachedTranslations: "翻訳済みのノートは最初から訳を表示"
+  showCachedTranslationsDescription: "誰かが翻訳したノートは、自分で翻訳しなくても訳を表示します。"
 _emojiCategoryMerge:
   title: "カテゴリをまとめる"
   from: "廃止するカテゴリ"

@@ -3582,6 +3582,15 @@ export type paths = {
          */
         post: operations['notes___translate'];
     };
+    '/notes/translations': {
+        /**
+         * notes/translations
+         * @description Return the translations of notes that someone has already translated (with notes/translate) into the language. Nothing is translated here, so it costs nothing. Notes you cannot see and notes without a translation are left out.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['notes___translations'];
+    };
     '/notes/unrenote': {
         /**
          * notes/unrenote
@@ -35481,6 +35490,86 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___translations: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    noteIds: string[];
+                    targetLang: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        noteId: string;
+                        sourceLang: string;
+                        text: string;
+                    }[];
                 };
             };
             /** @description Client error */
