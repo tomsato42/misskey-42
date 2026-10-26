@@ -46,6 +46,7 @@ Claude Code 固有の補助 (skills / agents / slash commands / docs) は `.clau
 - プロフィールに出す intra 情報は login と Piscine だけ。BH (`blackholed_at`) はペースシステムやフリーズを反映せず古い値が残り、ペース期日は公開 API に無いため表示しない (値は DB と API には残っている)
 - `admin/roles/update-default-policies` は基本ポリシーを丸ごと置き換える。基本ポリシーの初期値は migration で入れているので、それを上書きする処理 (初期設定ウィザードなど) を足さない
 - `locales/ja-JP.yml` を変えたら `packages/i18n/src/autogen/locale.ts` (git 管理) も再生成してコミットする
+- このフォークの文の訳 (en-US・ko-KR・zh-CN・zh-TW) は `locales-42times/<lang>.yml` に置く (`locales/` のほかの言語は Crowdin が配るので触らない)。`packages/i18n` が Crowdin の訳の下に重ねて読む。`ja-JP.yml` にキーを足したら 4 言語にも足し、`pnpm --filter i18n verify-fork` (CI の `Fork locale`) で訳の抜けと引数の違いを確かめる。upstream の取り込みで Crowdin に訳の無い upstream の文が増えたときも、ここに足す
 - UserDetailed に項目を足すときは `WebhookTestService.ts` のダミー、`test/e2e/users.ts` の `userDetailedNotMe`、`packages/frontend/.storybook/fakes.ts` も更新する
 - 通知の種類を足したら、フロントは `MkNotification.vue`、Service Worker は `sw/src/scripts/create-notification.ts` (表示) と `sw/src/sw.ts` (クリック先)、`pages/settings/notifications.vue` (ユーザーが無い通知は `onlyOnOrOffNotificationTypes`) も更新する。sw の確認は `packages/sw` で `pnpm typecheck`
 - モデレーションログ種別の追加は `backend/src/types.ts`・`misskey-js/src/consts.ts`・`ja-JP.yml` の `_moderationLogTypes`・`frontend/src/pages/admin/modlog.ModLog.vue` の 4 か所

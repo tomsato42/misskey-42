@@ -17,6 +17,7 @@
 	"scripts": {
 		"generate": "tsx scripts/generateLocaleInterface.ts",
 		"verify": "tsx scripts/verify.ts",
+		"verify-fork": "tsx scripts/verify-fork.ts",
 		"build": "tsx ./build.ts",
 		"watch": "nodemon -w package.json -e json --exec \"tsx ./build.ts --watch\"",
 		"tsd": "tsd",
