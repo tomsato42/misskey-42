@@ -20,6 +20,13 @@ export const EMOJI_TAGGING_MODELS = [
 	{ value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5' },
 ] as const;
 
+/** 翻訳で選べるモデル。backend の CLAUDE_TRANSLATION_MODELS と同じ (先頭が既定) */
+export const CLAUDE_TRANSLATION_MODELS = [
+	{ value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5' },
+	{ value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5' },
+	{ value: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
+] as const;
+
 /** 提案のリクエストを同時に送る数 */
 export const EMOJI_TAGGING_CONCURRENCY = 4;
 

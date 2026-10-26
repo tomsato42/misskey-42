@@ -212,6 +212,12 @@ type AdminEmojiListRequest = operations['admin___emoji___list']['requestBody']['
 type AdminEmojiListResponse = operations['admin___emoji___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiMergeCategoryRequest = operations['admin___emoji___merge-category']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiMergeCategoryResponse = operations['admin___emoji___merge-category']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiRemoveAliasesBulkRequest = operations['admin___emoji___remove-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1726,6 +1732,8 @@ declare namespace entities {
         AdminEmojiListResponse,
         AdminEmojiListRemoteRequest,
         AdminEmojiListRemoteResponse,
+        AdminEmojiMergeCategoryRequest,
+        AdminEmojiMergeCategoryResponse,
         AdminEmojiRemoveAliasesBulkRequest,
         AdminEmojiSetAliasesBulkRequest,
         AdminEmojiSetCategoryBulkRequest,

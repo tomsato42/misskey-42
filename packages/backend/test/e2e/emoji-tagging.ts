@@ -7,7 +7,7 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { describe, beforeAll, test } from 'vitest';
-import { api, castAsError, initTestDb, role, signup, successfulApiCall } from '../utils.js';
+import { api, castAsError, initTestDb, role, signup, successfulApiCall, uploadFile } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 // Claude の API には繋がないので、キーの保存と権限だけを確かめる
@@ -79,5 +79,40 @@ describe('絵文字のタグの提案', () => {
 		await successfulApiCall({ endpoint: 'admin/update-meta', parameters: { anthropicApiKey: '' }, user: root });
 		const meta = await successfulApiCall({ endpoint: 'admin/meta', parameters: {}, user: root });
 		assert.strictEqual(meta.anthropicApiKeyHint, null);
+	});
+});
+
+describe('カテゴリをまとめる', () => {
+	let root: misskey.entities.SignupResponse;
+	let alice: misskey.entities.SignupResponse;
+
+	beforeAll(async () => {
+		await initTestDb(true);
+		root = await signup({ username: 'root' });
+		alice = await signup({ username: 'alice' });
+
+		const file = (await uploadFile(root)).body!;
+		for (const [name, category] of [['blob_a', 'blob'], ['blob_b', 'blob'], ['other_a', 'other']] as const) {
+			await successfulApiCall({ endpoint: 'admin/emoji/add', parameters: { name, category, fileId: file.id, aliases: [] }, user: root });
+		}
+	}, 1000 * 60 * 2);
+
+	test('カテゴリの絵文字をすべて別のカテゴリに移す', async () => {
+		const res = await successfulApiCall({ endpoint: 'admin/emoji/merge-category', parameters: { from: 'blob', to: 'other' }, user: root });
+		assert.strictEqual(res.count, 2);
+
+		const emojis = await successfulApiCall({ endpoint: 'admin/emoji/list', parameters: { limit: 100 }, user: root });
+		assert.deepStrictEqual(emojis.map(it => it.category).sort(), ['other', 'other', 'other']);
+	});
+
+	test('絵文字の無いカテゴリは NO_SUCH_CATEGORY', async () => {
+		const res = await api('admin/emoji/merge-category', { from: 'blob', to: 'other' }, root);
+		assert.strictEqual(res.status, 400);
+		assert.strictEqual(castAsError(res.body as any).error.code, 'NO_SUCH_CATEGORY');
+	});
+
+	test('絵文字を管理できない人は使えない', async () => {
+		const res = await api('admin/emoji/merge-category', { from: 'other', to: 'blob' }, alice);
+		assert.strictEqual(res.status, 403);
 	});
 });

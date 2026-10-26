@@ -123,7 +123,8 @@ export class MetaEntityService {
 			enableEmail: instance.enableEmail,
 			enableServiceWorker: instance.enableServiceWorker,
 
-			translatorAvailable: instance.deeplAuthKey != null,
+			// Claude で翻訳する設定なら、DeepL のキーが無くても翻訳できる
+			translatorAvailable: instance.deeplAuthKey != null || (instance.anthropicTranslationEnabled && instance.anthropicApiKey != null),
 
 			serverRules: instance.serverRules,
 

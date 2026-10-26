@@ -350,6 +350,15 @@ export type paths = {
          */
         post: operations['admin___emoji___list-remote'];
     };
+    '/admin/emoji/merge-category': {
+        /**
+         * admin/emoji/merge-category
+         * @description Move every local custom emoji in a category to another category, so that the old category disappears.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___merge-category'];
+    };
     '/admin/emoji/remove-aliases-bulk': {
         /**
          * admin/emoji/remove-aliases-bulk
@@ -398,7 +407,7 @@ export type paths = {
     '/admin/emoji/test-tagging': {
         /**
          * admin/emoji/test-tagging
-         * @description Check that the Claude API key and model in the server settings can be used for suggesting emoji tags. No tokens are used.
+         * @description Check that the Claude API key and models in the server settings can be used for suggesting emoji tags and, when enabled, translating notes. No tokens are used.
          *
          *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
          */
@@ -9621,6 +9630,76 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___merge-category': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    from: string;
+                    /** @description Use `null` to remove the category from the emojis. */
+                    to: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description The number of emojis moved. */
+                        count: number;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'admin___emoji___remove-aliases-bulk': {
         requestBody: {
             content: {
@@ -11076,6 +11155,10 @@ export interface operations {
                         anthropicApiKeyHint: string | null;
                         /** @enum {string} */
                         anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                        /** @description Whether notes are translated with Claude instead of DeepL. Used only when the Claude API key is set. */
+                        anthropicTranslationEnabled: boolean;
+                        /** @enum {string} */
+                        anthropicTranslationModel: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                         defaultDarkTheme: string | null;
                         defaultLightTheme: string | null;
                         clientOptions: components['schemas']['MetaClientOptions'];
@@ -14661,6 +14744,9 @@ export interface operations {
                     anthropicApiKey?: string | null;
                     /** @enum {string} */
                     anthropicModel?: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                    anthropicTranslationEnabled?: boolean;
+                    /** @enum {string} */
+                    anthropicTranslationModel?: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                     enableEmail?: boolean;
                     email?: string | null;
                     smtpSecure?: boolean;
@@ -35426,6 +35512,15 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

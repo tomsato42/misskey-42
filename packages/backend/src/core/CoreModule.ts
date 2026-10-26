@@ -173,6 +173,8 @@ import { IntraCoalitionService } from './intra/IntraCoalitionService.js';
 import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
 import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
 import { EmojiTagSuggestionService } from './emoji-tagging/EmojiTagSuggestionService.js';
+import { AnthropicService } from './anthropic/AnthropicService.js';
+import { ClaudeTranslationService } from './anthropic/ClaudeTranslationService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -349,6 +351,8 @@ const $IntraCoalitionService: Provider = { provide: 'IntraCoalitionService', use
 const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
 const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
 const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionService', useExisting: EmojiTagSuggestionService };
+const $AnthropicService: Provider = { provide: 'AnthropicService', useExisting: AnthropicService };
+const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService', useExisting: ClaudeTranslationService };
 //#endregion
 
 @Module({
@@ -525,6 +529,8 @@ const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionServi
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		EmojiTagSuggestionService,
+		AnthropicService,
+		ClaudeTranslationService,
 		QueueService,
 		TelemetryService,
 
@@ -697,6 +703,8 @@ const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionServi
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$EmojiTagSuggestionService,
+		$AnthropicService,
+		$ClaudeTranslationService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -870,6 +878,8 @@ const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionServi
 		PairRecruitmentService,
 		PairRecruitmentEntityService,
 		EmojiTagSuggestionService,
+		AnthropicService,
+		ClaudeTranslationService,
 		QueueService,
 		TelemetryService,
 
@@ -1040,6 +1050,8 @@ const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionServi
 		$PairRecruitmentService,
 		$PairRecruitmentEntityService,
 		$EmojiTagSuggestionService,
+		$AnthropicService,
+		$ClaudeTranslationService,
 		$TelemetryService,
 		//#endregion
 	],

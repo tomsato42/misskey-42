@@ -33,6 +33,8 @@ export const MAX_EXCLUDED_TAGS = 100;
 export const MAX_CATEGORY_LENGTH = 64;
 /** カテゴリ一覧としてプロンプトに入れる最大数 */
 export const MAX_PROMPT_CATEGORIES = 500;
+/** カテゴリごとにプロンプトに入れる絵文字の名前の例の数 */
+export const CATEGORY_EXAMPLE_COUNT = 5;
 /** Claude に送る画像の一辺の長さ (px) */
 export const EMOJI_TAGGING_IMAGE_SIZE = 256;
 
@@ -67,15 +69,45 @@ export const EMOJI_TAGGING_SYSTEM_PROMPT = `あなたは日本語の SNS (Misske
 
 カテゴリの決まり:
 - 「今あるカテゴリ」の一覧に合うものがあれば、その名前を一字一句そのまま使う
+- 一覧には、カテゴリごとに入っている絵文字の名前の例を付けている。名前の付け方 (ablob_ や blob_ のような接頭辞、末尾の付け方など) が例と同じカテゴリがあれば、絵柄よりもそれを優先する
+- アニメーションする絵文字と静止画の絵文字でカテゴリが分かれているとき (例: blob と ablob、アニメーション用の名前のカテゴリ) は、指示の「動き」に合わせて選ぶ。アニメーションする絵文字を静止画のカテゴリに、静止画をアニメーションのカテゴリに入れない
 - 合うものが無いときだけ、新しいカテゴリの名前を 1 つ考える。今あるカテゴリと同じ言語・同じ粒度・同じ書き方 (「/」で区切っていればそれも) に揃える
 - 今のカテゴリが合っていれば、それをそのまま返す`;
+
+/** プロンプトに入れるカテゴリ。名前の付け方を真似られるよう、入っている絵文字の名前の例を付ける */
+export type CategorySummary = {
+	name: string;
+	count: number;
+	examples: string[];
+};
+
+/**
+ * ローカルの絵文字から、カテゴリごとの件数と名前の例をまとめる。カテゴリは名前順、例は名前順に先頭から
+ */
+export function summarizeCategories(emojis: { name: string; category: string | null }[]): CategorySummary[] {
+	const map = new Map<string, string[]>();
+	for (const emoji of emojis) {
+		if (emoji.category == null || emoji.category === '') continue;
+		const names = map.get(emoji.category);
+		if (names == null) map.set(emoji.category, [emoji.name]);
+		else names.push(emoji.name);
+	}
+	return [...map.entries()]
+		.sort(([a], [b]) => a.localeCompare(b, 'ja'))
+		.map(([name, names]) => ({
+			name,
+			count: names.length,
+			examples: [...names].sort((a, b) => a.localeCompare(b)).slice(0, CATEGORY_EXAMPLE_COUNT),
+		}));
+}
 
 /**
  * 今あるカテゴリの一覧をプロンプトの文にする。一覧はどの絵文字でも同じなので、システムプロンプトの後ろに置いてキャッシュする
  */
-export function buildCategoryListPrompt(categories: string[]): string {
+export function buildCategoryListPrompt(categories: CategorySummary[]): string {
 	if (categories.length === 0) return '今あるカテゴリ: (まだ無い)';
-	return `今あるカテゴリ:\n${categories.slice(0, MAX_PROMPT_CATEGORIES).map(it => `- ${it}`).join('\n')}`;
+	const lines = categories.slice(0, MAX_PROMPT_CATEGORIES).map(it => `- ${it.name} (${it.count} 件。例: ${it.examples.join(', ')})`);
+	return `今あるカテゴリ:\n${lines.join('\n')}`;
 }
 
 export type EmojiTaggingRequest = {
@@ -90,11 +122,17 @@ export type EmojiTaggingRequest = {
 	hint: string | null;
 };
 
+export type EmojiImageInfo = {
+	/** アニメーションする画像か (送るのは最初のコマなので、Claude には言葉で伝える) */
+	isAnimated: boolean;
+};
+
 /**
  * 画像と一緒に送る指示の文を作る
  */
-export function buildEmojiTaggingPrompt(request: EmojiTaggingRequest): string {
+export function buildEmojiTaggingPrompt(request: EmojiTaggingRequest, image: EmojiImageInfo): string {
 	const lines = [`絵文字の名前: ${request.name}`];
+	lines.push(`動き: ${image.isAnimated ? 'アニメーションする (送った画像は最初のコマ)' : '静止画'}`);
 	lines.push(`今のカテゴリ: ${request.category != null && request.category !== '' ? request.category : '(未設定)'}`);
 	if (request.currentTags.length > 0) lines.push(`今付いているタグ (これは出さない): ${request.currentTags.join(' ')}`);
 	if (request.excludedTags.length > 0) lines.push(`前に提案して採用されなかった語 (これは出さず、別の語を出す): ${request.excludedTags.join(' ')}`);
@@ -164,11 +202,4 @@ export function normalizeSuggestedCategory(raw: unknown, categories: string[]): 
 
 	const existing = categories.find(it => tagKey(it) === tagKey(name));
 	return existing != null ? { name: existing, isNew: false } : { name, isNew: true };
-}
-
-/**
- * ローカルの絵文字のカテゴリを、重複を除いて名前順に並べる
- */
-export function collectCategories(categories: (string | null)[]): string[] {
-	return [...new Set(categories.filter((it): it is string => it != null && it !== ''))].sort((a, b) => a.localeCompare(b, 'ja'));
 }
