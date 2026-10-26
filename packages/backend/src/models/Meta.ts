@@ -394,6 +394,20 @@ export class MiMeta {
 	})
 	public anthropicModel: string;
 
+	/**
+	 * ノートの翻訳に DeepL ではなく Claude を使うか (anthropicApiKey があるときだけ)
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public anthropicTranslationEnabled: boolean;
+
+	@Column('varchar', {
+		length: 128,
+		default: 'claude-haiku-5-5',
+	})
+	public anthropicTranslationModel: string;
+
 	@Column('varchar', {
 		length: 1024,
 		nullable: true,

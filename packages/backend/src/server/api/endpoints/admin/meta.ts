@@ -11,6 +11,7 @@ import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 import { EMOJI_TAGGING_MODELS, maskApiKey, toEmojiTaggingModel } from '@/core/emoji-tagging/emoji-tagging.js';
+import { CLAUDE_TRANSLATION_MODELS, toClaudeTranslationModel } from '@/core/anthropic/claude-translation.js';
 
 export const meta = {
 	tags: ['meta'],
@@ -446,6 +447,16 @@ export const meta = {
 				optional: false, nullable: false,
 				enum: EMOJI_TAGGING_MODELS,
 			},
+			anthropicTranslationEnabled: {
+				type: 'boolean',
+				optional: false, nullable: false,
+				description: 'Whether notes are translated with Claude instead of DeepL. Used only when the Claude API key is set.',
+			},
+			anthropicTranslationModel: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: CLAUDE_TRANSLATION_MODELS,
+			},
 			defaultDarkTheme: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -701,7 +712,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				clientOptions: instance.clientOptions,
 				enableEmail: instance.enableEmail,
 				enableServiceWorker: instance.enableServiceWorker,
-				translatorAvailable: instance.deeplAuthKey != null,
+				translatorAvailable: instance.deeplAuthKey != null || (instance.anthropicTranslationEnabled && instance.anthropicApiKey != null),
 				cacheRemoteFiles: instance.cacheRemoteFiles,
 				cacheRemoteSensitiveFiles: instance.cacheRemoteSensitiveFiles,
 				pinnedUsers: instance.pinnedUsers,
@@ -750,6 +761,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				deeplIsPro: instance.deeplIsPro,
 				anthropicApiKeyHint: maskApiKey(instance.anthropicApiKey),
 				anthropicModel: toEmojiTaggingModel(instance.anthropicModel),
+				anthropicTranslationEnabled: instance.anthropicTranslationEnabled,
+				anthropicTranslationModel: toClaudeTranslationModel(instance.anthropicTranslationModel),
 				enableIpLogging: instance.enableIpLogging,
 				enableActiveEmailValidation: instance.enableActiveEmailValidation,
 				enableVerifymailApi: instance.enableVerifymailApi,

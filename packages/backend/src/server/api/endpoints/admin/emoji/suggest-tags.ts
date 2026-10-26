@@ -9,7 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { DriveFilesRepository, EmojisRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { EmojiTagSuggestionService } from '@/core/emoji-tagging/EmojiTagSuggestionService.js';
-import { MAX_CURRENT_TAGS, MAX_EXCLUDED_TAGS, MAX_HINT_LENGTH, MAX_PROMPT_NAME_LENGTH, collectCategories } from '@/core/emoji-tagging/emoji-tagging.js';
+import { MAX_CURRENT_TAGS, MAX_EXCLUDED_TAGS, MAX_HINT_LENGTH, MAX_PROMPT_NAME_LENGTH, summarizeCategories } from '@/core/emoji-tagging/emoji-tagging.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { emojiTaggingApiErrors, withEmojiTaggingApiErrors } from '@/server/api/emoji-tagging-errors.js';
 import { ApiError } from '../../../error.js';
@@ -155,7 +155,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			const localEmojis = await this.customEmojiService.localEmojisCache.fetch();
-			const categories = collectCategories([...localEmojis.values()].map(it => it.category));
+			const categories = summarizeCategories([...localEmojis.values()]);
 
 			return await withEmojiTaggingApiErrors(() => this.emojiTagSuggestionService.suggest(imageUrl, {
 				name,

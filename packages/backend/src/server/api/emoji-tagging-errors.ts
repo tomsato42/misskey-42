@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// 絵文字のタグの提案の API (admin/emoji/suggest-tags・admin/emoji/test-tagging) が返すエラー。
-// サービスの EmojiTaggingError の code ごとに 1 つ。どのエンドポイントでも同じ ID を返す
+// Claude を使う API (admin/emoji/suggest-tags・admin/emoji/test-tagging・admin/test-claude-translation) が返すエラー。
+// AnthropicService の ClaudeError の code ごとに 1 つ。どのエンドポイントでも同じ ID を返す
 
-import { EmojiTaggingError } from '@/core/emoji-tagging/EmojiTagSuggestionService.js';
-import type { EmojiTaggingErrorCode } from '@/core/emoji-tagging/EmojiTagSuggestionService.js';
+import { ClaudeError } from '@/core/anthropic/AnthropicService.js';
+import type { ClaudeErrorCode } from '@/core/anthropic/AnthropicService.js';
 import { ApiError } from './error.js';
 
 type ErrorDef = { message: string; code: string; id: string };
@@ -52,16 +52,16 @@ const errorKeys = {
 	RATE_LIMITED: 'rateLimited',
 	REFUSED: 'refused',
 	FAILED: 'failed',
-} as const satisfies Record<EmojiTaggingErrorCode, keyof typeof emojiTaggingApiErrors>;
+} as const satisfies Record<ClaudeErrorCode, keyof typeof emojiTaggingApiErrors>;
 
 /**
- * サービスの EmojiTaggingError を API エラーに変換する。その他の例外はそのまま投げる
+ * サービスの ClaudeError を API エラーに変換する。その他の例外はそのまま投げる
  */
 export async function withEmojiTaggingApiErrors<T>(fn: () => Promise<T>): Promise<T> {
 	try {
 		return await fn();
 	} catch (err) {
-		if (err instanceof EmojiTaggingError) throw new ApiError(emojiTaggingApiErrors[errorKeys[err.code]]);
+		if (err instanceof ClaudeError) throw new ApiError(emojiTaggingApiErrors[errorKeys[err.code]]);
 		throw err;
 	}
 }

@@ -344,12 +344,18 @@ export function getNoteMenu(props: {
 			}
 		} else if ($i?.policies.canUseTranslator && instance.translatorAvailable) {
 			props.translating.value = true;
-			const res = await misskeyApi('notes/translate', {
-				noteId: appearNote.id,
-				targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
-			});
-			props.translating.value = false;
-			props.translation.value = res;
+			try {
+				const res = await misskeyApi('notes/translate', {
+					noteId: appearNote.id,
+					targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
+				});
+				props.translation.value = res;
+			} catch (err) {
+				// 失敗したら「翻訳中」のまま止まらないようにし、理由を出す (Claude で訳すときは混んでいると失敗する)
+				os.alert({ type: 'error', text: err instanceof Error ? err.message : (err as { message?: string }).message ?? i18n.ts.somethingHappened });
+			} finally {
+				props.translating.value = false;
+			}
 		}
 	}
 

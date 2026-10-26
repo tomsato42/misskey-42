@@ -10,6 +10,8 @@ import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
+import { ClaudeTranslationService } from '@/core/anthropic/ClaudeTranslationService.js';
+import { ClaudeError } from '@/core/anthropic/AnthropicService.js';
 import { MiMeta } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
@@ -19,6 +21,12 @@ export const meta = {
 
 	requireCredential: true,
 	kind: 'read:account',
+
+	// Claude で訳すときは 1 回ごとに費用がかかるので、続けて送れる数を絞る (同じノートの翻訳は覚えておく)
+	limit: {
+		duration: 1000 * 60,
+		max: 60,
+	},
 
 	res: {
 		type: 'object',
@@ -45,6 +53,11 @@ export const meta = {
 			code: 'CANNOT_TRANSLATE_INVISIBLE_NOTE',
 			id: 'ea29f2ca-c368-43b3-aaf1-5ac3e74bbe5d',
 		},
+		translationFailed: {
+			message: 'Failed to translate the note. Try again later.',
+			code: 'TRANSLATION_FAILED',
+			id: '2e0cb9ea-3a83-4dfb-a0de-5b7aad20c947',
+		},
 	},
 } as const;
 
@@ -67,6 +80,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private getterService: GetterService,
 		private httpRequestService: HttpRequestService,
 		private roleService: RoleService,
+		private claudeTranslationService: ClaudeTranslationService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const policies = await this.roleService.getUserPolicies(me.id);
@@ -96,6 +110,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (text.trim() === '') {
 				return;
+			}
+
+			if (this.claudeTranslationService.isEnabled) {
+				try {
+					return await this.claudeTranslationService.translateNote(note, text, ps.targetLang);
+				} catch (err) {
+					if (err instanceof ClaudeError) throw new ApiError(meta.errors.translationFailed);
+					throw err;
+				}
 			}
 
 			if (this.serverSettings.deeplAuthKey == null) {

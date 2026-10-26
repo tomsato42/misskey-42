@@ -15677,6 +15677,18 @@ export interface Locale extends ILocale {
          */
         "testSucceeded": string;
         /**
+         * ノートの翻訳にも使う
+         */
+        "useForTranslation": string;
+        /**
+         * DeepL の代わりに Claude で翻訳します。同じノートの翻訳は 1 日覚えておきます。利用者の投稿を Anthropic に送るので、プライバシーポリシーにも書いています。
+         */
+        "useForTranslationCaption": string;
+        /**
+         * 翻訳のモデル
+         */
+        "translationModel": string;
+        /**
          * キーを削除
          */
         "deleteKey": string;
@@ -15870,5 +15882,39 @@ export interface Locale extends ILocale {
              */
             "failed": string;
         };
+    };
+    "_emojiCategoryMerge": {
+        /**
+         * カテゴリをまとめる
+         */
+        "title": string;
+        /**
+         * 廃止するカテゴリ
+         */
+        "from": string;
+        /**
+         * 移す先のカテゴリ
+         */
+        "to": string;
+        /**
+         * 今あるカテゴリの名前か、新しい名前を入れます。空にすると、カテゴリ未設定にします。
+         */
+        "toDescription": string;
+        /**
+         * {name} ({count} 件)
+         */
+        "categoryWithCount": ParameterizedString<"name" | "count">;
+        /**
+         * 「{from}」の {count} 件の絵文字を「{to}」に移し、「{from}」を廃止します。よろしいですか？
+         */
+        "confirm": ParameterizedString<"from" | "count" | "to" | "from">;
+        /**
+         * 「{from}」の {count} 件の絵文字をカテゴリ未設定にし、「{from}」を廃止します。よろしいですか？
+         */
+        "confirmRemove": ParameterizedString<"from" | "count" | "from">;
+        /**
+         * カテゴリのある絵文字がありません。
+         */
+        "noCategories": string;
     };
 }

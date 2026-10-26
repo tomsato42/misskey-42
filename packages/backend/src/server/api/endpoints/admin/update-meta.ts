@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
 import { INTRA_FIXED_META } from '@/core/intra/intra-visitor.js';
 import { EMOJI_TAGGING_MODELS, maskApiKey } from '@/core/emoji-tagging/emoji-tagging.js';
+import { CLAUDE_TRANSLATION_MODELS } from '@/core/anthropic/claude-translation.js';
 import type { Config } from '@/config.js';
 
 export const meta = {
@@ -136,6 +137,8 @@ export const paramDef = {
 			description: 'Use `null` or an empty string to delete the key.',
 		},
 		anthropicModel: { type: 'string', enum: EMOJI_TAGGING_MODELS },
+		anthropicTranslationEnabled: { type: 'boolean' },
+		anthropicTranslationModel: { type: 'string', enum: CLAUDE_TRANSLATION_MODELS },
 		enableEmail: { type: 'boolean' },
 		email: { type: 'string', nullable: true },
 		smtpSecure: { type: 'boolean' },
@@ -647,6 +650,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.anthropicModel !== undefined) {
 				set.anthropicModel = ps.anthropicModel;
+			}
+
+			if (ps.anthropicTranslationEnabled !== undefined) {
+				set.anthropicTranslationEnabled = ps.anthropicTranslationEnabled;
+			}
+
+			if (ps.anthropicTranslationModel !== undefined) {
+				set.anthropicTranslationModel = ps.anthropicTranslationModel;
 			}
 
 			if (ps.enableIpLogging !== undefined) {

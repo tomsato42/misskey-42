@@ -69,6 +69,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSelect>
 							</SearchMarker>
 
+							<SearchMarker :keywords="['translate', 'translation', 'deepl']">
+								<MkSwitch v-model="anthropicTranslationEnabled">
+									<template #label><SearchLabel>{{ i18n.ts._emojiTagging.useForTranslation }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._emojiTagging.useForTranslationCaption }}</template>
+								</MkSwitch>
+							</SearchMarker>
+
+							<SearchMarker v-if="anthropicTranslationEnabled">
+								<MkSelect v-model="anthropicTranslationModel" :items="anthropicTranslationModelDef">
+									<template #label><SearchLabel>{{ i18n.ts._emojiTagging.translationModel }}</SearchLabel></template>
+								</MkSelect>
+							</SearchMarker>
+
 							<div class="_buttons">
 								<MkButton primary @click="save_anthropic">{{ i18n.ts.save }}</MkButton>
 								<MkButton :disabled="anthropicApiKeyHint == null" @click="test_anthropic">{{ i18n.ts._emojiTagging.testConnection }}</MkButton>
@@ -96,7 +109,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkFolder from '@/components/MkFolder.vue';
 import { useMkSelect } from '@/composables/use-mkselect.js';
-import { EMOJI_TAGGING_MODELS, emojiTaggingErrorMessage, isEmojiTaggingAvailable } from '@/utility/emoji-tagging.js';
+import { CLAUDE_TRANSLATION_MODELS, EMOJI_TAGGING_MODELS, emojiTaggingErrorMessage, isEmojiTaggingAvailable } from '@/utility/emoji-tagging.js';
 
 const meta = await misskeyApi('admin/meta');
 
@@ -112,6 +125,14 @@ const {
 } = useMkSelect({
 	items: EMOJI_TAGGING_MODELS.map(it => ({ label: it.label, value: it.value })),
 	initialValue: meta.anthropicModel,
+});
+const anthropicTranslationEnabled = ref(meta.anthropicTranslationEnabled);
+const {
+	model: anthropicTranslationModel,
+	def: anthropicTranslationModelDef,
+} = useMkSelect({
+	items: CLAUDE_TRANSLATION_MODELS.map(it => ({ label: it.label, value: it.value })),
+	initialValue: meta.anthropicTranslationModel,
 });
 
 function save_deepl() {
@@ -134,8 +155,12 @@ async function save_anthropic() {
 		// 空のまま保存したときは今のキーを残す
 		...(anthropicApiKey.value.trim() !== '' ? { anthropicApiKey: anthropicApiKey.value.trim() } : {}),
 		anthropicModel: anthropicModel.value,
+		anthropicTranslationEnabled: anthropicTranslationEnabled.value,
+		anthropicTranslationModel: anthropicTranslationModel.value,
 	});
 	anthropicApiKey.value = '';
+	// 翻訳を使えるか (translatorAvailable) が変わるので、インスタンスの情報も取り直す
+	fetchInstance(true);
 	await refreshAnthropicApiKeyHint();
 }
 

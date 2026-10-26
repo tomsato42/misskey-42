@@ -9,7 +9,7 @@ import {
 	MAX_SUGGESTED_TAGS,
 	buildCategoryListPrompt,
 	buildEmojiTaggingPrompt,
-	collectCategories,
+	summarizeCategories,
 	maskApiKey,
 	normalizeSuggestedCategory,
 	normalizeSuggestedTags,
@@ -64,15 +64,35 @@ describe('normalizeSuggestedCategory', () => {
 	});
 });
 
-describe('collectCategories', () => {
-	test('空と重複を除いて並べる', () => {
-		expect(collectCategories(['b', null, 'a', '', 'b'])).toEqual(['a', 'b']);
+describe('summarizeCategories', () => {
+	test('カテゴリごとに件数と名前の例をまとめ、カテゴリの無いものは除く', () => {
+		const emojis = [
+			{ name: 'blob_cry', category: 'blob' },
+			{ name: 'ablob_happy', category: 'ablob' },
+			{ name: 'blob_happy', category: 'blob' },
+			{ name: 'misc', category: null },
+			{ name: 'empty', category: '' },
+		];
+		expect(summarizeCategories(emojis)).toEqual([
+			{ name: 'ablob', count: 1, examples: ['ablob_happy'] },
+			{ name: 'blob', count: 2, examples: ['blob_cry', 'blob_happy'] },
+		]);
+	});
+
+	test('例は 5 件まで', () => {
+		const emojis = Array.from({ length: 8 }, (_, i) => ({ name: `blob_${i}`, category: 'blob' }));
+		const [summary] = summarizeCategories(emojis);
+		expect(summary.count).toBe(8);
+		expect(summary.examples).toHaveLength(5);
 	});
 });
 
 describe('buildCategoryListPrompt', () => {
-	test('一覧を箇条書きにする', () => {
-		expect(buildCategoryListPrompt(['a', 'b'])).toBe('今あるカテゴリ:\n- a\n- b');
+	test('件数と名前の例を付けて箇条書きにする', () => {
+		expect(buildCategoryListPrompt([
+			{ name: 'ablob', count: 3, examples: ['ablob_cry', 'ablob_happy'] },
+			{ name: 'blob', count: 1, examples: ['blob_cry'] },
+		])).toBe('今あるカテゴリ:\n- ablob (3 件。例: ablob_cry, ablob_happy)\n- blob (1 件。例: blob_cry)');
 	});
 
 	test('カテゴリが無いときもそう伝える', () => {
@@ -88,8 +108,9 @@ describe('buildEmojiTaggingPrompt', () => {
 			currentTags: ['泣き'],
 			excludedTags: ['涙', 'sad'],
 			hint: '顔文字っぽく',
-		});
+		}, { isAnimated: false });
 		expect(prompt).toContain('絵文字の名前: cry');
+		expect(prompt).toContain('動き: 静止画');
 		expect(prompt).toContain('今のカテゴリ: (未設定)');
 		expect(prompt).toContain('泣き');
 		expect(prompt).toContain('涙 sad');
@@ -97,7 +118,8 @@ describe('buildEmojiTaggingPrompt', () => {
 	});
 
 	test('無いものは入れない', () => {
-		const prompt = buildEmojiTaggingPrompt({ name: 'cry', category: 'きもち', currentTags: [], excludedTags: [], hint: null });
+		const prompt = buildEmojiTaggingPrompt({ name: 'cry', category: 'きもち', currentTags: [], excludedTags: [], hint: null }, { isAnimated: true });
+		expect(prompt).toContain('動き: アニメーションする');
 		expect(prompt).toContain('今のカテゴリ: きもち');
 		expect(prompt).not.toContain('今付いているタグ');
 		expect(prompt).not.toContain('前に提案');
