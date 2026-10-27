@@ -57,10 +57,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkA>
 						<span v-if="appearNote.user.isBot" :class="$style.isBot">bot</span>
 						<div :class="$style.noteHeaderInfo">
-							<span v-if="appearNote.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[appearNote.visibility]">
-								<i v-if="appearNote.visibility === 'home'" class="ti ti-home"></i>
-								<i v-else-if="appearNote.visibility === 'followers'" class="ti ti-lock"></i>
-								<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
+							<span v-if="$appearNote.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[$appearNote.visibility]">
+								<i v-if="$appearNote.visibility === 'home'" class="ti ti-home"></i>
+								<i v-else-if="$appearNote.visibility === 'followers'" class="ti ti-lock"></i>
+								<i v-else-if="$appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 							</span>
 							<span v-if="appearNote.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 						</div>
@@ -77,24 +77,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</header>
 			<div :class="$style.noteContent">
-				<p v-if="appearNote.cw != null" :class="$style.cw">
+				<p v-if="$appearNote.cw != null" :class="$style.cw">
 					<Mfm
-						v-if="appearNote.cw != ''"
-						:text="appearNote.cw"
+						v-if="$appearNote.cw != ''"
+						:text="$appearNote.cw"
 						:author="appearNote.user"
 						:nyaize="'respect'"
 						:enableEmojiMenu="true"
 						:enableEmojiMenuReaction="true"
 					/>
-					<MkCwButton v-model="showContent" :text="appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll"/>
+					<MkCwButton v-model="showContent" :text="$appearNote.text" :renote="appearNote.renote" :files="appearNote.files" :poll="appearNote.poll"/>
 				</p>
-				<div v-show="appearNote.cw == null || showContent">
+				<div v-show="$appearNote.cw == null || showContent">
 					<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 					<MkA v-if="appearNote.replyId" :class="$style.noteReplyTarget" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
 					<Mfm
-						v-if="appearNote.text"
+						v-if="$appearNote.text"
 						:parsedNodes="parsed"
-						:text="appearNote.text"
+						:text="$appearNote.text"
 						:author="appearNote.user"
 						:nyaize="'respect'"
 						:emojiUrls="appearNote.emojis"
@@ -127,6 +127,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkUrlPreview v-for="url in urls" :key="url" :url="url" :compact="true" :detail="true" style="margin-top: 6px;"/>
 					</div>
 					<div v-if="appearNote.renoteId" :class="$style.quote"><MkNoteSimple :note="appearNote?.renote ?? null" :class="$style.quoteNote"/></div>
+					<MkNoteCalendarEvent v-if="appearNote.calendarEvent" :event="appearNote.calendarEvent"/>
+					<MkIntraProjectResult v-if="appearNote.intraProjectResult" style="margin-top: 10px;" :result="appearNote.intraProjectResult"/>
+					<MkIntraLevel v-if="appearNote.intraLevel" style="margin-top: 10px;" :level="appearNote.intraLevel.level"/>
 				</div>
 				<MkA v-if="appearNote.channel && !inChannel" :class="$style.channel" :to="`/channels/${appearNote.channel.id}`"><i class="ti ti-device-tv"></i> {{ appearNote.channel.name }}</MkA>
 			</div>
@@ -135,15 +138,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkA :to="notePage(appearNote)">
 						<MkTime :time="appearNote.createdAt" mode="detail" colored/>
 					</MkA>
+					<span v-if="$appearNote.updatedAt != null" style="margin-left: 0.5em;"><i class="ti ti-pencil"></i> {{ i18n.ts.edited }}</span>
 					<span style="margin-left: 0.5em;">
 						<span style="border: 1px solid var(--MI_THEME-divider); margin-right: 0.5em;"></span>
-						<i v-if="appearNote.visibility === 'public'" class="ti ti-world"></i>
-						<i v-else-if="appearNote.visibility === 'home'" class="ti ti-home"></i>
-						<i v-else-if="appearNote.visibility === 'followers'" class="ti ti-lock"></i>
-						<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
-						<span style="margin-left: 0.3em;">{{ i18n.ts._visibility[appearNote.visibility] }}</span>
+						<i v-if="$appearNote.visibility === 'public'" class="ti ti-world"></i>
+						<i v-else-if="$appearNote.visibility === 'home'" class="ti ti-home"></i>
+						<i v-else-if="$appearNote.visibility === 'followers'" class="ti ti-lock"></i>
+						<i v-else-if="$appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
+						<span style="margin-left: 0.3em;">{{ i18n.ts._visibility[$appearNote.visibility] }}</span>
 					</span>
 				</div>
+				<MkNoteEditHistory v-if="$appearNote.updatedAt != null" :note="appearNote" :updatedAt="$appearNote.updatedAt"/>
 				<MkReactionsViewer
 					v-if="appearNote.reactionAcceptance !== 'likeOnly'"
 					style="margin-top: 6px;"
@@ -244,8 +249,8 @@ import * as Misskey from 'misskey-js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
-import { userPage } from '@/filters/user.js';
-import { notePage } from '@/filters/note.js';
+import { userPage } from '@@/js/user.js';
+import { notePage } from '@@/js/note.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { Paginator } from '@/utility/paginator.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
@@ -262,10 +267,14 @@ import MkCwButton from '@/components/MkCwButton.vue';
 import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
+import MkNoteCalendarEvent from '@/components/MkNoteCalendarEvent.vue';
+import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
+import MkIntraLevel from '@/components/MkIntraLevel.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkNoteEditHistory from '@/components/MkNoteEditHistory.vue';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -388,7 +397,7 @@ const keymap = {
 		galleryEl.value?.openGallery();
 	},
 	'v|enter': () => {
-		if (appearNote.cw != null) {
+		if ($appearNote.cw != null) {
 			showContent.value = !showContent.value;
 		}
 	},

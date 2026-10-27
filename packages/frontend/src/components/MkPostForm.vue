@@ -14,13 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<header :class="$style.header">
 		<div :class="$style.headerLeft">
 			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
-			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" class="_button" @click="openAccountMenu">
+			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" class="_button" :disabled="editNote != null" @click="openAccountMenu">
 				<img :class="$style.avatar" :src="(postAccount ?? $i).avatarUrl" style="border-radius: 100%;"/>
 			</button>
 		</div>
 		<div :class="$style.headerRight">
 			<template v-if="!(targetChannel != null && fixed)">
-				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setVisibility">
+				<button v-if="targetChannel == null" ref="visibilityButton" v-tooltip="i18n.ts.visibility" :class="['_button', $style.headerRightItem, $style.visibility]" :disabled="editNote != null && editNote.visibility === 'specified'" @click="setVisibility">
 					<span v-if="visibility === 'public'"><i class="ti ti-world"></i></span>
 					<span v-if="visibility === 'home'"><i class="ti ti-home"></i></span>
 					<span v-if="visibility === 'followers'"><i class="ti ti-lock"></i></span>
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
 				</button>
 			</template>
-			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
+			<button v-if="visibility !== 'specified' && !instance.intraLoginEnabled" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null || editNote != null" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
 			</button>
@@ -49,8 +49,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</header>
 	<MkNoteSimple v-if="replyTargetNote" :class="$style.targetNote" :note="replyTargetNote"/>
 	<MkNoteSimple v-if="renoteTargetNote" :class="$style.targetNote" :note="renoteTargetNote"/>
+	<template v-if="editNote != null">
+		<MkNoteSimple v-if="editNote.reply" :class="$style.targetNote" :note="editNote.reply"/>
+		<MkNoteSimple v-if="editNote.renote" :class="$style.targetNote" :note="editNote.renote"/>
+	</template>
 	<div v-if="quoteId" :class="$style.withQuote"><i class="ti ti-quote"></i> {{ i18n.ts.quoteAttached }}<button @click="quoteId = null; renoteTargetNote = null;"><i class="ti ti-x"></i></button></div>
-	<div v-if="visibility === 'specified'" :class="$style.toSpecified">
+	<div v-if="visibility === 'specified' && editNote == null" :class="$style.toSpecified">
 		<span style="margin-right: 8px;">{{ i18n.ts.recipient }}</span>
 		<div :class="$style.visibleUsers">
 			<span v-for="u in visibleUsers" :key="u.id" :class="$style.visibleUser">
@@ -71,6 +75,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</I18n> - <button class="_textButton" @click="cancelSchedule()">{{ i18n.ts.cancel }}</button>
 	</MkInfo>
 	<MkInfo v-if="hasNotSpecifiedMentions" warn :class="$style.hasNotSpecifiedMentions">{{ i18n.ts.notSpecifiedMentionWarning }} - <button class="_textButton" @click="addMissingMention()">{{ i18n.ts.add }}</button></MkInfo>
+	<XCalendarEvent
+		v-if="calendarEventForm != null || linkedCalendarEvent != null"
+		v-model:form="calendarEventForm"
+		v-model:errors="calendarEventFormErrors"
+		:linkedEvent="linkedCalendarEvent"
+		:unavailableReason="calendarUnavailableReason"
+		:noteVisibility="visibility"
+		:disabled="posting || posted"
+		@stopAnnouncing="stopAnnouncingCalendarEvent"
+		@unlink="linkedCalendarEvent = null"
+	/>
 	<div v-show="useCw" :class="$style.cwOuter">
 		<input ref="cwInputEl" v-model="cw" :class="$style.cw" :placeholder="i18n.ts.annotation" @keydown="onKeydown" @keyup="onKeyup" @compositionend="onCompositionEnd">
 		<div v-if="maxCwTextLength - cwTextLength < 20" :class="['_acrylic', $style.cwTextCount, { [$style.cwTextOver]: cwTextLength > maxCwTextLength }]">{{ maxCwTextLength - cwTextLength }}</div>
@@ -80,7 +95,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<textarea ref="textareaEl" v-model="text" :class="[$style.text]" :disabled="posting || posted" :readonly="textAreaReadOnly" :placeholder="placeholder" data-testid="post-form-text" @keydown="onKeydown" @keyup="onKeyup" @paste="onPaste" @compositionupdate="onCompositionUpdate" @compositionend="onCompositionEnd"></textarea>
 		<div v-if="maxTextLength - textLength < 100" :class="['_acrylic', $style.textCount, { [$style.textOver]: textLength > maxTextLength }]">{{ maxTextLength - textLength }}</div>
 	</div>
-	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
+	<MkIntraProjectResult v-if="intraProjectCard != null" :class="$style.intraProjectResult" :result="intraProjectCard" removable @remove="intraProjectResult = null"/>
+	<MkIntraLevel v-if="intraLevel != null" :class="$style.intraProjectResult" :level="intraLevel" removable @remove="intraLevel = null"/>
+	<input v-show="withHashtags && editNote == null" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName"/>
 	<div v-if="uploader.items.value.length > 0" style="padding: 12px;">
 		<MkTip k="postFormUploader">
@@ -89,16 +106,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkUploaderItems :items="uploader.items.value" @showMenu="(item, ev) => showPerUploadItemMenu(item, ev)" @showMenuViaContextmenu="(item, ev) => showPerUploadItemMenuViaContextmenu(item, ev)"/>
 	</div>
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
-	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
+	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="editNote != null ? editNote.files ?? [] : files" :poll="editNote != null ? editNotePoll : poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
 	<footer ref="footerEl" :class="$style.footer">
 		<div :class="$style.footerLeft">
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
-			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
-			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
+			<template v-if="editNote == null">
+				<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
+				<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
+				<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
+			</template>
 			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
-			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
+			<button v-if="editNote == null" v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
 			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
 			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
 			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
@@ -158,6 +177,21 @@ import { checkDragDataType, getDragData } from '@/drag-and-drop.js';
 import { useUploader } from '@/composables/use-uploader.js';
 import { startTour } from '@/utility/tour.js';
 import { closeTip } from '@/tips.js';
+import XCalendarEvent from '@/components/MkPostForm.CalendarEvent.vue';
+import MkIntraProjectResult from '@/components/MkIntraProjectResult.vue';
+import MkIntraLevel from '@/components/MkIntraLevel.vue';
+import { toIntraProjectNote } from '@/utility/intra-project-result.js';
+import type { CalendarEventFormErrors, CalendarEventFormValue } from '@/utility/calendar-event-form.js';
+import {
+	calendarEventFormToParams,
+	calendarEventReasonToField,
+	getCalendarEventValidationReason,
+	validateCalendarEventForm,
+} from '@/utility/calendar-event-form.js';
+import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js';
+import { buildCalendarNoteParams, getCalendarNoteFormUnavailableReason, getCalendarNoteUnlinkableReason } from '@/utility/calendar-note.js';
+import { noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
+import { emitNoteUpdated } from '@/utility/note-edit.js';
 
 const $i = ensureSignin();
 
@@ -222,10 +256,34 @@ const textAreaReadOnly = ref(false);
 const justEndedComposition = ref(false);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const replyTargetNote: ShallowRef<PostFormProps['reply'] | null> = shallowRef(props.reply);
-const targetChannel = shallowRef(props.channel);
+const targetChannel = shallowRef(props.editNote != null ? props.editNote.channel : props.channel);
 
 const serverDraftId = ref<string | null>(null);
 const postFormActions = getPluginHandlers('post_form_action');
+
+//#region 42times: カレンダーのイベントの告知・紐づけ
+// 告知 (投稿しながらイベントを作る) と紐づけ (既存のイベント) は同時に使えないので、片方を選ぶともう片方を外す。
+// 下書き (ローカルの自動保存・サーバーの下書き・予約投稿) にはイベントの情報を保存しない
+/** 告知するイベントの入力。告知していないときは null */
+const calendarEventForm = ref<CalendarEventFormValue | null>(null);
+const calendarEventFormErrors = ref<CalendarEventFormErrors>({});
+/** 紐づけるイベント */
+const linkedCalendarEvent = shallowRef<Misskey.entities.CalendarEventLite | null>(props.initialCalendarEvent != null && !props.initialCalendarEvent.isCanceled ? props.initialCalendarEvent : null);
+/** イベントを扱えない理由 (ダイレクト・予約投稿)。あるときは欄を無効にし、notes/create にも送らない */
+const calendarUnavailableReason = computed(() => getCalendarNoteFormUnavailableReason({
+	visibility: visibility.value,
+	scheduledAt: scheduledAt.value,
+}));
+const hasCalendarEventState = computed(() => calendarEventForm.value != null || linkedCalendarEvent.value != null);
+//#endregion
+
+// 42times: 付ける課題の結果 (点数を共有)。下書きと予約投稿には保存しない
+const intraProjectResult = shallowRef<Misskey.entities.IntraProjectResult | null>(props.initialIntraProjectResult ?? null);
+// 付ける提出 (チームの ID)。null なら最後の提出
+const intraProjectTeamId = props.initialIntraProjectTeamId ?? null;
+const intraProjectCard = computed(() => intraProjectResult.value != null ? toIntraProjectNote(intraProjectResult.value, intraProjectTeamId) : null);
+// 42times: 付ける 42 intra のレベル。課題の結果と同じく、下書きと予約投稿には保存しない
+const intraLevel = ref<number | null>(props.initialIntraLevel ?? null);
 
 let textAutocomplete: Autocomplete | null = null;
 let cwAutocomplete: Autocomplete | null = null;
@@ -245,6 +303,9 @@ uploader.events.on('itemUploaded', ctx => {
 });
 
 const draftKey = computed((): string => {
+	// 42times: 編集の下書きはノートごとに持つ
+	if (props.editNote != null) return `edit:${props.editNote.id}`;
+
 	let key = targetChannel.value ? `channel:${targetChannel.value.id}` : '';
 
 	if (renoteTargetNote.value) {
@@ -279,6 +340,14 @@ const placeholder = computed((): string => {
 });
 
 const submitText = computed((): string => {
+	if (props.editNote != null) return i18n.ts.save;
+
+	// 42times: イベントを告知するときは、ボタンの文言で分かるようにする
+	// (予約投稿のときは calendarUnavailableReason が 'scheduled' になるので、ここには来ない)
+	if (calendarEventForm.value != null && calendarUnavailableReason.value == null) {
+		return i18n.ts._calendar.announceAndNote;
+	}
+
 	return scheduledAt.value != null
 		? i18n.ts.schedule
 		: renoteTargetNote.value
@@ -289,7 +358,7 @@ const submitText = computed((): string => {
 });
 
 const submitIcon = computed((): string => {
-	return posted.value ? 'ti ti-check' : scheduledAt.value != null ? 'ti ti-calendar-time' : replyTargetNote.value ? 'ti ti-arrow-back-up' : renoteTargetNote.value ? 'ti ti-quote' : 'ti ti-send';
+	return posted.value ? 'ti ti-check' : props.editNote != null ? 'ti ti-device-floppy' : scheduledAt.value != null ? 'ti ti-calendar-time' : replyTargetNote.value ? 'ti ti-arrow-back-up' : renoteTargetNote.value ? 'ti ti-quote' : 'ti ti-send';
 });
 
 const textLength = computed((): number => {
@@ -306,13 +375,70 @@ const cwTextLength = computed((): number => {
 
 const maxCwTextLength = 100;
 
+//#region 42times: ノートの編集
+// 本文・CW・公開範囲を notes/update で書き換える。書きかけの内容は、新規のノートと同じく端末の下書きに保存する。
+// 公開範囲は公開・ホーム・フォロワーの間だけ変えられる (ダイレクトのノートは変えられず、ほかのノートをダイレクトにもできない)
+/** 保存する本文。空欄は「無し」として送る */
+const editedText = computed(() => text.value.trim() === '' ? null : text.value);
+/** 保存する CW。オフのときは無し */
+const editedCw = computed(() => useCw.value ? cw.value : null);
+
+/** 保存する公開範囲。元のノートから変えていなければ送らない (送ると作成時の制限を掛け直すので) */
+const editedVisibility = computed((): 'public' | 'home' | 'followers' | undefined => {
+	const v = visibility.value;
+	if (props.editNote == null || v === props.editNote.visibility || v === 'specified') return undefined;
+	return v;
+});
+
+/** 本文・CW・公開範囲を元のノートから変えたか */
+const isEditChanged = computed((): boolean => props.editNote != null &&
+	(editedText.value !== props.editNote.text || editedCw.value !== (props.editNote.cw ?? null) || editedVisibility.value != null));
+
+const canSaveEdit = computed((): boolean => {
+	if (props.editNote == null) return false;
+	return isEditChanged.value && !posting.value && !posted.value &&
+		textLength.value <= maxTextLength.value &&
+		(
+			useCw.value ?
+				(
+					cw.value != null && cw.value.trim() !== '' &&
+					cwTextLength.value <= maxCwTextLength
+				) : true
+		);
+});
+
+/** 本文・CW・公開範囲を元のノートのものに戻す (下書きも消える) */
+function resetEdit(note: Misskey.entities.Note) {
+	text.value = note.text ?? '';
+	useCw.value = note.cw != null;
+	cw.value = note.cw ?? null;
+	visibility.value = note.visibility;
+}
+
+/** プレビューに出す元のノートの投票 (投票は編集できない) */
+const editNotePoll = computed((): PollEditorModelValue | undefined => {
+	const notePoll = props.editNote?.poll;
+	if (notePoll == null) return undefined;
+	return {
+		choices: notePoll.choices.map(x => x.text),
+		multiple: notePoll.multiple,
+		expiresAt: notePoll.expiresAt ? (new Date(notePoll.expiresAt)).getTime() : null,
+		expiredAfter: null,
+	};
+});
+//#endregion
+
 const canPost = computed((): boolean => {
+	if (props.editNote != null) return canSaveEdit.value;
+
 	return !props.mock && !posting.value && !posted.value && !uploader.uploading.value && (uploader.items.value.length === 0 || uploader.readyForUpload.value) &&
 		(
 			1 <= textLength.value ||
 			1 <= files.value.length ||
 			1 <= uploader.items.value.length ||
 			poll.value != null ||
+			intraProjectResult.value != null ||
+			intraLevel.value != null ||
 			renoteTargetNote.value != null ||
 			quoteId.value != null
 		) &&
@@ -427,6 +553,15 @@ if (prefer.s.keepCw && replyTargetNote.value && replyTargetNote.value.cw) {
 	cw.value = replyTargetNote.value.cw;
 }
 
+// 42times: 編集するノートの本文・CW・公開範囲を入れる
+if (props.editNote != null) {
+	text.value = props.editNote.text ?? '';
+	useCw.value = props.editNote.cw != null;
+	cw.value = props.editNote.cw ?? null;
+	visibility.value = props.editNote.visibility;
+	localOnly.value = props.editNote.localOnly ?? false;
+}
+
 function watchForDraft() {
 	watch(text, () => saveDraft());
 	watch(useCw, () => saveDraft());
@@ -441,7 +576,8 @@ function watchForDraft() {
 }
 
 function checkMissingMention() {
-	if (visibility.value === 'specified') {
+	// 42times: 編集では宛先を変えられないので確かめない
+	if (visibility.value === 'specified' && props.editNote == null) {
 		const ast = mfm.parse(text.value);
 
 		for (const x of extractMentions(ast)) {
@@ -535,10 +671,13 @@ function setVisibility() {
 		isSilenced: $i.isSilenced,
 		anchorElement: visibilityButton.value,
 		...(replyTargetNote.value ? { isReplyVisibilitySpecified: replyTargetNote.value.visibility === 'specified' } : {}),
+		// 42times: 編集ではダイレクトにできない
+		hideSpecified: props.editNote != null,
 	}, {
 		changeVisibility: v => {
 			visibility.value = v;
-			if (prefer.s.rememberNoteVisibility) {
+			// 42times: 編集で選んだ公開範囲は、次に投稿するときの公開範囲として覚えない
+			if (prefer.s.rememberNoteVisibility && props.editNote == null) {
 				store.set('visibility', visibility.value);
 			}
 		},
@@ -609,6 +748,36 @@ async function toggleReactionAcceptance() {
 
 //#region その他の設定メニューpopup
 function showOtherSettings() {
+	// 42times: 編集のときはサーバーの下書き・予約投稿・リアクションの受け入れを出さない。リセットは元のノートに戻す
+	if (props.editNote != null) {
+		const note = props.editNote;
+		os.popupMenu([{
+			type: 'component',
+			component: XTextCounter,
+			props: {
+				textLength: textLength,
+			},
+		}, { type: 'divider' }, {
+			type: 'switch',
+			icon: 'ti ti-eye',
+			text: i18n.ts.preview,
+			ref: showPreview,
+		}, {
+			icon: 'ti ti-trash',
+			text: i18n.ts.reset,
+			danger: true,
+			action: async () => {
+				const { canceled } = await os.confirm({
+					type: 'question',
+					text: i18n.ts.resetAreYouSure,
+				});
+				if (canceled) return;
+				resetEdit(note);
+			},
+		}] satisfies MenuItem[], otherSettingsButton.value);
+		return;
+	}
+
 	let reactionAcceptanceIcon = 'ti ti-icons';
 	let reactionAcceptanceCaption = '';
 
@@ -659,6 +828,22 @@ function showOtherSettings() {
 					type: 'error',
 					text: i18n.ts._drafts.cannotCreateDraft,
 				});
+			}
+			// 42times: 下書きにはイベントの告知・紐づけを保存しない
+			if (hasCalendarEventState.value) {
+				const { canceled } = await os.confirm({
+					type: 'warning',
+					text: i18n.ts._calendar.draftWithoutEvent,
+				});
+				if (canceled) return;
+			}
+			// 42times: 下書きには課題の結果とレベルを保存しない
+			if (intraProjectResult.value != null || intraLevel.value != null) {
+				const { canceled } = await os.confirm({
+					type: 'warning',
+					text: i18n.ts._intraProjectResult.notSavedInDraft,
+				});
+				if (canceled) return;
 			}
 			saveServerDraft();
 		},
@@ -719,7 +904,92 @@ function clear() {
 	poll.value = null;
 	quoteId.value = null;
 	scheduledAt.value = null;
+	clearCalendarEvent();
+	intraProjectResult.value = null;
+	intraLevel.value = null;
 	uploader.reset();
+}
+
+/**
+ * 42times: 「#」の欄で付けたハッシュタグを、投稿した後に外す。
+ * upstream では欄の中身とオン・オフが端末に保存され、次の投稿にも付いたままになる
+ */
+function resetHashtags() {
+	withHashtags.value = false;
+	hashtags.value = '';
+}
+
+//#region 42times: カレンダーのイベントの告知・紐づけ
+function clearCalendarEvent() {
+	calendarEventForm.value = null;
+	calendarEventFormErrors.value = {};
+	linkedCalendarEvent.value = null;
+}
+
+function stopAnnouncingCalendarEvent() {
+	calendarEventForm.value = null;
+	calendarEventFormErrors.value = {};
+}
+
+// ノートの公開範囲を変えたとき、イベントの公開範囲をノートに合わせたままなら一緒に変える
+watch(visibility, (next, prev) => {
+	if (calendarEventForm.value == null) return;
+	if (calendarEventForm.value.visibility !== noteVisibilityToCalendarVisibility(prev)) return;
+	calendarEventForm.value = { ...calendarEventForm.value, visibility: noteVisibilityToCalendarVisibility(next) };
+});
+
+/**
+ * notes/create のカレンダーに関するエラーを、告知の欄やダイアログに出す。扱ったら true
+ * @param sent notes/create にイベントのパラメータを送ったか
+ */
+function handleCalendarPostError(err: unknown, sent: boolean): boolean {
+	if (!sent) return false;
+
+	const reason = getCalendarEventValidationReason(err);
+	if (reason != null) {
+		const field = calendarEventReasonToField(reason);
+		if (calendarEventForm.value != null && field != null) {
+			calendarEventFormErrors.value = { ...calendarEventFormErrors.value, [field]: reason };
+			return true;
+		}
+	}
+
+	const code = (err as Partial<Misskey.api.APIError> | null)?.code;
+	switch (code) {
+		case 'INVALID_CALENDAR_EVENT':
+		case 'NO_SUCH_CALENDAR_EVENT':
+		case 'CALENDAR_EVENT_CANCELED':
+		case 'CANNOT_LINK_NOTE_TO_CALENDAR_EVENT':
+		case 'CALENDAR_EVENT_PARAMS_CONFLICT':
+		case 'RATE_LIMIT_EXCEEDED': {
+			os.alert({ type: 'error', ...getCalendarApiErrorMessage(err) });
+			// 紐づけたイベントが消された・中止されたときは、紐づけを外して投稿し直せるようにする
+			if (code === 'NO_SUCH_CALENDAR_EVENT' || code === 'CALENDAR_EVENT_CANCELED') linkedCalendarEvent.value = null;
+			return true;
+		}
+		default:
+			return false;
+	}
+}
+//#endregion
+
+/** notes/create の課題の結果に関するエラーをダイアログに出す。扱ったら true */
+function handleIntraProjectResultPostError(err: unknown): boolean {
+	switch ((err as Partial<Misskey.api.APIError> | null)?.code) {
+		case 'NO_SUCH_INTRA_PROJECT_RESULT':
+			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.noSuchResult });
+			intraProjectResult.value = null;
+			return true;
+		case 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE':
+			os.alert({ type: 'error', text: i18n.ts._intraProjectResult._errors.cannotAttachToPureRenote });
+			return true;
+		case 'INTRA_LEVEL_NOT_REACHED':
+			os.alert({ type: 'error', text: i18n.ts._intraLevel._errors.notReached });
+			intraLevel.value = null;
+			return true;
+		default:
+			return false;
+	}
 }
 
 function onKeydown(ev: KeyboardEvent) {
@@ -749,6 +1019,8 @@ async function onPaste(ev: ClipboardEvent) {
 	if (props.mock) return;
 	if (ev.clipboardData == null) return;
 	if (textareaEl.value == null) return;
+	// 42times: 編集では添付も引用も足せないので、そのまま貼り付ける
+	if (props.editNote != null) return;
 
 	let pastedFiles: File[] = [];
 	for (const { item, i } of Array.from(ev.clipboardData.items, (data, x) => ({ item: data, i: x }))) {
@@ -806,6 +1078,7 @@ async function onPaste(ev: ClipboardEvent) {
 }
 
 function onDragover(ev: DragEvent) {
+	if (props.editNote != null) return;
 	if (ev.dataTransfer == null) return;
 	if (ev.dataTransfer.items[0] == null) return;
 
@@ -842,6 +1115,7 @@ function onDragleave() {
 
 function onDrop(ev: DragEvent): void {
 	draghover.value = false;
+	if (props.editNote != null) return;
 
 	// ファイルだったら
 	if (ev.dataTransfer && ev.dataTransfer.files.length > 0) {
@@ -882,6 +1156,12 @@ type StoredDrafts = {
 
 function saveDraft() {
 	if (props.instant || props.mock) return;
+
+	// 42times: 編集で元のノートと同じに戻したら、下書きは要らない
+	if (props.editNote != null && !isEditChanged.value) {
+		deleteDraft();
+		return;
+	}
 
 	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
 
@@ -966,6 +1246,11 @@ async function post(ev?: PointerEvent) {
 		}
 	}
 
+	if (props.editNote != null) {
+		await saveEdit(props.editNote);
+		return;
+	}
+
 	if (scheduledAt.value != null) {
 		if (uploader.items.value.some(x => x.uploaded == null)) {
 			await uploadFiles();
@@ -978,10 +1263,20 @@ async function post(ev?: PointerEvent) {
 
 		await postAsScheduled();
 		clear();
+		resetHashtags();
 		return;
 	}
 
 	if (props.mock) return;
+
+	// 42times: 告知するイベントの入力は、ほかの確認やアップロードより先に確かめる
+	if (calendarEventForm.value != null && calendarUnavailableReason.value == null) {
+		const errors = validateCalendarEventForm(calendarEventForm.value, { withDescription: false });
+		if (Object.keys(errors).length > 0) {
+			calendarEventFormErrors.value = errors;
+			return;
+		}
+	}
 
 	if (visibility.value === 'public' && (
 		(useCw.value && cw.value != null && cw.value.trim() !== '' && isAnnoying(cw.value)) || // CWが迷惑になる場合
@@ -1019,7 +1314,17 @@ async function post(ev?: PointerEvent) {
 		}
 	}
 
+	// 42times: イベントの告知・紐づけ。ダイレクトのときなどは送らない (告知の欄は注意書きを出して無効にしている)
+	const calendarParams = calendarUnavailableReason.value == null ? buildCalendarNoteParams({
+		announce: calendarEventForm.value != null ? calendarEventFormToParams(calendarEventForm.value, { withDescription: false }) : null,
+		linkedEventId: linkedCalendarEvent.value?.id ?? null,
+	}) : {};
+	const sendsCalendarParams = Object.keys(calendarParams).length > 0;
+
 	let postData = {
+		...calendarParams,
+		...(intraProjectResult.value != null ? { intraProjectResultId: intraProjectResult.value.id, intraProjectTeamId: intraProjectTeamId ?? undefined } : {}),
+		...(intraLevel.value != null ? { intraLevel: intraLevel.value } : {}),
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
 		replyId: replyTargetNote.value ? replyTargetNote.value.id : undefined,
@@ -1027,7 +1332,8 @@ async function post(ev?: PointerEvent) {
 		channelId: targetChannel.value ? targetChannel.value.id : undefined,
 		poll: poll.value,
 		cw: useCw.value ? cw.value ?? '' : null,
-		localOnly: visibility.value === 'specified' ? false : localOnly.value,
+		// 学内SNSモードでは連合なしのボタンを出さないので、以前の設定が残っていても送らない
+		localOnly: visibility.value === 'specified' || instance.intraLoginEnabled ? false : localOnly.value,
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
@@ -1046,6 +1352,15 @@ async function post(ev?: PointerEvent) {
 			}
 			postData.text = postTextLines.join('\n');
 		}
+	}
+
+	// 42times: 本文などの無いリノートは紐づけられない (API でも断られるが、先に分かるので送らない)
+	if (sendsCalendarParams && getCalendarNoteUnlinkableReason(postData) === 'pureRenote') {
+		os.alert({
+			type: 'error',
+			text: i18n.ts._calendar._errors.cannotLinkPureRenote,
+		});
+		return;
 	}
 
 	// plugin
@@ -1078,6 +1393,7 @@ async function post(ev?: PointerEvent) {
 
 	posting.value = true;
 	misskeyApi('notes/create', postData, token).then((res) => {
+		resetHashtags();
 		if (props.freezeAfterPosted) {
 			posted.value = true;
 		} else {
@@ -1145,11 +1461,39 @@ async function post(ev?: PointerEvent) {
 		});
 	}).catch(err => {
 		posting.value = false;
+		if (handleCalendarPostError(err, sendsCalendarParams)) return;
+		if (handleIntraProjectResultPostError(err)) return;
 		os.alert({
 			type: 'error',
 			text: err.message + '\n' + (err as any).id,
 		});
 	});
+}
+
+/** 42times: 編集した本文と CW を保存し、表示中のノートにも反映する */
+async function saveEdit(note: Misskey.entities.Note) {
+	if (!canSaveEdit.value) return;
+
+	posting.value = true;
+	try {
+		const updated = await misskeyApi('notes/update', {
+			noteId: note.id,
+			text: editedText.value,
+			cw: editedCw.value,
+			...(editedVisibility.value != null ? { visibility: editedVisibility.value } : {}),
+		});
+		emitNoteUpdated(updated);
+		deleteDraft();
+		posted.value = true;
+		emit('posted');
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			text: (err as Misskey.api.APIError).code === 'EMPTY_NOTE' ? i18n.ts.noteEditEmpty : (err as Error).message,
+		});
+	} finally {
+		posting.value = false;
+	}
 }
 
 async function postAsScheduled() {
@@ -1301,6 +1645,8 @@ async function openAccountMenu(ev: PointerEvent) {
 				});
 
 				serverDraftId.value = draft.id;
+				// 42times: 下書きにはイベントの情報が無いので、復元したらフォームのイベントの告知・紐づけも外す
+				clearCalendarEvent();
 			},
 			cancel: () => {
 
@@ -1357,6 +1703,17 @@ async function schedule() {
 	});
 	if (canceled) return;
 	if (result.getTime() <= Date.now()) return;
+
+	// 42times: 予約投稿には課題の結果とレベルを付けられないので、外してよいか確かめる
+	if (intraProjectResult.value != null || intraLevel.value != null) {
+		const confirm = await os.confirm({
+			type: 'warning',
+			text: i18n.ts._intraProjectResult.notSavedInDraft,
+		});
+		if (confirm.canceled) return;
+		intraProjectResult.value = null;
+		intraLevel.value = null;
+	}
 
 	scheduledAt.value = result.getTime();
 }
@@ -1419,7 +1776,7 @@ onMounted(() => {
 
 	nextTick(() => {
 		// 書きかけの投稿を復元
-		if (!props.instant && !props.mention && !props.specified && !props.mock) {
+		if (!props.instant && !props.mention && !props.specified && !props.mock && props.editNote == null) {
 			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
 			if (draft != null) {
 				text.value = draft.data.text;
@@ -1466,6 +1823,29 @@ onMounted(() => {
 			}
 			quoteId.value = renoteTargetNote.value ? renoteTargetNote.value.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
+			// 42times: 削除して編集するとき、元のノートのイベントに紐づけ直す (告知のノートを消してもイベントは残る)
+			if (init.calendarEvent != null && !init.calendarEvent.isCanceled && linkedCalendarEvent.value == null) {
+				linkedCalendarEvent.value = init.calendarEvent;
+			}
+		}
+
+		// 42times: 書きかけの編集を復元する。下書きを保存した後にノートが編集されていたら (ほかの端末など)、
+		// 古い本文で上書きしないよう下書きを捨てる
+		if (props.editNote != null && !props.mock) {
+			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
+			if (draft != null) {
+				const noteUpdatedAt = new Date(props.editNote.updatedAt ?? props.editNote.createdAt).getTime();
+				if (new Date(draft.updatedAt).getTime() >= noteUpdatedAt) {
+					text.value = draft.data.text;
+					useCw.value = draft.data.useCw;
+					cw.value = draft.data.cw;
+					if (props.editNote.visibility !== 'specified' && ['public', 'home', 'followers'].includes(draft.data.visibility)) {
+						visibility.value = draft.data.visibility;
+					}
+				} else {
+					deleteDraft();
+				}
+			}
 		}
 
 		nextTick(() => watchForDraft());
@@ -1726,6 +2106,10 @@ html[data-color-scheme=light] .preview {
 	}
 }
 
+.intraProjectResult {
+	margin: 0 24px 8px;
+}
+
 .cwOuter {
 	width: 100%;
 	position: relative;
@@ -1835,6 +2219,11 @@ html[data-color-scheme=light] .preview {
 	&.footerButtonActive {
 		color: var(--MI_THEME-accent);
 	}
+
+	&:disabled {
+		opacity: 0.5;
+		background: none;
+	}
 }
 
 .previewButtonActive {
@@ -1873,6 +2262,10 @@ html[data-color-scheme=light] .preview {
 
 	.text {
 		min-height: 80px;
+	}
+
+	.intraProjectResult {
+		margin: 0 16px 8px;
 	}
 
 	.footer {

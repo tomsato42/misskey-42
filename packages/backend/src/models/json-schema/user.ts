@@ -272,6 +272,34 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: true, optional: false,
 			example: '2018-03-12',
 		},
+		intra: {
+			type: 'object',
+			nullable: true, optional: false,
+			description: '42 intra の情報。intra と連携していないユーザーと、未ログインでの取得では null',
+			properties: {
+				login: {
+					type: 'string',
+					nullable: false, optional: false,
+					example: 'tomoki',
+				},
+				poolYearMonth: {
+					type: 'string',
+					nullable: true, optional: false,
+					description: 'ピシンの年月 (YYMM)',
+					example: '2307',
+				},
+				blackholedAt: {
+					type: 'string',
+					format: 'date-time',
+					nullable: true, optional: false,
+				},
+				paceDeadlineAt: {
+					type: 'string',
+					format: 'date-time',
+					nullable: true, optional: false,
+				},
+			},
+		},
 		lang: {
 			type: 'string',
 			nullable: true, optional: false,
@@ -495,6 +523,19 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		pairInvitationsEnabled: {
+			type: 'boolean',
+			nullable: false, optional: false,
+			description: 'ペア募集の招待を受け取るか (42times)',
+		},
+		followApprovalLocalSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
+		followApprovalRemoteSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,
@@ -621,6 +662,21 @@ export const packedMeDetailedOnlySchema = {
 				login: { optional: true, ...notificationRecieveConfig },
 				createToken: { optional: true, ...notificationRecieveConfig },
 				exportCompleted: { optional: true, ...notificationRecieveConfig },
+				// 42times: カレンダーの通知は calendarNotificationSettings で切り替えるので、i/update では設定できない
+				calendarEventReminder: { optional: true, ...notificationRecieveConfig },
+				calendarEventUpdated: { optional: true, ...notificationRecieveConfig },
+				calendarEventInvited: { optional: true, ...notificationRecieveConfig },
+				pairJoinRequested: { optional: true, ...notificationRecieveConfig },
+				pairAccepted: { optional: true, ...notificationRecieveConfig },
+				pairClosed: { optional: true, ...notificationRecieveConfig },
+				pairInvited: { optional: true, ...notificationRecieveConfig },
+				pairApplicationCancelled: { optional: true, ...notificationRecieveConfig },
+				intraProjectFinished: { optional: true, ...notificationRecieveConfig },
+				intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
+				intraLevelUp: { optional: true, ...notificationRecieveConfig },
+				// 42times: 登録したときに一度だけ届くので、i/update では設定できない
+				acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
+				acquaintanceJoined: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

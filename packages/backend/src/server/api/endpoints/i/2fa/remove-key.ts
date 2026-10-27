@@ -12,6 +12,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 
 export const meta = {
 	requireCredential: true,
@@ -19,6 +20,12 @@ export const meta = {
 	secure: true,
 
 	errors: {
+		intraReauthRequired: {
+			message: 'Verify yourself by signing in to 42 intra again.',
+			code: 'INTRA_REAUTH_REQUIRED',
+			id: '45d3560c-49ef-48e3-b35b-925a97008798',
+		},
+
 		incorrectPassword: {
 			message: 'Incorrect password.',
 			code: 'INCORRECT_PASSWORD',
@@ -34,7 +41,7 @@ export const paramDef = {
 		token: { type: 'string', nullable: true },
 		credentialId: { type: 'string' },
 	},
-	required: ['password', 'credentialId'],
+	required: ['credentialId'],
 } as const;
 
 @Injectable()
@@ -49,6 +56,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private userEntityService: UserEntityService,
 		private userAuthService: UserAuthService,
 		private globalEventService: GlobalEventService,
+		private intraAuthService: IntraAuthService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const token = ps.token;
@@ -66,9 +74,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 			}
 
-			const passwordMatched = await bcrypt.compare(ps.password, profile.password ?? '');
-			if (!passwordMatched) {
-				throw new ApiError(meta.errors.incorrectPassword);
+			// 42 intra で作ったアカウントはパスワードを持たないので、パスワード (と TOTP の登録) の代わりに 42 での本人確認を求める
+			const usesIntraReauth = this.intraAuthService.usesIntraReauth(profile);
+			if (usesIntraReauth) {
+				if (!await this.intraAuthService.hasRecentReauth(me.id)) {
+					throw new ApiError(meta.errors.intraReauthRequired);
+				}
+			} else {
+				const passwordMatched = await bcrypt.compare(ps.password ?? '', profile.password ?? '');
+				if (!passwordMatched) {
+					throw new ApiError(meta.errors.incorrectPassword);
+				}
 			}
 
 			// Make sure we only delete the user's own creds

@@ -16,6 +16,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { store } from '@/store.js';
 import { miLocalStorage } from '@/local-storage.js';
+import { rememberTranslation, translationTargetLang } from '@/utility/cached-translation.js';
 import { getUserMenu } from '@/utility/get-user-menu.js';
 import { clipsCache, favoritedChannelsCache } from '@/cache.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
@@ -344,12 +345,19 @@ export function getNoteMenu(props: {
 			}
 		} else if ($i?.policies.canUseTranslator && instance.translatorAvailable) {
 			props.translating.value = true;
-			const res = await misskeyApi('notes/translate', {
-				noteId: appearNote.id,
-				targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
-			});
-			props.translating.value = false;
-			props.translation.value = res;
+			try {
+				const res = await misskeyApi('notes/translate', {
+					noteId: appearNote.id,
+					targetLang: translationTargetLang(),
+				});
+				props.translation.value = res;
+				if (res != null) rememberTranslation(appearNote, res);
+			} catch (err) {
+				// 失敗したら「翻訳中」のまま止まらないようにし、理由を出す (Claude で訳すときは混んでいると失敗する)
+				os.alert({ type: 'error', text: err instanceof Error ? err.message : (err as { message?: string }).message ?? i18n.ts.somethingHappened });
+			} finally {
+				props.translating.value = false;
+			}
 		}
 	}
 
@@ -516,6 +524,12 @@ export function getNoteMenu(props: {
 		if (appearNote.userId === $i.id || $i.isModerator || $i.isAdmin) {
 			menuItems.push({ type: 'divider' });
 			if (appearNote.userId === $i.id) {
+				// 42times: 本文と CW はそのまま編集できる (削除して編集と同じく投稿フォームで編集する)
+				menuItems.push({
+					icon: 'ti ti-pencil',
+					text: i18n.ts.edit,
+					action: () => os.post({ editNote: appearNote }),
+				});
 				menuItems.push({
 					icon: 'ti ti-edit',
 					text: i18n.ts.deleteAndEdit,
@@ -690,7 +704,7 @@ export function getRenoteMenu(props: {
 				}
 
 				const configuredVisibility = prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility;
-				const localOnly = prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly;
+				const localOnly = instance.intraLoginEnabled ? false : prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly;
 
 				let visibility = appearNote.visibility;
 				visibility = smallerVisibility(visibility, configuredVisibility);

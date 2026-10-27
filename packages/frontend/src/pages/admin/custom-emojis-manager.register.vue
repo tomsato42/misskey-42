@@ -20,6 +20,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts._customEmojisManager._local._register.directoryToCategoryLabel }}</template>
 					<template #caption>{{ i18n.ts._customEmojisManager._local._register.directoryToCategoryCaption }}</template>
 				</MkSwitch>
+
+				<MkSwitch v-if="taggingAvailable" v-model="suggestOnUpload">
+					<template #label>{{ i18n.ts._emojiTagging.suggestOnUpload }}</template>
+					<template #caption>{{ i18n.ts._emojiTagging.suggestOnUploadCaption }}</template>
+				</MkSwitch>
 			</div>
 		</MkFolder>
 
@@ -35,6 +40,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_buttonsCenter">
 			<MkButton primary rounded @click="onFileSelectClicked">{{ i18n.ts.upload }}</MkButton>
 			<MkButton primary rounded @click="onDriveSelectClicked">{{ i18n.ts.fromDrive }}</MkButton>
+			<MkButton primary rounded :disabled="pasting" @click="onPasteClicked">{{ i18n.ts._customEmojisManager._local._register.pasteToRegister }}</MkButton>
+		</div>
+
+		<div v-if="suggestingCount > 0" :class="$style.suggesting">
+			<MkLoading :inline="true" :em="true"/>{{ i18n.tsx._emojiTagging.suggestingCount({ count: suggestingCount }) }}
 		</div>
 
 		<div v-if="gridItems.length > 0" :class="$style.gridArea">
@@ -60,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script setup lang="ts">
 import * as Misskey from 'misskey-js';
 import { computed, onMounted, ref, useCssModule } from 'vue';
-import type { RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
+import type { PastedEmoji, RequestLogItem } from '@/pages/admin/custom-emojis-manager.impl.js';
 import type { GridCellValidationEvent, GridCellValueChangeEvent, GridEvent } from '@/components/grid/grid-event.js';
 import type { DroppedFile } from '@/utility/file-drop.js';
 import type { GridSetting } from '@/components/grid/grid.js';
@@ -69,6 +79,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import {
 	emptyStrToEmptyArray,
 	emptyStrToNull,
+	mapWithConcurrency,
+	parsePastedEmojis,
 	roleIdsParser,
 } from '@/pages/admin/custom-emojis-manager.impl.js';
 import MkGrid from '@/components/grid/MkGrid.vue';
@@ -84,10 +96,21 @@ import { extractDroppedItems, flattenDroppedFiles } from '@/utility/file-drop.js
 import XRegisterLogs from '@/pages/admin/custom-emojis-manager.logs.vue';
 import { copyGridDataToClipboard } from '@/components/grid/grid-utils.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
+import { customEmojisMap } from '@/custom-emojis.js';
+import {
+	EMOJI_TAGGING_CONCURRENCY,
+	emojiTaggingErrorMessage,
+	isEmojiTaggingAvailable,
+	parseTags,
+	replaceSuggestedTags,
+	suggestEmojiTags,
+} from '@/utility/emoji-tagging.js';
 
 import { prefer } from '@/preferences.js';
 
-const MAXIMUM_EMOJI_REGISTER_COUNT = 100;
+const MAXIMUM_EMOJI_REGISTER_COUNT = 256;
+// サーバーの負荷を避けるため、登録のリクエストは同時にこの件数までにする
+const EMOJI_REGISTER_CONCURRENCY = 4;
 
 type FolderItem = {
 	id?: string;
@@ -106,6 +129,8 @@ type GridItem = {
 	localOnly: boolean;
 	roleIdsThatCanBeUsedThisEmojiAsReaction: { id: string, name: string }[];
 	type: string | null;
+	/** Claude が提案したタグ。再提案のとき、これだけを差し替えて、人が書き足したタグは残す */
+	suggestedTags: string[];
 };
 
 function setupGrid(): GridSetting {
@@ -135,6 +160,12 @@ function setupGrid(): GridSetting {
 			// 行のコンテキストメニュー設定
 			contextMenuFactory: (row, context) => {
 				return [
+					...(taggingAvailable.value ? [{
+						type: 'button' as const,
+						text: i18n.ts._emojiTagging.resuggestRows,
+						icon: 'ti ti-sparkles',
+						action: () => suggestForItems(context.rangedRows.map(it => gridItems.value[it.index]).filter(it => it != null), true),
+					}] : []),
 					{
 						type: 'button',
 						text: i18n.ts._customEmojisManager._gridCommon.copySelectionRows,
@@ -206,6 +237,12 @@ function setupGrid(): GridSetting {
 			// セルのコンテキストメニュー設定
 			contextMenuFactory: (col, row, value, context) => {
 				return [
+					...(taggingAvailable.value ? [{
+						type: 'button' as const,
+						text: i18n.ts._emojiTagging.resuggestRows,
+						icon: 'ti ti-sparkles',
+						action: () => suggestForItems([...new Set(context.rangedCells.map(it => gridItems.value[it.row.index]))].filter(it => it != null), true),
+					}] : []),
 					{
 						type: 'button',
 						text: i18n.ts._customEmojisManager._gridCommon.copySelectionRanges,
@@ -235,7 +272,12 @@ const {
 });
 const directoryToCategory = ref<boolean>(false);
 const registerButtonDisabled = ref<boolean>(false);
+// 貼り付けて登録している間は、同じ名前を並行して送らないようにボタンを押せなくする
+const pasting = ref<boolean>(false);
 const requestLogs = ref<RequestLogItem[]>([]);
+const taggingAvailable = ref(false);
+const suggestOnUpload = ref(true);
+const suggestingCount = ref(0);
 const isDragOver = ref<boolean>(false);
 
 async function onRegistryClicked() {
@@ -248,30 +290,32 @@ async function onRegistryClicked() {
 		return;
 	}
 
-	const items = gridItems.value;
-	const upload = () => {
-		return items.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT)
-			.map(item =>
-				misskeyApi(
-					'admin/emoji/add', {
-						name: item.name,
-						category: emptyStrToNull(item.category),
-						aliases: emptyStrToEmptyArray(item.aliases),
-						license: emptyStrToNull(item.license),
-						isSensitive: item.isSensitive,
-						localOnly: item.localOnly,
-						roleIdsThatCanBeUsedThisEmojiAsReaction: item.roleIdsThatCanBeUsedThisEmojiAsReaction.map(it => it.id),
-						fileId: item.fileId!,
-					})
-					.then(() => ({ item, success: true, err: undefined }))
-					.catch(err => ({ item, success: false, err })),
-			);
-	};
+	const items = gridItems.value.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT);
+	const result = await os.promiseDialog(mapWithConcurrency(items, EMOJI_REGISTER_CONCURRENCY, item =>
+		misskeyApi(
+			'admin/emoji/add', {
+				name: item.name,
+				category: emptyStrToNull(item.category),
+				aliases: emptyStrToEmptyArray(item.aliases),
+				license: emptyStrToNull(item.license),
+				isSensitive: item.isSensitive,
+				localOnly: item.localOnly,
+				roleIdsThatCanBeUsedThisEmojiAsReaction: item.roleIdsThatCanBeUsedThisEmojiAsReaction.map(it => it.id),
+				fileId: item.fileId!,
+			})
+			.then(() => ({ item, success: true, err: undefined }))
+			.catch(err => ({ item, success: false, err })),
+	));
 
-	const result = await os.promiseDialog(Promise.all(upload()));
-	const failedItems = result.filter(it => !it.success);
+	await showRegisterResult(result);
 
-	if (failedItems.length > 0) {
+	// 登録に成功したものは一覧から除く
+	const successItems = result.filter(it => it.success).map(it => it.item);
+	gridItems.value = gridItems.value.filter(it => !successItems.includes(it));
+}
+
+async function showRegisterResult(result: { item: { url: string, name: string }, success: boolean, err: unknown }[]) {
+	if (result.some(it => !it.success)) {
 		await os.alert({
 			type: 'error',
 			title: i18n.ts.somethingHappened,
@@ -283,12 +327,88 @@ async function onRegistryClicked() {
 		failed: !it.success,
 		url: it.item.url,
 		name: it.item.name,
-		error: it.err ? JSON.stringify(it.err) : undefined,
+		error: it.err == null ? undefined : typeof it.err === 'string' ? it.err : JSON.stringify(it.err),
 	}));
+}
 
-	// 登録に成功したものは一覧から除く
-	const successItems = result.filter(it => it.success).map(it => it.item);
-	gridItems.value = gridItems.value.filter(it => !successItems.includes(it));
+/**
+ * クリップボードを直接読み、読めない (許可されない・非対応) か絵文字が見つからなければ、貼り付ける欄を出す
+ */
+async function readPastedText(): Promise<string | null> {
+	try {
+		const text = await navigator.clipboard.readText();
+		if (parsePastedEmojis(text).length > 0) return text;
+	} catch (err) {
+		console.warn(err);
+	}
+
+	const { canceled, result } = await os.form(i18n.ts._customEmojisManager._local._register.pasteToRegister, {
+		text: {
+			type: 'string',
+			label: i18n.ts._customEmojisManager._local._register.pasteDialogLabel,
+			multiline: true,
+			required: true,
+		},
+	});
+	if (canceled) return null;
+	return result.text;
+}
+
+// ほかのサーバーでコピーした絵文字を、一覧に足さずにそのまま登録する (画像はサーバーが取り込み、誰のドライブにも入れない)
+async function onPasteClicked() {
+	pasting.value = true;
+	try {
+		await pasteAndRegister();
+	} finally {
+		pasting.value = false;
+	}
+}
+
+async function pasteAndRegister() {
+	const text = await readPastedText();
+	if (text == null) return;
+
+	const emojis = parsePastedEmojis(text);
+	if (emojis.length === 0) {
+		await os.alert({
+			type: 'warning',
+			text: i18n.ts._customEmojisManager._local._register.noPastedEmojis,
+		});
+		return;
+	}
+
+	const targets = emojis.slice(0, MAXIMUM_EMOJI_REGISTER_COUNT);
+	const dialogSelection = await os.confirm({
+		type: 'info',
+		text: i18n.tsx._customEmojisManager._local._register.confirmRegisterPastedEmojisDescription({
+			total: emojis.length,
+			count: targets.length,
+			max: MAXIMUM_EMOJI_REGISTER_COUNT,
+		}),
+	});
+	if (dialogSelection.canceled) return;
+
+	const result = await os.promiseDialog(mapWithConcurrency(targets, EMOJI_REGISTER_CONCURRENCY, registerPastedEmoji));
+	await showRegisterResult(result);
+}
+
+async function registerPastedEmoji(item: PastedEmoji) {
+	// 同じ名前の絵文字があればサーバーに送らない (画像を取り込む手間を省く)
+	if (customEmojisMap.has(item.name)) {
+		return { item, success: false, err: i18n.ts._customEmojisManager._local._register.pastedEmojiNameAlreadyExists };
+	}
+
+	return misskeyApi('admin/emoji/add-from-url', {
+		url: item.url,
+		name: item.name,
+		category: item.category,
+		aliases: item.aliases,
+		license: item.license,
+		isSensitive: item.isSensitive,
+		localOnly: item.localOnly,
+	})
+		.then(() => ({ item, success: true, err: undefined }))
+		.catch(err => ({ item, success: false, err }));
 }
 
 async function onClearClicked() {
@@ -310,14 +430,57 @@ async function onFileSelectClicked() {
 		// nameConverter: (file) => file.name.replace(/\.[a-zA-Z0-9]+$/, ''),
 	});
 
-	gridItems.value.push(...driveFiles.map(fromDriveFile));
+	addDriveFiles(driveFiles);
 }
 
 async function onDriveSelectClicked() {
 	const driveFiles = await chooseDriveFile({
 		multiple: true,
 	});
-	gridItems.value.push(...driveFiles.map(fromDriveFile));
+	addDriveFiles(driveFiles);
+}
+
+function addDriveFiles(driveFiles: Misskey.entities.DriveFile[]) {
+	const items = driveFiles.map(fromDriveFile);
+	gridItems.value.push(...items);
+	if (taggingAvailable.value && suggestOnUpload.value) {
+		suggestForItems(items, false);
+	}
+}
+
+/**
+ * Claude にタグとカテゴリを提案させ、表に入れる。カテゴリは空のときだけ埋める
+ * @param resuggest 再提案。前の提案を除いて別の語を出させる
+ */
+async function suggestForItems(targets: GridItem[], resuggest: boolean) {
+	// push した後の要素はリアクティブなプロキシなので、一覧から取り直して書き換える
+	const items = targets.map(target => gridItems.value.find(it => it.fileId === target.fileId)).filter(it => it != null);
+	suggestingCount.value += items.length;
+	let failure: unknown = null;
+
+	await mapWithConcurrency(items, EMOJI_TAGGING_CONCURRENCY, async item => {
+		try {
+			const cell = parseTags(item.aliases);
+			const result = await suggestEmojiTags({
+				fileId: item.fileId,
+				name: item.name,
+				category: item.category === '' ? null : item.category,
+				currentTags: cell.filter(it => !item.suggestedTags.includes(it)),
+				excludedTags: resuggest ? item.suggestedTags : [],
+			});
+			item.aliases = replaceSuggestedTags(cell, item.suggestedTags, result.tags).join(' ');
+			item.suggestedTags = result.tags;
+			if (item.category === '' && result.category != null) item.category = result.category.name;
+		} catch (err) {
+			failure = err;
+		} finally {
+			suggestingCount.value--;
+		}
+	});
+
+	if (failure != null) {
+		os.toast(emojiTaggingErrorMessage(failure));
+	}
 }
 
 function onGridEvent(event: GridEvent) {
@@ -355,6 +518,7 @@ function fromDriveFile(it: Misskey.entities.DriveFile): GridItem {
 		localOnly: false,
 		roleIdsThatCanBeUsedThisEmojiAsReaction: [],
 		type: it.type,
+		suggestedTags: [],
 	};
 }
 
@@ -364,6 +528,9 @@ async function refreshUploadFolders() {
 }
 
 onMounted(async () => {
+	isEmojiTaggingAvailable().then(available => {
+		taggingAvailable.value = available;
+	});
 	await refreshUploadFolders();
 });
 </script>
@@ -371,6 +538,15 @@ onMounted(async () => {
 <style module lang="scss">
 .violationRow {
 	background-color: var(--MI_THEME-infoWarnBg);
+}
+
+.suggesting {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+	font-size: 0.9em;
 }
 
 .gridArea {

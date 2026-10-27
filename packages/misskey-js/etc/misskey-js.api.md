@@ -173,6 +173,12 @@ type AdminDriveShowFileResponse = operations['admin___drive___show-file']['respo
 type AdminEmojiAddAliasesBulkRequest = operations['admin___emoji___add-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiAddFromUrlRequest = operations['admin___emoji___add-from-url']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiAddFromUrlResponse = operations['admin___emoji___add-from-url']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiAddRequest = operations['admin___emoji___add']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -206,6 +212,12 @@ type AdminEmojiListRequest = operations['admin___emoji___list']['requestBody']['
 type AdminEmojiListResponse = operations['admin___emoji___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiMergeCategoryRequest = operations['admin___emoji___merge-category']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiMergeCategoryResponse = operations['admin___emoji___merge-category']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiRemoveAliasesBulkRequest = operations['admin___emoji___remove-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -216,6 +228,12 @@ type AdminEmojiSetCategoryBulkRequest = operations['admin___emoji___set-category
 
 // @public (undocumented)
 type AdminEmojiSetLicenseBulkRequest = operations['admin___emoji___set-license-bulk']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiSuggestTagsRequest = operations['admin___emoji___suggest-tags']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiSuggestTagsResponse = operations['admin___emoji___suggest-tags']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type AdminEmojiUpdateRequest = operations['admin___emoji___update']['requestBody']['content']['application/json'];
@@ -246,6 +264,21 @@ type AdminGetUserIpsRequest = operations['admin___get-user-ips']['requestBody'][
 
 // @public (undocumented)
 type AdminGetUserIpsResponse = operations['admin___get-user-ips']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminIntraCreateAccountRequest = operations['admin___intra___create-account']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminIntraCreateAccountResponse = operations['admin___intra___create-account']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminIntraIssuePasskeySetupRequest = operations['admin___intra___issue-passkey-setup']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminIntraIssuePasskeySetupResponse = operations['admin___intra___issue-passkey-setup']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminIntraSetPasswordLoginAllowedRequest = operations['admin___intra___set-password-login-allowed']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type AdminInviteCreateRequest = operations['admin___invite___create']['requestBody']['content']['application/json'];
@@ -630,6 +663,102 @@ type BubbleGameRankingResponse = operations['bubble-game___ranking']['responses'
 type BubbleGameRegisterRequest = operations['bubble-game___register']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type CalendarEvent = components['schemas']['CalendarEvent'];
+
+// @public (undocumented)
+type CalendarEventLite = components['schemas']['CalendarEventLite'];
+
+// @public (undocumented)
+type CalendarEventsCancelRequest = operations['calendar___events___cancel']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsCancelResponse = operations['calendar___events___cancel']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventSchedule = components['schemas']['CalendarEventSchedule'];
+
+// @public (undocumented)
+type CalendarEventsCreateRequest = operations['calendar___events___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsCreateResponse = operations['calendar___events___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsDeleteRequest = operations['calendar___events___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInvitationStatusesRequest = operations['calendar___events___invitation-statuses']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInvitationStatusesResponse = operations['calendar___events___invitation-statuses']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInviteRequest = operations['calendar___events___invite']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsInviteResponse = operations['calendar___events___invite']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsLinkNoteRequest = operations['calendar___events___link-note']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsListRequest = operations['calendar___events___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsListResponse = operations['calendar___events___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsNotesRequest = operations['calendar___events___notes']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsNotesResponse = operations['calendar___events___notes']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsShowRequest = operations['calendar___events___show']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsShowResponse = operations['calendar___events___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribeRequest = operations['calendar___events___subscribe']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribeResponse = operations['calendar___events___subscribe']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribersRequest = operations['calendar___events___subscribers']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsSubscribersResponse = operations['calendar___events___subscribers']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnlinkNoteRequest = operations['calendar___events___unlink-note']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnsubscribeRequest = operations['calendar___events___unsubscribe']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUnsubscribeResponse = operations['calendar___events___unsubscribe']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpcomingRequest = operations['calendar___events___upcoming']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpcomingResponse = operations['calendar___events___upcoming']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpdateRequest = operations['calendar___events___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarEventsUpdateResponse = operations['calendar___events___update']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type CalendarFeedUrls = components['schemas']['CalendarFeedUrls'];
+
+// @public (undocumented)
+type CalendarNotificationSettings = components['schemas']['CalendarNotificationSettings'];
+
+// @public (undocumented)
 type Channel = components['schemas']['Channel'];
 
 // Warning: (ae-forgotten-export) The symbol "AnyOf" needs to be exported by the entry point index.d.ts
@@ -779,6 +908,16 @@ export type Channels = {
         };
         events: {
             note: (payload: Note) => void;
+        };
+        receives: null;
+    };
+    clip: {
+        params: {
+            clipId: string;
+        };
+        events: {
+            updated: () => void;
+            deleted: () => void;
         };
         receives: null;
     };
@@ -1582,6 +1721,8 @@ declare namespace entities {
         AdminEmojiAddRequest,
         AdminEmojiAddResponse,
         AdminEmojiAddAliasesBulkRequest,
+        AdminEmojiAddFromUrlRequest,
+        AdminEmojiAddFromUrlResponse,
         AdminEmojiCopyRequest,
         AdminEmojiCopyResponse,
         AdminEmojiDeleteRequest,
@@ -1591,10 +1732,14 @@ declare namespace entities {
         AdminEmojiListResponse,
         AdminEmojiListRemoteRequest,
         AdminEmojiListRemoteResponse,
+        AdminEmojiMergeCategoryRequest,
+        AdminEmojiMergeCategoryResponse,
         AdminEmojiRemoveAliasesBulkRequest,
         AdminEmojiSetAliasesBulkRequest,
         AdminEmojiSetCategoryBulkRequest,
         AdminEmojiSetLicenseBulkRequest,
+        AdminEmojiSuggestTagsRequest,
+        AdminEmojiSuggestTagsResponse,
         AdminEmojiUpdateRequest,
         AdminFederationDeleteAllFilesRequest,
         AdminFederationRefreshRemoteInstanceMetadataRequest,
@@ -1605,6 +1750,11 @@ declare namespace entities {
         AdminGetTableStatsResponse,
         AdminGetUserIpsRequest,
         AdminGetUserIpsResponse,
+        AdminIntraCreateAccountRequest,
+        AdminIntraCreateAccountResponse,
+        AdminIntraIssuePasskeySetupRequest,
+        AdminIntraIssuePasskeySetupResponse,
+        AdminIntraSetPasswordLoginAllowedRequest,
         AdminInviteCreateRequest,
         AdminInviteCreateResponse,
         AdminInviteListRequest,
@@ -1715,6 +1865,33 @@ declare namespace entities {
         BubbleGameRankingRequest,
         BubbleGameRankingResponse,
         BubbleGameRegisterRequest,
+        CalendarEventsCancelRequest,
+        CalendarEventsCancelResponse,
+        CalendarEventsCreateRequest,
+        CalendarEventsCreateResponse,
+        CalendarEventsDeleteRequest,
+        CalendarEventsInvitationStatusesRequest,
+        CalendarEventsInvitationStatusesResponse,
+        CalendarEventsInviteRequest,
+        CalendarEventsInviteResponse,
+        CalendarEventsLinkNoteRequest,
+        CalendarEventsListRequest,
+        CalendarEventsListResponse,
+        CalendarEventsNotesRequest,
+        CalendarEventsNotesResponse,
+        CalendarEventsShowRequest,
+        CalendarEventsShowResponse,
+        CalendarEventsSubscribeRequest,
+        CalendarEventsSubscribeResponse,
+        CalendarEventsSubscribersRequest,
+        CalendarEventsSubscribersResponse,
+        CalendarEventsUnlinkNoteRequest,
+        CalendarEventsUnsubscribeRequest,
+        CalendarEventsUnsubscribeResponse,
+        CalendarEventsUpcomingRequest,
+        CalendarEventsUpcomingResponse,
+        CalendarEventsUpdateRequest,
+        CalendarEventsUpdateResponse,
         ChannelsCreateRequest,
         ChannelsCreateResponse,
         ChannelsFavoriteRequest,
@@ -1953,6 +2130,11 @@ declare namespace entities {
         IAppsResponse,
         IAuthorizedAppsRequest,
         IAuthorizedAppsResponse,
+        ICalendarFeedResponse,
+        ICalendarFeedRegenerateResponse,
+        ICalendarNotificationSettingsResponse,
+        ICalendarNotificationSettingsUpdateRequest,
+        ICalendarNotificationSettingsUpdateResponse,
         IChangePasswordRequest,
         IClaimAchievementRequest,
         IDeleteAccountRequest,
@@ -1968,6 +2150,9 @@ declare namespace entities {
         IImportFollowingRequest,
         IImportMutingRequest,
         IImportUserListsRequest,
+        IIntraRolesResponse,
+        IIntraProjectResultsResponse,
+        IIntraStartReauthResponse,
         IMoveRequest,
         IMoveResponse,
         INotificationsRequest,
@@ -2052,6 +2237,8 @@ declare namespace entities {
         NotesFeaturedResponse,
         NotesGlobalTimelineRequest,
         NotesGlobalTimelineResponse,
+        NotesHistoryRequest,
+        NotesHistoryResponse,
         NotesHybridTimelineRequest,
         NotesHybridTimelineResponse,
         NotesLocalTimelineRequest,
@@ -2085,7 +2272,11 @@ declare namespace entities {
         NotesTimelineResponse,
         NotesTranslateRequest,
         NotesTranslateResponse,
+        NotesTranslationsRequest,
+        NotesTranslationsResponse,
         NotesUnrenoteRequest,
+        NotesUpdateRequest,
+        NotesUpdateResponse,
         NotesUserListTimelineRequest,
         NotesUserListTimelineResponse,
         NotificationsCreateRequest,
@@ -2099,6 +2290,35 @@ declare namespace entities {
         PagesShowResponse,
         PagesUnlikeRequest,
         PagesUpdateRequest,
+        PairRecruitmentsAcceptRequest,
+        PairRecruitmentsAcceptResponse,
+        PairRecruitmentsApplyRequest,
+        PairRecruitmentsApplyResponse,
+        PairRecruitmentsCancelInvitationRequest,
+        PairRecruitmentsCancelInvitationResponse,
+        PairRecruitmentsCloseRequest,
+        PairRecruitmentsCloseResponse,
+        PairRecruitmentsCreateRequest,
+        PairRecruitmentsCreateResponse,
+        PairRecruitmentsDeclineRequest,
+        PairRecruitmentsDeclineResponse,
+        PairRecruitmentsInviteRequest,
+        PairRecruitmentsInviteResponse,
+        PairRecruitmentsInviteCandidatesRequest,
+        PairRecruitmentsInviteCandidatesResponse,
+        PairRecruitmentsListRequest,
+        PairRecruitmentsListResponse,
+        PairRecruitmentsOpenChatRequest,
+        PairRecruitmentsOpenChatResponse,
+        PairRecruitmentsProjectsResponse,
+        PairRecruitmentsRejectRequest,
+        PairRecruitmentsRejectResponse,
+        PairRecruitmentsShowRequest,
+        PairRecruitmentsShowResponse,
+        PairRecruitmentsUpdateRequest,
+        PairRecruitmentsUpdateResponse,
+        PairRecruitmentsWithdrawRequest,
+        PairRecruitmentsWithdrawResponse,
         PingResponse,
         PinnedUsersResponse,
         PromoReadRequest,
@@ -2268,7 +2488,19 @@ declare namespace entities {
         ChatMessageLiteForRoom,
         ChatRoom,
         ChatRoomInvitation,
-        ChatRoomMembership
+        ChatRoomMembership,
+        CalendarEventLite,
+        CalendarEvent,
+        CalendarEventSchedule,
+        CalendarFeedUrls,
+        CalendarNotificationSettings,
+        PairRecruitmentProject,
+        PairRecruitment,
+        PairRecruitmentDetailed,
+        PairMember,
+        PairInviteCandidate,
+        IntraProjectResult,
+        IntraProjectNote
     }
 }
 export { entities }
@@ -2550,7 +2782,7 @@ type I2faDoneResponse = operations['i___2fa___done']['responses']['200']['conten
 
 // @public (undocumented)
 type I2faKeyDoneRequest_2 = {
-    password: string;
+    password?: string;
     token?: string | null;
     name: string;
     credential: RegistrationResponseJSON;
@@ -2594,6 +2826,21 @@ type IAuthorizedAppsRequest = operations['i___authorized-apps']['requestBody']['
 
 // @public (undocumented)
 type IAuthorizedAppsResponse = operations['i___authorized-apps']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedRegenerateResponse = operations['i___calendar-feed___regenerate']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarFeedResponse = operations['i___calendar-feed']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsResponse = operations['i___calendar-notification-settings']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateRequest = operations['i___calendar-notification-settings___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ICalendarNotificationSettingsUpdateResponse = operations['i___calendar-notification-settings___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IChangePasswordRequest = operations['i___change-password']['requestBody']['content']['application/json'];
@@ -2662,6 +2909,15 @@ type IImportMutingRequest = operations['i___import-muting']['requestBody']['cont
 type IImportUserListsRequest = operations['i___import-user-lists']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type IIntraProjectResultsResponse = operations['i___intra___project-results']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IIntraRolesResponse = operations['i___intra-roles']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IIntraStartReauthResponse = operations['i___intra___start-reauth']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type IMoveRequest = operations['i___move']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -2678,6 +2934,12 @@ type INotificationsRequest = operations['i___notifications']['requestBody']['con
 
 // @public (undocumented)
 type INotificationsResponse = operations['i___notifications']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IntraProjectNote = components['schemas']['IntraProjectNote'];
+
+// @public (undocumented)
+type IntraProjectResult = components['schemas']['IntraProjectResult'];
 
 // @public (undocumented)
 type InviteCode = components['schemas']['InviteCode'];
@@ -2900,7 +3162,7 @@ type ModerationLog = {
 }[keyof ModerationLogPayloads]);
 
 // @public (undocumented)
-export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "unsuspend", "updateUserNote", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "resetPassword", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetMfa", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "updateProxyAccountDescription"];
+export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "unsuspend", "updateUserNote", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "resetPassword", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetMfa", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "updateProxyAccountDescription", "updateIntraPasswordLoginAllowed", "issueIntraPasskeySetup"];
 
 // @public (undocumented)
 type MuteCreateRequest = operations['mute___create']['requestBody']['content']['application/json'];
@@ -3018,6 +3280,12 @@ type NotesGlobalTimelineRequest = operations['notes___global-timeline']['request
 type NotesGlobalTimelineResponse = operations['notes___global-timeline']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type NotesHistoryRequest = operations['notes___history']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesHistoryResponse = operations['notes___history']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type NotesHybridTimelineRequest = operations['notes___hybrid-timeline']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -3123,7 +3391,19 @@ type NotesTranslateRequest = operations['notes___translate']['requestBody']['con
 type NotesTranslateResponse = operations['notes___translate']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type NotesTranslationsRequest = operations['notes___translations']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesTranslationsResponse = operations['notes___translations']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type NotesUnrenoteRequest = operations['notes___unrenote']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesUpdateRequest = operations['notes___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesUpdateResponse = operations['notes___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesUserListTimelineRequest = operations['notes___user-list-timeline']['requestBody']['content']['application/json'];
@@ -3141,7 +3421,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed", "pairInvited", "pairApplicationCancelled", "intraProjectFinished", "intraProjectsRefreshed", "intraLevelUp", "acquaintanceSuggested", "acquaintanceJoined"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;
@@ -3190,6 +3470,108 @@ type PagesUnlikeRequest = operations['pages___unlike']['requestBody']['content']
 
 // @public (undocumented)
 type PagesUpdateRequest = operations['pages___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairInviteCandidate = components['schemas']['PairInviteCandidate'];
+
+// @public (undocumented)
+type PairMember = components['schemas']['PairMember'];
+
+// @public (undocumented)
+type PairRecruitment = components['schemas']['PairRecruitment'];
+
+// @public (undocumented)
+type PairRecruitmentDetailed = components['schemas']['PairRecruitmentDetailed'];
+
+// @public (undocumented)
+type PairRecruitmentProject = components['schemas']['PairRecruitmentProject'];
+
+// @public (undocumented)
+type PairRecruitmentsAcceptRequest = operations['pair-recruitments___accept']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsAcceptResponse = operations['pair-recruitments___accept']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsApplyRequest = operations['pair-recruitments___apply']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsApplyResponse = operations['pair-recruitments___apply']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCancelInvitationRequest = operations['pair-recruitments___cancel-invitation']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCancelInvitationResponse = operations['pair-recruitments___cancel-invitation']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCloseRequest = operations['pair-recruitments___close']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCloseResponse = operations['pair-recruitments___close']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCreateRequest = operations['pair-recruitments___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsCreateResponse = operations['pair-recruitments___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsDeclineRequest = operations['pair-recruitments___decline']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsDeclineResponse = operations['pair-recruitments___decline']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsInviteCandidatesRequest = operations['pair-recruitments___invite-candidates']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsInviteCandidatesResponse = operations['pair-recruitments___invite-candidates']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsInviteRequest = operations['pair-recruitments___invite']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsInviteResponse = operations['pair-recruitments___invite']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsListRequest = operations['pair-recruitments___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsListResponse = operations['pair-recruitments___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsOpenChatRequest = operations['pair-recruitments___open-chat']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsOpenChatResponse = operations['pair-recruitments___open-chat']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsProjectsResponse = operations['pair-recruitments___projects']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsRejectRequest = operations['pair-recruitments___reject']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsRejectResponse = operations['pair-recruitments___reject']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsShowRequest = operations['pair-recruitments___show']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsShowResponse = operations['pair-recruitments___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsUpdateRequest = operations['pair-recruitments___update']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsUpdateResponse = operations['pair-recruitments___update']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsWithdrawRequest = operations['pair-recruitments___withdraw']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type PairRecruitmentsWithdrawResponse = operations['pair-recruitments___withdraw']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 function parse(_acct: string): Acct;
@@ -3771,8 +4153,8 @@ type VerifyEmailRequest = operations['verify-email']['requestBody']['content']['
 // Warnings were encountered during analysis:
 //
 // src/streaming.ts:57:3 - (ae-forgotten-export) The symbol "ReconnectingWebSocket" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:226:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:241:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:236:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:251:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

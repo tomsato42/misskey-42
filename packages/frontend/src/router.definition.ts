@@ -7,6 +7,7 @@ import { defineAsyncComponent } from 'vue';
 import type { AsyncComponentLoader } from 'vue';
 import type { RouteDef } from '@/lib/nirax.js';
 import { $i, iAmModerator } from '@/i.js';
+import { instance } from '@/instance.js';
 import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
 import PageTimeline from '@/pages/timeline.vue';
@@ -19,6 +20,11 @@ export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 
 function chatPage(...args: Parameters<typeof page>) {
 	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : page(() => import('@/pages/not-found.vue'));
+}
+
+/** 学内SNSモード (42 intra ログイン) でだけ使えるページ。それ以外では見つからない扱いにする。判定はページを開くときに行う */
+function intraPage(loader: AsyncComponentLoader) {
+	return page(() => instance.intraLoginEnabled === true ? loader() : import('@/pages/not-found.vue'));
 }
 
 export const ROUTE_DEF = [{
@@ -42,6 +48,10 @@ export const ROUTE_DEF = [{
 	path: '/@:acct/:page?',
 	component: page(() => import('@/pages/user/index.vue')),
 }, {
+	// 42times: 2次元コードの URL。学内SNSモードの backend はユーザーのページへリダイレクトしないので、ここで移る
+	path: '/users/:userId',
+	component: intraPage(() => import('@/pages/user-by-id.vue')),
+}, {
 	name: 'note',
 	path: '/notes/:noteId/:initialTab?',
 	component: page(() => import('@/pages/note.vue')),
@@ -52,6 +62,20 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/clips/:clipId',
 	component: page(() => import('@/pages/clip.vue')),
+}, {
+	// 42times のカレンダー。month は表示する月 (YYYY-MM)、filter はタブ (all / subscribed / mine)
+	path: '/calendar',
+	component: page(() => import('@/pages/calendar/index.vue')),
+	query: {
+		month: 'month',
+		filter: 'filter',
+	},
+	loginRequired: true,
+}, {
+	// カレンダー配信 (.ics) の各イベントの URL にも使うので、パスを変えない
+	path: '/calendar/events/:eventId',
+	component: page(() => import('@/pages/calendar/event.vue')),
+	loginRequired: true,
 }, {
 	path: '/chat',
 	component: chatPage(() => import('@/pages/chat/home.vue')),
@@ -67,6 +91,26 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/chat/messages/:messageId',
 	component: chatPage(() => import('@/pages/chat/message.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair/new',
+	component: intraPage(() => import('@/pages/pair/new.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair/:id/edit',
+	component: intraPage(() => import('@/pages/pair/new.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair/:id',
+	component: intraPage(() => import('@/pages/pair/recruitment.vue')),
+	loginRequired: true,
+}, {
+	path: '/pair',
+	component: intraPage(() => import('@/pages/pair/index.vue')),
+	loginRequired: true,
+}, {
+	path: '/projects',
+	component: intraPage(() => import('@/pages/intra-projects.vue')),
 	loginRequired: true,
 }, {
 	path: '/instance-info/:host',
@@ -104,6 +148,11 @@ export const ROUTE_DEF = [{
 		path: '/notifications',
 		name: 'notifications',
 		component: page(() => import('@/pages/settings/notifications.vue')),
+	}, {
+		// 42times: カレンダー連携 (配信 URL)
+		path: '/calendar',
+		name: 'calendar',
+		component: page(() => import('@/pages/settings/calendar.vue')),
 	}, {
 		path: '/email',
 		name: 'email',
@@ -202,6 +251,17 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/signup-complete/:code',
 	component: page(() => import('@/pages/signup-complete.vue')),
+}, {
+	// 42 intra のログインから戻ってきたときのページ。失敗時は code が error になり、理由が reason に入る
+	path: '/intra-complete/:code',
+	component: page(() => import('@/pages/intra-complete.vue')),
+	query: {
+		reason: 'reason',
+	},
+}, {
+	// 管理者が発行したパスキーの登録リンク (42 にログインできない人のため)
+	path: '/intra-passkey-setup/:token',
+	component: intraPage(() => import('@/pages/intra-passkey-setup.vue')),
 }, {
 	path: '/verify-email/:code',
 	component: page(() => import('@/pages/verify-email.vue')),

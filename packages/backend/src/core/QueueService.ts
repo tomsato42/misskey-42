@@ -8,6 +8,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { MetricsTime, type JobType } from 'bullmq';
 import type { IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
+import type { MiAnnouncement } from '@/models/Announcement.js';
 import type { MiWebhook, WebhookEventTypes } from '@/models/Webhook.js';
 import type { MiSystemWebhook, SystemWebhookEventType } from '@/models/SystemWebhook.js';
 import type { Config } from '@/config.js';
@@ -20,6 +21,7 @@ import type { Packed } from '@/misc/json-schema.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import type {
 	DbJobData,
+	ArchiveAnnouncementJobData,
 	DeliverJobData,
 	RelationshipJobData,
 	SystemWebhookDeliverJobData,
@@ -85,6 +87,32 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 	pattern: '0 4 * * *',
 }];
 
+/**
+ * 42times のカレンダー機能の repeatable ジョブ。カレンダーは学内SNSモード以外でも使えるので、常に登録する
+ */
+const CALENDAR_REPEATABLE_SYSTEM_JOB_DEF = [{
+	name: 'calendarEventReminders',
+	// 5分ごとに、送る時刻になったリマインドを送る
+	pattern: '*/5 * * * *',
+}];
+
+/**
+ * 42 intra 連携が有効なときだけ登録する repeatable ジョブ
+ */
+const INTRA_REPEATABLE_SYSTEM_JOB_DEF = [{
+	name: 'syncIntraUsers',
+	// 毎時15分に起動
+	pattern: '15 * * * *',
+}, {
+	name: 'syncIntraProjects',
+	// 毎日午前4時45分に起動 (課題の条件はめったに変わらない)
+	pattern: '45 4 * * *',
+}, {
+	name: 'closeExpiredPairRecruitments',
+	// 毎時5分に起動 (一覧と取得では期限切れの募集を締め切ったものとして扱うので、遅れても表示は変わらない)
+	pattern: '5 * * * *',
+}];
+
 function parseRedisInfo(infoText: string): Record<string, string> {
 	const fields = infoText
 		.split('\n')
@@ -115,7 +143,13 @@ export class QueueService {
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 	) {
-		for (const def of REPEATABLE_SYSTEM_JOB_DEF) {
+		const repeatableJobDefs = [
+			...REPEATABLE_SYSTEM_JOB_DEF,
+			...CALENDAR_REPEATABLE_SYSTEM_JOB_DEF,
+			...(this.config.intra != null ? INTRA_REPEATABLE_SYSTEM_JOB_DEF : []),
+		];
+
+		for (const def of repeatableJobDefs) {
 			this.systemQueue.upsertJobScheduler(def.name, {
 				pattern: def.pattern,
 				immediately: false,
@@ -134,9 +168,10 @@ export class QueueService {
 		}
 
 		// 古いバージョンで作成され現在使われなくなったrepeatableジョブをクリーンアップ
+		// (42 intra 連携を無効にした場合の syncIntraUsers もここで消える)
 		this.systemQueue.getJobSchedulers().then(schedulers => {
 			for (const scheduler of schedulers) {
-				if (!REPEATABLE_SYSTEM_JOB_DEF.some(def => def.name === scheduler.key)) {
+				if (!repeatableJobDefs.some(def => def.name === scheduler.key)) {
 					this.systemQueue.removeJobScheduler(scheduler.key);
 				}
 			}
@@ -245,6 +280,44 @@ export class QueueService {
 				count: 100,
 			},
 		});
+	}
+
+	private announcementArchiveJobId(announcementId: MiAnnouncement['id'], autoArchiveAt: Date): string {
+		return `archiveAnnouncement-${announcementId}-${autoArchiveAt.getTime()}`;
+	}
+
+	@bindThis
+	public async scheduleAnnouncementArchive(announcementId: MiAnnouncement['id'], autoArchiveAt: Date): Promise<void> {
+		const jobId = this.announcementArchiveJobId(announcementId, autoArchiveAt);
+		const existingJob = await this.systemQueue.getJob(jobId);
+		if (existingJob != null) {
+			const state = await existingJob.getState();
+			if (state !== 'completed' && state !== 'failed') return;
+			await this.systemQueue.remove(jobId);
+		}
+
+		const data: ArchiveAnnouncementJobData = {
+			announcementId,
+			autoArchiveAt: autoArchiveAt.getTime(),
+		};
+
+		await this.systemQueue.add('archiveAnnouncement', data, {
+			jobId,
+			delay: Math.max(0, autoArchiveAt.getTime() - Date.now()),
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
+	public async clearAnnouncementArchive(announcementId: MiAnnouncement['id'], autoArchiveAt: Date): Promise<void> {
+		await this.systemQueue.remove(this.announcementArchiveJobId(announcementId, autoArchiveAt));
 	}
 
 	@bindThis

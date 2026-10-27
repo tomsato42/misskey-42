@@ -286,6 +286,15 @@ export type paths = {
          */
         post: operations['admin___emoji___add-aliases-bulk'];
     };
+    '/admin/emoji/add-from-url': {
+        /**
+         * admin/emoji/add-from-url
+         * @description Download an image from the specified URL and register it as a local custom emoji. The file is not stored in anyone's drive.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___add-from-url'];
+    };
     '/admin/emoji/copy': {
         /**
          * admin/emoji/copy
@@ -341,6 +350,15 @@ export type paths = {
          */
         post: operations['admin___emoji___list-remote'];
     };
+    '/admin/emoji/merge-category': {
+        /**
+         * admin/emoji/merge-category
+         * @description Move every local custom emoji in a category to another category, so that the old category disappears.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___merge-category'];
+    };
     '/admin/emoji/remove-aliases-bulk': {
         /**
          * admin/emoji/remove-aliases-bulk
@@ -376,6 +394,24 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
          */
         post: operations['admin___emoji___set-license-bulk'];
+    };
+    '/admin/emoji/suggest-tags': {
+        /**
+         * admin/emoji/suggest-tags
+         * @description Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___suggest-tags'];
+    };
+    '/admin/emoji/test-tagging': {
+        /**
+         * admin/emoji/test-tagging
+         * @description Check that the Claude API key and models in the server settings can be used for suggesting emoji tags and, when enabled, translating notes. No tokens are used.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___test-tagging'];
     };
     '/admin/emoji/update': {
         /**
@@ -457,6 +493,35 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *read:admin:user-ips*
          */
         post: operations['admin___get-user-ips'];
+    };
+    '/admin/intra/create-account': {
+        /**
+         * admin/intra/create-account
+         * @description Find or create the account of a 42 intra user by their login, and issue a link to register a passkey. Used for people who cannot sign in to 42 intra (e.g. after the black hole).
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:account*
+         */
+        post: operations['admin___intra___create-account'];
+    };
+    '/admin/intra/issue-passkey-setup': {
+        /**
+         * admin/intra/issue-passkey-setup
+         * @description Issue a link to register a passkey to an existing local account. Used for people who cannot sign in to 42 intra (e.g. after the black hole).
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:account*
+         */
+        post: operations['admin___intra___issue-passkey-setup'];
+    };
+    '/admin/intra/set-password-login-allowed': {
+        /**
+         * admin/intra/set-password-login-allowed
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:account*
+         */
+        post: operations['admin___intra___set-password-login-allowed'];
     };
     '/admin/invite/create': {
         /**
@@ -1130,6 +1195,141 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
         post: operations['bubble-game___register'];
+    };
+    '/calendar/events/cancel': {
+        /**
+         * calendar/events/cancel
+         * @description Cancel a calendar event. The event remains with isCanceled set. Only the creator and moderators can cancel it.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___cancel'];
+    };
+    '/calendar/events/create': {
+        /**
+         * calendar/events/create
+         * @description Create a calendar event. The creator is subscribed to it automatically. If visibility is specified or list, the users who can see the event are invited.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___create'];
+    };
+    '/calendar/events/delete': {
+        /**
+         * calendar/events/delete
+         * @description Delete a calendar event. Linked notes are kept. Only the creator and moderators can delete it.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___delete'];
+    };
+    '/calendar/events/invitation-statuses': {
+        /**
+         * calendar/events/invitation-statuses
+         * @description Get whether you can invite each user to a calendar event. Only those who can invite to the event (see calendar/events/invite) can use this.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___invitation-statuses'];
+    };
+    '/calendar/events/invite': {
+        /**
+         * calendar/events/invite
+         * @description Invite users and/or the members of one of your lists to a calendar event. Subscribers can invite to public, followers and mutual events, except followers (mutual) events whose creator hides their followers (or following) list; the creator and moderators can invite to any event. Each user is invited only once (by whoever invites first) and gets a calendarEventInvited notification. Subscribed users and users who cannot see the event are skipped. Up to 200 users (including the list members) are processed per call. With dryRun, nothing is saved and the counts are returned.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___invite'];
+    };
+    '/calendar/events/link-note': {
+        /**
+         * calendar/events/link-note
+         * @description Link your note to a calendar event. A note can be linked to only one event. Does nothing if already linked to the same event.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___link-note'];
+    };
+    '/calendar/events/list': {
+        /**
+         * calendar/events/list
+         * @description List calendar events starting in the given month (Asia/Tokyo), ordered by start time. Canceled events are included.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___list'];
+    };
+    '/calendar/events/notes': {
+        /**
+         * calendar/events/notes
+         * @description List notes of a calendar event, newest first: notes linked to the event, notes with the event's hashtag, and direct replies to either of them. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___notes'];
+    };
+    '/calendar/events/show': {
+        /**
+         * calendar/events/show
+         * @description Show a calendar event. Canceled events are also returned (with isCanceled set). Events outside your visibility are treated as not found, except for moderators with moderatorView.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___show'];
+    };
+    '/calendar/events/subscribe': {
+        /**
+         * calendar/events/subscribe
+         * @description Subscribe to a calendar event. Does nothing if already subscribed.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___subscribe'];
+    };
+    '/calendar/events/subscribers': {
+        /**
+         * calendar/events/subscribers
+         * @description List the subscribers of a calendar event, excluding the creator, newest first. Suspended and deleted users are excluded.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___subscribers'];
+    };
+    '/calendar/events/unlink-note': {
+        /**
+         * calendar/events/unlink-note
+         * @description Unlink a note from its calendar event. The author of the note, the creator of the event and moderators can do this. Others get NOTE_NOT_LINKED_TO_CALENDAR_EVENT whether the note is linked or not.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___unlink-note'];
+    };
+    '/calendar/events/unsubscribe': {
+        /**
+         * calendar/events/unsubscribe
+         * @description Unsubscribe from a calendar event. Does nothing if not subscribed. The creator cannot unsubscribe. If you can no longer see the event, the subscription is still removed but NO_SUCH_CALENDAR_EVENT is returned.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___unsubscribe'];
+    };
+    '/calendar/events/upcoming': {
+        /**
+         * calendar/events/upcoming
+         * @description List upcoming calendar events ordered by start time (for widgets). Canceled events are excluded. All-day events are upcoming until the end of the day, others until they end (or start, if they have no end time).
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['calendar___events___upcoming'];
+    };
+    '/calendar/events/update': {
+        /**
+         * calendar/events/update
+         * @description Update a calendar event. Omitted fields are left unchanged; null clears optional fields. Only the creator and moderators can update it. If the visibility changes to specified or list, the users who can newly see the event are invited.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['calendar___events___update'];
     };
     '/channels/create': {
         /**
@@ -2466,6 +2666,44 @@ export type paths = {
          */
         post: operations['i___authorized-apps'];
     };
+    '/i/calendar-feed': {
+        /**
+         * i/calendar-feed
+         * @description Get the calendar feed (iCalendar) URLs of your account. A feed token is created if you do not have one yet. Anyone who knows the URLs can see the events without signing in.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___calendar-feed'];
+    };
+    '/i/calendar-feed/regenerate': {
+        /**
+         * i/calendar-feed/regenerate
+         * @description Regenerate the calendar feed token. The old feed URLs stop working.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___calendar-feed___regenerate'];
+    };
+    '/i/calendar-notification-settings': {
+        /**
+         * i/calendar-notification-settings
+         * @description Get which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations).
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___calendar-notification-settings'];
+    };
+    '/i/calendar-notification-settings/update': {
+        /**
+         * i/calendar-notification-settings/update
+         * @description Change which calendar notifications you receive (reminders and changes of the events you subscribe to, and invitations). Omitted items are left unchanged.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___calendar-notification-settings___update'];
+    };
     '/i/change-password': {
         /**
          * i/change-password
@@ -2651,6 +2889,43 @@ export type paths = {
          *     **Credential required**: *Yes*
          */
         post: operations['i___import-user-lists'];
+    };
+    '/i/intra-roles': {
+        /**
+         * i/intra-roles
+         * @description Get the roles automatically assigned to you from your 42 intra information.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___intra-roles'];
+    };
+    '/i/intra/project-results': {
+        /**
+         * i/intra/project-results
+         * @description 42times: Get your 42 intra project results (projects with a final mark, passed or not), newest first. They are synced when you log in and every hour.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['i___intra___project-results'];
+    };
+    '/i/intra/refresh-project-results': {
+        /**
+         * i/intra/refresh-project-results
+         * @description 42times: Fetch your 42 intra information (including project results) now instead of waiting for the hourly sync. It returns immediately, and an intraProjectsRefreshed notification arrives when fetching finishes.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['i___intra___refresh-project-results'];
+    };
+    '/i/intra/start-reauth': {
+        /**
+         * i/intra/start-reauth
+         * @description Start verifying yourself by signing in to 42 intra again. Open the returned URL in the browser; after that, you can register or remove passkeys for a while.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['i___intra___start-reauth'];
     };
     '/i/move': {
         /**
@@ -3127,6 +3402,15 @@ export type paths = {
          */
         post: operations['notes___global-timeline'];
     };
+    '/notes/history': {
+        /**
+         * notes/history
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['notes___history'];
+    };
     '/notes/hybrid-timeline': {
         /**
          * notes/hybrid-timeline
@@ -3298,6 +3582,15 @@ export type paths = {
          */
         post: operations['notes___translate'];
     };
+    '/notes/translations': {
+        /**
+         * notes/translations
+         * @description Return the translations of notes that someone has already translated (with notes/translate) into the language. Nothing is translated here, so it costs nothing. Notes you cannot see and notes without a translation are left out.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['notes___translations'];
+    };
     '/notes/unrenote': {
         /**
          * notes/unrenote
@@ -3306,6 +3599,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:notes*
          */
         post: operations['notes___unrenote'];
+    };
+    '/notes/update': {
+        /**
+         * notes/update
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:notes*
+         */
+        post: operations['notes___update'];
     };
     '/notes/user-list-timeline': {
         /**
@@ -3424,6 +3726,141 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:pages*
          */
         post: operations['pages___update'];
+    };
+    '/pair-recruitments/accept': {
+        /**
+         * pair-recruitments/accept
+         * @description 参加希望を承認する (作成者だけ)。承認した人に通知し、人数がそろったら募集を締め切って、作成者以外のメンバーに通知する
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___accept'];
+    };
+    '/pair-recruitments/apply': {
+        /**
+         * pair-recruitments/apply
+         * @description ペア募集に参加希望を送る。wantedProjectSlugs (やりたい課題) のすべてで自分の判定が available か in_progress のときだけ送れる。指定しなければ取り組める課題すべてになる。招待された人も送れる。作成者に通知する
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___apply'];
+    };
+    '/pair-recruitments/cancel-invitation': {
+        /**
+         * pair-recruitments/cancel-invitation
+         * @description 招待を取り消す (作成者だけ)。返事待ちか、断られた招待だけ取り消せる。取り消すと、もう一度招待できる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___cancel-invitation'];
+    };
+    '/pair-recruitments/close': {
+        /**
+         * pair-recruitments/close
+         * @description 募集を締め切る (作成者だけ)。作成者以外のメンバー (承認済みと参加希望中) に通知する
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___close'];
+    };
+    '/pair-recruitments/create': {
+        /**
+         * pair-recruitments/create
+         * @description ペア募集を作成する。projectSlugs で複数の課題をまとめられる (人数はどの課題でも組める範囲にする)。projectSlug は 1 つの課題のときの古い指定。announce が true なら、募集のページの URL を含むノートをタイムラインにも投稿する (連携アプリのトークンでは write:notes も必要)
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___create'];
+    };
+    '/pair-recruitments/decline': {
+        /**
+         * pair-recruitments/decline
+         * @description 招待を断る (招待された人だけ)。断った後でも参加希望は送れる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___decline'];
+    };
+    '/pair-recruitments/invite': {
+        /**
+         * pair-recruitments/invite
+         * @description 募集に招待する (作成者だけ)。同じキャンパスで、募集の課題のどれかに取り組めて、招待を受け取る人だけを招待できる。全員を招待できるときだけ送り、招待した人に通知する
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___invite'];
+    };
+    '/pair-recruitments/invite-candidates': {
+        /**
+         * pair-recruitments/invite-candidates
+         * @description 招待の候補 (作成者だけ)。同じキャンパスで、募集の課題のどれか (projectSlug を指定したらその課題) に取り組めて、招待を受け取る人。既に参加希望を送った人と招待した人は除く
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['pair-recruitments___invite-candidates'];
+    };
+    '/pair-recruitments/list': {
+        /**
+         * pair-recruitments/list
+         * @description ペア募集の一覧。open: 自分と同じキャンパスの募集中の募集、mine: 自分の募集 (締め切ったものを含む)、joined: 参加希望を送った・参加している募集 (締め切ったものを含む)。新しい順
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['pair-recruitments___list'];
+    };
+    '/pair-recruitments/open-chat': {
+        /**
+         * pair-recruitments/open-chat
+         * @description 募集のチーム候補で話すチャットルームを開く。作成者・参加希望中・参加が決まった人 (締め切った後は作成者と参加が決まった人) だけ。ルームが無ければ作り、自分が入っていなければ入れる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:chat*
+         */
+        post: operations['pair-recruitments___open-chat'];
+    };
+    '/pair-recruitments/projects': {
+        /**
+         * pair-recruitments/projects
+         * @description 自分のキャンパスの 2 人以上で取り組む課題と、自分のその課題の判定の一覧。取り組める課題 (available, in_progress) を上に並べる。キャンパスが分からなければ空
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['pair-recruitments___projects'];
+    };
+    '/pair-recruitments/reject': {
+        /**
+         * pair-recruitments/reject
+         * @description 参加希望を見送る (作成者だけ)。通知はしない。見送られた人は同じ募集に再び参加希望を送れない
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___reject'];
+    };
+    '/pair-recruitments/show': {
+        /**
+         * pair-recruitments/show
+         * @description ペア募集とメンバーの一覧。参加希望中・見送りのメンバーは作成者と本人にだけ含める。同じキャンパスの人・作成者・参加希望を送った人だけが見られる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['pair-recruitments___show'];
+    };
+    '/pair-recruitments/update': {
+        /**
+         * pair-recruitments/update
+         * @description 募集を編集する (作成者だけ、募集中の間だけ)。指定した項目だけを変える。課題を外すと、その課題だけをやりたい参加希望は取り下げになり、本人に通知する。参加が決まったメンバーのやりたい課題をすべて外すことはできない。人数を参加が決まった人数ちょうどにすると締め切る
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___update'];
+    };
+    '/pair-recruitments/withdraw': {
+        /**
+         * pair-recruitments/withdraw
+         * @description 自分の参加希望・参加を取り下げる (募集中の間だけ)。取り下げた後は、もう一度参加希望を送れる
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         */
+        post: operations['pair-recruitments___withdraw'];
     };
     '/ping': {
         /**
@@ -4091,6 +4528,20 @@ export type components = {
             location: string | null;
             /** @example 2018-03-12 */
             birthday: string | null;
+            /** @description 42 intra の情報。intra と連携していないユーザーと、未ログインでの取得では null */
+            intra: {
+                /** @example tomoki */
+                login: string;
+                /**
+                 * @description ピシンの年月 (YYMM)
+                 * @example 2307
+                 */
+                poolYearMonth: string | null;
+                /** Format: date-time */
+                blackholedAt: string | null;
+                /** Format: date-time */
+                paceDeadlineAt: string | null;
+            } | null;
             /** @example ja-JP */
             lang: string | null;
             fields: {
@@ -4146,6 +4597,10 @@ export type components = {
             autoSensitive: boolean;
             carefulBot: boolean;
             autoAcceptFollowed: boolean;
+            /** @description ペア募集の招待を受け取るか (42times) */
+            pairInvitationsEnabled: boolean;
+            followApprovalLocalSeconds: number | null;
+            followApprovalRemoteSeconds: number | null;
             noCrawle: boolean;
             preventAiLearning: boolean;
             isExplorable: boolean;
@@ -4347,6 +4802,123 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                calendarEventReminder?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                calendarEventUpdated?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                calendarEventInvited?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairJoinRequested?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairAccepted?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairClosed?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairInvited?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                pairApplicationCancelled?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                intraProjectFinished?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                intraProjectsRefreshed?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                intraLevelUp?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                acquaintanceSuggested?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                acquaintanceJoined?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -4392,7 +4964,7 @@ export type components = {
             unlockedAt: number;
         };
         /** @enum {string} */
-        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead' | 'intraReferral1' | 'intraReferral5' | 'intraReferral10';
         Ad: {
             /**
              * Format: id
@@ -4452,6 +5024,11 @@ export type components = {
             createdAt: string;
             /** Format: date-time */
             deletedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description 42times: When the text or CW was last edited. Absent if never edited.
+             */
+            updatedAt?: string;
             text: string | null;
             cw?: string | null;
             /** Format: id */
@@ -4462,6 +5039,11 @@ export type components = {
              * @example xxxxxxxxxx
              */
             replyId?: string | null;
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            threadId?: string;
             /**
              * Format: id
              * @example xxxxxxxxxx
@@ -4521,6 +5103,11 @@ export type components = {
             clippedCount?: number;
             hasPoll?: boolean;
             myReaction?: string | null;
+            calendarEvent?: components['schemas']['CalendarEventLite'];
+            intraProjectResult?: components['schemas']['IntraProjectNote'];
+            intraLevel?: {
+                level: number;
+            };
         };
         NoteDraft: {
             /**
@@ -4811,6 +5398,177 @@ export type components = {
             createdAt: string;
             /** @enum {string} */
             type: 'test';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventReminder';
+            event: components['schemas']['CalendarEventLite'];
+            /**
+             * @description week: 7 days before (9:00 JST), day: the day before (9:00 JST), today: the day of the event (9:00 JST, or 1 hour before the start if it starts at or before 9:00).
+             * @enum {string}
+             */
+            reminderKind: 'week' | 'day' | 'today';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventUpdated';
+            event: components['schemas']['CalendarEventLite'];
+            /** @enum {string} */
+            updateKind: 'rescheduled' | 'canceled';
+            /** @description The schedule before the change. null if updateKind is canceled. */
+            previousSchedule: components['schemas']['CalendarEventSchedule'] | null;
+            /** @description The schedule after the change (rescheduled), or at the time of cancellation (canceled). */
+            schedule: components['schemas']['CalendarEventSchedule'];
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'calendarEventInvited';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            event: components['schemas']['CalendarEventLite'];
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairJoinRequested';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairAccepted';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairClosed';
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+            /** @enum {string} */
+            reason: 'full' | 'manual' | 'expired';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairInvited';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'pairApplicationCancelled';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+            pairRecruitment: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'intraProjectFinished';
+            /** @description The project result at the time of the notification. */
+            intraProjectResult: {
+                /** Format: id */
+                id: string;
+                projectSlug: string;
+                projectName: string;
+                finalMark: number;
+                validated: boolean;
+            };
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'intraProjectsRefreshed';
+            /** @description Whether fetching from 42 intra failed. */
+            failed: boolean;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'intraLevelUp';
+            /** @description The 42 intra level (integer part) after leveling up. */
+            level: number;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceSuggested';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceJoined';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
         };
         DriveFile: {
             /**
@@ -5563,6 +6321,8 @@ export type components = {
             maxFileSize: number;
             /** @enum {string} */
             federation: 'all' | 'specified' | 'none';
+            /** @description 42 intra でのログインが有効か */
+            intraLoginEnabled: boolean;
         };
         MetaDetailedOnly: {
             features?: {
@@ -5722,6 +6482,367 @@ export type components = {
             user?: components['schemas']['UserLite'];
             roomId: string;
             room?: components['schemas']['ChatRoom'];
+        };
+        CalendarEventLite: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            title: string;
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+            location: string | null;
+            /**
+             * @description public: everyone, followers: followers of the creator, mutual: mutual followers of the creator, specified: the specified users, list: members of the creator's list. The creator and moderators can always see the event.
+             * @enum {string}
+             */
+            visibility: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+            isCanceled: boolean;
+            subscribersCount: number;
+            /** @description Only present when the viewer is signed in. */
+            isSubscribed?: boolean;
+        };
+        CalendarEvent: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            title: string;
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+            location: string | null;
+            /**
+             * @description public: everyone, followers: followers of the creator, mutual: mutual followers of the creator, specified: the specified users, list: members of the creator's list. The creator and moderators can always see the event.
+             * @enum {string}
+             */
+            visibility: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+            isCanceled: boolean;
+            subscribersCount: number;
+            /** @description Only present when the viewer is signed in. */
+            isSubscribed?: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** Format: id */
+            userId: string;
+            user: components['schemas']['UserLite'];
+            description: string | null;
+            /** @description Without the leading #. */
+            hashtag: string | null;
+            /** Format: date-time */
+            canceledAt: string | null;
+            /** Format: id */
+            announcementNoteId: string | null;
+            /** @description Whether the viewer can edit, cancel or delete the event. Only present when the viewer is signed in. */
+            canManage?: boolean;
+            /** @description The users who can see the event when visibility is specified (excluding the creator). Only present when the viewer can manage the event. */
+            visibleUserIds?: string[];
+            /**
+             * Format: id
+             * @description The list whose members can see the event when visibility is list. null if visibility is not list or the list has been deleted. Only present when the viewer can manage the event.
+             */
+            userListId?: string | null;
+            /** @description Up to 5 subscribers, the users you follow first. Only present in calendar/events/show. */
+            subscribersPreview?: components['schemas']['UserLite'][];
+            /** @description The user who invited you to the event. null if you are not invited. Only present in calendar/events/show. */
+            invitedBy?: components['schemas']['UserLite'] | null;
+            /** @description Whether you can invite users to the event (see calendar/events/invite). This does not take cancellation into account. Only present in calendar/events/show. */
+            canInvite?: boolean;
+            /** @description Whether the event is outside your visibility, i.e. you see it only because you are a moderator and requested moderatorView. Only present when moderatorView is requested. */
+            isOutsideVisibility?: boolean;
+        };
+        CalendarEventSchedule: {
+            /**
+             * @description YYYY-MM-DD (Asia/Tokyo)
+             * @example 2026-10-20
+             */
+            date: string;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day.
+             * @example 12:00
+             */
+            startTime: string | null;
+            /**
+             * @description HH:mm (Asia/Tokyo). null if the event is all-day or has no end time.
+             * @example 13:00
+             */
+            endTime: string | null;
+            isAllDay: boolean;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+        };
+        CalendarFeedUrls: {
+            /**
+             * Format: url
+             * @description Events you subscribe to (including your own).
+             */
+            subscribedUrl: string;
+            /**
+             * Format: url
+             * @description All events.
+             */
+            allUrl: string;
+        };
+        CalendarNotificationSettings: {
+            /** @description 7 days before the event, at 9:00 (Asia/Tokyo). */
+            week: boolean;
+            /** @description The day before the event, at 9:00 (Asia/Tokyo). */
+            day: boolean;
+            /** @description The day of the event, at 9:00 (Asia/Tokyo), or 1 hour before the start if it starts at or before 9:00. */
+            today: boolean;
+            /** @description When the date or time of the event changes, or the event is canceled. */
+            changes: boolean;
+            /** @description When someone invites you to an event. */
+            invited: boolean;
+        };
+        PairRecruitmentProject: {
+            slug: string;
+            name: string;
+            minGroupSize: number;
+            maxGroupSize: number;
+            /** @enum {string} */
+            state: 'available' | 'in_progress' | 'finished' | 'locked';
+            /** @enum {string|null} */
+            reason: 'registered' | 'validated' | 'equivalentValidated' | 'equivalentInProgress' | 'forbiddenQuestValidated' | 'requiredQuestMissing' | 'requiredProjectMissing' | null;
+            openRecruitmentCount: number;
+        };
+        PairRecruitment: {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            closedAt: string | null;
+            /** @enum {string} */
+            status: 'open' | 'closed';
+            /** @enum {string|null} */
+            closedReason: 'full' | 'manual' | 'expired' | null;
+            /** Format: id */
+            userId: string;
+            user: components['schemas']['UserLite'];
+            project: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+            };
+            /** @description まとめた課題 (1 つ以上)。project は最初の課題で、名前は課題の名前を / でつないだもの */
+            projects: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+                /** @enum {string|null} */
+                myState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+                /** @description この課題をやりたい参加希望中・参加中の人数 (作成者を含まない) */
+                wantedCount: number;
+            }[];
+            teamSize: number;
+            acceptedCount: number;
+            pendingCount: number | null;
+            /** @enum {string} */
+            startTiming: 'now' | 'nextWeek' | 'nextMonth' | 'date';
+            /** Format: date */
+            startDate: string | null;
+            comment: string | null;
+            /** Format: id */
+            noteId: string | null;
+            /** @enum {string|null} */
+            myProjectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+            /** @enum {string|null} */
+            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined' | null;
+            /** @description 自分のやりたい課題 (参加希望中・参加中のときだけ) */
+            myWantedProjectSlugs: string[] | null;
+        };
+        PairRecruitmentDetailed: {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            closedAt: string | null;
+            /** @enum {string} */
+            status: 'open' | 'closed';
+            /** @enum {string|null} */
+            closedReason: 'full' | 'manual' | 'expired' | null;
+            /** Format: id */
+            userId: string;
+            user: components['schemas']['UserLite'];
+            project: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+            };
+            /** @description まとめた課題 (1 つ以上)。project は最初の課題で、名前は課題の名前を / でつないだもの */
+            projects: {
+                slug: string;
+                name: string;
+                minGroupSize: number;
+                maxGroupSize: number;
+                /** @enum {string|null} */
+                myState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+                /** @description この課題をやりたい参加希望中・参加中の人数 (作成者を含まない) */
+                wantedCount: number;
+            }[];
+            teamSize: number;
+            acceptedCount: number;
+            pendingCount: number | null;
+            /** @enum {string} */
+            startTiming: 'now' | 'nextWeek' | 'nextMonth' | 'date';
+            /** Format: date */
+            startDate: string | null;
+            comment: string | null;
+            /** Format: id */
+            noteId: string | null;
+            /** @enum {string|null} */
+            myProjectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+            /** @enum {string|null} */
+            myStatus: 'owner' | 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined' | null;
+            /** @description 自分のやりたい課題 (参加希望中・参加中のときだけ) */
+            myWantedProjectSlugs: string[] | null;
+            /** @description 作成者の 42 intra の課題のページ。作成者がその課題に登録したことが無ければ null */
+            ownerIntraProjectUrl: string | null;
+            /** @description 作成者の 42 intra のログイン名 (共有の文章に使う) */
+            ownerIntraLogin: string | null;
+            /** @description 参加希望中・参加中・見送った人など (招待は含まない) */
+            members: components['schemas']['PairMember'][];
+            /** @description 返事待ちと断られた招待。作成者にだけ返す (ほかの人には空) */
+            invitations: components['schemas']['PairMember'][];
+        };
+        PairMember: {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: id */
+            userId: string;
+            user: components['schemas']['UserLite'];
+            /** @enum {string} */
+            status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'invited' | 'declined';
+            /** @enum {string|null} */
+            projectState: 'available' | 'in_progress' | 'finished' | 'locked' | null;
+            wantedProjectSlugs: string[];
+        };
+        PairInviteCandidate: {
+            user: components['schemas']['UserLite'];
+            /** @description その人が取り組める、募集の課題の slug */
+            projectSlugs: string[];
+        };
+        IntraProjectResult: {
+            /** Format: id */
+            id: string;
+            /** @example webserv */
+            projectSlug: string;
+            /** @example webserv */
+            projectName: string;
+            /** @example 125 */
+            finalMark: number;
+            validated: boolean;
+            /** @description The number of evaluations flagged as outstanding. null if unknown. */
+            outstandingCount: number | null;
+            /** @description The team members (including yourself). Empty if unknown. */
+            members: {
+                login: string;
+                /** @description null if the member has no account on this server. */
+                user: components['schemas']['UserLite'] | null;
+            }[];
+            /** Format: date-time */
+            markedAt: string | null;
+            /** @description The intra team ID of the latest submission. */
+            teamId: number | null;
+            /** @description The submissions with a final mark, newest first. Empty if not fetched yet. */
+            submissions: {
+                /** @description The intra team ID. Pass it as intraProjectTeamId to notes/create. */
+                teamId: number;
+                /** @description 1 for the first submission. */
+                attemptNumber: number;
+                /** @example 125 */
+                finalMark: number;
+                validated: boolean;
+                /** @description The number of evaluations flagged as outstanding. null if unknown. */
+                outstandingCount: number | null;
+                /** @description The team members (including yourself). Empty if unknown. */
+                members: {
+                    login: string;
+                    /** @description null if the member has no account on this server. */
+                    user: components['schemas']['UserLite'] | null;
+                }[];
+                /** Format: date-time */
+                markedAt: string | null;
+            }[];
+        };
+        IntraProjectNote: {
+            /** @example webserv */
+            projectSlug: string;
+            /** @example webserv */
+            projectName: string;
+            /** @example 125 */
+            finalMark: number;
+            validated: boolean;
+            /** @description The number of evaluations flagged as outstanding. null if unknown. */
+            outstandingCount: number | null;
+            /** @description The team members (including yourself). Empty if unknown. */
+            members: {
+                login: string;
+                /** @description null if the member has no account on this server. */
+                user: components['schemas']['UserLite'] | null;
+            }[];
+            /** @description Which submission it was (1 for the first). null if unknown. */
+            attemptNumber: number | null;
+            /** @description The number of submissions when it was posted. null if unknown. */
+            attemptCount: number | null;
+            /** Format: date-time */
+            markedAt: string | null;
+            /** @description The intra login of the note author, for linking to their project page on intra. */
+            intraLogin: string | null;
         };
     };
     responses: never;
@@ -6689,6 +7810,8 @@ export interface operations {
                      * @default null
                      */
                     userId?: string | null;
+                    /** @default null */
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -6871,6 +7994,8 @@ export interface operations {
                         /** @enum {string} */
                         display: 'normal' | 'banner' | 'dialog';
                         isActive: boolean;
+                        /** Format: date-time */
+                        autoArchiveAt: string | null;
                         forExistingUsers: boolean;
                         silence: boolean;
                         needConfirmationToRead: boolean;
@@ -6944,6 +8069,7 @@ export interface operations {
                     silence?: boolean;
                     needConfirmationToRead?: boolean;
                     isActive?: boolean;
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -8031,6 +9157,78 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___add-from-url': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    name: string;
+                    url: string;
+                    /** @description Use `null` to reset the category. */
+                    category?: string | null;
+                    aliases?: string[];
+                    license?: string | null;
+                    isSensitive?: boolean;
+                    localOnly?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['EmojiDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___emoji___copy: {
         requestBody: {
             content: {
@@ -8441,6 +9639,76 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___merge-category': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    from: string;
+                    /** @description Use `null` to remove the category from the emojis. */
+                    to: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description The number of emojis moved. */
+                        count: number;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'admin___emoji___remove-aliases-bulk': {
         requestBody: {
             content: {
@@ -8677,6 +9945,163 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___suggest-tags': {
+        requestBody: {
+            content: {
+                'application/json': ({
+                    /** Format: misskey:id */
+                    emojiId: string;
+                } | {
+                    /** Format: misskey:id */
+                    fileId: string;
+                    name: string;
+                }) & {
+                    category?: string | null;
+                    /** @description Tags the emoji already has. They are not suggested again. Defaults to the aliases of the emoji. */
+                    currentTags?: string[];
+                    /** @description Tags suggested before. Claude suggests other words instead. */
+                    excludedTags?: string[];
+                    hint?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        tags: string[];
+                        category: {
+                            name: string;
+                            /** @description Whether the category does not exist yet. */
+                            isNew: boolean;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___test-tagging': {
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9277,6 +10702,216 @@ export interface operations {
             };
         };
     };
+    'admin___intra___create-account': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    login: string;
+                    /** @default false */
+                    manuallyVerified?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        userId: string;
+                        username: string;
+                        created: boolean;
+                        linked: boolean;
+                        url: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___intra___issue-passkey-setup': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        url: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___intra___set-password-login-allowed': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                    allowed: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___invite___create: {
         requestBody: {
             content: {
@@ -9525,6 +11160,16 @@ export interface operations {
                         backgroundImageUrl: string | null;
                         deeplAuthKey: string | null;
                         deeplIsPro: boolean;
+                        /** @description The last 4 characters of the Claude (Anthropic) API key (`****` for a very short key), or `null` if no key is set. The key itself is never returned. */
+                        anthropicApiKeyHint: string | null;
+                        /** @enum {string} */
+                        anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                        /** @description Instructions added to every emoji tag and category suggestion. */
+                        anthropicEmojiTaggingInstructions: string | null;
+                        /** @description Whether notes are translated with Claude instead of DeepL. Used only when the Claude API key is set. */
+                        anthropicTranslationEnabled: boolean;
+                        /** @enum {string} */
+                        anthropicTranslationModel: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                         defaultDarkTheme: string | null;
                         defaultLightTheme: string | null;
                         clientOptions: components['schemas']['MetaClientOptions'];
@@ -12000,6 +13645,96 @@ export interface operations {
                                 /** Format: misskey:id */
                                 userListId: string;
                             };
+                            pairJoinRequested?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairAccepted?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairClosed?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairInvited?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            pairApplicationCancelled?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            intraProjectFinished?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            intraProjectsRefreshed?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            intraLevelUp?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            acquaintanceSuggested?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            acquaintanceJoined?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
                         };
                         isModerator: boolean;
                         isSilenced: boolean;
@@ -12007,6 +13742,10 @@ export interface operations {
                         isHibernated: boolean;
                         lastActiveDate: string | null;
                         moderationNote: string;
+                        /** @description 42 intra のユーザー ID。intra と連携していないユーザーは null */
+                        intraId: number | null;
+                        /** @description 42 intra 連携が有効なときに、パスワード・パスキーでのログインを例外的に許可しているか */
+                        intraPasswordLoginAllowed: boolean;
                         signins: components['schemas']['Signin'][];
                         policies: components['schemas']['RolePolicies'];
                         roles: components['schemas']['Role'][];
@@ -13012,6 +14751,15 @@ export interface operations {
                     langs?: string[];
                     deeplAuthKey?: string | null;
                     deeplIsPro?: boolean;
+                    /** @description Use `null` or an empty string to delete the key. */
+                    anthropicApiKey?: string | null;
+                    /** @enum {string} */
+                    anthropicModel?: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                    /** @description Instructions added to every emoji tag and category suggestion. Use `null` or an empty string to remove them. */
+                    anthropicEmojiTaggingInstructions?: string | null;
+                    anthropicTranslationEnabled?: boolean;
+                    /** @enum {string} */
+                    anthropicTranslationModel?: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                     enableEmail?: boolean;
                     email?: string | null;
                     smtpSecure?: boolean;
@@ -14773,6 +16521,1203 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___cancel: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___create: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @description Required. Up to 100 characters after trimming. */
+                    title: string;
+                    /** @description YYYY-MM-DD (Asia/Tokyo). */
+                    date: string;
+                    /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                    startTime?: string | null;
+                    /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                    endTime?: string | null;
+                    /** @description Up to 128 characters. */
+                    location?: string | null;
+                    /** @description MFM. Up to 3000 characters. */
+                    description?: string | null;
+                    /** @description A single hashtag. The leading # is optional. */
+                    hashtag?: string | null;
+                    /** @default false */
+                    isAllDay?: boolean;
+                    /**
+                     * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId.
+                     * @default public
+                     * @enum {string}
+                     */
+                    visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                    /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                    visibleUserIds?: string[] | null;
+                    /**
+                     * Format: misskey:id
+                     * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                     */
+                    userListId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___delete: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___invitation-statuses': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    userIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        userId: string;
+                        /**
+                         * @description invitable: you can invite the user, subscribed: the user subscribes (including the creator), invited: the user has already been invited, unavailable: you cannot invite the user (yourself, or the user cannot see the event, or is suspended or deleted).
+                         * @enum {string}
+                         */
+                        status: 'invitable' | 'subscribed' | 'invited' | 'unavailable';
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___invite: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    userIds?: string[];
+                    /**
+                     * Format: misskey:id
+                     * @description One of your lists.
+                     */
+                    userListId?: string | null;
+                    /** @default false */
+                    dryRun?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description The number of users invited (with dryRun, the number of users who would be invited). */
+                        invited: number;
+                        /** @description Skipped because they already subscribe (including the creator). */
+                        subscribed: number;
+                        /** @description Skipped because they have already been invited. */
+                        alreadyInvited: number;
+                        /** @description Skipped because they cannot see the event, are suspended or deleted, or are you. */
+                        unavailable: number;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___link-note': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___list: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @description YYYY-MM (Asia/Tokyo). */
+                    month: string;
+                    /**
+                     * @description all: every event, subscribed: events you subscribe to (including your own), mine: events you created.
+                     * @default all
+                     * @enum {string}
+                     */
+                    filter?: 'all' | 'subscribed' | 'mine';
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___notes: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Note'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___show: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___subscribe: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___subscribers: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /** @default 30 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    /**
+                     * @description Moderators only: also show events outside your visibility (the moderator view). Ignored for other users.
+                     * @default false
+                     */
+                    moderatorView?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /**
+                         * Format: id
+                         * @description The subscription ID (use it for sinceId / untilId).
+                         */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        user: components['schemas']['UserLite'];
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'calendar___events___unlink-note': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___unsubscribe: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___upcoming: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 5 */
+                    limit?: number;
+                    /**
+                     * @description all: every event, subscribed: events you subscribe to (including your own), mine: events you created.
+                     * @default all
+                     * @enum {string}
+                     */
+                    filter?: 'all' | 'subscribed' | 'mine';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    calendar___events___update: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    eventId: string;
+                    /** @description Required. Up to 100 characters after trimming. */
+                    title?: string;
+                    /** @description YYYY-MM-DD (Asia/Tokyo). */
+                    date?: string;
+                    /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                    startTime?: string | null;
+                    /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                    endTime?: string | null;
+                    /** @description Up to 128 characters. */
+                    location?: string | null;
+                    /** @description MFM. Up to 3000 characters. */
+                    description?: string | null;
+                    /** @description A single hashtag. The leading # is optional. */
+                    hashtag?: string | null;
+                    isAllDay?: boolean;
+                    /**
+                     * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId. Narrowing it unsubscribes the users who can no longer see the event.
+                     * @enum {string}
+                     */
+                    visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                    /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                    visibleUserIds?: string[] | null;
+                    /**
+                     * Format: misskey:id
+                     * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                     */
+                    userListId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarEvent'];
                 };
             };
             /** @description Client error */
@@ -24629,7 +27574,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                     name: string;
                     credential: Record<string, never>;
@@ -24834,7 +27779,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                 };
             };
@@ -24900,7 +27845,7 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
-                    password: string;
+                    password?: string;
                     token?: string | null;
                     credentialId: string;
                 };
@@ -25243,6 +28188,276 @@ export interface operations {
             };
         };
     };
+    'i___calendar-feed': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarFeedUrls'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-feed___regenerate': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarFeedUrls'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-notification-settings': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarNotificationSettings'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___calendar-notification-settings___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    week?: boolean;
+                    day?: boolean;
+                    today?: boolean;
+                    changes?: boolean;
+                    invited?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['CalendarNotificationSettings'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'i___change-password': {
         requestBody: {
             content: {
@@ -25312,7 +28527,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @enum {string} */
-                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead' | 'intraReferral1' | 'intraReferral5' | 'intraReferral10';
                 };
             };
         };
@@ -26536,6 +29751,261 @@ export interface operations {
             };
         };
     };
+    'i___intra-roles': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @enum {string} */
+                        kind: 'level' | 'campus' | 'pool' | 'cohort' | 'coalition';
+                        /** Format: id */
+                        roleId: string;
+                        name: string;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___intra___project-results': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['IntraProjectResult'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___intra___refresh-project-results': {
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___intra___start-reauth': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     i___move: {
         requestBody: {
             content: {
@@ -26624,8 +30094,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -26709,8 +30179,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -27889,6 +31359,9 @@ export interface operations {
                     publicReactions?: boolean;
                     carefulBot?: boolean;
                     autoAcceptFollowed?: boolean;
+                    pairInvitationsEnabled?: boolean;
+                    followApprovalLocalSeconds?: number | null;
+                    followApprovalRemoteSeconds?: number | null;
                     noCrawle?: boolean;
                     preventAiLearning?: boolean;
                     requireSigninToViewContents?: boolean;
@@ -28057,6 +31530,87 @@ export interface operations {
                             userListId: string;
                         };
                         test?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairJoinRequested?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairAccepted?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairClosed?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairInvited?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        pairApplicationCancelled?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        intraProjectFinished?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        intraProjectsRefreshed?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        intraLevelUp?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        acquaintanceJoined?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {
@@ -29622,6 +33176,52 @@ export interface operations {
                         expiresAt?: number | null;
                         expiredAfter?: number | null;
                     } | null;
+                    /**
+                     * Format: misskey:id
+                     * @description 42times: Link the note to an existing calendar event. Cannot be used with calendarEvent.
+                     */
+                    calendarEventId?: string | null;
+                    /** @description 42times: Create a calendar event announced by the note. If description is omitted, the note text is used (unless the note has a CW). Cannot be used with calendarEventId. */
+                    calendarEvent?: {
+                        /** @description Required. Up to 100 characters after trimming. */
+                        title: string;
+                        /** @description YYYY-MM-DD (Asia/Tokyo). */
+                        date: string;
+                        /** @description HH:mm (Asia/Tokyo). Required unless isAllDay is true. */
+                        startTime?: string | null;
+                        /** @description HH:mm (Asia/Tokyo). Must be after startTime on the same day. Ignored if isAllDay is true. */
+                        endTime?: string | null;
+                        /** @description Up to 128 characters. */
+                        location?: string | null;
+                        /** @description MFM. Up to 3000 characters. */
+                        description?: string | null;
+                        /** @description A single hashtag. The leading # is optional. */
+                        hashtag?: string | null;
+                        /** @default false */
+                        isAllDay?: boolean;
+                        /**
+                         * @description public: everyone, followers: your followers, mutual: your mutual followers, specified: visibleUserIds, list: members of userListId.
+                         * @default public
+                         * @enum {string}
+                         */
+                        visibility?: 'public' | 'followers' | 'mutual' | 'specified' | 'list';
+                        /** @description Required when visibility is specified. Local users other than the creator. The users are invited to the event. */
+                        visibleUserIds?: string[] | null;
+                        /**
+                         * Format: misskey:id
+                         * @description Required when visibility is list. One of the creator's lists. The members are invited to the event.
+                         */
+                        userListId?: string | null;
+                    } | null;
+                    /**
+                     * Format: misskey:id
+                     * @description 42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.
+                     */
+                    intraProjectResultId?: string | null;
+                    /** @description 42times: The intra team ID of the submission to attach (one of the result's submissions). Omit for the latest submission. Ignored without intraProjectResultId. */
+                    intraProjectTeamId?: number | null;
+                    /** @description 42times: Attach a 42 intra level you have reached (up to your current level). The note can then have no text. */
+                    intraLevel?: number | null;
                 };
             };
         };
@@ -30399,6 +33999,87 @@ export interface operations {
                 };
                 content: {
                     'application/json': components['schemas']['Note'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___history: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        id: string;
+                        text: string | null;
+                        cw: string | null;
+                        /**
+                         * Format: date-time
+                         * @description When this version was written (the note creation or the previous edit).
+                         */
+                        createdAt: string;
+                        /**
+                         * Format: date-time
+                         * @description When this version was replaced by the next edit.
+                         */
+                        replacedAt: string;
+                    }[];
                 };
             };
             /** @description Client error */
@@ -31851,6 +35532,95 @@ export interface operations {
                     'application/json': components['schemas']['Error'];
                 };
             };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___translations: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    noteIds: string[];
+                    targetLang: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        noteId: string;
+                        sourceLang: string;
+                        text: string;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
             /** @description Internal server error */
             500: {
                 headers: {
@@ -31876,6 +35646,85 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___update: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    noteId: string;
+                    text: string | null;
+                    cw: string | null;
+                    /** @enum {string} */
+                    visibility?: 'public' | 'home' | 'followers';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Note'];
                 };
             };
             /** @description Client error */
@@ -32775,6 +36624,1136 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___accept': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___apply': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    wantedProjectSlugs?: string[] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___cancel-invitation': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___close': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___create': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    projectSlug?: string;
+                    projectSlugs?: string[];
+                    teamSize: number;
+                    /** @enum {string} */
+                    startTiming: 'now' | 'nextWeek' | 'nextMonth' | 'date';
+                    startDate?: string | null;
+                    comment?: string | null;
+                    /** @default false */
+                    announce?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___decline': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___invite': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    userIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___invite-candidates': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    projectSlug?: string | null;
+                    query?: string | null;
+                    /** @default 30 */
+                    limit?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairInviteCandidate'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___list': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /**
+                     * @default open
+                     * @enum {string}
+                     */
+                    tab?: 'open' | 'mine' | 'joined';
+                    projectSlug?: string | null;
+                    /** @default false */
+                    onlyWorkable?: boolean;
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitment'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___open-chat': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        roomId: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___projects': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentProject'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___reject': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___show': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                    projectSlugs?: string[];
+                    teamSize?: number;
+                    /** @enum {string} */
+                    startTiming?: 'now' | 'nextWeek' | 'nextMonth' | 'date';
+                    startDate?: string | null;
+                    comment?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'pair-recruitments___withdraw': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    recruitmentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['PairRecruitmentDetailed'];
                 };
             };
             /** @description Client error */

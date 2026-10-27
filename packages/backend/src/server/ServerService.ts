@@ -20,6 +20,7 @@ import * as Acct from '@/misc/acct.js';
 import { genIdenticon } from '@/misc/gen-identicon.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { CacheService } from '@/core/CacheService.js';
 import { bindThis } from '@/decorators.js';
 import { envOption } from '@/env.js';
 import { ActivityPubServerService } from './ActivityPubServerService.js';
@@ -29,10 +30,13 @@ import { StreamingApiServerService } from './api/StreamingApiServerService.js';
 import { WellKnownServerService } from './WellKnownServerService.js';
 import { FileServerService } from './FileServerService.js';
 import { HealthServerService } from './HealthServerService.js';
+import { CalendarFeedServerService } from './CalendarFeedServerService.js';
 import { ClientServerService } from './web/ClientServerService.js';
 import { OpenApiServerService } from './api/openapi/OpenApiServerService.js';
 import { OAuth2ProviderService } from './oauth/OAuth2ProviderService.js';
 import { registerHttpAccessLog } from './http-access-log.js';
+import { createMediaGateUserChecker, mediaGateRouteOptions } from './media-gate-hooks.js';
+import { INTRA_X_ROBOTS_TAG, isIntraMode } from '@/core/intra/intra-visitor.js';
 
 const _dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -66,10 +70,12 @@ export class ServerService implements OnApplicationShutdown {
 		private nodeinfoServerService: NodeinfoServerService,
 		private fileServerService: FileServerService,
 		private healthServerService: HealthServerService,
+		private calendarFeedServerService: CalendarFeedServerService,
 		private clientServerService: ClientServerService,
 		private globalEventService: GlobalEventService,
 		private loggerService: LoggerService,
 		private oauth2ProviderService: OAuth2ProviderService,
+		private cacheService: CacheService,
 	) {
 		this.logger = this.loggerService.getLogger('server', 'gray');
 	}
@@ -88,6 +94,14 @@ export class ServerService implements OnApplicationShutdown {
 		if (this.config.url.startsWith('https') && !this.config.disableHsts) {
 			fastify.addHook('onRequest', (request, reply, done) => {
 				reply.header('strict-transport-security', 'max-age=15552000; preload');
+				done();
+			});
+		}
+
+		// 学内SNSモードでは、すべての応答 (HTML・API・メディア) を検索エンジンにインデックスさせない
+		if (isIntraMode(this.config)) {
+			fastify.addHook('onRequest', (request, reply, done) => {
+				reply.header('X-Robots-Tag', INTRA_X_ROBOTS_TAG);
 				done();
 			});
 		}
@@ -161,8 +175,13 @@ export class ServerService implements OnApplicationShutdown {
 		fastify.register(this.oauth2ProviderService.createServer, { prefix: '/oauth' });
 		fastify.register(this.oauth2ProviderService.createTokenServer, { prefix: '/oauth/token' });
 		fastify.register(this.healthServerService.createServer, { prefix: '/healthz' });
+		// 42times: カレンダー配信 (iCalendar)。ClientServerService の /* より先に登録する
+		fastify.register(this.calendarFeedServerService.createServer);
 
-		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', async (request, reply) => {
+		// アバター・カスタム絵文字・identicon は、mediaGate が有効ならログイン中のブラウザ (メディア用 Cookie を持つもの) にだけ返す
+		const mediaGateOptions = mediaGateRouteOptions(this.config.mediaGate, createMediaGateUserChecker(this.cacheService, this.usersRepository));
+
+		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', mediaGateOptions, async (request, reply) => {
 			const path = request.params.path;
 
 			reply.header('Cache-Control', 'public, max-age=86400');
@@ -220,7 +239,7 @@ export class ServerService implements OnApplicationShutdown {
 			);
 		});
 
-		fastify.get<{ Params: { acct: string } }>('/avatar/@:acct', async (request, reply) => {
+		fastify.get<{ Params: { acct: string } }>('/avatar/@:acct', mediaGateOptions, async (request, reply) => {
 			const { username, host } = Acct.parse(request.params.acct);
 			const user = await this.usersRepository.findOne({
 				where: {
@@ -239,7 +258,7 @@ export class ServerService implements OnApplicationShutdown {
 			}
 		});
 
-		fastify.get<{ Params: { x: string } }>('/identicon/:x', async (request, reply) => {
+		fastify.get<{ Params: { x: string } }>('/identicon/:x', mediaGateOptions, async (request, reply) => {
 			reply.header('Content-Type', 'image/png');
 			reply.header('Cache-Control', 'public, max-age=86400');
 

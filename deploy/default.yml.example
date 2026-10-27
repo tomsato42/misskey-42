@@ -1,0 +1,118 @@
+# misskey-42 (https://42times.kinachan.com) の本番用設定の例。
+# VPS の /home/misskey/42times/.config/default.yml にコピーし、「ここに入れる」と書いた値を書き換える。
+# 書き換えた後のファイルは秘密の値を含むので、リポジトリにコミットしない。
+# 各項目の詳しい説明はリポジトリの .config/example.yml を参照。
+
+#   ┌─────┐
+#───┘ URL └─────────────────────────────────────────────────────
+
+# 一度起動した後は変えない
+url: https://42times.kinachan.com/
+
+#   ┌───────────────────────┐
+#───┘ 待ち受けとプロキシ └───────────────────────────────────────
+
+# 既存の Misskey (mi.kinachan.com) が 3000 を使っているので 3001 にする。
+# Docker の healthcheck.sh はこの行 (行頭の port:) を読む
+port: 3001
+
+# 構成は Cloudflare → nginx (同じ VPS) → Misskey。
+# nginx が real_ip モジュールで CF-Connecting-IP からクライアントの IP を取り出し、
+# X-Forwarded-For をその 1 つの値で上書きして渡す (deploy/nginx/42times.kinachan.com.conf)。
+# そのため Misskey は、同じ VPS の nginx (ループバック) だけを信頼すればよい。
+# Cloudflare の IP 範囲はここには書かない (nginx 側だけで管理する)
+trustProxy:
+  - '127.0.0.1/32'
+  - '::1/128'
+
+#   ┌─────────────────────────────┐
+#───┘ 初期設定用のパスワード └───────────────────────────────────
+
+# 最初の管理者アカウントを作るときに必要なパスワード。
+# 学内SNSモードでも、管理者がまだいない間は誰でも管理者の作成画面を開けるので、必ず設定する。
+# 管理者を作った後は使われない
+setupPassword: 'ここに初期設定用のパスワードを入れる'
+
+#   ┌──────────────────────────┐
+#───┘ PostgreSQL └──────────────────────────────────────────────
+
+# VPS に直接入っている PostgreSQL 15 を、既存の Misskey と共有する。DB とロールは分ける
+db:
+  host: localhost
+  port: 5432
+  db: misskey42
+  user: misskey42
+  pass: 'ここに PostgreSQL の misskey42 ロールのパスワードを入れる'
+
+dbReplications: false
+
+#   ┌─────────────────────┐
+#───┘ Redis └───────────────────────────────────────────────────
+
+# VPS に直接入っている Redis を、既存の Misskey と共有する。
+# 既存の Misskey は DB 番号 0 を使っているので、別の DB 番号にし、prefix も付ける
+redis:
+  host: localhost
+  port: 6379
+  db: 1
+  prefix: 42times
+  # VPS の Redis はパスワード付き (既存の Misskey の default.yml の redis.pass と同じ値)
+  pass: 'ここに Redis のパスワードを入れる'
+
+#   ┌───────────────────────────┐
+#───┘ 全文検索 └──────────────────────────────────────────────
+
+fulltextSearch:
+  provider: sqlLike
+
+#   ┌───────────────┐
+#───┘ ID の形式 └────────────────────────────────────────────
+
+# 一度起動した後は変えない
+id: 'aidx'
+
+#   ┌──────────────────┐
+#───┘ 42 intra 連携 └────────────────────────────────────────────
+
+# 42 intra でアプリケーションを登録するときのリダイレクト URI:
+#   https://42times.kinachan.com/api/intra/callback
+intra:
+  clientId: 'ここに 42 intra のアプリケーションの UID を入れる'
+  clientSecret: 'ここに 42 intra のアプリケーションの SECRET を入れる'
+  # 在籍判定とレベルの取得に使う cursus の ID (省略時は 21 = 42cursus)
+  #cursusId: 21
+  # 42 API のベース URL (省略時は https://api.intra.42.fr)
+  #apiBaseUrl: https://api.intra.42.fr
+  # レベルのロールのアイコン (今は使っていない)。{level} がレベルの整数に置き換わる (deploy/badges/generate-level-badges.cjs で作り、nginx の /instance-assets/ から配信する)
+  #levelBadgeUrl: 'https://42times.kinachan.com/instance-assets/badges/lv-{level}.svg'
+  # コアリションのロールのアイコン。{id} が intra のコアリション ID に置き換わる (画像の置き方は deploy/README.md の「コアリションのアイコン」)
+  #coalitionIconUrl: 'https://42times.kinachan.com/instance-assets/coalitions/{id}.svg'
+
+#   ┌──────────────────────────────┐
+#───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────
+
+# secret は 32 文字以上のランダムな値 (例: openssl rand -base64 48)。
+# Cloudflare Worker (cloudflare/media-worker) の MEDIA_GATE_SECRET と同じ値にする
+mediaGate:
+  secret: 'ここに 32 文字以上のランダムな値を入れる'
+  # Worker の COOKIE_NAME と同じ値にする (省略時は mi_media_session)
+  #cookieName: mi_media_session
+  # Cookie の有効期間 (秒。省略時は 604800 = 7 日)
+  #ttlSec: 604800
+
+#   ┌─────────────────────┐
+#───┘ その他 └───────────────────────────────────────────────────
+
+# VPS は 3 コア・メモリ 2GB で、既存の Misskey と共有しているのでワーカーは 1 つにする
+clusterLimit: 1
+
+# アップロードの上限 (バイト)。nginx の client_max_body_size (250m) と合わせている。
+# Cloudflare の無料プランでは 1 リクエスト 100MB までしか通らない
+#maxFileSize: 262144000
+
+proxyBypassHosts:
+  - api.deepl.com
+  - api-free.deepl.com
+  - www.recaptcha.net
+  - hcaptcha.com
+  - challenges.cloudflare.com

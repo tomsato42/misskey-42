@@ -16,7 +16,7 @@ import components from '@/components/index.js';
 import { themeManager } from '@/theme.js';
 import { isDeviceDarkmode } from '@/utility/is-device-darkmode.js';
 import { i18n } from '@/i18n.js';
-import { refreshCurrentAccount, login } from '@/accounts.js';
+import { refreshCurrentAccount, login, ensureCurrentAccountListed } from '@/accounts.js';
 import { store } from '@/store.js';
 import { fetchInstance, instance } from '@/instance.js';
 import { updateDeviceKind } from '@/utility/device-kind.js';
@@ -31,6 +31,9 @@ import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
+import { isIntraVisitor } from '@/utility/intra-visitor.js';
+import { setAttachTokenToGetRequests } from '@/utility/misskey-api.js';
+import { setupMediaSession } from '@/utility/media-session.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
@@ -118,10 +121,14 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	await store.ready;
 	await deckStore.ready;
 
+	// instance は HTML に埋め込まれた meta で初期化済みなので、取得を待たずに設定できる
+	setAttachTokenToGetRequests(instance.intraLoginEnabled === true);
+
 	const fetchInstanceMetaPromise = fetchInstance();
 
 	fetchInstanceMetaPromise.then(() => {
 		miLocalStorage.setItem('v', instance.version);
+		setAttachTokenToGetRequests(instance.intraLoginEnabled === true);
 	});
 
 	//#region loginId
@@ -239,12 +246,19 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		}
 
 		refreshCurrentAccount();
+		ensureCurrentAccountListed();
+
+		// 画像・添付ファイル用の Cookie (backend の mediaGate)。切れている可能性が高いときだけ、画像を読み込む前に更新を待つ
+		await setupMediaSession($i);
 	}
 	//#endregion
 
-	try {
-		await fetchCustomEmojis();
-	} catch (err) { /* empty */ }
+	// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインでは絵文字の一覧を取得できない (backend が拒否する)
+	if (!isIntraVisitor()) {
+		try {
+			await fetchCustomEmojis();
+		} catch (err) { /* empty */ }
+	}
 
 	// analytics
 	fetchInstanceMetaPromise.then(async () => {

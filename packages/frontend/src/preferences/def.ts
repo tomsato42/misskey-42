@@ -15,6 +15,7 @@ import type { DeviceKind } from '@/utility/device-kind.js';
 import type { DeckProfile } from '@/deck.js';
 import type { WatermarkPreset } from '@/utility/watermark/WatermarkRenderer.js';
 import type { ImageFramePreset } from '@/utility/image-frame-renderer/ImageFrameRenderer.js';
+import type { PinnedRole } from '@/utility/pinned-roles.js';
 import { genId } from '@/utility/id.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 import { deepEqual } from '@/utility/deep-equal.js';
@@ -67,6 +68,21 @@ export const PREF_DEF = definePreferences({
 	pinnedUserLists: {
 		accountDependent: true,
 		default: [] as Misskey.entities.UserList[],
+	},
+	// 42times: タイムラインのタブに出すロール
+	pinnedRoles: {
+		accountDependent: true,
+		default: [] as PinnedRole[],
+	},
+	// 42times: pinnedRoles に入学時期のロールを一度だけ足したか (boot/main-boot.ts)。ユーザーが後で外したら足し直さないための印
+	'roleTimeline.cohortRoleAdded': {
+		accountDependent: true,
+		default: false,
+	},
+	// 42times: pinnedRoles に足した入学時期のロールの ID (boot/main-boot.ts)。入学時期のロールが変わったときに差し替えるため
+	'roleTimeline.cohortRoleId': {
+		accountDependent: true,
+		default: null as string | null,
 	},
 	uploadFolder: {
 		accountDependent: true,
@@ -185,13 +201,20 @@ export const PREF_DEF = definePreferences({
 	collapseRenotes: {
 		default: true,
 	},
+	// 42times: 誰かが翻訳したノートは、最初から訳を出す
+	showCachedTranslations: {
+		default: true,
+	},
 	menu: {
 		default: [
 			'notifications',
+			'calendar',
 			'clips',
 			'drive',
 			'followRequests',
 			'chat',
+			'pair',
+			'projectShare',
 			'-',
 			'explore',
 			'announcements',
@@ -200,6 +223,18 @@ export const PREF_DEF = definePreferences({
 			'-',
 			'ui',
 		],
+	},
+	// 42times: 既存の menu に calendar を一度だけ足したか (boot/main-boot.ts)。ユーザーが後で消したら足し直さないための印
+	'calendar.menuItemAdded': {
+		default: false,
+	},
+	// 42times: 既存の menu に projectShare (点数を共有) を一度だけ足したか (boot/main-boot.ts)
+	'intraProjectResult.menuItemAdded': {
+		default: false,
+	},
+	// 42times: カレンダーを管理人ビュー (公開範囲の外のイベントも出す) で見るか。モデレーター以上にだけ効く
+	'calendar.moderatorView': {
+		default: false,
 	},
 	statusbars: {
 		default: [] as StatusbarStore[],
