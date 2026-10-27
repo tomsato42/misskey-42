@@ -11164,6 +11164,8 @@ export interface operations {
                         anthropicApiKeyHint: string | null;
                         /** @enum {string} */
                         anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                        /** @description Instructions added to every emoji tag and category suggestion. */
+                        anthropicEmojiTaggingInstructions: string | null;
                         /** @description Whether notes are translated with Claude instead of DeepL. Used only when the Claude API key is set. */
                         anthropicTranslationEnabled: boolean;
                         /** @enum {string} */
@@ -14753,6 +14755,8 @@ export interface operations {
                     anthropicApiKey?: string | null;
                     /** @enum {string} */
                     anthropicModel?: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                    /** @description Instructions added to every emoji tag and category suggestion. Use `null` or an empty string to remove them. */
+                    anthropicEmojiTaggingInstructions?: string | null;
                     anthropicTranslationEnabled?: boolean;
                     /** @enum {string} */
                     anthropicTranslationModel?: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';

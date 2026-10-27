@@ -615,6 +615,7 @@ _emojiTagging:
   resuggestSelected: "Suggest again for selected"
   resuggestThisRow: "Suggest again for this row"
   hint: "Hint"
+  instructions: "Instructions for all suggestions"
   apply: "Apply"
   applied: "Applied"
   applyAll: "Apply all suggestions ({count})"
@@ -654,7 +655,6 @@ _emojiTagging:
     failed: "Couldn't get tags from Claude."
 _noteTranslation:
   showCachedTranslations: "Show translations of already-translated notes right away"
-  showCachedTranslationsDescription: "For notes someone has already translated, the translation is shown without you having to translate it."
 _emojiCategoryMerge:
   title: "Merge categories"
   from: "Category to retire"

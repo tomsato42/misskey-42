@@ -593,6 +593,7 @@ _emojiTagging:
   resuggestSelected: "重新建议所选项"
   resuggestThisRow: "重新建议此行"
   hint: "提示"
+  instructions: "适用于所有建议的指示"
   apply: "应用"
   applied: "已应用"
   applyAll: "应用所有建议（{count}）"
@@ -632,7 +633,6 @@ _emojiTagging:
     failed: "未能从 Claude 获取标签。"
 _noteTranslation:
   showCachedTranslations: "已翻译的帖子从一开始就显示译文"
-  showCachedTranslationsDescription: "对于有人翻译过的帖子，无需自己翻译即可显示译文。"
 _emojiCategoryMerge:
   title: "合并类别"
   from: "要废弃的类别"

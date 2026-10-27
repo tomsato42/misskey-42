@@ -33,7 +33,7 @@ function textResponse(json: unknown, stopReason = 'end_turn') {
 const categories = (...names: string[]) => names.map(name => ({ name, count: 1, examples: [`${name}_example`] }));
 
 describe('EmojiTagSuggestionService', () => {
-	let meta: Pick<MiMeta, 'anthropicApiKey' | 'anthropicModel'>;
+	let meta: Pick<MiMeta, 'anthropicApiKey' | 'anthropicModel' | 'anthropicEmojiTaggingInstructions'>;
 	let calls: Record<string, any>[];
 	let respond: () => Promise<unknown>;
 	let downloadFails: boolean;
@@ -49,7 +49,7 @@ describe('EmojiTagSuggestionService', () => {
 	});
 
 	beforeEach(() => {
-		meta = { anthropicApiKey: API_KEY, anthropicModel: 'claude-sonnet-5-5' };
+		meta = { anthropicApiKey: API_KEY, anthropicModel: 'claude-sonnet-5-5', anthropicEmojiTaggingInstructions: null };
 		calls = [];
 		respond = async () => textResponse({ tags: ['うれしい', 'にこ', 'smile'], category: 'きもち' });
 		downloadFails = false;
@@ -85,6 +85,17 @@ describe('EmojiTagSuggestionService', () => {
 		expect(params.system[1].text).toContain('- たべもの (1 件。例: たべもの_example)');
 		expect(params.messages[0].content[1].text).toContain('動き: 静止画');
 		expect(params.fallbacks).toBe('default');
+	});
+
+	test('管理者の指示があれば、カテゴリ一覧の前に入れて一緒にキャッシュする', async () => {
+		meta.anthropicEmojiTaggingInstructions = '動物の絵文字は「どうぶつ」に入れる';
+		await service.suggest('https://example.com/cat.png', request, categories('きもち'));
+		const system = calls[0].system;
+		expect(system).toHaveLength(3);
+		expect(system[1].text).toContain('動物の絵文字は「どうぶつ」に入れる');
+		expect(system[1].cache_control).toBeUndefined();
+		expect(system[2].text).toContain('今あるカテゴリ');
+		expect(system[2].cache_control).toEqual({ type: 'ephemeral' });
 	});
 
 	test('今あるカテゴリに無ければ新しいカテゴリとして返す', async () => {

@@ -19,6 +19,7 @@ import {
 	EMOJI_TAGGING_SYSTEM_PROMPT,
 	EMOJI_TAGS_SCHEMA,
 	buildCategoryListPrompt,
+	buildInstructionsPrompt,
 	buildEmojiTaggingPrompt,
 	normalizeSuggestedCategory,
 	normalizeSuggestedTags,
@@ -87,13 +88,15 @@ export class EmojiTagSuggestionService {
 		// 画像を取りに行く前に、キーが無いことを知らせる
 		this.anthropicService.getClient();
 		const image = await this.loadImage(imageUrl);
+		const instructions = buildInstructionsPrompt(this.meta.anthropicEmojiTaggingInstructions);
 
 		const parsed = await this.anthropicService.createJson({
 			model: toEmojiTaggingModel(this.meta.anthropicModel),
 			schema: EMOJI_TAGS_SCHEMA,
-			// 指示とカテゴリ一覧はどの絵文字でも同じなので、まとめて提案するときはキャッシュが効く
+			// 指示・管理者の指示・カテゴリ一覧はどの絵文字でも同じなので、まとめて提案するときはキャッシュが効く
 			system: [
 				{ type: 'text', text: EMOJI_TAGGING_SYSTEM_PROMPT },
+				...(instructions != null ? [{ type: 'text' as const, text: instructions }] : []),
 				{ type: 'text', text: buildCategoryListPrompt(categories), cache_control: { type: 'ephemeral' } },
 			],
 			content: [

@@ -232,7 +232,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<MkPreferenceContainer k="showCachedTranslations">
 										<MkSwitch v-model="showCachedTranslations">
 											<template #label><SearchLabel>{{ i18n.ts._noteTranslation.showCachedTranslations }}</SearchLabel></template>
-											<template #caption><SearchText>{{ i18n.ts._noteTranslation.showCachedTranslationsDescription }}</SearchText></template>
 										</MkSwitch>
 									</MkPreferenceContainer>
 								</SearchMarker>

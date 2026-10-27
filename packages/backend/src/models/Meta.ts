@@ -395,6 +395,15 @@ export class MiMeta {
 	public anthropicModel: string;
 
 	/**
+	 * 絵文字のタグとカテゴリの提案すべてに添える、管理者の指示
+	 */
+	@Column('varchar', {
+		length: 2000,
+		nullable: true,
+	})
+	public anthropicEmojiTaggingInstructions: string | null;
+
+	/**
 	 * ノートの翻訳に DeepL ではなく Claude を使うか (anthropicApiKey があるときだけ)
 	 */
 	@Column('boolean', {

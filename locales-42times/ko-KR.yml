@@ -593,6 +593,7 @@ _emojiTagging:
   resuggestSelected: "고른 항목 다시 제안"
   resuggestThisRow: "이 행 다시 제안"
   hint: "힌트"
+  instructions: "모든 제안에 대한 지시"
   apply: "반영"
   applied: "반영됨"
   applyAll: "제안된 항목 모두 반영 ({count})"
@@ -632,7 +633,6 @@ _emojiTagging:
     failed: "Claude로부터 태그를 받지 못했습니다."
 _noteTranslation:
   showCachedTranslations: "번역된 노트는 처음부터 번역문 표시"
-  showCachedTranslationsDescription: "누군가 번역한 노트는 직접 번역하지 않아도 번역문을 표시합니다."
 _emojiCategoryMerge:
   title: "카테고리 합치기"
   from: "없앨 카테고리"

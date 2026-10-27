@@ -76,6 +76,17 @@ describe('絵文字のタグの提案', () => {
 		assert.ok(!JSON.stringify(logs[0]).includes(apiKey));
 	});
 
+	test('すべての提案に添える指示を保存し、空にすると消す', async () => {
+		await successfulApiCall({ endpoint: 'admin/update-meta', parameters: { anthropicEmojiTaggingInstructions: ' 動物は「どうぶつ」へ ' }, user: root });
+		assert.strictEqual((await successfulApiCall({ endpoint: 'admin/meta', parameters: {}, user: root })).anthropicEmojiTaggingInstructions, '動物は「どうぶつ」へ');
+
+		await successfulApiCall({ endpoint: 'admin/update-meta', parameters: { anthropicEmojiTaggingInstructions: '' }, user: root });
+		assert.strictEqual((await successfulApiCall({ endpoint: 'admin/meta', parameters: {}, user: root })).anthropicEmojiTaggingInstructions, null);
+
+		const res = await api('admin/update-meta', { anthropicEmojiTaggingInstructions: 'あ'.repeat(2001) }, root);
+		assert.strictEqual(res.status, 400);
+	});
+
 	test('空にするとキーを消す', async () => {
 		await successfulApiCall({ endpoint: 'admin/update-meta', parameters: { anthropicApiKey: '' }, user: root });
 		const meta = await successfulApiCall({ endpoint: 'admin/meta', parameters: {}, user: root });
