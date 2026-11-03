@@ -193,6 +193,7 @@ import { getCalendarApiErrorMessage } from '@/utility/calendar-event-messages.js
 import { buildCalendarNoteParams, getCalendarNoteFormUnavailableReason, getCalendarNoteUnlinkableReason } from '@/utility/calendar-note.js';
 import { noteVisibilityToCalendarVisibility } from '@/utility/calendar-visibility.js';
 import { emitNoteUpdated } from '@/utility/note-edit.js';
+import { closeAppAfterPost } from '@/utility/close-after-post.js';
 
 const $i = ensureSignin();
 
@@ -1462,6 +1463,10 @@ async function post(ev?: PointerEvent) {
 
 			if (serverDraftId.value != null) {
 				misskeyApi('notes/drafts/delete', { draftId: serverDraftId.value });
+			}
+
+			if (prefer.s.closeAfterPost && !props.mock) {
+				closeAppAfterPost();
 			}
 		});
 	}).catch(err => {

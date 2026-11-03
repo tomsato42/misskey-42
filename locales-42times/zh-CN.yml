@@ -1,3 +1,5 @@
+closeAfterPost: "发帖后关闭应用"
+closeAfterPostDescription: "在电脑上会关闭标签页。无法关闭时或在其他设备上，会跳转到空白页面。"
 noteEditEmpty: "正文不能为空"
 noteEditHistory: "编辑历史"
 noteEditHistoryOriginal: "最初版本"

@@ -367,6 +367,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkPreferenceContainer>
 							</SearchMarker>
 
+							<SearchMarker :keywords="['close', 'post', 'tab', 'exit']">
+								<MkPreferenceContainer k="closeAfterPost">
+									<MkSwitch v-model="closeAfterPost">
+										<template #label><SearchLabel>{{ i18n.ts.closeAfterPost }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts.closeAfterPostDescription }}</template>
+									</MkSwitch>
+								</MkPreferenceContainer>
+							</SearchMarker>
+
 							<SearchMarker :keywords="['remember', 'keep', 'note', 'visibility']">
 								<MkPreferenceContainer k="rememberNoteVisibility">
 									<MkSwitch v-model="rememberNoteVisibility">
@@ -927,6 +936,7 @@ const overridedDeviceKind = prefer.model('overridedDeviceKind');
 const pollingInterval = prefer.model('pollingInterval');
 const showTitlebar = prefer.model('showTitlebar');
 const keepCw = prefer.model('keepCw');
+const closeAfterPost = prefer.model('closeAfterPost');
 const serverDisconnectedBehavior = prefer.model('serverDisconnectedBehavior');
 const hemisphere = prefer.model('hemisphere');
 const showNoteActionsOnlyHover = prefer.model('showNoteActionsOnlyHover');

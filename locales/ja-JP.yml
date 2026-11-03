@@ -919,6 +919,8 @@ usernameInfo: "サーバー上であなたのアカウントを一意に識別�
 aiChanMode: "藍モード"
 devMode: "開発者モード"
 keepCw: "CWを維持する"
+closeAfterPost: "投稿したらアプリを閉じる"
+closeAfterPostDescription: "PC ではタブを閉じます。閉じられないときや PC 以外では真っ白の画面に移ります。"
 pubSub: "Pub/Subのアカウント"
 lastCommunication: "直近の通信"
 resolved: "解決済み"
