@@ -1108,4 +1108,29 @@ describe('Note', () => {
 			assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
 		});
 	});
+	describe('ノートの作成を許可しないロール', () => {
+		test('ノート・リプライ・リノート・編集はできず、リアクションと投票はできる', async () => {
+			const carol = await signup({ username: 'carol_reaction_only' });
+			const carolNote = await post(carol, { text: 'before' });
+			const aliceNote = await post(alice, { text: 'hello', poll: { choices: ['a', 'b'] } });
+			const reactionOnly = await role(root, {}, { canCreateNote: { priority: 2, useDefault: false, value: false } });
+			await api('admin/roles/assign', { userId: carol.id, roleId: reactionOnly.id }, root);
+
+			for (const params of [{ text: 'test' }, { text: 'reply', replyId: aliceNote.id }, { renoteId: aliceNote.id }, { text: 'quote', renoteId: aliceNote.id }]) {
+				const res = await api('notes/create', params, carol);
+				assert.strictEqual(res.status, 400);
+				assert.strictEqual(castAsError(res.body).error.code, 'CANNOT_CREATE_NOTE');
+			}
+
+			const update = await api('notes/update', { noteId: carolNote.id, text: 'after', cw: null }, carol);
+			assert.strictEqual(update.status, 400);
+			assert.strictEqual(castAsError(update.body).error.code, 'CANNOT_CREATE_NOTE');
+
+			const reaction = await api('notes/reactions/create', { noteId: aliceNote.id, reaction: '👍' }, carol);
+			assert.strictEqual(reaction.status, 204);
+
+			const vote = await api('notes/polls/vote', { noteId: aliceNote.id, choice: 0 }, carol);
+			assert.strictEqual(vote.status, 204);
+		});
+	});
 });

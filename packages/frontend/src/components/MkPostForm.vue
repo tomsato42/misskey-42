@@ -64,6 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button class="_buttonPrimary" style="padding: 4px; border-radius: 8px;" @click="addVisibleUser"><i class="ti ti-plus ti-fw"></i></button>
 		</div>
 	</div>
+	<MkInfo v-if="cannotCreateNote" warn :class="$style.cannotCreateNote">{{ i18n.ts.cannotCreateNoteForThisAccount }}</MkInfo>
 	<MkInfo v-if="!store.r.tips.value.postForm" :class="$style.showHowToUse" closable @close="closeTip('postForm')">
 		<button class="_textButton" @click="showTour">{{ i18n.ts._postForm.showHowToUse }}</button>
 	</MkInfo>
@@ -428,7 +429,11 @@ const editNotePoll = computed((): PollEditorModelValue | undefined => {
 });
 //#endregion
 
+// 42times: ロールでノートを作れなくした (リアクションだけできる) 人は、投稿も編集もできない
+const cannotCreateNote = computed(() => $i.policies.canCreateNote === false);
+
 const canPost = computed((): boolean => {
+	if (cannotCreateNote.value) return false;
 	if (props.editNote != null) return canSaveEdit.value;
 
 	return !props.mock && !posting.value && !posted.value && !uploader.uploading.value && (uploader.items.value.length === 0 || uploader.readyForUpload.value) &&
@@ -2071,6 +2076,10 @@ html[data-color-scheme=light] .preview {
 }
 
 .hasNotSpecifiedMentions {
+	margin: 0 20px 16px 20px;
+}
+
+.cannotCreateNote {
 	margin: 0 20px 16px 20px;
 }
 

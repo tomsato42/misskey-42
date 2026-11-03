@@ -5234,6 +5234,10 @@ export interface Locale extends ILocale {
      */
     "cannotSelectSensitiveMediaDescription": string;
     /**
+     * このアカウントではノートを投稿・編集できません (リアクションはできます)
+     */
+    "cannotCreateNoteForThisAccount": string;
+    /**
      * 説明文はありません
      */
     "noDescription": string;
@@ -8434,6 +8438,14 @@ export interface Locale extends ILocale {
              * ローカルタイムラインの閲覧
              */
             "ltlAvailable": string;
+            /**
+             * ノートの作成
+             */
+            "canCreateNote": string;
+            /**
+             * オフにすると、ノート・リプライ・リノート・引用・ノートの編集ができなくなります (リアクションと投票はできます)。ほかのロールでオンになっていると作成できるので、優先度を上げて設定してください。
+             */
+            "canCreateNote_caption": string;
             /**
              * パブリック投稿の許可
              */

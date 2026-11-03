@@ -4,6 +4,7 @@ noteEditHistory: "Edit history"
 noteEditHistoryOriginal: "Original"
 cannotSelectSensitiveMedia: "Sensitive media can't be selected"
 cannotSelectSensitiveMediaDescription: "If you see this error even though you didn't mark the file as sensitive yourself, it may have been flagged as sensitive automatically.\nIf the flag isn't needed under this server's rules, remove the sensitive setting from the file and try again."
+cannotCreateNoteForThisAccount: "This account can't post or edit notes (reactions are still allowed)"
 _followApproval:
   groupTitle: "Follow approval"
   inactiveDescription: "All follows require approval, so the period-based settings don't apply. If you stop requiring approval for follows, the settings below will apply again."
@@ -666,3 +667,7 @@ _emojiCategoryMerge:
   noCategories: "There are no emojis with a category."
 _deck:
   showHowToUse: "View UI guide"
+_role:
+  _options:
+    canCreateNote: "Create notes"
+    canCreateNote_caption: "When off, the user can't post notes, replies, renotes, or quotes, or edit notes (reactions and votes are still allowed). Notes can still be created if another role turns this on, so set a higher priority."

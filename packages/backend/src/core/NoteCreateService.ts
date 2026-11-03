@@ -276,6 +276,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
 
+	/** 42times: ロールでノートを作れなくした (リアクションだけできる) ローカルのユーザーは、リプライ・リノート・予約投稿も含めて作れない */
+	@bindThis
+	private async assertCanCreateNote(user: { id: MiUser['id']; host: MiUser['host']; }): Promise<void> {
+		if (user.host !== null) return;
+		if ((await this.roleService.getUserPolicies(user.id)).canCreateNote === false) {
+			throw new IdentifiableError('3e2bf5d3-c980-4f68-b5ea-79c41bfc75b4', 'You are not allowed to create notes');
+		}
+	}
+
 	@bindThis
 	public async fetchAndCreate(user: {
 		id: MiUser['id'];
@@ -301,6 +310,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		apEmojis?: string[] | null;
 		onInserted?: Option['onInserted'];
 	}): Promise<MiNote> {
+		await this.assertCanCreateNote(user);
+
 		const visibleUsers = data.visibleUserIds.length > 0 ? await this.usersRepository.findBy({
 			id: In(data.visibleUserIds),
 		}) : [];
@@ -451,6 +462,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		isBot: MiUser['isBot'];
 		isCat: MiUser['isCat'];
 	}, data: Option, silent = false): Promise<MiNote> {
+		await this.assertCanCreateNote(user);
+
 		// チャンネル外にリプライしたら対象のスコープに合わせる
 		// (クライアントサイドでやっても良い処理だと思うけどとりあえずサーバーサイドで)
 		if (data.reply && data.channel && data.reply.channelId !== data.channel.id) {

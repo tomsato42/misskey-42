@@ -1,6 +1,7 @@
 noteEditEmpty: "正文不能为空"
 noteEditHistory: "编辑历史"
 noteEditHistoryOriginal: "最初版本"
+cannotCreateNoteForThisAccount: "此账户无法发布或编辑帖子（仍可回应）"
 _initialTutorial:
   _calendar:
     title: "日历"
@@ -642,3 +643,7 @@ _emojiCategoryMerge:
   confirm: "将「{from}」中的 {count} 个表情符号移至「{to}」，并废弃「{from}」。确定吗？"
   confirmRemove: "将「{from}」中的 {count} 个表情符号设为未设置类别，并废弃「{from}」。确定吗？"
   noCategories: "没有带类别的表情符号。"
+_role:
+  _options:
+    canCreateNote: "创建帖子"
+    canCreateNote_caption: "关闭后将无法发布帖子、回复、转帖、引用，也无法编辑帖子（仍可回应和投票）。如果其他角色开启了此项，仍可创建，因此请设置较高的优先级。"
