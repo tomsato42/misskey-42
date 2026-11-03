@@ -3693,10 +3693,6 @@ export interface Locale extends ILocale {
      */
     "closeAfterPost": string;
     /**
-     * PC ではタブを閉じます。閉じられないときや PC 以外では真っ白の画面に移ります。
-     */
-    "closeAfterPostDescription": string;
-    /**
      * Pub/Subのアカウント
      */
     "pubSub": string;
