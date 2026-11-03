@@ -120,6 +120,8 @@ export const meta = {
 					intraProjectFinished: { optional: true, ...notificationRecieveConfig },
 					intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
 					intraLevelUp: { optional: true, ...notificationRecieveConfig },
+					acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
+					acquaintanceJoined: { optional: true, ...notificationRecieveConfig },
 				},
 			},
 			isModerator: {

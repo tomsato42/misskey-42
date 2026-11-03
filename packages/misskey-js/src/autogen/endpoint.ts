@@ -46,6 +46,8 @@ import type {
 	AdminEmojiAddRequest,
 	AdminEmojiAddResponse,
 	AdminEmojiAddAliasesBulkRequest,
+	AdminEmojiAddFromUrlRequest,
+	AdminEmojiAddFromUrlResponse,
 	AdminEmojiCopyRequest,
 	AdminEmojiCopyResponse,
 	AdminEmojiDeleteRequest,
@@ -55,10 +57,14 @@ import type {
 	AdminEmojiListResponse,
 	AdminEmojiListRemoteRequest,
 	AdminEmojiListRemoteResponse,
+	AdminEmojiMergeCategoryRequest,
+	AdminEmojiMergeCategoryResponse,
 	AdminEmojiRemoveAliasesBulkRequest,
 	AdminEmojiSetAliasesBulkRequest,
 	AdminEmojiSetCategoryBulkRequest,
 	AdminEmojiSetLicenseBulkRequest,
+	AdminEmojiSuggestTagsRequest,
+	AdminEmojiSuggestTagsResponse,
 	AdminEmojiUpdateRequest,
 	AdminFederationDeleteAllFilesRequest,
 	AdminFederationRefreshRemoteInstanceMetadataRequest,
@@ -593,6 +599,8 @@ import type {
 	NotesTimelineResponse,
 	NotesTranslateRequest,
 	NotesTranslateResponse,
+	NotesTranslationsRequest,
+	NotesTranslationsResponse,
 	NotesUnrenoteRequest,
 	NotesUpdateRequest,
 	NotesUpdateResponse,
@@ -772,16 +780,20 @@ export type Endpoints = {
 	'admin/drive/show-file': { req: AdminDriveShowFileRequest; res: AdminDriveShowFileResponse };
 	'admin/emoji/add': { req: AdminEmojiAddRequest; res: AdminEmojiAddResponse };
 	'admin/emoji/add-aliases-bulk': { req: AdminEmojiAddAliasesBulkRequest; res: EmptyResponse };
+	'admin/emoji/add-from-url': { req: AdminEmojiAddFromUrlRequest; res: AdminEmojiAddFromUrlResponse };
 	'admin/emoji/copy': { req: AdminEmojiCopyRequest; res: AdminEmojiCopyResponse };
 	'admin/emoji/delete': { req: AdminEmojiDeleteRequest; res: EmptyResponse };
 	'admin/emoji/delete-bulk': { req: AdminEmojiDeleteBulkRequest; res: EmptyResponse };
 	'admin/emoji/import-zip': { req: AdminEmojiImportZipRequest; res: EmptyResponse };
 	'admin/emoji/list': { req: AdminEmojiListRequest; res: AdminEmojiListResponse };
 	'admin/emoji/list-remote': { req: AdminEmojiListRemoteRequest; res: AdminEmojiListRemoteResponse };
+	'admin/emoji/merge-category': { req: AdminEmojiMergeCategoryRequest; res: AdminEmojiMergeCategoryResponse };
 	'admin/emoji/remove-aliases-bulk': { req: AdminEmojiRemoveAliasesBulkRequest; res: EmptyResponse };
 	'admin/emoji/set-aliases-bulk': { req: AdminEmojiSetAliasesBulkRequest; res: EmptyResponse };
 	'admin/emoji/set-category-bulk': { req: AdminEmojiSetCategoryBulkRequest; res: EmptyResponse };
 	'admin/emoji/set-license-bulk': { req: AdminEmojiSetLicenseBulkRequest; res: EmptyResponse };
+	'admin/emoji/suggest-tags': { req: AdminEmojiSuggestTagsRequest; res: AdminEmojiSuggestTagsResponse };
+	'admin/emoji/test-tagging': { req: EmptyRequest; res: EmptyResponse };
 	'admin/emoji/update': { req: AdminEmojiUpdateRequest; res: EmptyResponse };
 	'admin/federation/delete-all-files': { req: AdminFederationDeleteAllFilesRequest; res: EmptyResponse };
 	'admin/federation/refresh-remote-instance-metadata': { req: AdminFederationRefreshRemoteInstanceMetadataRequest; res: EmptyResponse };
@@ -1129,6 +1141,7 @@ export type Endpoints = {
 	'notes/thread-muting/delete': { req: NotesThreadMutingDeleteRequest; res: EmptyResponse };
 	'notes/timeline': { req: NotesTimelineRequest; res: NotesTimelineResponse };
 	'notes/translate': { req: NotesTranslateRequest; res: NotesTranslateResponse };
+	'notes/translations': { req: NotesTranslationsRequest; res: NotesTranslationsResponse };
 	'notes/unrenote': { req: NotesUnrenoteRequest; res: EmptyResponse };
 	'notes/update': { req: NotesUpdateRequest; res: NotesUpdateResponse };
 	'notes/user-list-timeline': { req: NotesUserListTimelineRequest; res: NotesUserListTimelineResponse };

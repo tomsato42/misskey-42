@@ -4,7 +4,7 @@
  */
 
 import * as mfm from 'mfm-js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
 import { CalendarEventValidationError } from './calendar-errors.js';
 import { resolveCalendarEventSchedule } from './calendar-time.js';
 import type { CalendarEventSchedule, CalendarEventScheduleInput } from './calendar-time.js';
@@ -44,7 +44,7 @@ function optionalText(value: string | null | undefined): string | null {
 /**
  * イベントのハッシュタグを保存する形にする。
  * 先頭の # (全角を含む) を除き、ノートのハッシュタグと同じく MFM のハッシュタグとして読めるものだけを受け付け、
- * normalizeForSearch (NFKC + 小文字) で正規化する。空なら null
+ * normalizeTag (NFKC + 小文字) で正規化する。空なら null
  * @throws CalendarEventValidationError (invalidHashtag / hashtagTooLong)
  */
 export function normalizeCalendarHashtag(value: string | null | undefined): string | null {
@@ -59,7 +59,7 @@ export function normalizeCalendarHashtag(value: string | null | undefined): stri
 		throw new CalendarEventValidationError('invalidHashtag');
 	}
 
-	const normalized = normalizeForSearch(tag);
+	const normalized = normalizeTag(tag);
 	if (codePointLength(normalized) > CALENDAR_EVENT_HASHTAG_MAX_LENGTH) {
 		throw new CalendarEventValidationError('hashtagTooLong');
 	}

@@ -10,6 +10,7 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
 import { IntraProjectResultNotAttachableError, IntraProjectResultNotFoundError, IntraProjectResultService } from '@/core/intra/IntraProjectResultService.js';
@@ -44,6 +45,12 @@ export const meta = {
 	},
 
 	errors: {
+		cannotCreateNote: {
+			message: 'You are not allowed to create notes.',
+			code: 'CANNOT_CREATE_NOTE',
+			id: 'c827f19d-9eef-4a7e-9999-053a8d664b87',
+		},
+
 		noSuchRenoteTarget: {
 			message: 'No such renote target.',
 			code: 'NO_SUCH_RENOTE_TARGET',
@@ -271,8 +278,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private calendarNotePostService: CalendarNotePostService,
 		private intraProjectResultService: IntraProjectResultService,
 		private intraLevelNoteService: IntraLevelNoteService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42times: ノートを作れないロール (リアクションだけできる) の人は、カレンダーなどを確かめる前に断る
+			if ((await this.roleService.getUserPolicies(me.id)).canCreateNote === false) {
+				throw new ApiError(meta.errors.cannotCreateNote);
+			}
+
 			// 42times: カレンダーのイベントの指定は、ノートを作る前に確かめる
 			const onInserted = await this.calendarNotePostService.prepare(me, {
 				calendarEventId: ps.calendarEventId,
@@ -348,7 +361,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			} catch (err) {
 				// TODO: 他のErrorもここでキャッチしてエラーメッセージを当てるようにしたい
 				if (err instanceof IdentifiableError) {
-					if (err.id === '689ee33f-f97c-479a-ac49-1b9f8140af99') {
+					if (err.id === '3e2bf5d3-c980-4f68-b5ea-79c41bfc75b4') {
+						throw new ApiError(meta.errors.cannotCreateNote);
+					} else if (err.id === '689ee33f-f97c-479a-ac49-1b9f8140af99') {
 						throw new ApiError(meta.errors.containsProhibitedWords);
 					} else if (err.id === '9f466dab-c856-48cd-9e65-ff90ff750580') {
 						throw new ApiError(meta.errors.containsTooManyMentions);

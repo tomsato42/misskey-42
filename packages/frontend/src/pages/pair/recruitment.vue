@@ -136,7 +136,7 @@ import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useRouter } from '@/router.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { canApply, canWorkOn, getDaysUntil, getGroupSizeText, getPairRecruitmentErrorText, getPairRecruitmentUrl, getRemainingSlots, getStartTimingText, isMultiProject } from '@/utility/pair-recruitment.js';

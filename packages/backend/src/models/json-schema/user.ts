@@ -528,6 +528,14 @@ export const packedMeDetailedOnlySchema = {
 			nullable: false, optional: false,
 			description: 'ペア募集の招待を受け取るか (42times)',
 		},
+		followApprovalLocalSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
+		followApprovalRemoteSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,
@@ -666,6 +674,9 @@ export const packedMeDetailedOnlySchema = {
 				intraProjectFinished: { optional: true, ...notificationRecieveConfig },
 				intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
 				intraLevelUp: { optional: true, ...notificationRecieveConfig },
+				// 42times: 登録したときに一度だけ届くので、i/update では設定できない
+				acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
+				acquaintanceJoined: { optional: true, ...notificationRecieveConfig },
 			},
 		},
 		emailNotificationTypes: {

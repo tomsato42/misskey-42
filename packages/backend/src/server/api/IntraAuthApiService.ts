@@ -78,11 +78,12 @@ export class IntraAuthApiService {
 	}
 
 	/**
-	 * GET /api/intra/authorize[?reauth=<チケット>]
-	 * reauth は、ログイン中のユーザーが本人確認のために 42 でログインし直すときに i/intra/start-reauth で発行したチケット
+	 * GET /api/intra/authorize[?reauth=<チケット>][?ref=<ユーザー ID>]
+	 * reauth は、ログイン中のユーザーが本人確認のために 42 でログインし直すときに i/intra/start-reauth で発行したチケット。
+	 * ref は、2次元コードを読み込んで来た人のときの、コードを見せた人のユーザー ID (アカウントを作ったら、その人を通知で案内する)
 	 */
 	@bindThis
-	public async authorize(request: FastifyRequest<{ Querystring: { reauth?: string; } }>, reply: FastifyReply) {
+	public async authorize(request: FastifyRequest<{ Querystring: { reauth?: string; ref?: string; } }>, reply: FastifyReply) {
 		if (await this.isRateLimited(request, authorizeLimit)) {
 			reply.code(429);
 			return { error: rateLimitExceededError };
@@ -91,7 +92,7 @@ export class IntraAuthApiService {
 		const reauthTicket = request.query.reauth;
 		const authorization = reauthTicket != null
 			? await this.intraAuthService.createReauthAuthorizeUrl(reauthTicket)
-			: await this.intraAuthService.createAuthorizeUrl();
+			: await this.intraAuthService.createAuthorizeUrl(request.query.ref);
 		if (authorization == null) {
 			return reply.redirect(buildIntraReauthResultUrl(this.config.url, 'error'), 302);
 		}

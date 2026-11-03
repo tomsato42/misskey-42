@@ -657,6 +657,10 @@ export interface Locale extends ILocale {
      */
     "selectAntenna": string;
     /**
+     * クリップを選択
+     */
+    "selectClip": string;
+    /**
      * アンテナを編集
      */
     "editAntenna": string;
@@ -3685,6 +3689,14 @@ export interface Locale extends ILocale {
      */
     "keepCw": string;
     /**
+     * 投稿したらアプリを閉じる
+     */
+    "closeAfterPost": string;
+    /**
+     * PC ではタブを閉じます。閉じられないときや PC 以外では真っ白の画面に移ります。
+     */
+    "closeAfterPostDescription": string;
+    /**
      * Pub/Subのアカウント
      */
     "pubSub": string;
@@ -5221,6 +5233,19 @@ export interface Locale extends ILocale {
      */
     "keepOriginalFilenameDescription": string;
     /**
+     * センシティブなメディアは選択できません
+     */
+    "cannotSelectSensitiveMedia": string;
+    /**
+     * 自分でセンシティブ設定を行っていないのにこのエラーが出ている場合、自動判定によりセンシティブなメディアとされている可能性があります。
+     * サーバーの規則に照らして不要な場合は、ファイルのセンシティブ設定を解除してもう一度お試しください。
+     */
+    "cannotSelectSensitiveMediaDescription": string;
+    /**
+     * このアカウントではノートを投稿・編集できません (リアクションはできます)
+     */
+    "cannotCreateNoteForThisAccount": string;
+    /**
      * 説明文はありません
      */
     "noDescription": string;
@@ -6360,6 +6385,64 @@ export interface Locale extends ILocale {
          */
         "forceBackup": string;
     };
+    "_followApproval": {
+        /**
+         * フォロー承認
+         */
+        "groupTitle": string;
+        /**
+         * すべてのフォローが承認制になるため、期間による設定は適用されません。フォローの承認制を解除すると、以下の設定が再び適用されます。
+         */
+        "inactiveDescription": string;
+        /**
+         * 新しいアカウントからのフォローを承認制にする
+         */
+        "title": string;
+        /**
+         * フォローを承認制にしている場合や、新しいアカウントからのフォローを保留する場合にも、あなたがフォローしている相手は自動承認します。
+         */
+        "autoAcceptDescription": string;
+        /**
+         * 指定した期間が経過していない相手からのフォローを、フォローリクエストとして保留します。既存のフォロワーには影響しません。フォローしている相手の自動承認が有効な場合、その相手は自動承認されます。
+         */
+        "description": string;
+        /**
+         * ローカルユーザーからのフォロー
+         */
+        "local": string;
+        /**
+         * このサーバーでのアカウント作成からの期間で判定します。
+         */
+        "localDescription": string;
+        /**
+         * リモートユーザーからのフォロー
+         */
+        "remote": string;
+        /**
+         * 相手のサーバーでの作成日時ではなく、このサーバーが初めてそのアカウントを認識してからの期間で判定します。
+         */
+        "remoteDescription": string;
+        /**
+         * 既定値を使う（現在は無効）
+         */
+        "useDefault": string;
+        /**
+         * 期間を指定する
+         */
+        "custom": string;
+        /**
+         * 承認が必要な期間
+         */
+        "period": string;
+        /**
+         * 単位
+         */
+        "unit": string;
+        /**
+         * 期間が正しくありません。1秒以上の期間を、指定できる範囲内で入力してください。
+         */
+        "invalidPeriod": string;
+    };
     "_accountSettings": {
         /**
          * コンテンツの表示にログインを必須にする
@@ -6544,6 +6627,18 @@ export interface Locale extends ILocale {
          * 有効にすると、このお知らせを既読にする際に確認ダイアログが表示されます。また、一括既読操作の対象になりません。
          */
         "needConfirmationToReadDescription": string;
+        /**
+         * 自動アーカイブ日時
+         */
+        "autoArchiveAt": string;
+        /**
+         * 指定した日時を過ぎると、このお知らせは自動的にアーカイブされます。空欄の場合は自動的にアーカイブされません。
+         */
+        "autoArchiveAtDescription": string;
+        /**
+         * 自動アーカイブ日時には現在より後の日時を指定してください。
+         */
+        "autoArchiveAtMustBeInFuture": string;
         /**
          * お知らせを終了
          */
@@ -8161,6 +8256,36 @@ export interface Locale extends ILocale {
                  */
                 "flavor": string;
             };
+            "_intraReferral1": {
+                /**
+                 * ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから1人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral5": {
+                /**
+                 * 勧誘大使
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから5人が登録した
+                 */
+                "description": string;
+            };
+            "_intraReferral10": {
+                /**
+                 * 42times 公認サポーター
+                 */
+                "title": string;
+                /**
+                 * あなたの2次元コードから10人が登録した
+                 */
+                "description": string;
+            };
         };
     };
     "_role": {
@@ -8321,6 +8446,14 @@ export interface Locale extends ILocale {
              * ローカルタイムラインの閲覧
              */
             "ltlAvailable": string;
+            /**
+             * ノートの作成
+             */
+            "canCreateNote": string;
+            /**
+             * オフにすると、ノート・リプライ・リノート・引用・ノートの編集ができなくなります (リアクションと投票はできます)。ほかのロールでオンになっていると作成できるので、優先度を上げて設定してください。
+             */
+            "canCreateNote_caption": string;
             /**
              * パブリック投稿の許可
              */
@@ -11248,6 +11381,18 @@ export interface Locale extends ILocale {
          * Lv.{level} になりました！
          */
         "intraLevelUpShareText": ParameterizedString<"level">;
+        /**
+         * もしかして知り合い？
+         */
+        "acquaintanceSuggested": string;
+        /**
+         * 2次元コードを読み込んだ相手です。プロフィールからフォローできます
+         */
+        "acquaintanceSuggestedText": string;
+        /**
+         * あなたの2次元コードから登録しました
+         */
+        "acquaintanceJoined": string;
         "_types": {
             /**
              * すべて
@@ -11377,6 +11522,14 @@ export interface Locale extends ILocale {
              * レベルアップ
              */
             "intraLevelUp": string;
+            /**
+             * 2次元コードを見せてくれた人の案内
+             */
+            "acquaintanceSuggested": string;
+            /**
+             * 2次元コードからの登録
+             */
+            "acquaintanceJoined": string;
         };
         "_actions": {
             /**
@@ -11549,6 +11702,10 @@ export interface Locale extends ILocale {
              * チャンネル
              */
             "channel": string;
+            /**
+             * クリップ
+             */
+            "clip": string;
             /**
              * メンション
              */
@@ -12665,6 +12822,26 @@ export interface Locale extends ILocale {
                  * ドラッグ＆ドロップされた{count}個のファイルをドライブにアップロードします。実行しますか？
                  */
                 "confirmUploadEmojisDescription": ParameterizedString<"count">;
+                /**
+                 * 貼り付けて登録
+                 */
+                "pasteToRegister": string;
+                /**
+                 * ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」でコピーした行、または画像の URL (1 行に 1 つ。名前はファイル名になります)
+                 */
+                "pasteDialogLabel": string;
+                /**
+                 * 登録できる絵文字が見つかりませんでした。ほかのサーバーの「カスタム絵文字(beta)」の「登録済み絵文字一覧」で、画像の列から行をコピーしてください。
+                 */
+                "noPastedEmojis": string;
+                /**
+                 * 貼り付けた{total}件のうち{count}件の絵文字を、画像をこのサーバーに取り込んで登録します。よろしいですか？（ロールは引き継ぎません。一度の操作で登録可能な絵文字は{max}件までです）
+                 */
+                "confirmRegisterPastedEmojisDescription": ParameterizedString<"total" | "count" | "max">;
+                /**
+                 * 同じ名前の絵文字がすでにあります
+                 */
+                "pastedEmojiNameAlreadyExists": string;
             };
         };
     };
@@ -14332,6 +14509,10 @@ export interface Locale extends ILocale {
          */
         "autoSignupDescription": string;
         /**
+         * 2次元コードを読み込みました。42 でログインすると、コードを見せてくれた人のページが開きます。
+         */
+        "qrInviteDescription": string;
+        /**
          * ログインすると、{documents}に同意したものとみなされます。
          */
         "agreementOnLogin": ParameterizedString<"documents">;
@@ -14746,7 +14927,7 @@ export interface Locale extends ILocale {
          */
         "hashtag": string;
         /**
-         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。
+         * 1つだけ指定できます。イベントページの「#○○ で投稿する」で本文に入ります。このハッシュタグの付いたノートとそのリプライはイベントページに表示されます。
          */
         "hashtagDescription": string;
         /**
@@ -15473,5 +15654,297 @@ export interface Locale extends ILocale {
              */
             "refreshTooSoon": string;
         };
+    };
+    "_emojiTagging": {
+        /**
+         * タグとカテゴリの提案
+         */
+        "title": string;
+        /**
+         * タグの提案
+         */
+        "tabTitle": string;
+        /**
+         * 絵文字のタグとカテゴリの提案に使います。使えるのは管理者だけです。
+         */
+        "serviceDescription": string;
+        /**
+         * API キー
+         */
+        "apiKey": string;
+        /**
+         * 保存したキーは表示しません。空のまま保存すると今のキーを残します。
+         */
+        "apiKeyCaption": string;
+        /**
+         * 登録済み (末尾 {hint})
+         */
+        "apiKeyConfigured": ParameterizedString<"hint">;
+        /**
+         * 未登録
+         */
+        "apiKeyNotConfigured": string;
+        /**
+         * モデル
+         */
+        "model": string;
+        /**
+         * 接続を確かめる
+         */
+        "testConnection": string;
+        /**
+         * Claude に接続できました。
+         */
+        "testSucceeded": string;
+        /**
+         * ノートの翻訳にも使う
+         */
+        "useForTranslation": string;
+        /**
+         * DeepL の代わりに Claude で翻訳します。同じノートの翻訳は 1 日覚えておきます。利用者の投稿を Anthropic に送るので、プライバシーポリシーにも書いています。
+         */
+        "useForTranslationCaption": string;
+        /**
+         * 翻訳のモデル
+         */
+        "translationModel": string;
+        /**
+         * キーを削除
+         */
+        "deleteKey": string;
+        /**
+         * Claude の API キーを削除しますか？
+         */
+        "deleteKeyConfirm": string;
+        /**
+         * 管理画面の「外部サービス」で Claude の API キーを登録すると使えます。
+         */
+        "notConfigured": string;
+        /**
+         * 外部サービスを開く
+         */
+        "openSettings": string;
+        /**
+         * タグとカテゴリを Claude に提案させる
+         */
+        "suggestOnUpload": string;
+        /**
+         * 画像を追加したときに、タグとカテゴリの欄を埋めます。入力済みのカテゴリは変えません。
+         */
+        "suggestOnUploadCaption": string;
+        /**
+         * {count} 件を提案中…
+         */
+        "suggestingCount": ParameterizedString<"count">;
+        /**
+         * 再提案
+         */
+        "resuggest": string;
+        /**
+         * 選んだ行のタグとカテゴリを提案し直す
+         */
+        "resuggestRows": string;
+        /**
+         * 選んだものを再提案
+         */
+        "resuggestSelected": string;
+        /**
+         * この行を再提案
+         */
+        "resuggestThisRow": string;
+        /**
+         * ヒント
+         */
+        "hint": string;
+        /**
+         * すべての提案への指示
+         */
+        "instructions": string;
+        /**
+         * 反映
+         */
+        "apply": string;
+        /**
+         * 反映済み
+         */
+        "applied": string;
+        /**
+         * 提案済みをすべて反映 ({count})
+         */
+        "applyAll": ParameterizedString<"count">;
+        /**
+         * 提案を始める ({count} 件)
+         */
+        "start": ParameterizedString<"count">;
+        /**
+         * 止める
+         */
+        "stop": string;
+        /**
+         * 対象
+         */
+        "target": string;
+        /**
+         * タグが無いもの
+         */
+        "targetNoTags": string;
+        /**
+         * タグが 2 個以下
+         */
+        "targetFewTags": string;
+        /**
+         * タグが 5 個以下
+         */
+        "targetSomeTags": string;
+        /**
+         * すべて
+         */
+        "targetAll": string;
+        /**
+         * すべてのカテゴリ
+         */
+        "allCategories": string;
+        /**
+         * カテゴリ未設定
+         */
+        "noCategory": string;
+        /**
+         * いまのタグ
+         */
+        "currentTags": string;
+        /**
+         * 提案
+         */
+        "suggestedTags": string;
+        /**
+         * 新規
+         */
+        "newCategory": string;
+        /**
+         * カテゴリも「{name}」にする
+         */
+        "changeCategory": ParameterizedString<"name">;
+        /**
+         * カテゴリを「{name}」にする
+         */
+        "useSuggestedCategory": ParameterizedString<"name">;
+        /**
+         * 提案 {index} / {count}
+         */
+        "history": ParameterizedString<"index" | "count">;
+        /**
+         * 前の提案
+         */
+        "previousSuggestion": string;
+        /**
+         * 次の提案
+         */
+        "nextSuggestion": string;
+        /**
+         * {count} 件を選択中
+         */
+        "selectedCount": ParameterizedString<"count">;
+        /**
+         * {done} / {total} 件
+         */
+        "progress": ParameterizedString<"done" | "total">;
+        /**
+         * 対象の絵文字がありません。
+         */
+        "noTargets": string;
+        /**
+         * 新しいタグは提案されませんでした。
+         */
+        "noSuggestedTags": string;
+        /**
+         * 行を移動
+         */
+        "keyMove": string;
+        /**
+         * 再提案
+         */
+        "keyResuggest": string;
+        /**
+         * ヒントを書いて再提案
+         */
+        "keyHint": string;
+        /**
+         * 前の提案に戻る
+         */
+        "keyHistory": string;
+        /**
+         * 選ぶ
+         */
+        "keySelect": string;
+        /**
+         * 反映して次へ
+         */
+        "keyApply": string;
+        "_errors": {
+            /**
+             * Claude の API キーが登録されていません。
+             */
+            "notConfigured": string;
+            /**
+             * 絵文字の画像を読み込めませんでした。
+             */
+            "failedToLoadImage": string;
+            /**
+             * Claude の API キーが正しくありません。
+             */
+            "invalidApiKey": string;
+            /**
+             * 利用の上限に達しました。しばらくしてから試してください。
+             */
+            "rateLimited": string;
+            /**
+             * Claude がこの絵文字への提案を断りました。
+             */
+            "refused": string;
+            /**
+             * Claude からタグを受け取れませんでした。
+             */
+            "failed": string;
+        };
+    };
+    "_noteTranslation": {
+        /**
+         * 翻訳済みのノートは最初から訳を表示
+         */
+        "showCachedTranslations": string;
+    };
+    "_emojiCategoryMerge": {
+        /**
+         * カテゴリをまとめる
+         */
+        "title": string;
+        /**
+         * 廃止するカテゴリ
+         */
+        "from": string;
+        /**
+         * 移す先のカテゴリ
+         */
+        "to": string;
+        /**
+         * 今あるカテゴリの名前か、新しい名前を入れます。空にすると、カテゴリ未設定にします。
+         */
+        "toDescription": string;
+        /**
+         * {name} ({count} 件)
+         */
+        "categoryWithCount": ParameterizedString<"name" | "count">;
+        /**
+         * 「{from}」の {count} 件の絵文字を「{to}」に移し、「{from}」を廃止します。よろしいですか？
+         */
+        "confirm": ParameterizedString<"from" | "count" | "to" | "from">;
+        /**
+         * 「{from}」の {count} 件の絵文字をカテゴリ未設定にし、「{from}」を廃止します。よろしいですか？
+         */
+        "confirmRemove": ParameterizedString<"from" | "count" | "from">;
+        /**
+         * カテゴリのある絵文字がありません。
+         */
+        "noCategories": string;
     };
 }

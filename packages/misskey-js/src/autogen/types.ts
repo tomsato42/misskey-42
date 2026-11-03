@@ -286,6 +286,15 @@ export type paths = {
          */
         post: operations['admin___emoji___add-aliases-bulk'];
     };
+    '/admin/emoji/add-from-url': {
+        /**
+         * admin/emoji/add-from-url
+         * @description Download an image from the specified URL and register it as a local custom emoji. The file is not stored in anyone's drive.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___add-from-url'];
+    };
     '/admin/emoji/copy': {
         /**
          * admin/emoji/copy
@@ -341,6 +350,15 @@ export type paths = {
          */
         post: operations['admin___emoji___list-remote'];
     };
+    '/admin/emoji/merge-category': {
+        /**
+         * admin/emoji/merge-category
+         * @description Move every local custom emoji in a category to another category, so that the old category disappears.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___merge-category'];
+    };
     '/admin/emoji/remove-aliases-bulk': {
         /**
          * admin/emoji/remove-aliases-bulk
@@ -376,6 +394,24 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
          */
         post: operations['admin___emoji___set-license-bulk'];
+    };
+    '/admin/emoji/suggest-tags': {
+        /**
+         * admin/emoji/suggest-tags
+         * @description Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___suggest-tags'];
+    };
+    '/admin/emoji/test-tagging': {
+        /**
+         * admin/emoji/test-tagging
+         * @description Check that the Claude API key and models in the server settings can be used for suggesting emoji tags and, when enabled, translating notes. No tokens are used.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+         */
+        post: operations['admin___emoji___test-tagging'];
     };
     '/admin/emoji/update': {
         /**
@@ -1226,7 +1262,7 @@ export type paths = {
     '/calendar/events/notes': {
         /**
          * calendar/events/notes
-         * @description List notes linked to a calendar event, newest first. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
+         * @description List notes of a calendar event, newest first: notes linked to the event, notes with the event's hashtag, and direct replies to either of them. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
          *
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
@@ -3546,6 +3582,15 @@ export type paths = {
          */
         post: operations['notes___translate'];
     };
+    '/notes/translations': {
+        /**
+         * notes/translations
+         * @description Return the translations of notes that someone has already translated (with notes/translate) into the language. Nothing is translated here, so it costs nothing. Notes you cannot see and notes without a translation are left out.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['notes___translations'];
+    };
     '/notes/unrenote': {
         /**
          * notes/unrenote
@@ -4554,6 +4599,8 @@ export type components = {
             autoAcceptFollowed: boolean;
             /** @description ペア募集の招待を受け取るか (42times) */
             pairInvitationsEnabled: boolean;
+            followApprovalLocalSeconds: number | null;
+            followApprovalRemoteSeconds: number | null;
             noCrawle: boolean;
             preventAiLearning: boolean;
             isExplorable: boolean;
@@ -4854,6 +4901,24 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                acquaintanceSuggested?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
+                acquaintanceJoined?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
             };
             emailNotificationTypes: string[];
             achievements: components['schemas']['Achievement'][];
@@ -4899,7 +4964,7 @@ export type components = {
             unlockedAt: number;
         };
         /** @enum {string} */
-        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+        AchievementName: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead' | 'intraReferral1' | 'intraReferral5' | 'intraReferral10';
         Ad: {
             /**
              * Format: id
@@ -4974,6 +5039,11 @@ export type components = {
              * @example xxxxxxxxxx
              */
             replyId?: string | null;
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            threadId?: string;
             /**
              * Format: id
              * @example xxxxxxxxxx
@@ -5479,6 +5549,26 @@ export type components = {
             type: 'intraLevelUp';
             /** @description The 42 intra level (integer part) after leveling up. */
             level: number;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceSuggested';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'acquaintanceJoined';
+            user: components['schemas']['UserLite'];
+            /** Format: id */
+            userId: string;
         };
         DriveFile: {
             /**
@@ -6022,6 +6112,7 @@ export type components = {
         RolePolicies: {
             gtlAvailable: boolean;
             ltlAvailable: boolean;
+            canCreateNote: boolean;
             canPublicNote: boolean;
             mentionLimit: number;
             canInvite: boolean;
@@ -7720,6 +7811,8 @@ export interface operations {
                      * @default null
                      */
                     userId?: string | null;
+                    /** @default null */
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -7902,6 +7995,8 @@ export interface operations {
                         /** @enum {string} */
                         display: 'normal' | 'banner' | 'dialog';
                         isActive: boolean;
+                        /** Format: date-time */
+                        autoArchiveAt: string | null;
                         forExistingUsers: boolean;
                         silence: boolean;
                         needConfirmationToRead: boolean;
@@ -7975,6 +8070,7 @@ export interface operations {
                     silence?: boolean;
                     needConfirmationToRead?: boolean;
                     isActive?: boolean;
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -9062,6 +9158,78 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___add-from-url': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    name: string;
+                    url: string;
+                    /** @description Use `null` to reset the category. */
+                    category?: string | null;
+                    aliases?: string[];
+                    license?: string | null;
+                    isSensitive?: boolean;
+                    localOnly?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['EmojiDetailed'];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___emoji___copy: {
         requestBody: {
             content: {
@@ -9472,6 +9640,76 @@ export interface operations {
             };
         };
     };
+    'admin___emoji___merge-category': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    from: string;
+                    /** @description Use `null` to remove the category from the emojis. */
+                    to: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** @description The number of emojis moved. */
+                        count: number;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'admin___emoji___remove-aliases-bulk': {
         requestBody: {
             content: {
@@ -9708,6 +9946,163 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___suggest-tags': {
+        requestBody: {
+            content: {
+                'application/json': ({
+                    /** Format: misskey:id */
+                    emojiId: string;
+                } | {
+                    /** Format: misskey:id */
+                    fileId: string;
+                    name: string;
+                }) & {
+                    category?: string | null;
+                    /** @description Tags the emoji already has. They are not suggested again. Defaults to the aliases of the emoji. */
+                    currentTags?: string[];
+                    /** @description Tags suggested before. Claude suggests other words instead. */
+                    excludedTags?: string[];
+                    hint?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        tags: string[];
+                        category: {
+                            name: string;
+                            /** @description Whether the category does not exist yet. */
+                            isNew: boolean;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___emoji___test-tagging': {
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10766,6 +11161,16 @@ export interface operations {
                         backgroundImageUrl: string | null;
                         deeplAuthKey: string | null;
                         deeplIsPro: boolean;
+                        /** @description The last 4 characters of the Claude (Anthropic) API key (`****` for a very short key), or `null` if no key is set. The key itself is never returned. */
+                        anthropicApiKeyHint: string | null;
+                        /** @enum {string} */
+                        anthropicModel: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                        /** @description Instructions added to every emoji tag and category suggestion. */
+                        anthropicEmojiTaggingInstructions: string | null;
+                        /** @description Whether notes are translated with Claude instead of DeepL. Used only when the Claude API key is set. */
+                        anthropicTranslationEnabled: boolean;
+                        /** @enum {string} */
+                        anthropicTranslationModel: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                         defaultDarkTheme: string | null;
                         defaultLightTheme: string | null;
                         clientOptions: components['schemas']['MetaClientOptions'];
@@ -13313,6 +13718,24 @@ export interface operations {
                                 /** Format: misskey:id */
                                 userListId: string;
                             };
+                            acquaintanceSuggested?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
+                            acquaintanceJoined?: {
+                                /** @enum {string} */
+                                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                            } | {
+                                /** @enum {string} */
+                                type: 'list';
+                                /** Format: misskey:id */
+                                userListId: string;
+                            };
                         };
                         isModerator: boolean;
                         isSilenced: boolean;
@@ -14329,6 +14752,15 @@ export interface operations {
                     langs?: string[];
                     deeplAuthKey?: string | null;
                     deeplIsPro?: boolean;
+                    /** @description Use `null` or an empty string to delete the key. */
+                    anthropicApiKey?: string | null;
+                    /** @enum {string} */
+                    anthropicModel?: 'claude-sonnet-5-5' | 'claude-opus-5-5' | 'claude-haiku-5-5';
+                    /** @description Instructions added to every emoji tag and category suggestion. Use `null` or an empty string to remove them. */
+                    anthropicEmojiTaggingInstructions?: string | null;
+                    anthropicTranslationEnabled?: boolean;
+                    /** @enum {string} */
+                    anthropicTranslationModel?: 'claude-haiku-5-5' | 'claude-sonnet-5-5' | 'claude-opus-5-5';
                     enableEmail?: boolean;
                     email?: string | null;
                     smtpSecure?: boolean;
@@ -28096,7 +28528,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @enum {string} */
-                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead';
+                    name: 'notes1' | 'notes10' | 'notes100' | 'notes500' | 'notes1000' | 'notes5000' | 'notes10000' | 'notes20000' | 'notes30000' | 'notes40000' | 'notes50000' | 'notes60000' | 'notes70000' | 'notes80000' | 'notes90000' | 'notes100000' | 'login3' | 'login7' | 'login15' | 'login30' | 'login60' | 'login100' | 'login200' | 'login300' | 'login400' | 'login500' | 'login600' | 'login700' | 'login800' | 'login900' | 'login1000' | 'passedSinceAccountCreated1' | 'passedSinceAccountCreated2' | 'passedSinceAccountCreated3' | 'loggedInOnBirthday' | 'loggedInOnNewYearsDay' | 'noteClipped1' | 'noteFavorited1' | 'myNoteFavorited1' | 'profileFilled' | 'markedAsCat' | 'following1' | 'following10' | 'following50' | 'following100' | 'following300' | 'followers1' | 'followers10' | 'followers50' | 'followers100' | 'followers300' | 'followers500' | 'followers1000' | 'collectAchievements30' | 'viewAchievements3min' | 'iLoveMisskey' | 'foundTreasure' | 'client30min' | 'client60min' | 'noteDeletedWithin1min' | 'postedAtLateNight' | 'postedAt0min0sec' | 'selfQuote' | 'htl20npm' | 'viewInstanceChart' | 'outputHelloWorldOnScratchpad' | 'open3windows' | 'driveFolderCircularReference' | 'reactWithoutRead' | 'clickedClickHere' | 'justPlainLucky' | 'setNameToSyuilo' | 'cookieClicked' | 'brainDiver' | 'smashTestNotificationButton' | 'tutorialCompleted' | 'bubbleGameExplodingHead' | 'bubbleGameDoubleExplodingHead' | 'intraReferral1' | 'intraReferral5' | 'intraReferral10';
                 };
             };
         };
@@ -29663,8 +30095,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -29748,8 +30180,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'createToken' | 'app' | 'test' | 'calendarEventReminder' | 'calendarEventUpdated' | 'calendarEventInvited' | 'pairJoinRequested' | 'pairAccepted' | 'pairClosed' | 'pairInvited' | 'pairApplicationCancelled' | 'intraProjectFinished' | 'intraProjectsRefreshed' | 'intraLevelUp' | 'acquaintanceSuggested' | 'acquaintanceJoined' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -30929,6 +31361,8 @@ export interface operations {
                     carefulBot?: boolean;
                     autoAcceptFollowed?: boolean;
                     pairInvitationsEnabled?: boolean;
+                    followApprovalLocalSeconds?: number | null;
+                    followApprovalRemoteSeconds?: number | null;
                     noCrawle?: boolean;
                     preventAiLearning?: boolean;
                     requireSigninToViewContents?: boolean;
@@ -31169,6 +31603,15 @@ export interface operations {
                             userListId: string;
                         };
                         intraLevelUp?: {
+                            /** @enum {string} */
+                            type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                        } | {
+                            /** @enum {string} */
+                            type: 'list';
+                            /** Format: misskey:id */
+                            userListId: string;
+                        };
+                        acquaintanceJoined?: {
                             /** @enum {string} */
                             type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
                         } | {
@@ -35083,6 +35526,95 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    notes___translations: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    noteIds: string[];
+                    targetLang: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: id */
+                        noteId: string;
+                        sourceLang: string;
+                        text: string;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

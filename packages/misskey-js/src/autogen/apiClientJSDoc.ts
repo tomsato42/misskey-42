@@ -350,6 +350,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Download an image from the specified URL and register it as a local custom emoji. The file is not stored in anyone's drive.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+     */
+    request<E extends 'admin/emoji/add-from-url', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
@@ -417,6 +428,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Move every local custom emoji in a category to another category, so that the old category disappears.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+     */
+    request<E extends 'admin/emoji/merge-category', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
@@ -455,6 +477,28 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
      */
     request<E extends 'admin/emoji/set-license-bulk', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Ask Claude to suggest tags (aliases) and a category for a local custom emoji, or for an image that is about to be registered as one. The category is one of the existing categories, or a new one if none fits. Nothing is saved. Requires the Claude API key in the server settings.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+     */
+    request<E extends 'admin/emoji/suggest-tags', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Check that the Claude API key and models in the server settings can be used for suggesting emoji tags and, when enabled, translating notes. No tokens are used.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:emoji*
+     */
+    request<E extends 'admin/emoji/test-tagging', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
@@ -1493,7 +1537,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * List notes linked to a calendar event, newest first. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
+     * List notes of a calendar event, newest first: notes linked to the event, notes with the event's hashtag, and direct replies to either of them. Notes the viewer cannot see (visibility, blocking, muting) are excluded.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
@@ -4318,6 +4362,17 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'notes/translate', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Return the translations of notes that someone has already translated (with notes/translate) into the language. Nothing is translated here, so it costs nothing. Notes you cannot see and notes without a translation are left out.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'notes/translations', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

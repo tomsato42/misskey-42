@@ -20,7 +20,9 @@ import {
 	getCookieValue,
 	isIntraToken,
 	isSameIntraToken,
+	getIntraReferralAchievements,
 	isSignupConflictError,
+	parseIntraReferrerId,
 } from '@/core/intra/intra-auth.js';
 
 describe('intra-auth', () => {
@@ -99,6 +101,24 @@ describe('intra-auth', () => {
 	test('buildIntraCompleteUrl / buildIntraErrorUrl', () => {
 		expect(buildIntraCompleteUrl('https://example.com', 'abc-_')).toBe('https://example.com/intra-complete/abc-_');
 		expect(buildIntraErrorUrl('https://example.com', 'not_eligible')).toBe('https://example.com/intra-complete/error?reason=not_eligible');
+	});
+
+	test('parseIntraReferrerId は英数字のユーザー ID だけを受け付ける', () => {
+		expect(parseIntraReferrerId('9zzzzzzzzz')).toBe('9zzzzzzzzz');
+		expect(parseIntraReferrerId('ABCdef0123')).toBe('ABCdef0123');
+		expect(parseIntraReferrerId(undefined)).toBeNull();
+		expect(parseIntraReferrerId('')).toBeNull();
+		expect(parseIntraReferrerId('abc:def')).toBeNull();
+		expect(parseIntraReferrerId('a'.repeat(33))).toBeNull();
+		expect(parseIntraReferrerId(['abc'])).toBeNull();
+	});
+
+	test('getIntraReferralAchievements は 1・5・10 人で実績を返す', () => {
+		expect(getIntraReferralAchievements(0)).toEqual([]);
+		expect(getIntraReferralAchievements(1)).toEqual(['intraReferral1']);
+		expect(getIntraReferralAchievements(4)).toEqual(['intraReferral1']);
+		expect(getIntraReferralAchievements(5)).toEqual(['intraReferral1', 'intraReferral5']);
+		expect(getIntraReferralAchievements(12)).toEqual(['intraReferral1', 'intraReferral5', 'intraReferral10']);
 	});
 
 	describe('isSignupConflictError', () => {

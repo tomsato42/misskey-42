@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender }]"
 	tabindex="0"
 >
-	<MkNoteSub v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote?.reply ?? null" :class="$style.replyTo"/>
+	<MkNoteReplyContext v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
 	<div v-if="isRenote" :class="$style.renote">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
@@ -205,7 +205,7 @@ import * as Misskey from 'misskey-js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { focusPrev, focusNext } from '@/utility/focus.js';
@@ -214,7 +214,7 @@ import { DI } from '@/di.js';
 import type { Keymap } from '@/utility/hotkey.js';
 
 // コンポーネント外部の依存関係
-import MkNoteSub from '@/components/MkNoteSub.vue';
+import MkNoteReplyContext from '@/components/MkNoteReplyContext.vue';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
@@ -473,6 +473,11 @@ const keymap = {
 .replyTo {
 	opacity: 0.7;
 	padding-bottom: 0;
+	transition: opacity 0.1s;
+
+	&:hover {
+		opacity: 0.85;
+	}
 }
 
 .renote {

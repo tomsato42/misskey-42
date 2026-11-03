@@ -19,6 +19,7 @@ describe('shouldShowIntraSigninOnly', () => {
 		'/miauth/abc',
 		'/admin',
 		'/intra-completex',
+		'/intra-passkey-setupx',
 	])('学内SNSモードで未ログインなら、%s ではログイン画面だけを出す', (pathname) => {
 		expect(shouldShowIntraSigninOnly({ ...visitor, pathname })).toBe(true);
 	});
@@ -29,6 +30,10 @@ describe('shouldShowIntraSigninOnly', () => {
 		'/intra-complete/error',
 	])('42 ログインの戻り先 %s は通常どおり表示する', (pathname) => {
 		expect(shouldShowIntraSigninOnly({ ...visitor, pathname })).toBe(false);
+	});
+
+	test('管理者が発行したパスキーの登録リンクは、未ログインでも登録の画面を出す', () => {
+		expect(shouldShowIntraSigninOnly({ ...visitor, pathname: '/intra-passkey-setup/abcdef' })).toBe(false);
 	});
 
 	test('ログインしていれば通常どおり表示する', () => {

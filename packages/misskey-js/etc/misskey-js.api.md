@@ -173,6 +173,12 @@ type AdminDriveShowFileResponse = operations['admin___drive___show-file']['respo
 type AdminEmojiAddAliasesBulkRequest = operations['admin___emoji___add-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiAddFromUrlRequest = operations['admin___emoji___add-from-url']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiAddFromUrlResponse = operations['admin___emoji___add-from-url']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiAddRequest = operations['admin___emoji___add']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -206,6 +212,12 @@ type AdminEmojiListRequest = operations['admin___emoji___list']['requestBody']['
 type AdminEmojiListResponse = operations['admin___emoji___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminEmojiMergeCategoryRequest = operations['admin___emoji___merge-category']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiMergeCategoryResponse = operations['admin___emoji___merge-category']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminEmojiRemoveAliasesBulkRequest = operations['admin___emoji___remove-aliases-bulk']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -216,6 +228,12 @@ type AdminEmojiSetCategoryBulkRequest = operations['admin___emoji___set-category
 
 // @public (undocumented)
 type AdminEmojiSetLicenseBulkRequest = operations['admin___emoji___set-license-bulk']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiSuggestTagsRequest = operations['admin___emoji___suggest-tags']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminEmojiSuggestTagsResponse = operations['admin___emoji___suggest-tags']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type AdminEmojiUpdateRequest = operations['admin___emoji___update']['requestBody']['content']['application/json'];
@@ -890,6 +908,16 @@ export type Channels = {
         };
         events: {
             note: (payload: Note) => void;
+        };
+        receives: null;
+    };
+    clip: {
+        params: {
+            clipId: string;
+        };
+        events: {
+            updated: () => void;
+            deleted: () => void;
         };
         receives: null;
     };
@@ -1693,6 +1721,8 @@ declare namespace entities {
         AdminEmojiAddRequest,
         AdminEmojiAddResponse,
         AdminEmojiAddAliasesBulkRequest,
+        AdminEmojiAddFromUrlRequest,
+        AdminEmojiAddFromUrlResponse,
         AdminEmojiCopyRequest,
         AdminEmojiCopyResponse,
         AdminEmojiDeleteRequest,
@@ -1702,10 +1732,14 @@ declare namespace entities {
         AdminEmojiListResponse,
         AdminEmojiListRemoteRequest,
         AdminEmojiListRemoteResponse,
+        AdminEmojiMergeCategoryRequest,
+        AdminEmojiMergeCategoryResponse,
         AdminEmojiRemoveAliasesBulkRequest,
         AdminEmojiSetAliasesBulkRequest,
         AdminEmojiSetCategoryBulkRequest,
         AdminEmojiSetLicenseBulkRequest,
+        AdminEmojiSuggestTagsRequest,
+        AdminEmojiSuggestTagsResponse,
         AdminEmojiUpdateRequest,
         AdminFederationDeleteAllFilesRequest,
         AdminFederationRefreshRemoteInstanceMetadataRequest,
@@ -2238,6 +2272,8 @@ declare namespace entities {
         NotesTimelineResponse,
         NotesTranslateRequest,
         NotesTranslateResponse,
+        NotesTranslationsRequest,
+        NotesTranslationsResponse,
         NotesUnrenoteRequest,
         NotesUpdateRequest,
         NotesUpdateResponse,
@@ -3355,6 +3391,12 @@ type NotesTranslateRequest = operations['notes___translate']['requestBody']['con
 type NotesTranslateResponse = operations['notes___translate']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type NotesTranslationsRequest = operations['notes___translations']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesTranslationsResponse = operations['notes___translations']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type NotesUnrenoteRequest = operations['notes___unrenote']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -3379,7 +3421,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed", "pairInvited", "pairApplicationCancelled", "intraProjectFinished", "intraProjectsRefreshed", "intraLevelUp"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "scheduledNotePosted", "scheduledNotePostFailed", "receiveFollowRequest", "followRequestAccepted", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "exportCompleted", "test", "login", "createToken", "calendarEventReminder", "calendarEventUpdated", "calendarEventInvited", "pairJoinRequested", "pairAccepted", "pairClosed", "pairInvited", "pairApplicationCancelled", "intraProjectFinished", "intraProjectsRefreshed", "intraLevelUp", "acquaintanceSuggested", "acquaintanceJoined"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;
@@ -3696,7 +3738,7 @@ type RoleLite = components['schemas']['RoleLite'];
 type RolePolicies = components['schemas']['RolePolicies'];
 
 // @public (undocumented)
-export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canPublicNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canManageAvatarDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable"];
+export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canCreateNote", "canPublicNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canManageAvatarDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable"];
 
 // @public (undocumented)
 type RolesListResponse = operations['roles___list']['responses']['200']['content']['application/json'];
@@ -4111,8 +4153,8 @@ type VerifyEmailRequest = operations['verify-email']['requestBody']['content']['
 // Warnings were encountered during analysis:
 //
 // src/streaming.ts:57:3 - (ae-forgotten-export) The symbol "ReconnectingWebSocket" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:226:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:241:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:236:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:251:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

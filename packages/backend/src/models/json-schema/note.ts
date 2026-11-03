@@ -52,6 +52,13 @@ export const packedNoteSchema = {
 			format: 'id',
 			example: 'xxxxxxxxxx',
 		},
+		// 42times: スレッドの最初のノートの ID。リプライのときだけある
+		threadId: {
+			type: 'string',
+			optional: true, nullable: false,
+			format: 'id',
+			example: 'xxxxxxxxxx',
+		},
 		renoteId: {
 			type: 'string',
 			optional: true, nullable: true,

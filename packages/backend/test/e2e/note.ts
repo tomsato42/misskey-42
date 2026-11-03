@@ -781,6 +781,77 @@ describe('Note', () => {
 			assert.strictEqual(note1.status, 400);
 		});
 
+		test('禁止ワードに指定したドメインはURL中でパーセントエンコードされていてもエラーになる', async () => {
+			const prohibited = await api('admin/update-meta', {
+				prohibitedWords: [
+					'banned.example',
+				],
+			}, root);
+
+			assert.strictEqual(prohibited.status, 204);
+
+			await new Promise(x => setTimeout(x, 2));
+
+			const note1 = await api('notes/create', {
+				text: 'hoge https://%62anned.example/ huge',
+			}, alice);
+
+			assert.strictEqual(note1.status, 400);
+			assert.strictEqual(castAsError(note1.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+
+			const note2 = await api('notes/create', {
+				text: 'hoge <https://ｂａｎｎｅｄ．example/> huge',
+			}, alice);
+
+			assert.strictEqual(note2.status, 400);
+			assert.strictEqual(castAsError(note2.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+		});
+
+		test('禁止ワードはURLのパス以降でパーセントエンコードされていてもエラーになる', async () => {
+			const prohibited = await api('admin/update-meta', {
+				prohibitedWords: [
+					'禁止パス',
+				],
+			}, root);
+
+			assert.strictEqual(prohibited.status, 204);
+
+			await new Promise(x => setTimeout(x, 2));
+
+			const note1 = await api('notes/create', {
+				text: 'hoge https://example.com/%E7%A6%81%E6%AD%A2%E3%83%91%E3%82%B9 huge',
+			}, alice);
+
+			assert.strictEqual(note1.status, 400);
+			assert.strictEqual(castAsError(note1.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+
+			const note2 = await api('notes/create', {
+				text: 'hoge https://example.com/?q=%E7%A6%81%E6%AD%A2%E3%83%91%E3%82%B9 huge',
+			}, alice);
+
+			assert.strictEqual(note2.status, 400);
+			assert.strictEqual(castAsError(note2.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+		});
+
+		test('センシティブワードに指定したドメインはURL中でパーセントエンコードされていてもhomeになる', async () => {
+			const sensitive = await api('admin/update-meta', {
+				sensitiveWords: [
+					'sensitive.example',
+				],
+			}, root);
+
+			assert.strictEqual(sensitive.status, 204);
+
+			await new Promise(x => setTimeout(x, 2));
+
+			const note1 = await api('notes/create', {
+				text: 'hoge https://%73ensitive.example/ huge',
+			}, alice);
+
+			assert.strictEqual(note1.status, 200);
+			assert.strictEqual(note1.body.createdNote.visibility, 'home');
+		});
+
 		test('メンションの数が上限を超えるとエラーになる', async () => {
 			const res = await api('admin/roles/create', {
 				name: 'test',
@@ -1035,6 +1106,31 @@ describe('Note', () => {
 			// NOTE: デフォルトでは登録されていないので落ちる
 			assert.strictEqual(res.status, 400);
 			assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
+		});
+	});
+	describe('ノートの作成を許可しないロール', () => {
+		test('ノート・リプライ・リノート・編集はできず、リアクションと投票はできる', async () => {
+			const carol = await signup({ username: 'carol_reaction_only' });
+			const carolNote = await post(carol, { text: 'before' });
+			const aliceNote = await post(alice, { text: 'hello', poll: { choices: ['a', 'b'] } });
+			const reactionOnly = await role(root, {}, { canCreateNote: { priority: 2, useDefault: false, value: false } });
+			await api('admin/roles/assign', { userId: carol.id, roleId: reactionOnly.id }, root);
+
+			for (const params of [{ text: 'test' }, { text: 'reply', replyId: aliceNote.id }, { renoteId: aliceNote.id }, { text: 'quote', renoteId: aliceNote.id }]) {
+				const res = await api('notes/create', params, carol);
+				assert.strictEqual(res.status, 400);
+				assert.strictEqual(castAsError(res.body).error.code, 'CANNOT_CREATE_NOTE');
+			}
+
+			const update = await api('notes/update', { noteId: carolNote.id, text: 'after', cw: null }, carol);
+			assert.strictEqual(update.status, 400);
+			assert.strictEqual(castAsError(update.body).error.code, 'CANNOT_CREATE_NOTE');
+
+			const reaction = await api('notes/reactions/create', { noteId: aliceNote.id, reaction: '👍' }, carol);
+			assert.strictEqual(reaction.status, 204);
+
+			const vote = await api('notes/polls/vote', { noteId: aliceNote.id, choice: 0 }, carol);
+			assert.strictEqual(vote.status, 204);
 		});
 	});
 });

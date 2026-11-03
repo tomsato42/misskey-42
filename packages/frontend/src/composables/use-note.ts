@@ -25,6 +25,7 @@ import { useTooltip } from '@/composables/use-tooltip.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { showMovedDialog } from '@/utility/show-moved-dialog.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
+import { fetchCachedTranslation } from '@/utility/cached-translation.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { $i } from '@/i.js';
@@ -33,7 +34,7 @@ import { globalEvents, useGlobalEvent } from '@/events.js';
 import MkUsersTooltip from '@/components/MkUsersTooltip.vue';
 import MkReactionsViewerDetails from '@/components/MkReactionsViewer.details.vue';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
-import { notePage } from '@/filters/note.js';
+import { notePage } from '@@/js/note.js';
 import type { DI as DIType } from '@/di.js';
 import type { ExtractInjectedType } from '@/types/misc.js';
 import type { MenuItem } from '@/types/menu.js';
@@ -166,7 +167,19 @@ export function useNote(
 		collapsed.value = $appearNote.cw == null && isLong.value;
 		translation.value = null;
 	});
-	const canRenote = ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id);
+	// 42times: 誰かが自分の言語に訳していれば、最初から訳を出す
+	if (!props.mock && !hideByPlugin) {
+		const text = $appearNote.text;
+		const cw = $appearNote.cw;
+		fetchCachedTranslation({ id: appearNote.id, updatedAt: $appearNote.updatedAt, text, cw }).then(cached => {
+			// 待つあいだに編集されたり、メニューから翻訳したりしていたら使わない
+			if (cached == null || translation.value != null || translating.value) return;
+			if ($appearNote.text !== text || $appearNote.cw !== cw) return;
+			translation.value = cached;
+		});
+	}
+	// 42times: ロールでノートを作れなくした (リアクションだけできる) 人はリノートもできない
+	const canRenote = $i?.policies.canCreateNote !== false && (['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id));
 	const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null)));
 
@@ -227,6 +240,7 @@ export function useNote(
 	// 共通アクション関数群
 	async function renote() {
 		if (props.mock) return;
+		if ($i?.policies.canCreateNote === false) return;
 		const isLoggedIn = await pleaseLogin({ openOnRemote: pleaseLoginContext });
 		if (!isLoggedIn) return;
 		showMovedDialog();

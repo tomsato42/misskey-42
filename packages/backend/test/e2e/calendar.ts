@@ -988,4 +988,32 @@ describe('カレンダー', () => {
 			await failedApiCall({ endpoint: 'calendar/events/invitation-statuses', parameters: { eventId: mutualOnly.id, userIds: [ivy.id] }, user: leo }, { status: 400, code: 'ACCESS_DENIED', id: 'e0a93603-1026-4c20-b625-74f569937d68' });
 		});
 	});
+
+	describe('ハッシュタグのノートとリプライ', () => {
+		test('イベントのノートの一覧に、ハッシュタグの付いたノートと、紐づけたノート・タグのノートへの直接のリプライが出る', async () => {
+			const tagged = await successfulApiCall({
+				endpoint: 'calendar/events/create',
+				parameters: { title: 'タグのイベント', date, startTime: '18:00', hashtag: 'CalendarReply42' },
+				user: alice,
+			});
+
+			const taggedNote = await post(bob, { text: '行きます #calendarreply42' });
+			const replyToTagged = await post(carol, { text: '私も', replyId: taggedNote.id });
+			const nestedReply = await post(dave, { text: 'いいね', replyId: replyToTagged.id });
+			const linkedNote = await post(alice, { text: '会場はここです', calendarEventId: tagged.id });
+			const replyToLinked = await post(erin, { text: 'ありがとう', replyId: linkedNote.id });
+			const unrelated = await post(bob, { text: '別の話 #calendarreply43' });
+
+			const notes = await successfulApiCall({ endpoint: 'calendar/events/notes', parameters: { eventId: tagged.id }, user: erin });
+			const ids = notes.map(n => n.id);
+			assert.deepStrictEqual(ids, [replyToLinked.id, linkedNote.id, replyToTagged.id, taggedNote.id]);
+			assert.ok(!ids.includes(nestedReply.id));
+			assert.ok(!ids.includes(unrelated.id));
+
+			// ハッシュタグを外すと、タグのノートとそのリプライは出なくなる
+			await successfulApiCall({ endpoint: 'calendar/events/update', parameters: { eventId: tagged.id, hashtag: null }, user: alice });
+			const withoutTag = await successfulApiCall({ endpoint: 'calendar/events/notes', parameters: { eventId: tagged.id }, user: erin });
+			assert.deepStrictEqual(withoutTag.map(n => n.id), [replyToLinked.id, linkedNote.id]);
+		});
+	});
 });

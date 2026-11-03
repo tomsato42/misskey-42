@@ -62,7 +62,7 @@ import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import { i18n } from '@/i18n.js';
-import { acct, userPage } from '@/filters/user.js';
+import { acct, userPage } from '@@/js/user.js';
 import { Paginator } from '@/utility/paginator.js';
 
 type Subscriber = Misskey.Endpoints['calendar/events/subscribers']['res'][number];

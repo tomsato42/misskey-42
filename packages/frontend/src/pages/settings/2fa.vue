@@ -99,7 +99,7 @@ import MkLink from '@/components/MkLink.vue';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
 import { i18n } from '@/i18n.js';
-import { updateCurrentAccountPartial } from '@/accounts.js';
+import { updateCurrentAccount } from '@/accounts.js';
 import { instance } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { startIntraReauth } from '@/utility/intra-login.js';
@@ -238,7 +238,7 @@ async function unregisterTOTP(): Promise<void> {
 		password: auth.result.password,
 		token: auth.result.token,
 	}).then(res => {
-		updateCurrentAccountPartial({
+		updateCurrentAccount({
 			twoFactorEnabled: false,
 		});
 	}).catch(error => {

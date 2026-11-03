@@ -48,6 +48,8 @@ export const notificationTypes = [
 	'intraProjectFinished',
 	'intraProjectsRefreshed',
 	'intraLevelUp',
+	'acquaintanceSuggested',
+	'acquaintanceJoined',
 ] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
@@ -208,6 +210,7 @@ export const moderationLogTypes = [
 export const rolePolicies = [
 	'gtlAvailable',
 	'ltlAvailable',
+	'canCreateNote',
 	'canPublicNote',
 	'mentionLimit',
 	'canInvite',

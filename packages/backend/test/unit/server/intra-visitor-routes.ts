@@ -139,6 +139,8 @@ describe('ClientServerService 学内SNSモード', () => {
 		'/channels/9zzzzzzzzz',
 		'/reversi/g/9zzzzzzzzz',
 		'/announcements/9zzzzzzzzz',
+		// 2次元コードの URL。ユーザー名へリダイレクトせず、フロントエンドでユーザーのページへ移る
+		'/users/9zzzzzzzzz',
 	])('%s はメタ情報を埋め込まず、通常の SPA の HTML を返す', async (path) => {
 		const { app, repositories } = await createClientServer(true);
 
@@ -154,7 +156,6 @@ describe('ClientServerService 学内SNSモード', () => {
 		'/@alice.rss',
 		'/@alice.atom',
 		'/@alice.json',
-		'/users/9zzzzzzzzz',
 		'/embed/notes/9zzzzzzzzz',
 		'/embed/user-timeline/9zzzzzzzzz',
 		'/embed/clips/9zzzzzzzzz',

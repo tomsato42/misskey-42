@@ -147,7 +147,7 @@ export class MiUserProfile {
 
 	@Column('varchar', {
 		length: 128, nullable: true,
-		comment: 'The password hash of the User. It will be null if the origin of the user is local.',
+		comment: 'The password hash of the User. It will be null if the origin of the user is remote.',
 	})
 	public password: string | null;
 
@@ -174,6 +174,12 @@ export class MiUserProfile {
 		default: false,
 	})
 	public autoAcceptFollowed: boolean;
+
+	@Column('integer', { nullable: true })
+	public followApprovalLocalSeconds: number | null;
+
+	@Column('integer', { nullable: true })
+	public followApprovalRemoteSeconds: number | null;
 
 	@Column('boolean', {
 		default: false,
@@ -319,6 +325,13 @@ export class MiUserProfile {
 		default: false,
 	})
 	public intraPasswordLoginAllowed: boolean;
+
+	// 2次元コードから登録したときの、コードを見せた人 (招待した人) のユーザー ID。招待した人数の実績に使う
+	@Index()
+	@Column('varchar', {
+		length: 32, nullable: true,
+	})
+	public intraReferrerId: MiUser['id'] | null;
 	//#endregion
 
 	//#region calendar
@@ -441,4 +454,13 @@ export const ACHIEVEMENT_TYPES = [
 	'tutorialCompleted',
 	'bubbleGameExplodingHead',
 	'bubbleGameDoubleExplodingHead',
+	// 42times: 2次元コードから登録した人数。backend が付けるので i/claim-achievement では付けられない
+	'intraReferral1',
+	'intraReferral5',
+	'intraReferral10',
 ] as const;
+
+/**
+ * 42times: backend だけが付ける実績 (i/claim-achievement では付けられない)
+ */
+export const SERVER_ONLY_ACHIEVEMENT_TYPES: readonly typeof ACHIEVEMENT_TYPES[number][] = ['intraReferral1', 'intraReferral5', 'intraReferral10'];

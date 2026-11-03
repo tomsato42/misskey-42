@@ -11,6 +11,7 @@ import { GetterService } from '@/server/api/GetterService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { isEditedNoteEmpty, isUneditableNote, NoteUpdateService } from '@/core/NoteUpdateService.js';
 import { canChangeNoteVisibility } from '@/core/note-edit-visibility.js';
+import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
 
 // 42times: 自分のノートの本文・CW・公開範囲を編集する
@@ -37,6 +38,12 @@ export const meta = {
 	},
 
 	errors: {
+		cannotCreateNote: {
+			message: 'You are not allowed to create notes.',
+			code: 'CANNOT_CREATE_NOTE',
+			id: 'f89ad736-7d98-4df3-8330-6b4e73a26be2',
+		},
+
 		noSuchNote: {
 			message: 'No such note.',
 			code: 'NO_SUCH_NOTE',
@@ -92,8 +99,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private getterService: GetterService,
 		private noteEntityService: NoteEntityService,
 		private noteUpdateService: NoteUpdateService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42times: ノートを作れないロール (リアクションだけできる) の人は、今までのノートも編集できない
+			if ((await this.roleService.getUserPolicies(me.id)).canCreateNote === false) {
+				throw new ApiError(meta.errors.cannotCreateNote);
+			}
+
 			const note = await this.getterService.getNote(ps.noteId).catch(err => {
 				if (err.id === '9725d0ce-ba28-4dde-95a7-2cbb2c15de24') throw new ApiError(meta.errors.noSuchNote);
 				throw err;
