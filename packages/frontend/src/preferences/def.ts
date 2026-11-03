@@ -201,6 +201,10 @@ export const PREF_DEF = definePreferences({
 	collapseRenotes: {
 		default: true,
 	},
+	// 42times: 投稿したらアプリを閉じる (PC はタブを閉じ、それ以外は真っ白のページへ)
+	closeAfterPost: {
+		default: false,
+	},
 	// 42times: 誰かが翻訳したノートは、最初から訳を出す
 	showCachedTranslations: {
 		default: true,

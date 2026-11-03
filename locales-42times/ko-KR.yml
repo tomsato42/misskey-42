@@ -1,3 +1,5 @@
+closeAfterPost: "게시하면 앱 닫기"
+closeAfterPostDescription: "PC에서는 탭을 닫습니다. 닫을 수 없거나 PC가 아닌 경우에는 빈 화면으로 이동합니다."
 noteEditEmpty: "본문을 비울 수 없습니다"
 noteEditHistory: "편집 기록"
 noteEditHistoryOriginal: "처음"
