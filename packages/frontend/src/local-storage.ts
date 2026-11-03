@@ -34,6 +34,7 @@ export type Keys = (
 	'latestPreferencesUpdate' |
 	'hidePreferencesRestoreSuggestion' |
 	'isSafeMode' |
+	'mediaSession' |
 	`miux:${string}` |
 	`ui:folder:${string}` |
 	`themes:${string}` | // DEPRECATED

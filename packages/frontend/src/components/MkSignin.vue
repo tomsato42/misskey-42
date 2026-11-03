@@ -70,7 +70,7 @@ import * as Misskey from 'misskey-js';
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialRequestOptionsJSON, AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
-import type { PwResponse } from '@/components/MkSignin.password.vue';
+import type { PwResponse, SigninUser } from '@/components/MkSignin.password.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { showSuspendedDialog } from '@/utility/show-suspended-dialog.js';
 import { i18n } from '@/i18n.js';
@@ -81,6 +81,7 @@ import XPassword from '@/components/MkSignin.password.vue';
 import XTotp from '@/components/MkSignin.totp.vue';
 import XPasskey from '@/components/MkSignin.passkey.vue';
 import { login } from '@/accounts.js';
+import { isIntraVisitor } from '@/utility/intra-visitor.js';
 
 const emit = defineEmits<{
 	(ev: 'login', v: Misskey.entities.SigninFlowResponse & { finished: true }): void;
@@ -104,7 +105,7 @@ const waiting = ref(false);
 const passwordPageEl = useTemplateRef('passwordPageEl');
 const needCaptcha = ref(false);
 
-const userInfo = ref<null | Misskey.entities.UserDetailed>(null);
+const userInfo = ref<null | SigninUser>(null);
 const password = ref('');
 
 //#region Passkey Passwordless
@@ -160,9 +161,15 @@ function onUseTotp(): void {
 async function onUsernameSubmitted(username: string) {
 	waiting.value = true;
 
-	userInfo.value = await misskeyApi('users/show', {
-		username,
-	}).catch(() => null);
+	if (isIntraVisitor()) {
+		// 42 intra 連携が有効なときは、未ログインでユーザー情報を取得できない (backend が拒否する)。
+		// ユーザーが存在するかどうかは signin-flow の応答でわかるので、ユーザー名だけで進める
+		userInfo.value = { username };
+	} else {
+		userInfo.value = await misskeyApi('users/show', {
+			username,
+		}).catch(() => null);
+	}
 
 	await tryLogin({
 		username,

@@ -1,0 +1,47 @@
+# misskey-42 (https://42times.kinachan.com) の本番用 compose ファイル。
+# 配置先: /home/misskey/42times/compose.yml
+#
+# 通常は deploy.sh から IMAGE_TAG を渡して使う。手で操作するときの例:
+#   IMAGE_TAG=$(cat state/current-tag) docker compose logs -f web
+#
+# ネットワークは host モードにしている。VPS に直接入っている PostgreSQL (127.0.0.1:5432) と
+# Redis (127.0.0.1:6379) に、既存の設定を変えずに localhost で接続するため。
+# このため Misskey はホストの 0.0.0.0:3001 で待ち受ける。外部から 3001 に届かないことを
+# ファイアウォール (ufw) で確かめること (手順は README.md)。
+# ポートを ports: で公開する bridge モードと違い、host モードでは Docker が iptables の規則を追加しないので、ufw の設定がそのまま効く。
+
+name: misskey42
+
+services:
+  web:
+    image: ghcr.io/tomsato42/misskey-42:${IMAGE_TAG:?IMAGE_TAG にイメージのタグ (例 sha-0123abc) を指定してください}
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      # 本番の設定。秘密の値を含むので、リポジトリには置かない (例は default.yml.example)
+      - ./.config/default.yml:/misskey/.config/default.yml:ro
+      # オブジェクトストレージ (R2) を設定する前にアップロードされたファイルの保存先
+      - ./files:/misskey/files
+    environment:
+      # V8 のヒープの上限 (MB)。コンテナのメモリ上限 (mem_limit) より小さくして、
+      # 上限に近づく前にガベージコレクションが働くようにする
+      NODE_OPTIONS: --max-old-space-size=512
+    # VPS のメモリは 2GB で、既存の Misskey・PostgreSQL・Redis と共有している
+    mem_limit: 768m
+    memswap_limit: 1536m
+    # 停止時に処理中のジョブを終えるための猶予
+    stop_grace_period: 60s
+    healthcheck:
+      # Dockerfile の HEALTHCHECK と同じスクリプト (default.yml の port を読んで /healthz を確かめる)。
+      # マイグレーションに時間がかかっても unhealthy にならないよう、start_period を長めにする
+      test: ["CMD", "/bin/bash", "/misskey/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 300s
+      start_interval: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"

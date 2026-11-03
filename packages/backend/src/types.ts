@@ -24,6 +24,19 @@
  * createToken - トークン作成
  * app - アプリ通知
  * test - テスト通知（サーバー側）
+ * calendarEventReminder - 購読しているイベントのリマインド (42times)
+ * calendarEventUpdated - 購読しているイベントの日時が変わった・中止された (42times)
+ * calendarEventInvited - イベントに招待された (42times)
+ * pairJoinRequested - 自分のペア募集に参加希望が届いた
+ * pairAccepted - ペア募集への参加希望が承認された
+ * pairClosed - 参加希望を送った・参加しているペア募集か、自分のペア募集が締め切られた
+ * pairInvited - ペア募集に招待された
+ * pairApplicationCancelled - ペア募集が編集され、やりたい課題が外れたので参加希望が取り下げになった
+ * intraProjectFinished - 42 intra の課題の結果が出た (42times)
+ * intraProjectsRefreshed - 自分で頼んだ 42 intra の課題の再取得が終わった (42times)
+ * intraLevelUp - 42 intra のレベルが上がった (42times)
+ * acquaintanceSuggested - 2次元コードを読み込んで登録したので、コードを見せた人を知り合いかもしれないと案内する (42times)
+ * acquaintanceJoined - 自分の2次元コードを読み込んだ人が登録した (42times)
  */
 export const notificationTypes = [
 	'note',
@@ -46,6 +59,19 @@ export const notificationTypes = [
 	'createToken',
 	'app',
 	'test',
+	'calendarEventReminder',
+	'calendarEventUpdated',
+	'calendarEventInvited',
+	'pairJoinRequested',
+	'pairAccepted',
+	'pairClosed',
+	'pairInvited',
+	'pairApplicationCancelled',
+	'intraProjectFinished',
+	'intraProjectsRefreshed',
+	'intraLevelUp',
+	'acquaintanceSuggested',
+	'acquaintanceJoined',
 ] as const;
 
 export const groupedNotificationTypes = [
@@ -135,6 +161,8 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'updateIntraPasswordLoginAllowed',
+	'issueIntraPasskeySetup',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -401,6 +429,22 @@ export type ModerationLogPayloads = {
 	updateProxyAccountDescription: {
 		before: string | null;
 		after: string | null;
+	};
+	updateIntraPasswordLoginAllowed: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		before: boolean;
+		after: boolean;
+	};
+	issueIntraPasskeySetup: {
+		userId: string;
+		userUsername: string;
+		/** 42 のログイン名から用意したときのログイン名。既存のアカウントに発行したときは null */
+		intraLogin: string | null;
+		created: boolean;
+		linked: boolean | null;
+		manuallyVerified: boolean | null;
 	};
 };
 

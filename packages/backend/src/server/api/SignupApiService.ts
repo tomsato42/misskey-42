@@ -75,6 +75,12 @@ export class SignupApiService {
 		}>,
 		reply: FastifyReply,
 	) {
+		// 42 intra 連携が有効なときは intra でのみ登録できる。
+		// 初期セットアップの管理者アカウントは admin/accounts/create で作成するため、ここで拒否しても影響しない
+		if (this.config.intra != null) {
+			throw new FastifyReplyError(403, 'SIGNUP_DISABLED');
+		}
+
 		const body = request.body;
 
 		// Verify *Captcha
@@ -336,6 +342,11 @@ export class SignupApiService {
 
 	@bindThis
 	public async signupPending(request: FastifyRequest<{ Body: { code: string; } }>, reply: FastifyReply) {
+		// 連携を有効にする前の /signup で作られた、メール認証待ちのユーザーも登録させない
+		if (this.config.intra != null) {
+			throw new FastifyReplyError(403, 'SIGNUP_DISABLED');
+		}
+
 		const body = request.body;
 
 		const code = body['code'];

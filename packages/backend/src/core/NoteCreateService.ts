@@ -23,7 +23,7 @@ import type { IPoll } from '@/models/Poll.js';
 import { MiPoll } from '@/models/Poll.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import type { MiChannel } from '@/models/Channel.js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
 import { RelayService } from '@/core/RelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
@@ -57,6 +57,7 @@ import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
+import { extractUrlsForKeyWordCheck } from '@/misc/extract-urls-for-keyword-check.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -188,6 +189,8 @@ type Option = {
 	uri?: string | null;
 	url?: string | null;
 	app?: MiApp | null;
+	/** 42times: ノートを保存した直後、配信などの後処理より前に呼ぶ (カレンダーのイベントとの紐づけ)。例外を投げないこと */
+	onInserted?: ((note: MiNote) => Promise<void>) | null;
 };
 
 @Injectable()
@@ -273,6 +276,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
 
+	/** 42times: ロールでノートを作れなくした (リアクションだけできる) ローカルのユーザーは、リプライ・リノート・予約投稿も含めて作れない */
+	@bindThis
+	private async assertCanCreateNote(user: { id: MiUser['id']; host: MiUser['host']; }): Promise<void> {
+		if (user.host !== null) return;
+		if ((await this.roleService.getUserPolicies(user.id)).canCreateNote === false) {
+			throw new IdentifiableError('3e2bf5d3-c980-4f68-b5ea-79c41bfc75b4', 'You are not allowed to create notes');
+		}
+	}
+
 	@bindThis
 	public async fetchAndCreate(user: {
 		id: MiUser['id'];
@@ -296,7 +308,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 		apMentions?: MinimumUser[] | null;
 		apHashtags?: string[] | null;
 		apEmojis?: string[] | null;
+		onInserted?: Option['onInserted'];
 	}): Promise<MiNote> {
+		await this.assertCanCreateNote(user);
+
 		const visibleUsers = data.visibleUserIds.length > 0 ? await this.usersRepository.findBy({
 			id: In(data.visibleUserIds),
 		}) : [];
@@ -435,6 +450,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			apMentions: data.apMentions,
 			apHashtags: data.apHashtags,
 			apEmojis: data.apEmojis,
+			onInserted: data.onInserted,
 		});
 	}
 
@@ -446,6 +462,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 		isBot: MiUser['isBot'];
 		isCat: MiUser['isCat'];
 	}, data: Option, silent = false): Promise<MiNote> {
+		await this.assertCanCreateNote(user);
+
 		// チャンネル外にリプライしたら対象のスコープに合わせる
 		// (クライアントサイドでやっても良い処理だと思うけどとりあえずサーバーサイドで)
 		if (data.reply && data.channel && data.reply.channelId !== data.channel.id) {
@@ -471,7 +489,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		if (data.visibility === 'public' && data.channel == null) {
 			const sensitiveWords = this.meta.sensitiveWords;
-			if (this.utilityService.isKeyWordIncluded(data.cw ?? data.text ?? '', sensitiveWords)) {
+			const sensitiveWordsTarget = data.cw ?? data.text ?? '';
+			if (sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), sensitiveWords)) {
 				data.visibility = 'home';
 			} else if ((await this.roleService.getUserPolicies(user.id)).canPublicNote === false) {
 				data.visibility = 'home';
@@ -633,6 +652,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		const note = await this.insertNote(user, data, tags, emojis, mentionedUsers);
 
+		// 42times: 配信するノートにカレンダーのイベントが付くよう、後処理より先に済ませる
+		if (data.onInserted) await data.onInserted(note);
+
 		setImmediate('post created', { signal: this.#shutdownController.signal }).then(
 			() => this.postNoteCreated(note, user, data, silent, tags!, mentionedUsers!),
 			() => { /* aborted, ignore this */ },
@@ -658,7 +680,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			text: data.text,
 			hasPoll: data.poll != null,
 			cw: data.cw ?? null,
-			tags: tags.map(tag => normalizeForSearch(tag)),
+			tags: tags.map(tag => normalizeTag(tag)),
 			emojis,
 			userId: user.id,
 			localOnly: data.localOnly!,
@@ -778,7 +800,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		this.pushToTl(note, user);
 
-		this.antennaService.addNoteToAntennas({
+		const matchedAntennas = this.antennaService.addNoteToAntennas({
 			...note,
 			channel: data.channel ?? null,
 		}, user);
@@ -842,6 +864,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 			this.globalEventService.publishNotesStream(noteObj);
 
 			this.roleService.addNoteToRoleTimeline(noteObj);
+
+			matchedAntennas.then(antennas => {
+				for (const antenna of antennas) {
+					this.globalEventService.publishAntennaStream(antenna.id, 'note', noteObj);
+				}
+			});
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });
 
@@ -1242,9 +1270,20 @@ export class NoteCreateService implements OnApplicationShutdown {
 			prohibitedWords = this.meta.prohibitedWords;
 		}
 
+		if (prohibitedWords.length === 0) {
+			return false;
+		}
+
 		if (
 			this.utilityService.isKeyWordIncluded(
-				this.utilityService.concatNoteContentsForKeyWordCheck(content),
+				this.utilityService.concatNoteContentsForKeyWordCheck({
+					...content,
+					others: [
+						...(content.others ?? []),
+						...extractUrlsForKeyWordCheck(content.cw ?? ''),
+						...extractUrlsForKeyWordCheck(content.text ?? ''),
+					],
+				}),
 				prohibitedWords,
 			)
 		) {

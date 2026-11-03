@@ -18,13 +18,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<!-- eslint-disable-next-line vue/no-v-html -->
 				<div v-html="instance.description || i18n.ts.headlineMisskey"></div>
 			</div>
-			<div v-if="instance.disableRegistration || instance.federation !== 'all'" :class="$style.mainWarn" class="_gaps_s">
-				<MkInfo v-if="instance.disableRegistration" warn>{{ i18n.ts.invitationRequiredToRegister }}</MkInfo>
+			<div v-if="(instance.disableRegistration && !instance.intraLoginEnabled) || instance.federation !== 'all'" :class="$style.mainWarn" class="_gaps_s">
+				<!-- intra 連携が有効なときは招待コードではなく 42 のログインで登録する -->
+				<MkInfo v-if="instance.disableRegistration && !instance.intraLoginEnabled" warn>{{ i18n.ts.invitationRequiredToRegister }}</MkInfo>
 				<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
 				<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
 			</div>
 			<div class="_gaps_s" :class="$style.mainActions">
 				<MkButton :class="$style.mainAction" full rounded gradate data-testid="signup" style="margin-right: 12px;" @click="signup()">{{ i18n.ts.joinThisServer }}</MkButton>
+				<p v-if="instance.intraLoginEnabled" :class="$style.intraCaption">{{ i18n.ts._intra.autoSignupDescription }}</p>
+				<MkIntraLoginAgreement v-if="instance.intraLoginEnabled" :tosUrl="instance.tosUrl" :privacyPolicyUrl="instance.privacyPolicyUrl"/>
 				<MkButton :class="$style.mainAction" full rounded type="a" target="_blank" rel="noopener" href="https://misskey-hub.net/servers/">{{ i18n.ts.exploreOtherServers }}</MkButton>
 				<MkButton :class="$style.mainAction" full rounded data-testid="signin" @click="signin()">{{ i18n.ts.login }}</MkButton>
 			</div>
@@ -62,6 +65,7 @@ import XSignupDialog from '@/components/MkSignupDialog.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import MkInfo from '@/components/MkInfo.vue';
+import MkIntraLoginAgreement from '@/components/MkIntraLoginAgreement.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -69,6 +73,7 @@ import { instance } from '@/instance.js';
 import MkNumber from '@/components/MkNumber.vue';
 import XActiveUsersChart from '@/components/MkVisitorDashboard.ActiveUsersChart.vue';
 import { openInstanceMenu } from '@/ui/_common_/common.js';
+import { startIntraLogin } from '@/utility/intra-login.js';
 
 const stats = ref<Misskey.entities.StatsResponse | null>(null);
 
@@ -87,6 +92,12 @@ function signin() {
 }
 
 function signup() {
+	// intra 連携が有効なときは通常の登録を受け付けないので、42 のログインへ移る (初回ログインでアカウントが作成される)
+	if (instance.intraLoginEnabled) {
+		startIntraLogin();
+		return;
+	}
+
 	const { dispose } = os.popup(XSignupDialog, {
 		autoSet: true,
 	}, {
@@ -169,6 +180,12 @@ function showMenu(ev: PointerEvent) {
 
 .mainAction {
 	line-height: 28px;
+}
+
+.intraCaption {
+	margin: 0;
+	font-size: 0.85em;
+	opacity: 0.7;
 }
 
 .stats {

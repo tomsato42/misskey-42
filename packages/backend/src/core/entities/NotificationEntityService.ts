@@ -20,6 +20,9 @@ import { ChatEntityService } from './ChatEntityService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { UserEntityService } from './UserEntityService.js';
 import type { NoteEntityService } from './NoteEntityService.js';
+import type { CalendarEventEntityService } from './CalendarEventEntityService.js';
+import type { MiCalendarEvent } from '@/models/CalendarEvent.js';
+import { getCalendarEventIdOfNotification, packCalendarNotificationFields } from '@/core/calendar/calendar-notification.js';
 
 const NOTE_REQUIRED_NOTIFICATION_TYPES = new Set([
 	'note',
@@ -40,6 +43,7 @@ export class NotificationEntityService implements OnModuleInit {
 	private noteEntityService: NoteEntityService;
 	private roleEntityService: RoleEntityService;
 	private chatEntityService: ChatEntityService;
+	private calendarEventEntityService: CalendarEventEntityService;
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -62,6 +66,7 @@ export class NotificationEntityService implements OnModuleInit {
 		this.noteEntityService = this.moduleRef.get('NoteEntityService');
 		this.roleEntityService = this.moduleRef.get('RoleEntityService');
 		this.chatEntityService = this.moduleRef.get('ChatEntityService');
+		this.calendarEventEntityService = this.moduleRef.get('CalendarEventEntityService');
 	}
 
 	/**
@@ -76,6 +81,7 @@ export class NotificationEntityService implements OnModuleInit {
 		hint?: {
 			packedNotes: Map<MiNote['id'], Packed<'Note'>>;
 			packedUsers: Map<MiUser['id'], Packed<'UserLite'>>;
+			packedCalendarEvents?: Map<MiCalendarEvent['id'], Packed<'CalendarEventLite'>>;
 		},
 	): Promise<Packed<'Notification'> | null> {
 		const notification = src;
@@ -156,6 +162,17 @@ export class NotificationEntityService implements OnModuleInit {
 			return null;
 		}
 
+		// 42times: カレンダーの通知はイベントを付ける。イベントが削除されていたら通知を出さない
+		const calendarEventId = getCalendarEventIdOfNotification(notification);
+		const calendarEvent = calendarEventId == null ? undefined : (
+			hint?.packedCalendarEvents != null
+				? hint.packedCalendarEvents.get(calendarEventId)
+				: (await this.calendarEventEntityService.packLiteManyByIds([calendarEventId], { id: meId })).get(calendarEventId)
+		);
+		if (calendarEventId != null && calendarEvent == null) {
+			return null;
+		}
+
 		const needsChatRoomInvitation = notification.type === 'chatRoomInvitationReceived';
 		const chatRoomInvitation = needsChatRoomInvitation ? await this.chatEntityService.packRoomInvitation(notification.invitationId, { id: meId }).catch(() => null) : undefined;
 		// if the invitation has been deleted, don't show this notification
@@ -193,6 +210,32 @@ export class NotificationEntityService implements OnModuleInit {
 				body: notification.customBody,
 				header: notification.customHeader,
 				icon: notification.customIcon,
+			} : {}),
+			...(calendarEvent != null ? packCalendarNotificationFields(notification, calendarEvent) : {}),
+			...(notification.type === 'pairJoinRequested' || notification.type === 'pairAccepted' || notification.type === 'pairClosed' || notification.type === 'pairInvited' || notification.type === 'pairApplicationCancelled' ? {
+				pairRecruitment: {
+					id: notification.pairRecruitmentId,
+					projectSlug: notification.projectSlug,
+					projectName: notification.projectName,
+				},
+			} : {}),
+			...(notification.type === 'pairClosed' ? {
+				reason: notification.reason,
+			} : {}),
+			...(notification.type === 'intraProjectFinished' ? {
+				intraProjectResult: {
+					id: notification.intraProjectResultId,
+					projectSlug: notification.projectSlug,
+					projectName: notification.projectName,
+					finalMark: notification.finalMark,
+					validated: notification.validated,
+				},
+			} : {}),
+			...(notification.type === 'intraProjectsRefreshed' ? {
+				failed: notification.failed,
+			} : {}),
+			...(notification.type === 'intraLevelUp' ? {
+				level: notification.level,
 			} : {}),
 		});
 	}
@@ -248,12 +291,18 @@ export class NotificationEntityService implements OnModuleInit {
 			validNotifications = validNotifications.filter(x => (x.type !== 'receiveFollowRequest') || reqs.some(r => r.followerId === x.notifierId));
 		}
 
+		// 42times: カレンダーの通知のイベントをまとめて引く
+		const calendarEventIds = validNotifications.map(x => getCalendarEventIdOfNotification(x)).filter(x => x != null);
+		const packedCalendarEvents = calendarEventIds.length > 0
+			? await this.calendarEventEntityService.packLiteManyByIds(calendarEventIds, { id: meId })
+			: new Map<MiCalendarEvent['id'], Packed<'CalendarEventLite'>>();
+
 		const packPromises = validNotifications.map(x => {
 			return this.pack(
 				x,
 				meId,
 				{ checkValidNotifier: false },
-				{ packedNotes, packedUsers },
+				{ packedNotes, packedUsers, packedCalendarEvents },
 			);
 		});
 
@@ -271,6 +320,7 @@ export class NotificationEntityService implements OnModuleInit {
 		hint?: {
 			packedNotes: Map<MiNote['id'], Packed<'Note'>>;
 			packedUsers: Map<MiUser['id'], Packed<'UserLite'>>;
+			packedCalendarEvents?: Map<MiCalendarEvent['id'], Packed<'CalendarEventLite'>>;
 		},
 	): Promise<Packed<'Notification'> | null> {
 		return await this.#packInternal(src, meId, options, hint);

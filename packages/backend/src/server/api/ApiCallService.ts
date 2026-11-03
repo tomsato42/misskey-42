@@ -18,6 +18,7 @@ import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { TelemetryService } from '@/core/telemetry/TelemetryService.js';
 import type { Config } from '@/config.js';
+import { isEndpointAllowedForIntraVisitor, isIntraMode } from '@/core/intra/intra-visitor.js';
 import { ApiError } from './error.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { ApiLoggerService } from './ApiLoggerService.js';
@@ -31,6 +32,13 @@ const accessDenied = {
 	message: 'Access denied.',
 	code: 'ACCESS_DENIED',
 	id: '56f35758-7dd5-468b-8439-5d6fb8ec9b8e',
+};
+
+const credentialRequired = {
+	message: 'Credential required.',
+	code: 'CREDENTIAL_REQUIRED',
+	id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+	httpStatusCode: 401,
 };
 
 /**
@@ -359,6 +367,12 @@ export class ApiCallService implements OnApplicationShutdown {
 		} | null,
 		request: FastifyRequest<{ Body: Record<string, unknown> | undefined, Querystring: Record<string, unknown> }>,
 	) {
+		// 42 intra 連携が有効なとき (学内SNSモード) は、ログイン画面の表示に必要なもの以外、トークンなしの呼び出しを受け付けない。
+		// requireCredential のエンドポイントをトークンなしで呼んだときと同じ応答にする
+		if (user == null && isIntraMode(this.config) && !isEndpointAllowedForIntraVisitor(ep.name)) {
+			throw new ApiError(credentialRequired);
+		}
+
 		const isSecure = user != null && token == null;
 
 		if (ep.meta.secure && !isSecure) {
@@ -402,12 +416,7 @@ export class ApiCallService implements OnApplicationShutdown {
 
 		if (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin) {
 			if (user == null) {
-				throw new ApiError({
-					message: 'Credential required.',
-					code: 'CREDENTIAL_REQUIRED',
-					id: '1384574d-a912-4b81-8601-c7b1c4085df1',
-					httpStatusCode: 401,
-				});
+				throw new ApiError(credentialRequired);
 			} else if (user!.isSuspended) {
 				throw new ApiError({
 					message: 'Your account has been suspended.',
@@ -449,9 +458,10 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
-		if (ep.meta.requiredRolePolicy != null && (this.meta.rootUserId !== user!.id)) {
-			const myRoles = await this.roleService.getUserRoles(user!.id);
-			const policies = await this.roleService.getUserPolicies(user!.id);
+		// 未ログイン時は既定ポリシーで判定
+		if (ep.meta.requiredRolePolicy != null && (user == null || this.meta.rootUserId !== user.id)) {
+			const myRoles = user != null ? await this.roleService.getUserRoles(user.id) : [];
+			const policies = await this.roleService.getUserPolicies(user?.id ?? null);
 			if (!policies[ep.meta.requiredRolePolicy] && !myRoles.some(r => r.isAdministrator)) {
 				throw new ApiError({
 					message: 'You are not assigned to a required role.',

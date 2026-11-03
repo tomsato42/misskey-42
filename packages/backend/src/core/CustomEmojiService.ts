@@ -343,6 +343,20 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		});
 	}
 
+	/**
+	 * 画像の URL (originalUrl) が同じローカルの絵文字を消す。絵文字にしたドライブのファイルを消したときに呼ぶ
+	 */
+	@bindThis
+	public async deleteByOriginalUrl(url: string, moderator?: MiUser) {
+		const emojis = await this.emojisRepository.find({
+			select: { id: true },
+			where: { host: IsNull(), originalUrl: url },
+		});
+		if (emojis.length === 0) return;
+
+		await this.deleteBulk(emojis.map(emoji => emoji.id), moderator);
+	}
+
 	@bindThis
 	private normalizeHost(src: string | undefined, noteUserHost: string | null): string | null {
 		// クエリに使うホスト

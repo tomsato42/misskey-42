@@ -1,0 +1,12 @@
+# このディレクトリを、リポジトリのルートとは別の pnpm workspace として扱うための設定です。
+# ルートの pnpm-workspace.yaml には含めていないので、ルートで pnpm install しても
+# wrangler などはインストールされません。このディレクトリで pnpm install を実行してください。
+packages:
+  - .
+allowBuilds:
+  esbuild: true
+  workerd: true
+  sharp: false
+minimumReleaseAge: 10080 # delay 7days to mitigate supply-chain attack (ルートと同じ)
+engineStrict: true
+saveExact: true

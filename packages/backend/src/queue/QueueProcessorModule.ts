@@ -15,11 +15,16 @@ import { InboxProcessorService } from './processors/InboxProcessorService.js';
 import { UserWebhookDeliverProcessorService } from './processors/UserWebhookDeliverProcessorService.js';
 import { SystemWebhookDeliverProcessorService } from './processors/SystemWebhookDeliverProcessorService.js';
 import { CheckExpiredMutingsProcessorService } from './processors/CheckExpiredMutingsProcessorService.js';
+import { ArchiveAnnouncementProcessorService } from './processors/ArchiveAnnouncementProcessorService.js';
 import { BakeBufferedReactionsProcessorService } from './processors/BakeBufferedReactionsProcessorService.js';
 import { CleanChartsProcessorService } from './processors/CleanChartsProcessorService.js';
 import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { CheckModeratorsActivityProcessorService } from './processors/CheckModeratorsActivityProcessorService.js';
 import { CleanRemoteNotesProcessorService } from './processors/CleanRemoteNotesProcessorService.js';
+import { SyncIntraUsersProcessorService } from './processors/SyncIntraUsersProcessorService.js';
+import { CalendarEventRemindersProcessorService } from './processors/CalendarEventRemindersProcessorService.js';
+import { SyncIntraProjectsProcessorService } from './processors/SyncIntraProjectsProcessorService.js';
+import { CloseExpiredPairRecruitmentsProcessorService } from './processors/CloseExpiredPairRecruitmentsProcessorService.js';
 import { CleanRemoteFilesProcessorService } from './processors/CleanRemoteFilesProcessorService.js';
 import { DeleteAccountProcessorService } from './processors/DeleteAccountProcessorService.js';
 import { DeleteDriveFilesProcessorService } from './processors/DeleteDriveFilesProcessorService.js';
@@ -55,6 +60,7 @@ import { RelationshipProcessorService } from './processors/RelationshipProcessor
 		ResyncChartsProcessorService,
 		CleanChartsProcessorService,
 		CheckExpiredMutingsProcessorService,
+		ArchiveAnnouncementProcessorService,
 		BakeBufferedReactionsProcessorService,
 		CleanProcessorService,
 		DeleteDriveFilesProcessorService,
@@ -87,6 +93,10 @@ import { RelationshipProcessorService } from './processors/RelationshipProcessor
 		CheckExpiredMutingsProcessorService,
 		CheckModeratorsActivityProcessorService,
 		CleanRemoteNotesProcessorService,
+		SyncIntraUsersProcessorService,
+		CalendarEventRemindersProcessorService,
+		SyncIntraProjectsProcessorService,
+		CloseExpiredPairRecruitmentsProcessorService,
 		QueueProcessorService,
 	],
 	exports: [

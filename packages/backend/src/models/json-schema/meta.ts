@@ -309,6 +309,11 @@ export const packedMetaLiteSchema = {
 			enum: ['all', 'specified', 'none'],
 			optional: false, nullable: false,
 		},
+		intraLoginEnabled: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			description: '42 intra でのログインが有効か',
+		},
 	},
 } as const;
 

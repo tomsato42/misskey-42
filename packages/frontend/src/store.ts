@@ -20,6 +20,21 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'account',
 		default: 0,
 	},
+	// 42times: カレンダーとペア募集のチュートリアルを見たか。見ていなければ読み込み時に一度だけ紹介を出す (boot/main-boot.ts)
+	featureTutorialShown: {
+		where: 'account',
+		default: false,
+	},
+	// 42times: 点数を共有のチュートリアルを見たか。カレンダーとペア募集の紹介を見た人にも、見ていなければ一度だけ出す (boot/main-boot.ts)
+	projectShareTutorialShown: {
+		where: 'account',
+		default: false,
+	},
+	// 42times: ブラックホールの前にパスキーを作るよう案内したか。していなければ読み込み時に一度だけ出す (boot/main-boot.ts)
+	passkeyNoticeShown: {
+		where: 'account',
+		default: false,
+	},
 	tips: {
 		where: 'device',
 		default: {} as Partial<Record<typeof TIPS[number], boolean>>, // true = 既読
@@ -51,7 +66,7 @@ export const store = markRaw(new Pizzax('base', {
 	tl: {
 		where: 'deviceAccount',
 		default: {
-			src: 'home' as 'home' | 'local' | 'social' | 'global' | `list:${string}`,
+			src: 'home' as 'home' | 'local' | 'social' | 'global' | `list:${string}` | `role:${string}`,
 			userList: null as Misskey.entities.UserList | null,
 			filter: {
 				withReplies: true,

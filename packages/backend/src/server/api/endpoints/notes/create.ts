@@ -10,8 +10,13 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { CalendarNotePostService } from '@/core/calendar/CalendarNotePostService.js';
+import { IntraProjectResultNotAttachableError, IntraProjectResultNotFoundError, IntraProjectResultService } from '@/core/intra/IntraProjectResultService.js';
+import { IntraLevelNoteService, IntraLevelNotReachedError } from '@/core/intra/IntraLevelNoteService.js';
 import { ApiError } from '../../error.js';
+import { calendarNoteCreateErrorMap, calendarNoteCreateErrors, calendarNoteCreateProperties, toCalendarApiError, toCalendarEventInput, toCalendarEventVisibilityInput } from '../../calendar-api.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -40,6 +45,12 @@ export const meta = {
 	},
 
 	errors: {
+		cannotCreateNote: {
+			message: 'You are not allowed to create notes.',
+			code: 'CANNOT_CREATE_NOTE',
+			id: 'c827f19d-9eef-4a7e-9999-053a8d664b87',
+		},
+
 		noSuchRenoteTarget: {
 			message: 'No such renote target.',
 			code: 'NO_SUCH_RENOTE_TARGET',
@@ -123,6 +134,29 @@ export const meta = {
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
 		},
+
+		// 42times: カレンダーのイベントとの紐づけ
+		...calendarNoteCreateErrors,
+
+		// 42times: 課題の結果
+		noSuchIntraProjectResult: {
+			message: 'No such intra project result.',
+			code: 'NO_SUCH_INTRA_PROJECT_RESULT',
+			id: '8e0b5273-9262-4653-bbe6-f112a2cc8e3e',
+		},
+
+		cannotAttachIntraProjectResultToPureRenote: {
+			message: 'Cannot attach an intra project result to a pure renote.',
+			code: 'CANNOT_ATTACH_INTRA_PROJECT_RESULT_TO_PURE_RENOTE',
+			id: '6c96ccd5-e908-497c-b7bb-56702aed3f80',
+		},
+
+		// 42times: レベル
+		intraLevelNotReached: {
+			message: 'You have not reached this intra level.',
+			code: 'INTRA_LEVEL_NOT_REACHED',
+			id: '8e5faa98-dd99-4979-936e-2a497b9f47ab',
+		},
 	},
 } as const;
 
@@ -182,6 +216,23 @@ export const paramDef = {
 			},
 			required: ['choices'],
 		},
+		// 42times: カレンダーのイベントとの紐づけ
+		...calendarNoteCreateProperties,
+		// 42times: 課題の結果を付ける
+		intraProjectResultId: {
+			type: 'string', format: 'misskey:id', nullable: true,
+			description: '42times: Attach one of your intra project results (from intra/project-results). The note can then have no text.',
+		},
+		// 42times: 課題の結果のうち、どの提出を付けるか
+		intraProjectTeamId: {
+			type: 'integer', nullable: true,
+			description: '42times: The intra team ID of the submission to attach (one of the result\'s submissions). Omit for the latest submission. Ignored without intraProjectResultId.',
+		},
+		// 42times: レベルを付ける
+		intraLevel: {
+			type: 'integer', minimum: 0, nullable: true,
+			description: '42times: Attach a 42 intra level you have reached (up to your current level). The note can then have no text.',
+		},
 	},
 	// (re)note with text, files and poll are optional
 	if: {
@@ -196,6 +247,12 @@ export const paramDef = {
 				type: 'null',
 			},
 			poll: {
+				type: 'null',
+			},
+			intraProjectResultId: {
+				type: 'null',
+			},
+			intraLevel: {
 				type: 'null',
 			},
 		},
@@ -218,8 +275,58 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
+		private calendarNotePostService: CalendarNotePostService,
+		private intraProjectResultService: IntraProjectResultService,
+		private intraLevelNoteService: IntraLevelNoteService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 42times: ノートを作れないロール (リアクションだけできる) の人は、カレンダーなどを確かめる前に断る
+			if ((await this.roleService.getUserPolicies(me.id)).canCreateNote === false) {
+				throw new ApiError(meta.errors.cannotCreateNote);
+			}
+
+			// 42times: カレンダーのイベントの指定は、ノートを作る前に確かめる
+			const onInserted = await this.calendarNotePostService.prepare(me, {
+				calendarEventId: ps.calendarEventId,
+				calendarEvent: ps.calendarEvent ? toCalendarEventInput(ps.calendarEvent) : null,
+				calendarEventVisibility: ps.calendarEvent ? toCalendarEventVisibilityInput(ps.calendarEvent) : null,
+				note: {
+					visibility: ps.visibility,
+					renoteId: ps.renoteId,
+					replyId: ps.replyId,
+					text: ps.text,
+					cw: ps.cw,
+					fileIds: ps.fileIds ?? ps.mediaIds,
+					hasPoll: ps.poll != null,
+				},
+			}).catch(err => {
+				throw toCalendarApiError(err, calendarNoteCreateErrorMap);
+			});
+
+			// 42times: 付ける課題の結果も、ノートを作る前に確かめる
+			const onIntraProjectNoteInserted = await this.intraProjectResultService.prepareNote(me, ps.intraProjectResultId, {
+				renoteId: ps.renoteId,
+				text: ps.text,
+				fileIds: ps.fileIds ?? ps.mediaIds,
+				hasPoll: ps.poll != null,
+			}, ps.intraProjectTeamId).catch(err => {
+				if (err instanceof IntraProjectResultNotFoundError) throw new ApiError(meta.errors.noSuchIntraProjectResult);
+				if (err instanceof IntraProjectResultNotAttachableError) throw new ApiError(meta.errors.cannotAttachIntraProjectResultToPureRenote);
+				throw err;
+			});
+
+			const onIntraLevelNoteInserted = await this.intraLevelNoteService.prepareNote(me, ps.intraLevel, {
+				renoteId: ps.renoteId,
+				text: ps.text,
+				fileIds: ps.fileIds ?? ps.mediaIds,
+				hasPoll: ps.poll != null,
+			}).catch(err => {
+				if (err instanceof IntraLevelNotReachedError) throw new ApiError(meta.errors.intraLevelNotReached);
+				if (err instanceof IntraProjectResultNotAttachableError) throw new ApiError(meta.errors.cannotAttachIntraProjectResultToPureRenote);
+				throw err;
+			});
+
 			try {
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
@@ -241,6 +348,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
+					onInserted: onInserted == null && onIntraProjectNoteInserted == null && onIntraLevelNoteInserted == null ? null : async created => {
+						await onInserted?.(created);
+						await onIntraProjectNoteInserted?.(created);
+						await onIntraLevelNoteInserted?.(created);
+					},
 				});
 
 				return {
@@ -249,7 +361,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			} catch (err) {
 				// TODO: 他のErrorもここでキャッチしてエラーメッセージを当てるようにしたい
 				if (err instanceof IdentifiableError) {
-					if (err.id === '689ee33f-f97c-479a-ac49-1b9f8140af99') {
+					if (err.id === '3e2bf5d3-c980-4f68-b5ea-79c41bfc75b4') {
+						throw new ApiError(meta.errors.cannotCreateNote);
+					} else if (err.id === '689ee33f-f97c-479a-ac49-1b9f8140af99') {
 						throw new ApiError(meta.errors.containsProhibitedWords);
 					} else if (err.id === '9f466dab-c856-48cd-9e65-ff90ff750580') {
 						throw new ApiError(meta.errors.containsTooManyMentions);

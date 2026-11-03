@@ -1,0 +1,92 @@
+{
+	"_comment": "packages/backend/src/core/media-gate/media-gate.ts と cloudflare/media-worker/src/token.ts の両方のテストで使うテストベクタ。secret はテスト専用のダミー値。",
+	"secret": "test-only-secret-do-not-use-in-production-0123456789",
+	"now": 1760000000,
+	"valid": [
+		{
+			"subject": "a1b2c3d4e5",
+			"exp": 1760604800,
+			"token": "v1.a1b2c3d4e5.1760604800.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3E"
+		},
+		{
+			"subject": "server",
+			"exp": 1760000001,
+			"token": "v1.server.1760000001.6ZRm2OboMHV_UTfrQmCWyEUY7XI81FiIlxSKTt9b8MM"
+		},
+		{
+			"subject": "ABCxyz0123456789",
+			"exp": 4102444800,
+			"token": "v1.ABCxyz0123456789.4102444800.3-zAd4rkKMaxWDpyYDI2bKiBjFrau_fmc1kT6WE-6E4"
+		}
+	],
+	"invalid": [
+		{
+			"name": "expired (exp == now)",
+			"token": "v1.a1b2c3d4e5.1760000000.Sln6bd4XBqEpeUAP6wLm8oxB_Y9-O-pRfUV6i3Qzcao"
+		},
+		{
+			"name": "expired (exp < now)",
+			"token": "v1.a1b2c3d4e5.1759999999.q2cD_zZwFJ42y1NEoI3SWYEjuX06fZ98Jtvk5NI7obk"
+		},
+		{
+			"name": "tampered subject",
+			"token": "v1.a1b2c3d4e6.1760604800.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3E"
+		},
+		{
+			"name": "tampered exp",
+			"token": "v1.a1b2c3d4e5.1760604801.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3E"
+		},
+		{
+			"name": "signed with another secret",
+			"token": "v1.a1b2c3d4e5.1760604800.GdyKPUHjnMYw1iKiE6I6HdACD0_vfNAcD0GFr_fnlpU"
+		},
+		{
+			"name": "non-canonical base64url signature",
+			"token": "v1.a1b2c3d4e5.1760604800.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3F"
+		},
+		{
+			"name": "signature with padding",
+			"token": "v1.a1b2c3d4e5.1760604800.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3E="
+		},
+		{
+			"name": "unknown version",
+			"token": "v2.a1b2c3d4e5.1760604800.Hq8KZpbScUG5g17E8Yxh9NtnPdVmz6YKAkghKD5FeEI"
+		},
+		{
+			"name": "leading zero in exp",
+			"token": "v1.a1b2c3d4e5.01760604800.YmZXTJlYth-6vdubOH6x54lLNHXMACFk-FMPEnnFtlQ"
+		},
+		{
+			"name": "invalid character in subject",
+			"token": "v1.a1b2-c3d4.1760604800.C7GcwiS4L0TydSWIYkncENP9zO4m-YIhZqxvKnRuibg"
+		},
+		{
+			"name": "empty subject",
+			"token": "v1..1760604800.aJagm9jr0CiGHbHlNj8GOXaHofSLvvn6gnbbM-nOBFg"
+		},
+		{
+			"name": "missing part",
+			"token": "v1.a1b2c3d4e5.1760604800"
+		},
+		{
+			"name": "extra part",
+			"token": "v1.a1b2c3d4e5.1760604800.0mzeFjGEE_ZA4TMOnvC_s8-_V9PapEFMlSbbIv0ph3E.x"
+		},
+		{
+			"name": "empty string",
+			"token": ""
+		},
+		{
+			"name": "too long",
+			"token": "v1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.1760604800.RY7kS8nTyqYzfVs7ZRHuo14ehrQQ36m4KC7mVXdhMX8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"name": "exp is not an integer",
+			"token": "v1.a1b2c3d4e5.1760604800.5.HUBX4s9rxOUOYZ9oyl5GL-5qakvGzMfXZ8F0PNIoGMc"
+		},
+		{
+			"name": "exp exceeds the safe integer range",
+			"token": "v1.a1b2c3d4e5.9999999999999999.84OXC-nrLrJdcLD2t9TPRG22pf4RBkWx3r64_BnL8sQ"
+		}
+	]
+}

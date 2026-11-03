@@ -96,6 +96,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<dt class="name"><i class="ti ti-cake ti-fw"></i> {{ i18n.ts.birthday }}</dt>
 								<dd class="value">{{ user.birthday.replace('-', '/').replace('-', '/') }} ({{ i18n.tsx.yearsOld({ age }) }})</dd>
 							</dl>
+							<template v-if="user.intra">
+								<dl class="field">
+									<dt class="name"><i class="ti ti-id ti-fw"></i> {{ i18n.ts._intra.intraAccount }}</dt>
+									<dd class="value"><a :href="getIntraProfileUrl(user.intra.login)" target="_blank" rel="noopener" class="_link">{{ user.intra.login }} <i class="ti ti-external-link"></i></a></dd>
+								</dl>
+								<dl v-if="user.intra.poolYearMonth" class="field">
+									<dt class="name"><i class="ti ti-school ti-fw"></i> {{ i18n.ts._intra.poolYearMonth }}</dt>
+									<dd class="value">{{ formatPoolYearMonth(user.intra.poolYearMonth) }}</dd>
+								</dl>
+							</template>
 							<dl class="field">
 								<dt class="name"><i class="ti ti-calendar ti-fw"></i> {{ i18n.ts.registeredDate }}</dt>
 								<dd class="value">{{ dateString(user.createdAt) }} (<MkTime :time="user.createdAt"/>)</dd>
@@ -173,7 +183,7 @@ import MkInfo from '@/components/MkInfo.vue';
 import MkButton from '@/components/MkButton.vue';
 import { getUserMenu } from '@/utility/get-user-menu.js';
 import number from '@/filters/number.js';
-import { userPage } from '@/filters/user.js';
+import { userPage } from '@@/js/user.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { $i, iAmModerator } from '@/i.js';
@@ -187,6 +197,7 @@ import MkSparkle from '@/components/MkSparkle.vue';
 import { prefer } from '@/preferences.js';
 import MkPullToRefresh from '@/components/MkPullToRefresh.vue';
 import { isBirthday } from '@/utility/is-birthday.js';
+import { getIntraProfileUrl } from '@/utility/intra-login.js';
 import type XTimeline_TypeReferenceOnly from './index.timeline.vue';
 
 function calcAge(birthdate: string): number {
@@ -203,6 +214,15 @@ function calcAge(birthdate: string): number {
 
 	return yearDiff;
 }
+
+// 42 intra のピシンの年月 (YYMM。例: 2307) を 2023/07 の形にする
+function formatPoolYearMonth(yymm: string): string {
+	if (!/^\d{4}$/.test(yymm)) return yymm;
+	return `20${yymm.slice(0, 2)}/${yymm.slice(2)}`;
+}
+
+// BH とペース期日は表示しない。42 API の blackholed_at はペースシステムやフリーズを反映せず、
+// ペース期日は公開 API から取得できないため (user.intra の blackholedAt / paceDeadlineAt は API には残っている)
 
 const XFiles = defineAsyncComponent(() => import('./index.files.vue'));
 const XActivity = defineAsyncComponent(() => import('./index.activity.vue'));
