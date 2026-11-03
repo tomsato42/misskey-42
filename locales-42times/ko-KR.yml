@@ -3,6 +3,7 @@ closeAfterPostDescription: "PC에서는 탭을 닫습니다. 닫을 수 없거�
 noteEditEmpty: "본문을 비울 수 없습니다"
 noteEditHistory: "편집 기록"
 noteEditHistoryOriginal: "처음"
+cannotCreateNoteForThisAccount: "이 계정으로는 노트를 게시하거나 편집할 수 없습니다 (리액션은 가능합니다)"
 _initialTutorial:
   _calendar:
     title: "캘린더"
@@ -644,3 +645,7 @@ _emojiCategoryMerge:
   confirm: "「{from}」의 이모지 {count}개를 「{to}」(으)로 옮기고 「{from}」을(를) 없앱니다. 계속하시겠습니까?"
   confirmRemove: "「{from}」의 이모지 {count}개를 카테고리 미설정으로 하고 「{from}」을(를) 없앱니다. 계속하시겠습니까?"
   noCategories: "카테고리가 있는 이모지가 없습니다."
+_role:
+  _options:
+    canCreateNote: "노트 작성"
+    canCreateNote_caption: "끄면 노트·답글·리노트·인용 작성과 노트 편집을 할 수 없습니다 (리액션과 투표는 가능합니다). 다른 역할에서 켜져 있으면 작성할 수 있으므로 우선순위를 높여 설정하세요."

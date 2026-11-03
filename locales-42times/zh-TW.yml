@@ -6,6 +6,7 @@ noteEditHistory: "編輯紀錄"
 noteEditHistoryOriginal: "最初"
 cannotSelectSensitiveMedia: "無法選擇敏感媒體"
 cannotSelectSensitiveMediaDescription: "如果您沒有自行設定為敏感內容卻出現此錯誤，可能是自動判定將其視為敏感媒體。\n若依照伺服器規則不需要此設定，請解除檔案的敏感內容設定後再試一次。"
+cannotCreateNoteForThisAccount: "此帳戶無法發布或編輯貼文（仍可反應）"
 _followApproval:
   groupTitle: "追隨許可"
   inactiveDescription: "由於所有追隨都需要許可，依期間設定的規則不會套用。解除追隨需要許可的設定後，以下設定將再次套用。"
@@ -666,3 +667,7 @@ _emojiCategoryMerge:
   confirm: "將「{from}」的 {count} 個表情符號移至「{to}」，並廢除「{from}」。確定嗎？"
   confirmRemove: "將「{from}」的 {count} 個表情符號設為未設定類別，並廢除「{from}」。確定嗎？"
   noCategories: "沒有設定類別的表情符號。"
+_role:
+  _options:
+    canCreateNote: "建立貼文"
+    canCreateNote_caption: "關閉後將無法發布貼文、回覆、轉發、引用，也無法編輯貼文（仍可反應和投票）。若其他角色開啟了此項仍可建立，因此請設定較高的優先度。"
