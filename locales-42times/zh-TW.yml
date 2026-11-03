@@ -1,5 +1,4 @@
 closeAfterPost: "發文後關閉應用程式"
-closeAfterPostDescription: "在電腦上會關閉分頁。無法關閉時或在其他裝置上，會跳轉到空白頁面。"
 selectClip: "選擇摘錄"
 noteEditEmpty: "內文不能為空"
 noteEditHistory: "編輯紀錄"

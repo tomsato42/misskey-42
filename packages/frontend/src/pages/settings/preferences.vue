@@ -371,7 +371,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkPreferenceContainer k="closeAfterPost">
 									<MkSwitch v-model="closeAfterPost">
 										<template #label><SearchLabel>{{ i18n.ts.closeAfterPost }}</SearchLabel></template>
-										<template #caption>{{ i18n.ts.closeAfterPostDescription }}</template>
 									</MkSwitch>
 								</MkPreferenceContainer>
 							</SearchMarker>

@@ -1,5 +1,4 @@
 closeAfterPost: "Close the app after posting"
-closeAfterPostDescription: "On a PC, the tab is closed. If it can't be closed, or on other devices, a blank page is shown instead."
 selectClip: "Select a clip"
 noteEditEmpty: "The note text can't be empty"
 noteEditHistory: "Edit history"
