@@ -17,13 +17,13 @@ export interface PostFormProps {
 		userId: string | null;
 	} | null;
 	mention?: Misskey.entities.User;
-	specified?: Misskey.entities.UserDetailed;
+	specified?: Misskey.entities.UserLite;
 	initialText?: string;
 	initialCw?: string;
 	initialVisibility?: (typeof Misskey.noteVisibilities)[number];
 	initialFiles?: Misskey.entities.DriveFile[];
 	initialLocalOnly?: boolean;
-	initialVisibleUsers?: Misskey.entities.UserDetailed[];
+	initialVisibleUsers?: Misskey.entities.UserLite[];
 	initialNote?: Misskey.entities.Note;
 	/** 42times: 紐づけるイベントの初期値 (イベントページの「#○○ で投稿する」など)。中止済みのイベントは無視する */
 	initialCalendarEvent?: Misskey.entities.CalendarEventLite | null;
