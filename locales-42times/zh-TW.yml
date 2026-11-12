@@ -670,3 +670,5 @@ _role:
   _options:
     canCreateNote: "建立貼文"
     canCreateNote_caption: "關閉後將無法發布貼文、回覆、轉發、引用，也無法編輯貼文（仍可反應和投票）。若其他角色開啟了此項仍可建立，因此請設定較高的優先度。"
+_settings:
+  autoplayEmbededPlayerOfUrlPreview: "自動播放網址預覽中的嵌入式播放器"

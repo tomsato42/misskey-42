@@ -672,3 +672,5 @@ _role:
   _options:
     canCreateNote: "Create notes"
     canCreateNote_caption: "When off, the user can't post notes, replies, renotes, or quotes, or edit notes (reactions and votes are still allowed). Notes can still be created if another role turns this on, so set a higher priority."
+_settings:
+  autoplayEmbededPlayerOfUrlPreview: "Autoplay embedded players in URL previews"

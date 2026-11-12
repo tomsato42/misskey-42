@@ -648,3 +648,5 @@ _role:
   _options:
     canCreateNote: "创建帖子"
     canCreateNote_caption: "关闭后将无法发布帖子、回复、转帖、引用，也无法编辑帖子（仍可回应和投票）。如果其他角色开启了此项，仍可创建，因此请设置较高的优先级。"
+_settings:
+  autoplayEmbededPlayerOfUrlPreview: "自动播放 URL 预览中的嵌入式播放器"
