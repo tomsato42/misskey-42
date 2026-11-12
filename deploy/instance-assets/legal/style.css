@@ -1,0 +1,111 @@
+/*
+ * SPDX-FileCopyrightText: syuilo and misskey-project
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+:root {
+	color-scheme: light dark;
+	--bg: #f7f7f5;
+	--fg: #1f2328;
+	--muted: #5f6670;
+	--line: #d9dbde;
+	--accent: #00a0a0;
+	--surface: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #17191c;
+		--fg: #e6e8ea;
+		--muted: #9aa1a9;
+		--line: #33373d;
+		--accent: #3cc7c7;
+		--surface: #1f2226;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif;
+	line-height: 1.8;
+	-webkit-text-size-adjust: 100%;
+}
+
+main {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 40px 16px 64px;
+}
+
+nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	font-size: 0.9em;
+	margin-bottom: 24px;
+}
+
+a {
+	color: var(--accent);
+}
+
+h1 {
+	font-size: 1.6em;
+	line-height: 1.4;
+	margin: 0 0 8px;
+}
+
+h2 {
+	font-size: 1.15em;
+	margin: 40px 0 8px;
+	padding-bottom: 4px;
+	border-bottom: 1px solid var(--line);
+}
+
+.lead {
+	color: var(--muted);
+}
+
+ol, ul {
+	padding-left: 1.6em;
+}
+
+li + li {
+	margin-top: 4px;
+}
+
+.table-wrap {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	background: var(--surface);
+	font-size: 0.92em;
+}
+
+th, td {
+	text-align: left;
+	vertical-align: top;
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+}
+
+th {
+	white-space: nowrap;
+}
+
+footer {
+	margin-top: 48px;
+	padding-top: 16px;
+	border-top: 1px solid var(--line);
+	color: var(--muted);
+	font-size: 0.9em;
+}

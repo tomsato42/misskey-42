@@ -55,6 +55,11 @@ export class SignupService {
 		passwordHash?: MiUserProfile['password'] | null;
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
+		/**
+		 * 42 intra 連携で作成するユーザーの intra 系の列。
+		 * ユーザーと同じトランザクションで保存し、intraId の一意制約違反ならユーザーの作成ごと取り消す
+		 */
+		intraProfile?: Pick<MiUserProfile, 'intraId' | 'intraLogin' | 'intraPoolYearMonth' | 'intraBlackholedAt' | 'intraPaceDeadlineAt'>;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -121,6 +126,15 @@ export class SignupService {
 
 		// Start transaction
 		await this.db.transaction(async transactionalEntityManager => {
+			// ローカルユーザーのユーザー名は host が NULL のため、(usernameLower, host) の
+			// 複合ユニークインデックスでは重複を防げない（NULLは互いにdistinct扱い）。
+			// 同一ユーザー名の並行サインアップをトランザクション単位のadvisory lockで直列化し、
+			// チェック→挿入のTOCTOU競合を排除する。
+			await transactionalEntityManager.query(
+				'SELECT pg_advisory_xact_lock(hashtext($1))',
+				[`signup:username:${username.toLowerCase()}`],
+			);
+
 			const exist = await transactionalEntityManager.findOneBy(MiUser, {
 				usernameLower: username.toLowerCase(),
 				host: IsNull(),
@@ -143,6 +157,7 @@ export class SignupService {
 			}));
 
 			await transactionalEntityManager.save(new MiUserProfile({
+				...opts.intraProfile,
 				userId: account.id,
 				autoAcceptFollowed: true,
 				password: hash,

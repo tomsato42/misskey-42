@@ -1,0 +1,32 @@
+// 42times の既定のライトテーマ (白黒)
+// 管理画面の「ブランディング」→「既定のライトテーマ」にこのファイルの中身を貼り付ける
+{
+	id: 'a298f7e6-267c-4d65-9981-d422d1b6b9d7',
+
+	name: '42times Light',
+	author: '42times',
+	desc: '白黒のライトテーマ',
+
+	base: 'light',
+
+	props: {
+		accent: '#000000',
+		fgOnAccent: '#ffffff',
+		bg: '#f4f4f4',
+		fg: '#222222',
+		fgHighlighted: '#000000',
+		fgOnWhite: '#000000',
+		divider: '#e2e2e2',
+		panel: '#ffffff',
+		header: ':alpha<0.7<@panel',
+		navBg: '#ffffff',
+		link: '#000000',
+		hashtag: '#555555',
+		mention: '#000000',
+		mentionMe: '#000000',
+		renote: '#555555',
+		love: '#000000',
+		buttonGradateA: '#000000',
+		buttonGradateB: '#333333',
+	},
+}

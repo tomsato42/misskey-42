@@ -14,6 +14,7 @@ import { createPostgresDataSource } from './postgres.js';
 import { RepositoryModule } from './models/RepositoryModule.js';
 import { allSettled } from './misc/promise-tracker.js';
 import { GlobalEvents } from './core/GlobalEventService.js';
+import { applyIntraMetaOverrides } from './core/intra/intra-visitor.js';
 import type { Provider, OnApplicationShutdown } from '@nestjs/common';
 
 const $config: Provider = {
@@ -99,7 +100,7 @@ const $redisForReactions: Provider = {
 
 const $meta: Provider = {
 	provide: DI.meta,
-	useFactory: async (db: DataSource, redisForSub: Redis.Redis) => {
+	useFactory: async (db: DataSource, redisForSub: Redis.Redis, config: Config) => {
 		const meta = await db.transaction(async transactionalEntityManager => {
 			// 過去のバグでレコードが複数出来てしまっている可能性があるので新しいIDを優先する
 			const metas = await transactionalEntityManager.find(MiMeta, {
@@ -139,6 +140,8 @@ const $meta: Provider = {
 							(meta as any)[key] = (body.after as any)[key];
 						}
 						meta.rootUser = null; // joinなカラムは通常取ってこないので
+						// 42 intra 連携が有効なときに固定する設定は、DB の値で上書きされたあとに戻す
+						applyIntraMetaOverrides(meta, config);
 						break;
 					}
 					default:
@@ -149,9 +152,10 @@ const $meta: Provider = {
 
 		redisForSub.on('message', onMessage);
 
-		return meta;
+		// 42 intra 連携が有効なときは、DB に保存されている値にかかわらず固定する設定がある
+		return applyIntraMetaOverrides(meta, config);
 	},
-	inject: [DI.db, DI.redisForSub],
+	inject: [DI.db, DI.redisForSub, DI.config],
 };
 
 @Global()

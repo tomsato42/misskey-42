@@ -85,6 +85,10 @@ export const ACHIEVEMENT_TYPES = [
 	'tutorialCompleted',
 	'bubbleGameExplodingHead',
 	'bubbleGameDoubleExplodingHead',
+	// 42times: 2次元コードから登録した人数 (backend が付ける)
+	'intraReferral1',
+	'intraReferral5',
+	'intraReferral10',
 ] as const;
 
 export const ACHIEVEMENT_BADGES = {
@@ -477,6 +481,21 @@ export const ACHIEVEMENT_BADGES = {
 		img: '/fluent-emoji/1f92f.png',
 		bg: 'linear-gradient(0deg, rgb(255 77 77), rgb(247 155 214))',
 		frame: 'silver',
+	},
+	'intraReferral1': {
+		img: '/fluent-emoji/1f389.png',
+		bg: 'linear-gradient(0deg, rgb(187 183 59), rgb(255 143 77))',
+		frame: 'bronze',
+	},
+	'intraReferral5': {
+		img: '/fluent-emoji/1f4e3.png',
+		bg: 'linear-gradient(0deg, rgb(220 223 225), rgb(172 192 207))',
+		frame: 'silver',
+	},
+	'intraReferral10': {
+		img: '/fluent-emoji/1f3c6.png',
+		bg: 'linear-gradient(0deg, rgb(255 210 56), rgb(255 248 191))',
+		frame: 'gold',
 	},
 /* @see <https://github.com/misskey-dev/misskey/pull/10365#discussion_r1155511107>
 } as const satisfies Record<typeof ACHIEVEMENT_TYPES[number], {

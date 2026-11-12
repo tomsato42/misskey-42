@@ -8,6 +8,7 @@ import { ui } from '@@/js/config.js';
 import { clearCache } from './utility/clear-cache.js';
 import type { ComputedRef } from 'vue';
 import { $i } from '@/i.js';
+import { instance } from '@/instance.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { openInstanceMenu, openToolsMenu } from '@/ui/_common_/common.js';
 import { lookup } from '@/utility/lookup.js';
@@ -41,6 +42,12 @@ export const navbarItemDef = reactive<{
 			}
 		}),
 		to: '/my/notifications',
+	},
+	calendar: {
+		title: i18n.ts._calendar.calendar,
+		icon: 'ti ti-calendar',
+		show: computed(() => $i != null),
+		to: '/calendar',
 	},
 	drive: {
 		title: i18n.ts.drive,
@@ -133,6 +140,20 @@ export const navbarItemDef = reactive<{
 		to: '/chat',
 		show: computed(() => $i != null && $i.policies.chatAvailability !== 'unavailable'),
 		indicated: computed(() => $i != null && $i.hasUnreadChatMessages),
+	},
+	pair: {
+		title: i18n.ts._pairRecruitment.title,
+		icon: 'ti ti-users-group',
+		to: '/pair',
+		// 学内SNSモード (42 intra ログイン) でだけ出す
+		show: computed(() => $i != null && instance.intraLoginEnabled === true),
+	},
+	projectShare: {
+		title: i18n.ts._intraProjectResult.share,
+		icon: 'ti ti-trophy',
+		to: '/projects',
+		// 学内SNSモード (42 intra ログイン) でだけ出す
+		show: computed(() => $i != null && instance.intraLoginEnabled === true),
 	},
 	achievements: {
 		title: i18n.ts.achievements,

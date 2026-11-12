@@ -6,6 +6,7 @@
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { load as loadYaml } from 'js-yaml';
 import { type FastifyServerOptions } from 'fastify';
 import type * as Sentry from '@sentry/node';
 import type * as SentryVue from '@sentry/vue';
@@ -129,6 +130,23 @@ type Source = {
 			enableQueryParamLogging?: boolean,
 		}
 	}
+
+	intra?: {
+		clientId: string;
+		clientSecret: string;
+		cursusId?: number;
+		/** レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (例: https://example.com/badges/lv-{level}.svg) */
+		levelBadgeUrl?: string;
+		/** コアリションのロールのアイコンの URL。{id} が intra のコアリション ID に置き換わる (例: https://example.com/coalitions/{id}.svg) */
+		coalitionIconUrl?: string;
+		apiBaseUrl?: string;
+	};
+
+	mediaGate?: {
+		secret: string;
+		cookieName?: string;
+		ttlSec?: number;
+	};
 };
 
 export type Config = {
@@ -230,6 +248,30 @@ export type Config = {
 	perUserNotificationsMaxCount: number;
 	deactivateAntennaThreshold: number;
 	pidFile: string;
+	/**
+	 * 42 intra 連携の設定。未設定のときは連携機能全体を無効にする
+	 */
+	intra: {
+		clientId: string;
+		clientSecret: string;
+		cursusId: number;
+		levelBadgeUrl: string | null;
+		coalitionIconUrl: string | null;
+		apiBaseUrl: string;
+	} | undefined;
+	/**
+	 * 画像・添付ファイルをログインしている人にだけ見せるための署名付き Cookie の設定。
+	 * 未設定のときは機能全体を無効にし、upstream と同じ挙動にする
+	 */
+	mediaGate: MediaGateConfig | undefined;
+};
+
+export type MediaGateConfig = {
+	/** Cookie の署名に使う秘密の値。Cloudflare Worker の MEDIA_GATE_SECRET と同じ値にする */
+	secret: string;
+	cookieName: string;
+	/** Cookie の有効期間 (秒) */
+	ttlSec: number;
 };
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
@@ -253,23 +295,22 @@ const configDir = resolve(rootDir, '.config');
 /** Path of built directory */
 const projectBuiltDir = resolve(rootDir, 'built');
 
-const compiledConfigFilePathForTest = resolve(projectBuiltDir, '._config_.json');
-
-export const compiledConfigFilePath = fs.existsSync(compiledConfigFilePathForTest)
-	? compiledConfigFilePathForTest
-	: resolve(projectBuiltDir, '.config.json');
+/**
+ * Path of configuration file
+ */
+export const path = process.env.MISSKEY_CONFIG_YML
+	? resolve(configDir, process.env.MISSKEY_CONFIG_YML)
+	: process.env.NODE_ENV === 'test'
+		? resolve(configDir, 'test.yml')
+		: resolve(configDir, 'default.yml');
 
 export function loadConfig(): Config {
-	if (!fs.existsSync(compiledConfigFilePath)) {
-		throw new Error('Compiled configuration file not found. Try running \'pnpm compile-config\'.');
-	}
-
 	const meta = JSON.parse(fs.readFileSync(resolve(projectBuiltDir, 'meta.json'), 'utf-8'));
 
 	const frontendManifestExists = fs.existsSync(resolve(projectBuiltDir, '_frontend_vite_/manifest.json'));
 	const frontendEmbedManifestExists = fs.existsSync(resolve(projectBuiltDir, '_frontend_embed_vite_/manifest.json'));
 
-	const config = JSON.parse(fs.readFileSync(compiledConfigFilePath, 'utf-8')) as Source;
+	const config = loadYaml(fs.readFileSync(path, 'utf-8')) as Source;
 
 	const url = tryCreateUrl(config.url ?? process.env.MISSKEY_URL ?? '');
 	const version = meta.version;
@@ -336,9 +377,9 @@ export function loadConfig(): Config {
 		threadPoolSize: config.threadPoolSize ?? 1,
 		outgoingAddress: config.outgoingAddress,
 		outgoingAddressFamily: config.outgoingAddressFamily,
-		deliverJobConcurrency: config.deliverJobConcurrency,
-		inboxJobConcurrency: config.inboxJobConcurrency,
-		relationshipJobConcurrency: config.relationshipJobConcurrency,
+		deliverJobConcurrency: validateJobConcurrency('deliverJobConcurrency', config.deliverJobConcurrency),
+		inboxJobConcurrency: validateJobConcurrency('inboxJobConcurrency', config.inboxJobConcurrency),
+		relationshipJobConcurrency: validateJobConcurrency('relationshipJobConcurrency', config.relationshipJobConcurrency),
 		deliverJobPerSec: config.deliverJobPerSec,
 		inboxJobPerSec: config.inboxJobPerSec,
 		relationshipJobPerSec: config.relationshipJobPerSec,
@@ -358,7 +399,43 @@ export function loadConfig(): Config {
 		deactivateAntennaThreshold: config.deactivateAntennaThreshold ?? (1000 * 60 * 60 * 24 * 7),
 		pidFile: config.pidFile,
 		logging: config.logging,
+		intra: config.intra ? {
+			clientId: config.intra.clientId,
+			clientSecret: config.intra.clientSecret,
+			// 21 = 42cursus
+			cursusId: config.intra.cursusId ?? 21,
+			levelBadgeUrl: config.intra.levelBadgeUrl ?? null,
+			coalitionIconUrl: config.intra.coalitionIconUrl ?? null,
+			apiBaseUrl: (config.intra.apiBaseUrl ?? 'https://api.intra.42.fr').replace(/\/+$/, ''),
+		} : undefined,
+		mediaGate: config.mediaGate ? convertMediaGateConfig(config.mediaGate) : undefined,
 	};
+}
+
+const MEDIA_GATE_MIN_SECRET_LENGTH = 32;
+const MEDIA_GATE_DEFAULT_TTL_SEC = 60 * 60 * 2;
+// フロントエンドは 15 分ごとに確認し、期限の半分を過ぎていれば更新する (packages/frontend/src/utility/media-session.ts)。
+// 更新が最も遅れるのは「半分 + 15 分」の時点なので、期限が切れる前に更新できるよう下限を 1 時間にする
+const MEDIA_GATE_MIN_TTL_SEC = 60 * 60;
+const MEDIA_GATE_MAX_TTL_SEC = 60 * 60 * 24;
+
+export function convertMediaGateConfig(source: NonNullable<Source['mediaGate']>): MediaGateConfig {
+	if (typeof source.secret !== 'string' || source.secret.length < MEDIA_GATE_MIN_SECRET_LENGTH) {
+		throw new Error(`mediaGate.secret must be a string of at least ${MEDIA_GATE_MIN_SECRET_LENGTH} characters.`);
+	}
+
+	const cookieName = source.cookieName ?? 'mi_media_session';
+	// Cookie 名に使えるのは RFC 6265 の token のうち、扱いやすい文字だけに限る
+	if (!/^[A-Za-z0-9_-]{1,64}$/.test(cookieName)) {
+		throw new Error('mediaGate.cookieName must consist of 1-64 characters of A-Z, a-z, 0-9, "_" and "-".');
+	}
+
+	const ttlSec = source.ttlSec ?? MEDIA_GATE_DEFAULT_TTL_SEC;
+	if (!Number.isInteger(ttlSec) || ttlSec < MEDIA_GATE_MIN_TTL_SEC || ttlSec > MEDIA_GATE_MAX_TTL_SEC) {
+		throw new Error(`mediaGate.ttlSec must be an integer between ${MEDIA_GATE_MIN_TTL_SEC} and ${MEDIA_GATE_MAX_TTL_SEC}.`);
+	}
+
+	return { secret: source.secret, cookieName, ttlSec };
 }
 
 function tryCreateUrl(url: string) {
@@ -367,6 +444,15 @@ function tryCreateUrl(url: string) {
 	} catch (_) {
 		throw new Error(`url="${url}" is not a valid URL.`);
 	}
+}
+
+function validateJobConcurrency(key: string, value: number | undefined) {
+	if (value == null) return undefined;
+	// BullMQ の Worker は 1 未満の concurrency を受け付けないため、起動時に設定キーを明示して落とす
+	if (typeof value !== 'number' || !Number.isFinite(value) || value < 1) {
+		throw new Error(`${key}=${JSON.stringify(value)} is invalid. It must be a finite number greater than or equal to 1.`);
+	}
+	return value;
 }
 
 function convertRedisOptions(options: RedisOptionsSource, host: string): RedisOptionsResolved {

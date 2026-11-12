@@ -9,6 +9,14 @@ import { apiUrl } from '@@/js/config.js';
 import { $i } from '@/i.js';
 export const pendingApiRequestsCount = ref(0);
 
+// 42 intra 連携が有効なとき (学内SNSモード) は、backend が未ログインの API 呼び出しを拒否するので、
+// misskeyApiGet にもトークンを付ける。instance.ts がこのファイルを import しているため、
+// instance を直接読まずに起動処理 (boot/common.ts) からこの関数で設定する
+let attachTokenToGetRequests = false;
+export function setAttachTokenToGetRequests(value: boolean) {
+	attachTokenToGetRequests = value;
+}
+
 // Implements Misskey.api.ApiClient.request
 export function misskeyApi<
 	ResT = void,
@@ -85,6 +93,8 @@ export function misskeyApiGet<
 			method: 'GET',
 			credentials: 'omit',
 			cache: 'default',
+			// トークンがあるときは backend が Cache-Control: public を付けない (ApiCallService)
+			headers: attachTokenToGetRequests && $i != null ? { Authorization: `Bearer ${$i.token}` } : undefined,
 		}).then(async (res) => {
 			const body = res.status === 204 ? null : await res.json();
 

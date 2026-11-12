@@ -43,6 +43,7 @@ import { MfmService } from './MfmService.js';
 import { ModerationLogService } from './ModerationLogService.js';
 import { NoteCreateService } from './NoteCreateService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
+import { NoteUpdateService } from './NoteUpdateService.js';
 import { NotePiningService } from './NotePiningService.js';
 import { NoteDraftService } from './NoteDraftService.js';
 import { NotificationService } from './NotificationService.js';
@@ -151,6 +152,30 @@ import { ApMentionService } from './activitypub/models/ApMentionService.js';
 import { ApNoteService } from './activitypub/models/ApNoteService.js';
 import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
+import { IntraApiService } from './intra/IntraApiService.js';
+import { IntraAuthService } from './intra/IntraAuthService.js';
+import { IntraAccountService } from './intra/IntraAccountService.js';
+import { IntraSyncService } from './intra/IntraSyncService.js';
+import { CalendarEventService } from './calendar/CalendarEventService.js';
+import { CalendarNotePostService } from './calendar/CalendarNotePostService.js';
+import { CalendarNotificationService } from './calendar/CalendarNotificationService.js';
+import { CalendarFeedService } from './calendar/CalendarFeedService.js';
+import { CalendarVisibilityService } from './calendar/CalendarVisibilityService.js';
+import { CalendarInvitationService } from './calendar/CalendarInvitationService.js';
+import { CalendarEventEntityService } from './entities/CalendarEventEntityService.js';
+import { IntraProjectService } from './intra/IntraProjectService.js';
+import { IntraCohortService } from './intra/IntraCohortService.js';
+import { IntraProjectResultService } from './intra/IntraProjectResultService.js';
+import { IntraLevelNoteService } from './intra/IntraLevelNoteService.js';
+import { IntraProjectRefreshService } from './intra/IntraProjectRefreshService.js';
+import { IntraProjectNoteEntityService } from './entities/IntraProjectNoteEntityService.js';
+import { IntraCoalitionService } from './intra/IntraCoalitionService.js';
+import { PairRecruitmentService } from './pair/PairRecruitmentService.js';
+import { PairRecruitmentEntityService } from './entities/PairRecruitmentEntityService.js';
+import { EmojiTagSuggestionService } from './emoji-tagging/EmojiTagSuggestionService.js';
+import { AnthropicService } from './anthropic/AnthropicService.js';
+import { ClaudeTranslationService } from './anthropic/ClaudeTranslationService.js';
+import { NoteTranslationCacheService } from './note-translation/NoteTranslationCacheService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -188,6 +213,7 @@ const $MfmService: Provider = { provide: 'MfmService', useExisting: MfmService }
 const $ModerationLogService: Provider = { provide: 'ModerationLogService', useExisting: ModerationLogService };
 const $NoteCreateService: Provider = { provide: 'NoteCreateService', useExisting: NoteCreateService };
 const $NoteDeleteService: Provider = { provide: 'NoteDeleteService', useExisting: NoteDeleteService };
+const $NoteUpdateService: Provider = { provide: 'NoteUpdateService', useExisting: NoteUpdateService };
 const $NotePiningService: Provider = { provide: 'NotePiningService', useExisting: NotePiningService };
 const $NoteDraftService: Provider = { provide: 'NoteDraftService', useExisting: NoteDraftService };
 const $NotificationService: Provider = { provide: 'NotificationService', useExisting: NotificationService };
@@ -305,6 +331,30 @@ const $ApMentionService: Provider = { provide: 'ApMentionService', useExisting: 
 const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNoteService };
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
+const $IntraApiService: Provider = { provide: 'IntraApiService', useExisting: IntraApiService };
+const $IntraAuthService: Provider = { provide: 'IntraAuthService', useExisting: IntraAuthService };
+const $IntraAccountService: Provider = { provide: 'IntraAccountService', useExisting: IntraAccountService };
+const $IntraSyncService: Provider = { provide: 'IntraSyncService', useExisting: IntraSyncService };
+const $CalendarEventService: Provider = { provide: 'CalendarEventService', useExisting: CalendarEventService };
+const $CalendarNotePostService: Provider = { provide: 'CalendarNotePostService', useExisting: CalendarNotePostService };
+const $CalendarNotificationService: Provider = { provide: 'CalendarNotificationService', useExisting: CalendarNotificationService };
+const $CalendarFeedService: Provider = { provide: 'CalendarFeedService', useExisting: CalendarFeedService };
+const $CalendarVisibilityService: Provider = { provide: 'CalendarVisibilityService', useExisting: CalendarVisibilityService };
+const $CalendarInvitationService: Provider = { provide: 'CalendarInvitationService', useExisting: CalendarInvitationService };
+const $CalendarEventEntityService: Provider = { provide: 'CalendarEventEntityService', useExisting: CalendarEventEntityService };
+const $IntraProjectService: Provider = { provide: 'IntraProjectService', useExisting: IntraProjectService };
+const $IntraCohortService: Provider = { provide: 'IntraCohortService', useExisting: IntraCohortService };
+const $IntraProjectResultService: Provider = { provide: 'IntraProjectResultService', useExisting: IntraProjectResultService };
+const $IntraLevelNoteService: Provider = { provide: 'IntraLevelNoteService', useExisting: IntraLevelNoteService };
+const $IntraProjectRefreshService: Provider = { provide: 'IntraProjectRefreshService', useExisting: IntraProjectRefreshService };
+const $IntraProjectNoteEntityService: Provider = { provide: 'IntraProjectNoteEntityService', useExisting: IntraProjectNoteEntityService };
+const $IntraCoalitionService: Provider = { provide: 'IntraCoalitionService', useExisting: IntraCoalitionService };
+const $PairRecruitmentService: Provider = { provide: 'PairRecruitmentService', useExisting: PairRecruitmentService };
+const $PairRecruitmentEntityService: Provider = { provide: 'PairRecruitmentEntityService', useExisting: PairRecruitmentEntityService };
+const $EmojiTagSuggestionService: Provider = { provide: 'EmojiTagSuggestionService', useExisting: EmojiTagSuggestionService };
+const $AnthropicService: Provider = { provide: 'AnthropicService', useExisting: AnthropicService };
+const $ClaudeTranslationService: Provider = { provide: 'ClaudeTranslationService', useExisting: ClaudeTranslationService };
+const $NoteTranslationCacheService: Provider = { provide: 'NoteTranslationCacheService', useExisting: NoteTranslationCacheService };
 //#endregion
 
 @Module({
@@ -341,6 +391,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ModerationLogService,
 		NoteCreateService,
 		NoteDeleteService,
+		NoteUpdateService,
 		NotePiningService,
 		NoteDraftService,
 		NotificationService,
@@ -459,6 +510,30 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ApNoteService,
 		ApPersonService,
 		ApQuestionService,
+		IntraApiService,
+		IntraAuthService,
+		IntraAccountService,
+		IntraSyncService,
+		CalendarEventService,
+		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
+		CalendarVisibilityService,
+		CalendarInvitationService,
+		CalendarEventEntityService,
+		IntraProjectService,
+		IntraCohortService,
+		IntraProjectResultService,
+		IntraLevelNoteService,
+		IntraProjectRefreshService,
+		IntraProjectNoteEntityService,
+		IntraCoalitionService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
+		EmojiTagSuggestionService,
+		AnthropicService,
+		ClaudeTranslationService,
+		NoteTranslationCacheService,
 		QueueService,
 		TelemetryService,
 
@@ -492,6 +567,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ModerationLogService,
 		$NoteCreateService,
 		$NoteDeleteService,
+		$NoteUpdateService,
 		$NotePiningService,
 		$NoteDraftService,
 		$NotificationService,
@@ -609,6 +685,30 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApNoteService,
 		$ApPersonService,
 		$ApQuestionService,
+		$IntraApiService,
+		$IntraAuthService,
+		$IntraAccountService,
+		$IntraSyncService,
+		$CalendarEventService,
+		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
+		$CalendarVisibilityService,
+		$CalendarInvitationService,
+		$CalendarEventEntityService,
+		$IntraProjectService,
+		$IntraCohortService,
+		$IntraProjectResultService,
+		$IntraLevelNoteService,
+		$IntraProjectRefreshService,
+		$IntraProjectNoteEntityService,
+		$IntraCoalitionService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
+		$EmojiTagSuggestionService,
+		$AnthropicService,
+		$ClaudeTranslationService,
+		$NoteTranslationCacheService,
 		$TelemetryService,
 		//#endregion
 	],
@@ -643,6 +743,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ModerationLogService,
 		NoteCreateService,
 		NoteDeleteService,
+		NoteUpdateService,
 		NotePiningService,
 		NoteDraftService,
 		NotificationService,
@@ -760,6 +861,30 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ApNoteService,
 		ApPersonService,
 		ApQuestionService,
+		IntraApiService,
+		IntraAuthService,
+		IntraAccountService,
+		IntraSyncService,
+		CalendarEventService,
+		CalendarNotePostService,
+		CalendarNotificationService,
+		CalendarFeedService,
+		CalendarVisibilityService,
+		CalendarInvitationService,
+		CalendarEventEntityService,
+		IntraProjectService,
+		IntraCohortService,
+		IntraProjectResultService,
+		IntraLevelNoteService,
+		IntraProjectRefreshService,
+		IntraProjectNoteEntityService,
+		IntraCoalitionService,
+		PairRecruitmentService,
+		PairRecruitmentEntityService,
+		EmojiTagSuggestionService,
+		AnthropicService,
+		ClaudeTranslationService,
+		NoteTranslationCacheService,
 		QueueService,
 		TelemetryService,
 
@@ -793,6 +918,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ModerationLogService,
 		$NoteCreateService,
 		$NoteDeleteService,
+		$NoteUpdateService,
 		$NotePiningService,
 		$NoteDraftService,
 		$NotificationService,
@@ -908,6 +1034,30 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ApNoteService,
 		$ApPersonService,
 		$ApQuestionService,
+		$IntraApiService,
+		$IntraAuthService,
+		$IntraAccountService,
+		$IntraSyncService,
+		$CalendarEventService,
+		$CalendarNotePostService,
+		$CalendarNotificationService,
+		$CalendarFeedService,
+		$CalendarVisibilityService,
+		$CalendarInvitationService,
+		$CalendarEventEntityService,
+		$IntraProjectService,
+		$IntraCohortService,
+		$IntraProjectResultService,
+		$IntraLevelNoteService,
+		$IntraProjectRefreshService,
+		$IntraProjectNoteEntityService,
+		$IntraCoalitionService,
+		$PairRecruitmentService,
+		$PairRecruitmentEntityService,
+		$EmojiTagSuggestionService,
+		$AnthropicService,
+		$ClaudeTranslationService,
+		$NoteTranslationCacheService,
 		$TelemetryService,
 		//#endregion
 	],

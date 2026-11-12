@@ -36,6 +36,7 @@ export default function(app: App) {
 	app.component('WidgetClicker', defineAsyncComponent(() => import('./WidgetClicker.vue')));
 	app.component('WidgetBirthdayFollowings', defineAsyncComponent(() => import('./WidgetBirthdayFollowings.vue')));
 	app.component('WidgetChat', defineAsyncComponent(() => import('./WidgetChat.vue')));
+	app.component('WidgetUpcomingCalendarEvents', defineAsyncComponent(() => import('./WidgetUpcomingCalendarEvents.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
@@ -72,6 +73,8 @@ export const widgets = [
 	'clicker',
 	'birthdayFollowings',
 	'chat',
+	// 42times
+	'upcomingCalendarEvents',
 
 	...federationWidgets,
 ] as const;

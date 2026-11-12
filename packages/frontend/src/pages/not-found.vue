@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div style="align-content: center; height: 100cqh;">
-	<MkResult type="notFound" :text="i18n.ts.notFoundDescription"/>
+	<!-- ログインが必要なページ (共有されたペア募集のページなど) を開いたときは、見つからないのではなくログインが必要だと出す -->
+	<MkResult type="notFound" :text="showLoginPopup ? i18n.ts.signinRequired : i18n.ts.notFoundDescription"/>
 </div>
 </template>
 

@@ -1,0 +1,34 @@
+# 42times: このフォークで足した文の訳 (locales-42times) が揃っているかを確かめる
+name: Fork locale
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - locales/**
+      - locales-42times/**
+      - packages/i18n/**
+      - .github/workflows/fork-locale.yml
+  pull_request:
+    paths:
+      - locales/**
+      - locales-42times/**
+      - packages/i18n/**
+      - .github/workflows/fork-locale.yml
+
+jobs:
+  verify_fork_locales:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+      - run: pnpm i --frozen-lockfile
+      - name: Verify fork locales
+        working-directory: ./packages/i18n
+        run: pnpm run verify-fork

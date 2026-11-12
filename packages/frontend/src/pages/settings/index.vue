@@ -99,6 +99,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/settings/notifications',
 		active: currentPage.value?.route.name === 'notifications',
 	}, {
+		icon: 'ti ti-rss',
+		text: i18n.ts._calendar.feed,
+		to: '/settings/calendar',
+		active: currentPage.value?.route.name === 'calendar',
+	}, {
 		icon: 'ti ti-mail',
 		text: i18n.ts.email,
 		to: '/settings/email',

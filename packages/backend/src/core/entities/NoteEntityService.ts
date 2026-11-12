@@ -16,6 +16,7 @@ import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
 import { IdService } from '@/core/IdService.js';
 import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
+import { isQuotePacked, isRenotePacked } from '@/misc/is-renote.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { CacheService } from '@/core/CacheService.js';
 import type { OnModuleInit } from '@nestjs/common';
@@ -23,6 +24,8 @@ import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
+import type { CalendarEventEntityService } from './CalendarEventEntityService.js';
+import type { IntraProjectNoteEntityService } from './IntraProjectNoteEntityService.js';
 
 // is-renote.tsとよしなにリンク
 function isPureRenote(note: MiNote): note is MiNote & { renoteId: MiNote['id']; renote: MiNote } {
@@ -68,6 +71,8 @@ export class NoteEntityService implements OnModuleInit {
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
 	private cacheService: CacheService;
+	private calendarEventEntityService: CalendarEventEntityService;
+	private intraProjectNoteEntityService: IntraProjectNoteEntityService;
 	private noteLoader = new DebounceLoader(this.findNoteOrFail);
 
 	constructor(
@@ -115,6 +120,8 @@ export class NoteEntityService implements OnModuleInit {
 		this.reactionsBufferingService = this.moduleRef.get('ReactionsBufferingService');
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
+		this.calendarEventEntityService = this.moduleRef.get('CalendarEventEntityService');
+		this.intraProjectNoteEntityService = this.moduleRef.get('IntraProjectNoteEntityService');
 	}
 
 	@bindThis
@@ -189,12 +196,16 @@ export class NoteEntityService implements OnModuleInit {
 		packedNote.text = null;
 		packedNote.poll = undefined;
 		packedNote.cw = null;
+		packedNote.updatedAt = undefined; // 42times: 編集したかも隠す
+		packedNote.calendarEvent = undefined; // 42times: 見られないノートが何のイベントのものかも隠す
+		packedNote.intraProjectResult = undefined; // 42times: 見られないノートに付けた課題の結果も隠す
+		packedNote.intraLevel = undefined; // 42times: レベルも隠す
 		packedNote.isHidden = true;
 		// TODO: hiddenReason みたいなのを提供しても良さそう
 	}
 
 	@bindThis
-	private async populatePoll(note: MiNote, meId: MiUser['id'] | null) {
+	private async populatePoll(note: Pick<MiNote, 'id'>, meId: MiUser['id'] | null) {
 		const poll = await this.pollsRepository.findOneByOrFail({ noteId: note.id });
 		const choices = poll.choices.map(c => ({
 			text: c,
@@ -230,6 +241,19 @@ export class NoteEntityService implements OnModuleInit {
 			expiresAt: poll.expiresAt?.toISOString() ?? null,
 			choices,
 		};
+	}
+
+	@bindThis
+	public async withMyPollVotes(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'>> {
+		const [poll, renote, reply] = await Promise.all([
+			note.poll ? this.populatePoll(note, meId) : note.poll,
+			note.renote ? this.withMyPollVotes(note.renote, meId) : note.renote,
+			note.reply ? this.withMyPollVotes(note.reply, meId) : note.reply,
+		]);
+
+		if (poll === note.poll && renote === note.renote && reply === note.reply) return note;
+
+		return { ...note, poll, renote, reply };
 	}
 
 	@bindThis
@@ -271,6 +295,23 @@ export class NoteEntityService implements OnModuleInit {
 		}
 
 		return undefined;
+	}
+
+	@bindThis
+	public async withMyRenoteReaction(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'>> {
+		if (meId == null) return note;
+		if (!isRenotePacked(note) || isQuotePacked(note)) return note;
+		if (note.renote == null || Object.keys(note.renote.reactions).length === 0) return note;
+
+		const myReaction = await this.populateMyReaction(note.renote, meId);
+
+		return {
+			...note,
+			renote: {
+				...note.renote,
+				myReaction,
+			},
+		};
 	}
 
 	@bindThis
@@ -355,6 +396,12 @@ export class NoteEntityService implements OnModuleInit {
 				myReactions: Map<MiNote['id'], string | null>;
 				packedFiles: Map<MiNote['fileIds'][number], Packed<'DriveFile'> | null>;
 				packedUsers: Map<MiUser['id'], Packed<'UserLite'>>
+				/** 42times: ノートの ID ごとのカレンダーのイベント (紐づいていなければ null)。無い ID は 1 件ずつ引く */
+				calendarEvents?: Map<MiNote['id'], Packed<'CalendarEventLite'> | null>;
+				/** 42times: ノートの ID ごとの課題の結果 (付いていなければ null)。無い ID は 1 件ずつ引く */
+				intraProjectResults?: Map<MiNote['id'], Packed<'IntraProjectNote'> | null>;
+				/** 42times: ノートの ID ごとのレベル (付いていなければ null)。無い ID は 1 件ずつ引く */
+				intraLevels?: Map<MiNote['id'], { level: number } | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -398,6 +445,7 @@ export class NoteEntityService implements OnModuleInit {
 		const packed: Packed<'Note'> = await awaitAll({
 			id: note.id,
 			createdAt: this.idService.parse(note.id).date.toISOString(),
+			updatedAt: note.updatedAt?.toISOString() ?? undefined,
 			userId: note.userId,
 			user: packedUsers?.get(note.userId) ?? this.userEntityService.pack(note.user ?? note.userId, me),
 			text: text,
@@ -417,6 +465,7 @@ export class NoteEntityService implements OnModuleInit {
 			fileIds: note.fileIds,
 			files: packedFiles != null ? this.packAttachedFiles(note.fileIds, packedFiles) : this.driveFileEntityService.packManyByIds(note.fileIds),
 			replyId: note.replyId,
+			threadId: note.threadId ?? undefined, // 42times: タイムラインでスレッドの最初のノートを出すため
 			renoteId: note.renoteId,
 			channelId: note.channelId ?? undefined,
 			channel: channel ? {
@@ -431,6 +480,9 @@ export class NoteEntityService implements OnModuleInit {
 			hasPoll: note.hasPoll || undefined,
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
+			calendarEvent: this.packCalendarEvent(note.id, me, options?._hint_?.calendarEvents),
+			intraProjectResult: this.packIntraProjectResult(note.id, me, options?._hint_?.intraProjectResults),
+			intraLevel: this.packIntraLevel(note.id, options?._hint_?.intraLevels),
 
 			...(opts.detail ? {
 				clippedCount: note.clippedCount,
@@ -552,6 +604,14 @@ export class NoteEntityService implements OnModuleInit {
 		];
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
+		// 42times: pack の中で返り値に含めるノート (リプライ先・リノート元と、リノート元のリプライ先・リノート元) のイベントをまとめて引く
+		const relatedNoteIds = notes.flatMap(n => [n.id, n.replyId, n.renoteId, n.renote?.replyId, n.renote?.renoteId]).filter(x => x != null);
+		const calendarEvents = await this.calendarEventEntityService.packLiteManyByNoteIds(relatedNoteIds, me);
+		// 42times: 課題の結果も同じノートの分をまとめて引く。付いていないノートは null にして、1 件ずつ引き直さないようにする
+		const packedIntraProjectResults = await this.intraProjectNoteEntityService.packManyByNoteIds(relatedNoteIds, me);
+		const intraProjectResults = new Map<MiNote['id'], Packed<'IntraProjectNote'> | null>(relatedNoteIds.map(id => [id, packedIntraProjectResults.get(id) ?? null]));
+		const packedIntraLevels = await this.intraProjectNoteEntityService.packLevelsByNoteIds(relatedNoteIds);
+		const intraLevels = new Map<MiNote['id'], { level: number } | null>(relatedNoteIds.map(id => [id, packedIntraLevels.get(id) ?? null]));
 
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
@@ -560,8 +620,55 @@ export class NoteEntityService implements OnModuleInit {
 				myReactions: myReactionsMap,
 				packedFiles,
 				packedUsers,
+				calendarEvents,
+				intraProjectResults,
+				intraLevels,
 			},
 		})));
+	}
+
+	/**
+	 * 42times: ノートが紐づいているカレンダーのイベント。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packCalendarEvent(
+		noteId: MiNote['id'],
+		me: { id: MiUser['id'] } | null | undefined,
+		hint: Map<MiNote['id'], Packed<'CalendarEventLite'> | null> | undefined,
+	): Promise<Packed<'CalendarEventLite'> | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.calendarEventEntityService.packLiteManyByNoteIds([noteId], me)).get(noteId);
+		return packed ?? undefined;
+	}
+
+	/**
+	 * 42times: ノートに付けた課題の結果。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packIntraProjectResult(
+		noteId: MiNote['id'],
+		me: { id: MiUser['id'] } | null | undefined,
+		hint: Map<MiNote['id'], Packed<'IntraProjectNote'> | null> | undefined,
+	): Promise<Packed<'IntraProjectNote'> | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.intraProjectNoteEntityService.packManyByNoteIds([noteId], me)).get(noteId);
+		return packed ?? undefined;
+	}
+
+	/**
+	 * 42times: ノートに付けたレベル。packMany でまとめて引いた値があればそれを使う
+	 */
+	@bindThis
+	private async packIntraLevel(
+		noteId: MiNote['id'],
+		hint: Map<MiNote['id'], { level: number } | null> | undefined,
+	): Promise<{ level: number } | undefined> {
+		const packed = hint?.has(noteId)
+			? hint.get(noteId)
+			: (await this.intraProjectNoteEntityService.packLevelsByNoteIds([noteId])).get(noteId);
+		return packed ?? undefined;
 	}
 
 	@bindThis

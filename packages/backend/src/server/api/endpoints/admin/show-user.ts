@@ -112,6 +112,16 @@ export const meta = {
 					achievementEarned: { optional: true, ...notificationRecieveConfig },
 					app: { optional: true, ...notificationRecieveConfig },
 					test: { optional: true, ...notificationRecieveConfig },
+					pairJoinRequested: { optional: true, ...notificationRecieveConfig },
+					pairAccepted: { optional: true, ...notificationRecieveConfig },
+					pairClosed: { optional: true, ...notificationRecieveConfig },
+					pairInvited: { optional: true, ...notificationRecieveConfig },
+					pairApplicationCancelled: { optional: true, ...notificationRecieveConfig },
+					intraProjectFinished: { optional: true, ...notificationRecieveConfig },
+					intraProjectsRefreshed: { optional: true, ...notificationRecieveConfig },
+					intraLevelUp: { optional: true, ...notificationRecieveConfig },
+					acquaintanceSuggested: { optional: true, ...notificationRecieveConfig },
+					acquaintanceJoined: { optional: true, ...notificationRecieveConfig },
 				},
 			},
 			isModerator: {
@@ -137,6 +147,16 @@ export const meta = {
 			moderationNote: {
 				type: 'string',
 				optional: false, nullable: false,
+			},
+			intraId: {
+				type: 'number',
+				optional: false, nullable: true,
+				description: '42 intra のユーザー ID。intra と連携していないユーザーは null',
+			},
+			intraPasswordLoginAllowed: {
+				type: 'boolean',
+				optional: false, nullable: false,
+				description: '42 intra 連携が有効なときに、パスワード・パスキーでのログインを例外的に許可しているか',
 			},
 			signins: {
 				type: 'array',
@@ -251,6 +271,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				isHibernated: user.isHibernated,
 				lastActiveDate: user.lastActiveDate ? user.lastActiveDate.toISOString() : null,
 				moderationNote: profile.moderationNote ?? '',
+				intraId: profile.intraId,
+				intraPasswordLoginAllowed: profile.intraPasswordLoginAllowed,
 				signins,
 				policies: await this.roleService.getUserPolicies(user.id),
 				roles: await this.roleEntityService.packMany(roles, me),

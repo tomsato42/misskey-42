@@ -264,13 +264,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</template>
 
 						<div class="_gaps">
+							<!-- 42 intra 連携が有効なときは連合を無効で固定する (backend の update-meta も連合の有効化を拒否する) -->
+							<MkInfo v-if="instance.intraLoginEnabled">{{ i18n.ts._intra.federationLocked }}</MkInfo>
+
 							<SearchMarker>
 								<MkRadios
 									v-model="federationForm.state.federation"
 									:options="[
-										{ value: 'all', label: i18n.ts.all },
-										{ value: 'specified', label: i18n.ts.specifyHost },
-										{ value: 'none', label: i18n.ts.none },
+										{ value: 'all', label: i18n.ts.all, disabled: instance.intraLoginEnabled },
+										{ value: 'specified', label: i18n.ts.specifyHost, disabled: instance.intraLoginEnabled },
+										{ value: 'none', label: i18n.ts.none, disabled: instance.intraLoginEnabled },
 									]"
 								>
 									<template #label><SearchLabel>{{ i18n.ts.behavior }}</SearchLabel><span v-if="federationForm.modifiedStates.federation" class="_modified">{{ i18n.ts.modified }}</span></template>
