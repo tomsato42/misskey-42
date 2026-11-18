@@ -47,8 +47,8 @@ const props = defineProps<{
 	token: string;
 }>();
 
-// backend が登録の challenge を覚えている時間 (5 分) より少し短くする
-const OPTIONS_MAX_AGE_MS = 1000 * 60 * 4;
+// backend が登録の challenge を覚えている時間 (10 分) より少し短くする
+const OPTIONS_MAX_AGE_MS = 1000 * 60 * 9;
 
 const username = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
