@@ -65,6 +65,8 @@ export class WebAuthnService {
 			userID: isoUint8Array.fromUTF8String(userId),
 			userName: userName,
 			userDisplayName: userDisplayName,
+			// 42times: 既定の 60 秒では、スマホで QR を読み取って登録するうちにブラウザが打ち切ることがあるので、challenge と同じ 5 分にする
+			timeout: 1000 * 60 * 5,
 			excludeCredentials: keys.map(key => (<{ id: string; transports?: string[]; }>{
 				id: key.id,
 				transports: key.transports ?? undefined,
@@ -76,7 +78,8 @@ export class WebAuthnService {
 			},
 		});
 
-		await this.redisClient.setex(`webauthn:registrationChallenge:${userId}`, 90, registrationOptions.challenge);
+		// 42times: 90 秒では、名前を入力してスマホで QR を読み取るなどしているうちに切れて「内部エラー」になるので 5 分にする
+		await this.redisClient.setex(`webauthn:registrationChallenge:${userId}`, 60 * 5, registrationOptions.challenge);
 
 		return registrationOptions;
 	}

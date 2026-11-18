@@ -103,6 +103,7 @@ import { updateCurrentAccount } from '@/accounts.js';
 import { instance } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { startIntraReauth } from '@/utility/intra-login.js';
+import { getPasskeyRegistrationErrorMessage } from '@/utility/passkey-registration-error.js';
 
 const $i = ensureSignin();
 
@@ -316,9 +317,12 @@ async function addSecurityKey() {
 	const credential = await os.promiseDialog(
 		startRegistration({ optionsJSON: registrationOptions }),
 		null,
-		() => {}, // ユーザーのキャンセルはrejectなのでエラーダイアログを出さない
+		// 42times: キャンセルだけでなく、この端末に登録済み・アプリ内ブラウザで使えないなども reject になるので、理由を出す (出さないと何も起きないように見える)
+		(err) => {
+			os.alert({ type: 'warning', text: getPasskeyRegistrationErrorMessage(err) });
+		},
 		i18n.ts._2fa.tapSecurityKey,
-	);
+	).catch(() => null);
 	if (!credential) return;
 
 	const auth2 = await authenticateForKey();

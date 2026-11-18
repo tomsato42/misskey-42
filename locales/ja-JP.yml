@@ -3937,6 +3937,10 @@ _intra:
   passkeySetupInvalid: "リンクが無効か、有効期限が切れています。管理者に新しいリンクを発行してもらってください。"
   passkeySetupFailed: "パスキーを作成できませんでした。もう一度お試しください。"
   passkeyDefaultName: "パスキー"
+  passkeyCreateCanceled: "パスキーを作成できませんでした。途中でキャンセルしたか、時間切れになった可能性があります。Slack や LINE などのアプリの中のブラウザで開いている場合は、Safari や Chrome で開き直してください。"
+  passkeyAlreadyRegistered: "この端末 (またはパスワードマネージャー) には、このアカウントのパスキーが既に登録されています。そのパスキーでログインできます。"
+  passkeyAuthenticatorUnsupported: "この端末やセキュリティキーでは、パスキーを作成できません。画面ロック (PIN・指紋・顔など) を設定するか、別の端末でお試しください。"
+  passkeyCreateError: "パスキーを作成できませんでした: {message}"
 
 _roleTimeline:
   pinnedRoles: "タイムラインに表示するロール"

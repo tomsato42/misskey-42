@@ -14742,6 +14742,22 @@ export interface Locale extends ILocale {
          * パスキー
          */
         "passkeyDefaultName": string;
+        /**
+         * パスキーを作成できませんでした。途中でキャンセルしたか、時間切れになった可能性があります。Slack や LINE などのアプリの中のブラウザで開いている場合は、Safari や Chrome で開き直してください。
+         */
+        "passkeyCreateCanceled": string;
+        /**
+         * この端末 (またはパスワードマネージャー) には、このアカウントのパスキーが既に登録されています。そのパスキーでログインできます。
+         */
+        "passkeyAlreadyRegistered": string;
+        /**
+         * この端末やセキュリティキーでは、パスキーを作成できません。画面ロック (PIN・指紋・顔など) を設定するか、別の端末でお試しください。
+         */
+        "passkeyAuthenticatorUnsupported": string;
+        /**
+         * パスキーを作成できませんでした: {message}
+         */
+        "passkeyCreateError": ParameterizedString<"message">;
     };
     "_roleTimeline": {
         /**

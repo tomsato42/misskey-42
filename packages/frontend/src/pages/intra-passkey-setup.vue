@@ -34,19 +34,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue';
 import { browserSupportsWebAuthn, startRegistration } from '@simplewebauthn/browser';
+import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/browser';
 import MkButton from '@/components/MkButton.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import { i18n } from '@/i18n.js';
 import { login } from '@/accounts.js';
+import * as os from '@/os.js';
 import { beginIntraPasskeySetup, completeIntraPasskeySetup, IntraPasskeySetupError } from '@/utility/intra-login.js';
+import { getPasskeyRegistrationErrorMessage } from '@/utility/passkey-registration-error.js';
 
 const props = defineProps<{
 	token: string;
 }>();
 
+// backend が登録の challenge を覚えている時間 (5 分) より少し短くする
+const OPTIONS_MAX_AGE_MS = 1000 * 60 * 4;
+
 const username = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const processing = ref(false);
+
+// 登録の準備 (challenge) は先に取っておく。iOS の Safari などは、タップの直後でないとパスキーの作成を拒むので、
+// ボタンを押してから通信を待つと黙って失敗する
+let prepared: { options: PublicKeyCredentialCreationOptionsJSON; fetchedAt: number } | null = null;
+
+async function prepare(): Promise<PublicKeyCredentialCreationOptionsJSON> {
+	const res = await beginIntraPasskeySetup(props.token);
+	username.value = res.username;
+	prepared = { options: res.options, fetchedAt: Date.now() };
+	return res.options;
+}
 
 function getErrorMessage(err: unknown): string {
 	if (err instanceof IntraPasskeySetupError) {
@@ -59,17 +76,22 @@ function getErrorMessage(err: unknown): string {
 async function createPasskey() {
 	processing.value = true;
 	try {
-		// 登録の challenge には有効期限があるので、ボタンを押したときに取り直す
-		const { options } = await beginIntraPasskeySetup(props.token);
+		// 準備が新しければ、await を挟まずにすぐ作成を始める。古ければ取り直す (この場合は Safari で拒まれることがある)
+		const options = prepared != null && Date.now() - prepared.fetchedAt < OPTIONS_MAX_AGE_MS
+			? prepared.options
+			: await prepare();
 
 		let credential;
 		try {
 			credential = await startRegistration({ optionsJSON: options });
-		} catch {
-			// ユーザーのキャンセル。もう一度押せるようにする
+		} catch (err) {
+			// キャンセルや、この端末・ブラウザで作れないとき。理由を出して、もう一度押せるようにする
+			os.alert({ type: 'warning', text: getPasskeyRegistrationErrorMessage(err) });
 			return;
 		}
 
+		// 検証すると backend の challenge は使い切られるので、失敗したら次は取り直す
+		prepared = null;
 		const { i } = await completeIntraPasskeySetup(props.token, i18n.ts._intra.passkeyDefaultName, credential);
 		// このページを再読み込みすると使用済みのリンクで再び登録しようとするので、トップページへ移動する
 		await login(i, '/');
@@ -82,7 +104,7 @@ async function createPasskey() {
 
 onMounted(async () => {
 	try {
-		username.value = (await beginIntraPasskeySetup(props.token)).username;
+		await prepare();
 	} catch (err) {
 		errorMessage.value = getErrorMessage(err);
 	}
