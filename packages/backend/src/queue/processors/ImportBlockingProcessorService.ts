@@ -54,7 +54,7 @@ export class ImportBlockingProcessorService {
 			return;
 		}
 
-		const csv = await this.downloadService.downloadTextFile(file.url);
+		const csv = await this.downloadService.downloadTextFile(file.url, { attachMediaGateCookie: true });
 		const targets = csv.trim().split('\n');
 		this.queueService.createImportBlockingToDbJob({ id: user.id }, targets);
 

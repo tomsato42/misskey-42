@@ -1,0 +1,32 @@
+// Cloudflare Worker の設定。デプロイ手順は README.md を参照してください。
+// 署名用の秘密の値 (MEDIA_GATE_SECRET) はこのファイルに書かず、`wrangler secret put MEDIA_GATE_SECRET` で登録します。
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "misskey-42-media",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [
+		{
+			"pattern": "42times.kinachan.com/media/*",
+			"zone_name": "kinachan.com"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "42times-files"
+		}
+	],
+	"vars": {
+		// Misskey の設定 (.config/default.yml) の mediaGate.cookieName と同じ値にする
+		"COOKIE_NAME": "mi_media_session",
+		// ログインしていない人にも返すオブジェクトのキー (カンマ区切り)。
+		// ログイン画面に出すインスタンスのアイコンなどを、ドライブにアップロードして使う場合に指定する
+		"PUBLIC_KEYS": ""
+	},
+	"observability": {
+		"enabled": true
+	}
+}

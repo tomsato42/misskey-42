@@ -17,6 +17,8 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { ApiError } from '@/server/api/error.js';
 import { MiMeta } from '@/models/Meta.js';
+import { isIntraMode } from '@/core/intra/intra-visitor.js';
+import { AuthenticateService, AuthenticationError } from '@/server/api/AuthenticateService.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
@@ -35,6 +37,7 @@ export class UrlPreviewService implements OnApplicationShutdown {
 		private httpRequestService: HttpRequestService,
 		private utilityService: UtilityService,
 		private loggerService: LoggerService,
+		private authenticateService: AuthenticateService,
 	) {
 		this.logger = this.loggerService.getLogger('url-preview');
 		this.summaryCache = new MemoryKVCache<SummalyResult>(1000 * 60 * 60, 100); // 1h, 100件
@@ -56,6 +59,19 @@ export class UrlPreviewService implements OnApplicationShutdown {
 		request: FastifyRequest<{ Querystring: { url: string; lang?: string; } }>,
 		reply: FastifyReply,
 	): Promise<object | undefined> {
+		// 42 intra 連携が有効なとき (学内SNSモード) は、未ログインの訪問者にサーバーから外部の URL を取得させない
+		if (isIntraMode(this.config) && !(await this.isAuthenticated(request))) {
+			reply.code(401);
+			reply.header('WWW-Authenticate', 'Bearer realm="Misskey"');
+			return {
+				error: new ApiError({
+					message: 'Credential required.',
+					code: 'CREDENTIAL_REQUIRED',
+					id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+				}),
+			};
+		}
+
 		const url = request.query.url;
 		if (typeof url !== 'string') {
 			reply.code(400);
@@ -118,14 +134,15 @@ export class UrlPreviewService implements OnApplicationShutdown {
 			}
 
 			// Cache 1day
-			reply.header('Cache-Control', 'max-age=86400, immutable');
+			// 学内SNSモードではログインしたユーザーにだけ返すので、共有キャッシュに保存させない
+			reply.header('Cache-Control', isIntraMode(this.config) ? 'private, max-age=86400, immutable' : 'max-age=86400, immutable');
 
 			return summary;
 		} catch (err) {
 			this.logger.warn(`Failed to get preview of ${url}: ${err}`);
 
 			reply.code(422);
-			reply.header('Cache-Control', 'max-age=86400, immutable');
+			reply.header('Cache-Control', isIntraMode(this.config) ? 'private, max-age=86400, immutable' : 'max-age=86400, immutable');
 			return {
 				error: new ApiError({
 					message: 'Failed to get preview',
@@ -133,6 +150,26 @@ export class UrlPreviewService implements OnApplicationShutdown {
 					id: '09d01cb5-53b9-4856-82e5-38a50c290a3b',
 				}),
 			};
+		}
+	}
+
+	/**
+	 * Authorization ヘッダーのトークンで、ログインしたユーザーからのリクエストか確かめる
+	 */
+	@bindThis
+	private async isAuthenticated(request: FastifyRequest): Promise<boolean> {
+		// https://datatracker.ietf.org/doc/html/rfc6750.html#section-2.1 (case sensitive)
+		const token = request.headers.authorization?.startsWith('Bearer ')
+			? request.headers.authorization.slice(7)
+			: null;
+		if (token == null) return false;
+
+		try {
+			const [user] = await this.authenticateService.authenticate(token);
+			return user != null && !user.isSuspended;
+		} catch (err) {
+			if (err instanceof AuthenticationError) return false;
+			throw err;
 		}
 	}
 

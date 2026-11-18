@@ -308,7 +308,7 @@ id: 'aidx'
 #  # To check enabled names, set `options.debug: true` and see
 #  # "Integration installed: <name>" in the Sentry logs.
 #  #
-#  # As of 2026-07-07 / @sentry/node 10.62.0, useful names for Misskey include:
+#  # As of 2026-10-01 / @sentry/node 11.0.0, useful names for Misskey include:
 #  #   Postgres  ... DB queries (when pg is externalized)
 #  #   Redis     ... ioredis commands
 #  #   Fastify   ... inbound HTTP routes
@@ -328,6 +328,15 @@ id: 'aidx'
 #    # Internal allowlist example:
 #    #tracePropagationTargets:
 #    #  - 'internal-service.example'
+#    # Sentry SDK v11 collects everything unless `dataCollection` is set, so
+#    # Misskey applies a restricted default: no user info, no cookies, no URL
+#    # query params (they may carry an access token), no HTTP bodies, no DB
+#    # query values, and peer-identifying request/response headers denied.
+#    # To change what is collected, set `dataCollection` here. It replaces
+#    # Misskey's default as a whole, so `dataCollection: {}` restores Sentry's
+#    # own defaults and collects everything.
+#    #dataCollection:
+#    #  userInfo: true
 
 #sentryForFrontend:
 #  vueIntegration:
@@ -337,6 +346,46 @@ id: 'aidx'
 #  replayIntegration:
 #  options:
 #    dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0'
+
+#   ┌──────────────────┐
+#───┘ 42 intra 連携 └────────────────────────────────────────────
+
+# 42 intra の OAuth2 アプリケーションの設定です。
+# このセクションが無い場合、42 intra 連携の機能は全体が無効になります。
+# 42 intra 側でアプリケーションを登録するときは、リダイレクト URI に
+# `{url}/api/intra/callback` (例: https://example.tld/api/intra/callback) を指定してください。
+# clientSecret は秘密情報です。実際の値をリポジトリにコミットしないでください。
+
+#intra:
+#  clientId: 'your-client-id'
+#  clientSecret: 'your-client-secret'
+#  # 在籍判定とレベルの取得に使う cursus の ID (省略時は 21 = 42cursus)
+#  #cursusId: 21
+#  # 42 API のベース URL (省略時は https://api.intra.42.fr)
+#  #apiBaseUrl: https://api.intra.42.fr
+#  # レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (省略時はアイコンなし)
+#  #levelBadgeUrl: 'https://example.com/badges/lv-{level}.svg'
+#  # コアリションのロールのアイコンの URL。{id} が intra のコアリション ID に置き換わる (省略時はアイコンなし)
+#  #coalitionIconUrl: 'https://example.com/coalitions/{id}.svg'
+
+#   ┌──────────────────────────────┐
+#───┘ 画像・添付ファイルの閲覧制限 └────────────────────────────
+
+# 画像・添付ファイルを、ログインしている人にだけ見せるための設定です。
+# このセクションがある場合、ログイン時に署名付きの Cookie を発行し、
+# /files/*・/proxy/*・/avatar/*・/identicon/*・/emoji/* は Cookie が無いと 401 を返します。
+# オブジェクトストレージ (R2 など) のファイルは、Cloudflare Worker (cloudflare/media-worker) が同じ Cookie を検証して返します。
+# このセクションが無い場合、この機能は全体が無効になります。
+# secret は秘密情報です。実際の値をリポジトリにコミットしないでください。
+# 32 文字以上のランダムな値にし、Worker の MEDIA_GATE_SECRET と同じ値にしてください (例: openssl rand -base64 48)。
+
+#mediaGate:
+#  secret: 'change-me-to-a-random-value-of-at-least-32-characters'
+#  # Cookie の名前 (省略時は mi_media_session)。Worker の COOKIE_NAME と同じ値にする
+#  #cookieName: mi_media_session
+#  # Cookie の有効期間 (秒、3600〜86400。省略時は 7200 = 2 時間)
+#  # ログイン中のブラウザは、期限の半分を過ぎると自動で Cookie を更新します
+#  #ttlSec: 7200
 
 #   ┌─────────────────────┐
 #───┘ Other configuration └─────────────────────────────────────

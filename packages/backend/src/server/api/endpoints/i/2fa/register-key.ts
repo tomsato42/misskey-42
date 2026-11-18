@@ -11,6 +11,7 @@ import { DI } from '@/di-symbols.js';
 import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 
 export const meta = {
 	requireCredential: true,
@@ -18,6 +19,12 @@ export const meta = {
 	secure: true,
 
 	errors: {
+		intraReauthRequired: {
+			message: 'Verify yourself by signing in to 42 intra again.',
+			code: 'INTRA_REAUTH_REQUIRED',
+			id: '9aeff541-7333-43b9-9015-b749135ee62a',
+		},
+
 		userNotFound: {
 			message: 'User not found.',
 			code: 'USER_NOT_FOUND',
@@ -48,7 +55,7 @@ export const paramDef = {
 		password: { type: 'string' },
 		token: { type: 'string', nullable: true },
 	},
-	required: ['password'],
+	required: [],
 } as const;
 
 // eslint-disable-next-line import/no-default-export
@@ -60,6 +67,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private webAuthnService: WebAuthnService,
 		private userAuthService: UserAuthService,
+		private intraAuthService: IntraAuthService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const token = ps.token;
@@ -86,13 +94,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				}
 			}
 
-			const passwordMatched = await bcrypt.compare(ps.password, profile.password ?? '');
-			if (!passwordMatched) {
-				throw new ApiError(meta.errors.incorrectPassword);
-			}
+			// 42 intra で作ったアカウントはパスワードを持たないので、パスワード (と TOTP の登録) の代わりに 42 での本人確認を求める
+			const usesIntraReauth = this.intraAuthService.usesIntraReauth(profile);
+			if (usesIntraReauth) {
+				if (!await this.intraAuthService.hasRecentReauth(me.id)) {
+					throw new ApiError(meta.errors.intraReauthRequired);
+				}
+			} else {
+				const passwordMatched = await bcrypt.compare(ps.password ?? '', profile.password ?? '');
+				if (!passwordMatched) {
+					throw new ApiError(meta.errors.incorrectPassword);
+				}
 
-			if (!profile.twoFactorEnabled) {
-				throw new ApiError(meta.errors.twoFactorNotEnabled);
+				if (!profile.twoFactorEnabled) {
+					throw new ApiError(meta.errors.twoFactorNotEnabled);
+				}
 			}
 
 			return await this.webAuthnService.initiateRegistration(

@@ -20,6 +20,8 @@ const _rootPackageDir = resolve(_dirname, '../../');
 const _rootPackage = JSON.parse(fs.readFileSync(resolve(_rootPackageDir, 'package.json'), 'utf-8'));
 const _frontendLocalesDir = resolve(_dirname, '../../built/_frontend_dist_/locales');
 const _localesDir = resolve(_rootPackageDir, 'locales');
+// 42times: このフォークで足した文の訳 (Crowdin の外で管理する)
+const _forkLocalesDir = resolve(_rootPackageDir, 'locales-42times');
 
 const entryPoints = fs.globSync('./src/**/**.{ts,tsx}');
 
@@ -59,6 +61,15 @@ function copyLocales(): void {
 		fs.copyFileSync(resolve(srcDir, file), resolve(destDir, file));
 	}
 	console.log(`[${_package.name}] locales copied (${files.length} files).`);
+
+	const forkDestDir = resolve(_dirname, 'built/locales-42times');
+	fs.rmSync(forkDestDir, { recursive: true, force: true });
+	fs.mkdirSync(forkDestDir, { recursive: true });
+	const forkFiles = fs.readdirSync(_forkLocalesDir).filter(f => f.endsWith('.yml'));
+	for (const file of forkFiles) {
+		fs.copyFileSync(resolve(_forkLocalesDir, file), resolve(forkDestDir, file));
+	}
+	console.log(`[${_package.name}] fork locales copied (${forkFiles.length} files).`);
 }
 
 /**
@@ -116,7 +127,7 @@ function buildDts(): Promise<unknown> {
 }
 
 async function watchSrc(): Promise<void> {
-	const localesWatcher = chokidarWatch(_localesDir, {
+	const localesWatcher = chokidarWatch([_localesDir, _forkLocalesDir], {
 		ignoreInitial: true,
 	});
 	localesWatcher.on('all', async (event, path) => {

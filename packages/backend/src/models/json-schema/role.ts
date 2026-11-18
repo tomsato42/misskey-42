@@ -176,6 +176,10 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canCreateNote: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		canPublicNote: {
 			type: 'boolean',
 			optional: false, nullable: false,

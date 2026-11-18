@@ -267,6 +267,8 @@ export class FileServerProxyHandler {
 			return await this.fileResolver.resolveFileByAccessKey(key);
 		}
 
-		return await this.fileResolver.downloadAndDetectTypeFromUrl(url);
+		// アバターや絵文字の画像が、自分のホストの /media/* (Cloudflare Worker) にあることがあるので、メディア用 Cookie を付ける。
+		// 付けるのは取得先が自分のホストのときだけ (DownloadService.getMediaGateHeaders)
+		return await this.fileResolver.downloadAndDetectTypeFromUrl(url, { attachMediaGateCookie: true });
 	}
 }

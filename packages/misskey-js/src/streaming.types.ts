@@ -156,6 +156,16 @@ export type Channels = {
 		};
 		receives: null;
 	};
+	clip: {
+		params: {
+			clipId: string;
+		};
+		events: {
+			updated: () => void;
+			deleted: () => void;
+		};
+		receives: null;
+	};
 	drive: {
 		params: null;
 		events: {
@@ -318,6 +328,14 @@ export type NoteUpdatedEvent = { id: Note['id'] } & ({
 	body: {
 		choice: number;
 		userId: User['id'];
+	};
+} | {
+	type: 'updated';
+	body: {
+		text: string | null;
+		cw: string | null;
+		visibility: Note['visibility'];
+		updatedAt: string | null;
 	};
 });
 

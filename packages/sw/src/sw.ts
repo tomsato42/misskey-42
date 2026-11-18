@@ -61,18 +61,29 @@ async function offlineContentHTML() {
 
 globalThis.addEventListener('install', (ev) => {
 	// 次の問題が発生するため、ServiceWorkerAutoPreload をオプトアウトする必要がある
+	// ルールを1つでも登録すればオプトアウトされる
 	// https://issues.chromium.org/issues/466790291
 	if ('addRoutes' in ev) {
 		// doc: https://developer.mozilla.org/en-US/docs/Web/API/InstallEvent/addRoutes
-		// @ts-expect-error 実験的なAPIなので型定義がない
-		ev.addRoutes({
-			condition: {
-				// doc: https://developer.mozilla.org/ja/docs/Web/API/URLPattern
-				// @ts-expect-error 実験的なAPIなので型定義がない
-				urlPattern: new URLPattern({}),
-			},
+		const addRoutes = (rules: unknown) => (ev.addRoutes as (rules: unknown) => Promise<void>).call(ev, rules);
+
+		// doc: https://developer.mozilla.org/ja/docs/Web/API/URLPattern
+		const anyUrl = new URLPattern({});
+		const urlEndsWithSlash = new URLPattern({ pathname: '*/', search: '' });
+
+		ev.waitUntil(addRoutes([
+			{ condition: { requestMode: 'navigate' }, source: 'fetch-event' },
+			// fetchハンドラーはURLが/で終わるリクエストもHTMLとして扱う (クエリが付くと/では終わらない)
+			{ condition: { urlPattern: urlEndsWithSlash }, source: 'fetch-event' },
+			// ルールは先に一致したものが優先されるので、これは上記以外のすべてに当たる
+			{ condition: { urlPattern: anyUrl }, source: 'network' },
+		]).catch(() => addRoutes({
+			// 上記のルールを受け付けないブラウザでも、オプトアウトは維持する
+			condition: { urlPattern: anyUrl },
 			source: 'fetch-event',
-		});
+		})).catch(() => {
+			// ルールの登録に失敗してもインストールは止めない
+		}));
 	}
 });
 
@@ -180,6 +191,29 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 								break;
 							case 'reaction':
 								client = await swos.openNote(data.body.note.id, loginId);
+								break;
+							case 'calendarEventReminder':
+							case 'calendarEventUpdated':
+							case 'calendarEventInvited':
+								// 42times: カレンダーの通知はイベントのページを開く
+								client = await swos.openClient('push', `/calendar/events/${data.body.event.id}`, loginId);
+								break;
+							case 'intraProjectFinished':
+							case 'intraProjectsRefreshed':
+								// 42times: 課題の通知は、点数を共有の画面を開く
+								client = await swos.openClient('push', '/projects', loginId);
+								break;
+							case 'intraLevelUp':
+								// 42times: 投稿するボタンは通知の一覧にあるので、通知の一覧を開く
+								client = await swos.openClient('push', '/my/notifications', loginId);
+								break;
+							case 'pairJoinRequested':
+							case 'pairAccepted':
+							case 'pairClosed':
+							case 'pairInvited':
+							case 'pairApplicationCancelled':
+								// ペア募集の通知は募集のページを開く
+								client = await swos.openClient('push', `/pair/${data.body.pairRecruitment.id}`, loginId);
 								break;
 							default:
 								if ('note' in data.body) {

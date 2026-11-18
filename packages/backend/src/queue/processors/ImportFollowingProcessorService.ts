@@ -54,7 +54,7 @@ export class ImportFollowingProcessorService {
 			return;
 		}
 
-		const csv = await this.downloadService.downloadTextFile(file.url);
+		const csv = await this.downloadService.downloadTextFile(file.url, { attachMediaGateCookie: true });
 		const targets = csv.trim().split('\n');
 		this.queueService.createImportFollowingToDbJob({ id: user.id }, targets, job.data.withReplies);
 
