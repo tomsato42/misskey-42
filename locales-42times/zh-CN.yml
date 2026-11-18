@@ -335,6 +335,10 @@ _intra:
   passkeySetupInvalid: "链接无效或已过期。请让管理员发放新的链接。"
   passkeySetupFailed: "无法创建通行密钥。请重试。"
   passkeyDefaultName: "通行密钥"
+  passkeyCreateCanceled: "无法创建通行密钥。可能已中途取消或超时。如果是在 Slack、LINE 等应用内的浏览器中打开的，请改用 Safari 或 Chrome 重新打开。"
+  passkeyAlreadyRegistered: "此设备（或密码管理器）中已注册了此账户的通行密钥。可以使用该通行密钥登录。"
+  passkeyAuthenticatorUnsupported: "此设备或安全密钥无法创建通行密钥。请设置屏幕锁定（PIN、指纹、面容等），或在其他设备上重试。"
+  passkeyCreateError: "无法创建通行密钥：{message}"
 _roleTimeline:
   pinnedRoles: "在时间线上显示的角色"
   pinnedRolesDescription: "将所选角色的时间线显示在时间线上方的标签页中。"

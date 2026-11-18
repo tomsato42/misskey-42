@@ -357,6 +357,10 @@ _intra:
   passkeySetupInvalid: "The link is invalid or has expired. Ask an admin to issue a new link."
   passkeySetupFailed: "Couldn't create the passkey. Please try again."
   passkeyDefaultName: "Passkey"
+  passkeyCreateCanceled: "Couldn't create the passkey. It may have been canceled or timed out. If you opened this page in an in-app browser (Slack, LINE, etc.), open it again in Safari or Chrome."
+  passkeyAlreadyRegistered: "A passkey for this account is already registered on this device (or password manager). You can sign in with it."
+  passkeyAuthenticatorUnsupported: "This device or security key can't create a passkey. Set up a screen lock (PIN, fingerprint, face, etc.) or try another device."
+  passkeyCreateError: "Couldn't create the passkey: {message}"
 _roleTimeline:
   pinnedRoles: "Roles shown on the timeline"
   pinnedRolesDescription: "Timelines of the selected roles are shown as tabs at the top of the timeline."

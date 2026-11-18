@@ -357,6 +357,10 @@ _intra:
   passkeySetupInvalid: "連結無效或已過期。請聯絡管理員發行新的連結。"
   passkeySetupFailed: "無法建立通行金鑰。請再試一次。"
   passkeyDefaultName: "通行金鑰"
+  passkeyCreateCanceled: "無法建立通行金鑰。可能已中途取消或逾時。如果是在 Slack、LINE 等應用程式內的瀏覽器中開啟，請改用 Safari 或 Chrome 重新開啟。"
+  passkeyAlreadyRegistered: "此裝置（或密碼管理工具）中已註冊此帳戶的通行金鑰。可以使用該通行金鑰登入。"
+  passkeyAuthenticatorUnsupported: "此裝置或安全金鑰無法建立通行金鑰。請設定螢幕鎖定（PIN、指紋、臉部等），或在其他裝置上再試一次。"
+  passkeyCreateError: "無法建立通行金鑰：{message}"
 _roleTimeline:
   pinnedRoles: "顯示於時間軸的角色"
   pinnedRolesDescription: "將所選角色的時間軸顯示在時間軸上方的分頁中。"

@@ -335,6 +335,10 @@ _intra:
   passkeySetupInvalid: "링크가 잘못되었거나 유효 기간이 지났습니다. 관리자에게 새 링크를 발급받아 주세요."
   passkeySetupFailed: "패스키를 만들지 못했습니다. 다시 시도해 주세요."
   passkeyDefaultName: "패스키"
+  passkeyCreateCanceled: "패스키를 만들지 못했습니다. 도중에 취소했거나 시간이 초과되었을 수 있습니다. Slack이나 LINE 등 앱 안의 브라우저에서 열었다면 Safari나 Chrome에서 다시 열어 주세요."
+  passkeyAlreadyRegistered: "이 기기(또는 비밀번호 관리자)에 이 계정의 패스키가 이미 등록되어 있습니다. 그 패스키로 로그인할 수 있습니다."
+  passkeyAuthenticatorUnsupported: "이 기기나 보안 키로는 패스키를 만들 수 없습니다. 화면 잠금(PIN·지문·얼굴 등)을 설정하거나 다른 기기에서 시도해 주세요."
+  passkeyCreateError: "패스키를 만들지 못했습니다: {message}"
 _roleTimeline:
   pinnedRoles: "타임라인에 표시할 역할"
   pinnedRolesDescription: "고른 역할의 타임라인을 타임라인 위쪽 탭에 표시합니다."
