@@ -29,6 +29,7 @@ const intraConfig = {
 	intra: {
 		clientId: 'id',
 		clientSecret: 'secret',
+		clientSecretNext: null,
 		cursusId: 21,
 		apiBaseUrl: 'https://api.intra.42.fr',
 		levelBadgeUrl: null, coalitionIconUrl: null,
