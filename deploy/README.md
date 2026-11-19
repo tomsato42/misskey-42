@@ -28,6 +28,7 @@ GitHub (main に push / 手動実行)
 | `deploy.sh` | `/home/misskey/42times/deploy.sh` | タグを受け取って pull → 起動 → ヘルスチェック待ち。失敗したら前のタグに戻す |
 | `backup.sh` | `/home/misskey/42times/backup.sh` | 1 日 1 回のバックアップ (DB・設定・`files/`)。7 個残し、R2 にも送る ([バックアップ](#バックアップ)) |
 | `configure-backup-r2.sh` | `/home/misskey/42times/configure-backup-r2.sh` | バックアップを送る R2 の鍵 (`.config/backup-r2.env`) を対話形式で書き込む。書き込む前に R2 へのアップロードを試す |
+| `rotate-intra-secret.sh` | `/home/misskey/42times/rotate-intra-secret.sh` | 42 で発行した次の SECRET を `intra.clientSecretNext` に入れて再起動する ([42 のアプリの SECRET の更新](#42-のアプリの-secret-の更新)) |
 | `default.yml.example` | `/home/misskey/42times/.config/default.yml` (コピーして編集) | 本番用の設定の例。秘密の値はダミー |
 | `nginx/42times.kinachan.com.conf` | `/etc/nginx/conf.d/42times.kinachan.com.conf` | nginx の server ブロック |
 
@@ -351,6 +352,24 @@ GitHub のドキュメントでは、Free プランの private リポジトリ�
   ```sh
   cd /home/misskey/42times
   IMAGE_TAG=$(cat state/current-tag) docker compose logs --tail 200 -f web
+  ```
+
+### 42 のアプリの SECRET の更新
+
+42 intra のアプリの SECRET には期限があり、切れると 42 API が 401 を返して、新しいログインと毎時の同期がすべて失敗します (2026-11 に一度止まった。ログには `Rejected intra login (intra_error): failed to fetch intra user: 401 Unauthorized` と `Synced 0 users with 42 intra (N failed)` が出る)。期限の前に intra のアプリのページで次の SECRET を発行できるので、発行したら VPS に入れておきます。
+
+- `intra.clientSecretNext` に次の SECRET を入れておくと、backend は `clientSecret` が 401 で拒否されたときに自動で `clientSecretNext` で取り直し、それ以降 (再起動まで) はそちらを使います。切り替えたときはログに `42 API rejected clientSecret. Switched to clientSecretNext` が出ます。両方とも拒否されたら `42 API rejected both clientSecret and clientSecretNext` が出ます。
+- 入れるのは `rotate-intra-secret.sh` で行います。SECRET は画面に表示せずに入力し、42 API で今の SECRET と渡した SECRET を試した結果を表示してから書き換え、Misskey を再起動します。
+  - `clientSecretNext` が空なら、渡した SECRET を `clientSecretNext` に入れる (`clientSecret` はそのまま)
+  - `clientSecretNext` が入っていれば、それを `clientSecret` に移し、渡した SECRET を新しい `clientSecretNext` にする (前の次の SECRET は、もう使われているか、次に使われるものなので)
+
+  ```sh
+  # 初めてのときだけ、ローカルの PC (リポジトリのルート) でスクリプトを置く
+  scp deploy/rotate-intra-secret.sh misskey-vps:/home/misskey/42times/
+  ssh misskey-vps 'chmod 700 /home/misskey/42times/rotate-intra-secret.sh'
+
+  # 次の SECRET を発行したら
+  ssh -t misskey-vps '/home/misskey/42times/rotate-intra-secret.sh'
   ```
 
 ### コアリションのアイコン
