@@ -63,6 +63,9 @@ export class IntraApiService {
 	private appToken: { token: string; expiresAt: number } | null = null;
 	private appTokenPromise: Promise<string> | null = null;
 
+	/** /oauth/token で使う SECRET。0 = clientSecret、1 = clientSecretNext */
+	private activeSecretIndex = 0;
+
 	// アプリトークンでのリクエストを直列化し、最小間隔を空けるためのキュー
 	private appRequestQueue: Promise<unknown> = Promise.resolve();
 	private lastAppRequestAt = 0;
@@ -90,25 +93,11 @@ export class IntraApiService {
 	 */
 	@bindThis
 	public async exchangeCode(code: string, redirectUri: string): Promise<string> {
-		const intra = this.getIntraConfig();
-
-		const res = await this.httpRequestService.send(`${intra.apiBaseUrl}/oauth/token`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				Accept: 'application/json',
-			},
-			body: new URLSearchParams({
-				grant_type: 'authorization_code',
-				client_id: intra.clientId,
-				client_secret: intra.clientSecret,
-				code,
-				redirect_uri: redirectUri,
-			}).toString(),
-			timeout: REQUEST_TIMEOUT,
+		const body = await this.requestToken({
+			grant_type: 'authorization_code',
+			code,
+			redirect_uri: redirectUri,
 		});
-
-		const body = await res.json() as IntraTokenResponse;
 		return body.access_token;
 	}
 
@@ -329,28 +318,64 @@ export class IntraApiService {
 
 	@bindThis
 	private async fetchAppToken(): Promise<string> {
-		const intra = this.getIntraConfig();
-
-		const res = await this.httpRequestService.send(`${intra.apiBaseUrl}/oauth/token`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				Accept: 'application/json',
-			},
-			body: new URLSearchParams({
-				grant_type: 'client_credentials',
-				client_id: intra.clientId,
-				client_secret: intra.clientSecret,
-			}).toString(),
-			timeout: REQUEST_TIMEOUT,
-		});
-
-		const body = await res.json() as IntraTokenResponse;
+		const body = await this.requestToken({ grant_type: 'client_credentials' });
 		this.appToken = {
 			token: body.access_token,
 			expiresAt: Date.now() + (body.expires_in * 1000) - APP_TOKEN_EXPIRY_MARGIN,
 		};
 		return body.access_token;
+	}
+
+	/**
+	 * client_id と SECRET を付けて /oauth/token に POST する。
+	 * 42 のアプリの SECRET には期限があるので、今の SECRET が 401 で拒否されたら次の SECRET (clientSecretNext) で取り直し、
+	 * 通ったほうをプロセスが終わるまで先に使う。client の認証は認可コードの確認より先に行われ、失敗してもコードは消費されないので、取り直しても同じコードを使える
+	 */
+	@bindThis
+	private async requestToken(params: Record<string, string>): Promise<IntraTokenResponse> {
+		const intra = this.getIntraConfig();
+		const secrets = [intra.clientSecret, intra.clientSecretNext].filter((secret, i, all): secret is string =>
+			secret != null && secret !== '' && all.indexOf(secret) === i);
+		const active = Math.min(this.activeSecretIndex, secrets.length - 1);
+		const order = [active, ...secrets.map((_, i) => i).filter(i => i !== active)];
+
+		let lastError: unknown = null;
+		for (const index of order) {
+			try {
+				const res = await this.httpRequestService.send(`${intra.apiBaseUrl}/oauth/token`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+						Accept: 'application/json',
+					},
+					body: new URLSearchParams({
+						...params,
+						client_id: intra.clientId,
+						client_secret: secrets[index],
+					}).toString(),
+					timeout: REQUEST_TIMEOUT,
+				});
+				const body = await res.json() as IntraTokenResponse;
+
+				if (index !== this.activeSecretIndex) {
+					this.activeSecretIndex = index;
+					if (index === 0) {
+						this.logger.info('42 API accepted clientSecret again. Using clientSecret');
+					} else {
+						this.logger.warn('42 API rejected clientSecret. Switched to clientSecretNext. When 42 issues the next secret, add it with rotate-intra-secret.sh');
+					}
+				}
+				return body;
+			} catch (err) {
+				if (!(err instanceof StatusError && err.statusCode === 401)) throw err;
+				lastError = err;
+			}
+		}
+
+		this.logger.error(secrets.length > 1
+			? '42 API rejected both clientSecret and clientSecretNext (401). Issue a new secret on the intra application page'
+			: '42 API rejected clientSecret (401). It may have expired. Issue the next secret on the intra application page and set it as clientSecretNext');
+		throw lastError;
 	}
 
 	/**

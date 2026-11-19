@@ -79,6 +79,9 @@ id: 'aidx'
 intra:
   clientId: 'ここに 42 intra のアプリケーションの UID を入れる'
   clientSecret: 'ここに 42 intra のアプリケーションの SECRET を入れる'
+  # 42 で発行した次の SECRET。clientSecret が期限切れなどで拒否 (401) されたら自動でこちらを使う
+  # (rotate-intra-secret.sh で入れる。手順は deploy/README.md の「42 のアプリの SECRET の更新」)
+  #clientSecretNext: ''
   # 在籍判定とレベルの取得に使う cursus の ID (省略時は 21 = 42cursus)
   #cursusId: 21
   # 42 API のベース URL (省略時は https://api.intra.42.fr)
