@@ -134,6 +134,8 @@ type Source = {
 	intra?: {
 		clientId: string;
 		clientSecret: string;
+		/** 42 で発行した次の SECRET。clientSecret が 401 で拒否されたときに使う */
+		clientSecretNext?: string | null;
 		cursusId?: number;
 		/** レベルのロールのアイコンの URL。{level} がレベルの整数に置き換わる (例: https://example.com/badges/lv-{level}.svg) */
 		levelBadgeUrl?: string;
@@ -254,6 +256,8 @@ export type Config = {
 	intra: {
 		clientId: string;
 		clientSecret: string;
+		/** 42 で発行した次の SECRET。clientSecret が期限切れなどで 401 になったときに使う */
+		clientSecretNext: string | null;
 		cursusId: number;
 		levelBadgeUrl: string | null;
 		coalitionIconUrl: string | null;
@@ -402,6 +406,7 @@ export function loadConfig(): Config {
 		intra: config.intra ? {
 			clientId: config.intra.clientId,
 			clientSecret: config.intra.clientSecret,
+			clientSecretNext: config.intra.clientSecretNext || null,
 			// 21 = 42cursus
 			cursusId: config.intra.cursusId ?? 21,
 			levelBadgeUrl: config.intra.levelBadgeUrl ?? null,

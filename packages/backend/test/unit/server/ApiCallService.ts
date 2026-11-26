@@ -102,6 +102,7 @@ describe('ApiCallService 学内SNSモードの未ログイン制限', () => {
 		intra: {
 			clientId: 'id',
 			clientSecret: 'secret',
+			clientSecretNext: null,
 			cursusId: 21,
 			apiBaseUrl: 'https://api.intra.42.fr',
 		levelBadgeUrl: null, coalitionIconUrl: null,
