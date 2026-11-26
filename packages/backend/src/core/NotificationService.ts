@@ -5,7 +5,7 @@
 
 import { setTimeout } from 'node:timers/promises';
 import * as Redis from 'ioredis';
-import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { BeforeApplicationShutdown, Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { In } from 'typeorm';
 import { ReplyError } from 'ioredis';
 import { DI } from '@/di-symbols.js';
@@ -25,7 +25,7 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 // import { escapeHtml } from '@/misc/escape-html.js';
 
 @Injectable()
-export class NotificationService implements OnApplicationShutdown {
+export class NotificationService implements BeforeApplicationShutdown, OnApplicationShutdown {
 	#shutdownController = new AbortController();
 
 	constructor(
@@ -188,7 +188,8 @@ export class NotificationService implements OnApplicationShutdown {
 		// 2秒経っても(今回作成した)通知が既読にならなかったら「未読の通知がありますよ」イベントを発行する
 		// テスト通知の場合は即時発行
 		const interval = notification.type === 'test' ? 0 : 2000;
-		setTimeout(interval, 'unread notification', { signal: this.#shutdownController.signal }).then(async () => {
+		// 終了時に DB の切断 (GlobalModule の onApplicationShutdown) より前に止め、走っている処理は終わるまで待たせる
+		trackPromise(setTimeout(interval, 'unread notification', { signal: this.#shutdownController.signal }).then(async () => {
 			const latestReadNotificationId = await this.redisClient.get(`latestReadNotification:${notifieeId}`);
 			if (latestReadNotificationId && (latestReadNotificationId >= redisId)) return;
 
@@ -197,7 +198,7 @@ export class NotificationService implements OnApplicationShutdown {
 
 			if (type === 'follow') this.emailNotificationFollow(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
 			if (type === 'receiveFollowRequest') this.emailNotificationReceiveFollowRequest(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
-		}, () => { /* aborted, ignore it */ });
+		}, () => { /* aborted, ignore it */ }));
 
 		return notification;
 	}
@@ -319,6 +320,11 @@ export class NotificationService implements OnApplicationShutdown {
 		}
 
 		return notifications;
+	}
+
+	@bindThis
+	public beforeApplicationShutdown(signal?: string | undefined): void {
+		this.dispose();
 	}
 
 	@bindThis
