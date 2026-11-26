@@ -11,17 +11,27 @@ import { unisonReload } from '@/utility/unison-reload.js';
 import { clear } from '@/utility/idb-proxy.js';
 import { $i } from '@/i.js';
 import { encodePushSubscriptionKey } from '@/utility/encode-push-subscription-key.js';
+import { clearMediaSession } from '@/utility/media-session.js';
 
-export async function signout() {
+export async function signout(showWaiting = true) {
 	if (!$i) return;
 
-	waiting();
+	if (showWaiting) {
+		waiting();
+	}
 
 	if (store.s.enablePreferencesAutoCloudBackup) {
-		await cloudBackup();
+		try {
+			await cloudBackup();
+		} catch {
+			// nop
+		}
 	}
 
 	localStorage.clear();
+
+	// すべてのアカウントの情報を消すので、画像・添付ファイル用の Cookie も消す
+	await clearMediaSession();
 
 	const idbAbortController = new AbortController();
 	const timeout = window.setTimeout(() => idbAbortController.abort(), 5000);

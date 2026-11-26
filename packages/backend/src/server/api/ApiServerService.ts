@@ -18,6 +18,8 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
+import { IntraAuthApiService } from './IntraAuthApiService.js';
+import { MediaSessionApiService } from './MediaSessionApiService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -39,6 +41,8 @@ export class ApiServerService {
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
+		private intraAuthApiService: IntraAuthApiService,
+		private mediaSessionApiService: MediaSessionApiService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -71,36 +75,45 @@ export class ApiServerService {
 			};
 
 			if (endpoint.meta.requireFile) {
-				fastify.all<{
+				fastify.route<{
 					Params: { endpoint: string; },
 					Body: Record<string, unknown>,
 					Querystring: Record<string, unknown>,
-				}>('/' + endpoint.name, async (request, reply) => {
-					if (request.method === 'GET' && !endpoint.meta.allowGet) {
-						reply.code(405);
-						reply.send();
-						return;
-					}
+				}>({
+					method: ['GET', 'POST'],
+					url: '/' + endpoint.name,
+					handler: async (request, reply) => {
+						if (request.method === 'GET' && !endpoint.meta.allowGet) {
+							reply.code(405);
+							reply.send();
+							return;
+						}
 
-					// Await so that any error can automatically be translated to HTTP 500
-					await this.apiCallService.handleMultipartRequest(ep, request, reply);
-					return reply;
+						// Await so that any error can automatically be translated to HTTP 500
+						await this.apiCallService.handleMultipartRequest(ep, request, reply);
+						return reply;
+					},
 				});
 			} else {
-				fastify.all<{
+				fastify.route<{
 					Params: { endpoint: string; },
 					Body: Record<string, unknown>,
 					Querystring: Record<string, unknown>,
-				}>('/' + endpoint.name, { bodyLimit: 1024 * 1024 }, async (request, reply) => {
-					if (request.method === 'GET' && !endpoint.meta.allowGet) {
-						reply.code(405);
-						reply.send();
-						return;
-					}
+				}>({
+					method: ['GET', 'POST'],
+					url: '/' + endpoint.name,
+					bodyLimit: 1024 * 1024,
+					handler: async (request, reply) => {
+						if (request.method === 'GET' && !endpoint.meta.allowGet) {
+							reply.code(405);
+							reply.send();
+							return;
+						}
 
-					// Await so that any error can automatically be translated to HTTP 500
-					await this.apiCallService.handleRequest(ep, request, reply);
-					return reply;
+						// Await so that any error can automatically be translated to HTTP 500
+						await this.apiCallService.handleRequest(ep, request, reply);
+						return reply;
+					},
 				});
 			}
 		}
@@ -143,16 +156,52 @@ export class ApiServerService {
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
 
-		fastify.get('/v1/instance/peers', async (request, reply) => {
-			const instances = await this.instancesRepository.find({
-				select: { host: true },
-				where: {
-					suspensionState: 'none',
-				},
-			});
+		// 42 intra の OAuth2 ログイン。連携が無効なら登録せず、upstream と同じく 404 にする
+		if (this.config.intra != null) {
+			fastify.get<{
+				Querystring: { reauth?: string; ref?: string; };
+			}>('/intra/authorize', (request, reply) => this.intraAuthApiService.authorize(request, reply));
 
-			return instances.map(instance => instance.host);
-		});
+			fastify.get<{
+				Querystring: { code?: string; state?: string; };
+			}>('/intra/callback', (request, reply) => this.intraAuthApiService.callback(request, reply));
+
+			fastify.post<{
+				Body: { code?: string; } | undefined;
+			}>('/intra/exchange', (request, reply) => this.intraAuthApiService.exchange(request, reply));
+
+			// 管理者が発行したパスキーの登録リンク (42 にログインできない人のため)
+			fastify.post<{
+				Body: { token?: string; } | undefined;
+			}>('/intra/passkey-setup/options', (request, reply) => this.intraAuthApiService.passkeySetupOptions(request, reply));
+
+			fastify.post<{
+				Body: { token?: string; name?: string; credential?: unknown; } | undefined;
+			}>('/intra/passkey-setup/complete', (request, reply) => this.intraAuthApiService.passkeySetupComplete(request, reply));
+		}
+
+		// 画像・添付ファイルを見るための Cookie。mediaGate が無効なら登録せず、upstream と同じく 404 にする
+		if (this.config.mediaGate != null) {
+			fastify.post<{
+				Body: { i?: unknown; } | undefined;
+			}>('/media-session', (request, reply) => this.mediaSessionApiService.issue(request, reply));
+
+			fastify.post('/media-session/clear', (request, reply) => this.mediaSessionApiService.clear(request, reply));
+		}
+
+		// 42 intra 連携が有効なときは連合しないので、既知のサーバーの一覧も出さない (下の /* で 404 になる)
+		if (this.config.intra == null) {
+			fastify.get('/v1/instance/peers', async (request, reply) => {
+				const instances = await this.instancesRepository.find({
+					select: { host: true },
+					where: {
+						suspensionState: 'none',
+					},
+				});
+
+				return instances.map(instance => instance.host);
+			});
+		}
 
 		fastify.post<{ Params: { session: string; } }>('/miauth/:session/check', async (request, reply) => {
 			const token = await this.accessTokensRepository.findOneBy({
@@ -176,15 +225,19 @@ export class ApiServerService {
 			}
 		});
 
-		fastify.all('/clear-browser-cache', (request, reply) => {
-			if (['GET', 'POST'].includes(request.method)) {
-				reply.header('Clear-Site-Data', '"cache", "prefetchCache", "prerenderCache", "executionContexts"');
-				reply.code(204);
-				reply.send();
-			} else {
-				reply.code(405);
-				reply.send();
-			}
+		fastify.route({
+			method: ['GET', 'POST'],
+			url: '/clear-browser-cache',
+			handler: (request, reply) => {
+				if (['GET', 'POST'].includes(request.method)) {
+					reply.header('Clear-Site-Data', '"cache", "prefetchCache", "prerenderCache", "executionContexts"');
+					reply.code(204);
+					reply.send();
+				} else {
+					reply.code(405);
+					reply.send();
+				}
+			},
 		});
 
 		// Make sure any unknown path under /api returns HTTP 404 Not Found,

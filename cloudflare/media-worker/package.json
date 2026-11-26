@@ -1,0 +1,23 @@
+{
+	"name": "misskey-42-media-worker",
+	"version": "0.0.0",
+	"private": true,
+	"description": "R2 の非公開バケットから、Misskey にログインしている人にだけ画像・添付ファイルを返す Cloudflare Worker",
+	"type": "module",
+	"packageManager": "pnpm@11.25.0",
+	"engines": {
+		"node": ">=22.18.0"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "node --test \"test/**/*.test.ts\"",
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "5.20261006.1",
+		"@types/node": "26.4.0",
+		"typescript": "7.0.2",
+		"wrangler": "4.148.0"
+	}
+}

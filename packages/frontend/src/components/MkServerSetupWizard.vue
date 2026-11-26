@@ -14,7 +14,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #icon><i class="ti ti-settings-question"></i></template>
 
 		<div class="_gaps_s">
+			<!-- 42 intra 連携が有効なとき (学内SNS) は「グループサーバー」で固定する。
+			     お一人様 (singleUserMode) は複数人で使う学内SNSと合わず、オープン (登録の受付・登録時のメール必須) は intra でのみ登録できる仕組みと合わない -->
+			<MkInfo v-if="instance.intraLoginEnabled">{{ i18n.ts._intra.serverUseLocked }}</MkInfo>
 			<MkRadios
+				v-else
 				v-model="q_use"
 				:options="[
 					{ value: 'single', label: i18n.ts._serverSetupWizard._use.single, icon: 'ti ti-user', caption: i18n.ts._serverSetupWizard._use.single_description },
@@ -58,7 +62,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_s">
 			<div>{{ i18n.ts._serverSetupWizard.doYouConnectToFediverse_description1 }}<br>{{ i18n.ts._serverSetupWizard.doYouConnectToFediverse_description2 }}<br><MkLink target="_blank" url="https://wikipedia.org/wiki/Fediverse">{{ i18n.ts.learnMore }}</MkLink></div>
 
+			<!-- 42 intra 連携が有効なときは連合を無効で固定する (backend の update-meta も連合の有効化を拒否する) -->
+			<MkInfo v-if="instance.intraLoginEnabled">{{ i18n.ts._intra.federationLocked }}</MkInfo>
 			<MkRadios
+				v-else
 				v-model="q_federation"
 				:options="[
 					{ value: 'yes', label: i18n.ts.yes },
@@ -143,46 +150,48 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div>{{ serverSettings.clientOptions?.entrancePageStyle }}</div>
 			</div>
 
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.rateLimitFactor }}:</b></div>
-				<div>{{ defaultPolicies.rateLimitFactor }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.driveCapacity }}:</b></div>
-				<div>{{ defaultPolicies.driveCapacityMb }} MB</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.userListMax }}:</b></div>
-				<div>{{ defaultPolicies.userListLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.antennaMax }}:</b></div>
-				<div>{{ defaultPolicies.antennaLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.webhookMax }}:</b></div>
-				<div>{{ defaultPolicies.webhookLimit }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportFollowing }}:</b></div>
-				<div>{{ defaultPolicies.canImportFollowing ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportMuting }}:</b></div>
-				<div>{{ defaultPolicies.canImportMuting ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportBlocking }}:</b></div>
-				<div>{{ defaultPolicies.canImportBlocking ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportUserLists }}:</b></div>
-				<div>{{ defaultPolicies.canImportUserLists ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
-			<div>
-				<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportAntennas }}:</b></div>
-				<div>{{ defaultPolicies.canImportAntennas ? i18n.ts.yes : i18n.ts.no }}</div>
-			</div>
+			<template v-if="!instance.intraLoginEnabled">
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.rateLimitFactor }}:</b></div>
+					<div>{{ defaultPolicies.rateLimitFactor }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.driveCapacity }}:</b></div>
+					<div>{{ defaultPolicies.driveCapacityMb }} MB</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.userListMax }}:</b></div>
+					<div>{{ defaultPolicies.userListLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.antennaMax }}:</b></div>
+					<div>{{ defaultPolicies.antennaLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.webhookMax }}:</b></div>
+					<div>{{ defaultPolicies.webhookLimit }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportFollowing }}:</b></div>
+					<div>{{ defaultPolicies.canImportFollowing ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportMuting }}:</b></div>
+					<div>{{ defaultPolicies.canImportMuting ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportBlocking }}:</b></div>
+					<div>{{ defaultPolicies.canImportBlocking ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportUserLists }}:</b></div>
+					<div>{{ defaultPolicies.canImportUserLists ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+				<div>
+					<div><b>{{ i18n.ts._role.baseRole }}/{{ i18n.ts._role._options.canImportAntennas }}:</b></div>
+					<div>{{ defaultPolicies.canImportAntennas ? i18n.ts.yes : i18n.ts.no }}</div>
+				</div>
+			</template>
 		</div>
 
 		<template #footer>
@@ -207,6 +216,7 @@ import MkRadios from '@/components/MkRadios.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkLink from '@/components/MkLink.vue';
+import { instance } from '@/instance.js';
 
 const emit = defineEmits<{
 	(ev: 'finished'): void;
@@ -218,7 +228,8 @@ const props = withDefaults(defineProps<{
 });
 
 const q_name = ref('');
-const q_use = ref<'single' | 'group' | 'open'>('single');
+// 42 intra 連携が有効なときは選択肢を出さず、グループサーバーで固定する
+const q_use = ref<'single' | 'group' | 'open'>(instance.intraLoginEnabled ? 'group' : 'single');
 const q_scale = ref<'small' | 'medium' | 'large'>('small');
 const q_federation = ref<'yes' | 'no'>('no');
 const q_remoteContentsCleaning = ref(true);
@@ -238,7 +249,7 @@ const serverSettings = computed<Misskey.entities.AdminUpdateMetaRequest>(() => {
 		disableRegistration: q_use.value !== 'open',
 		emailRequiredForSignup: q_use.value === 'open',
 		enableIpLogging: q_use.value === 'open',
-		federation: q_federation.value === 'yes' ? 'all' : 'none',
+		federation: q_federation.value === 'yes' && !instance.intraLoginEnabled ? 'all' : 'none',
 		enableRemoteNotesCleaning: q_remoteContentsCleaning.value,
 		enableFanoutTimeline: true,
 		enableFanoutTimelineDbFallback: q_use.value === 'single',
@@ -359,10 +370,12 @@ function applySettings() {
 			maintainerName: q_adminName.value === '' ? undefined : q_adminName.value,
 			maintainerEmail: q_adminEmail.value === '' ? undefined : q_adminEmail.value,
 		}, props.token),
-		misskeyApi('admin/roles/update-default-policies', {
+		// update-default-policies は基本ポリシーを丸ごと置き換えるので、42 intra 連携が有効なとき (学内SNS) は送らない。
+		// 学内SNSの基本ポリシーは migration で投入済み
+		...(instance.intraLoginEnabled ? [] : [misskeyApi('admin/roles/update-default-policies', {
 			// @ts-expect-error バックエンド側の型
 			policies: defaultPolicies.value,
-		}, props.token),
+		}, props.token)]),
 	]).then(() => {
 		emit('finished');
 	}).catch((err) => {

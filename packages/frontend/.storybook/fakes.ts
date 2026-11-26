@@ -265,6 +265,7 @@ export function userDetailed(id = 'someuserid', username = 'miskist', host: enti
 		bannerBlurhash: 'eQA^IW^-MH8w9tE8I=S^o{$*R4RikXtSxutRozjEnNR.RQadoyozog',
 		bannerUrl: 'https://github.com/misskey-dev/misskey/blob/master/packages/frontend/assets/fedi.jpg?raw=true',
 		birthday: '2014-06-20',
+		intra: null,
 		createdAt: '2016-12-28T22:49:51.000Z',
 		description: 'I am a cool user!',
 		followingVisibility: 'public',

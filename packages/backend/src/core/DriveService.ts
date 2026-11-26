@@ -44,6 +44,7 @@ import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { UtilityService } from '@/core/UtilityService.js';
+import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 
 type AddFileArgs = {
 	/** User who wish to add file */
@@ -131,6 +132,7 @@ export class DriveService {
 		private perUserDriveChart: PerUserDriveChart,
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
+		private customEmojiService: CustomEmojiService,
 	) {
 		const logger = new Logger('drive', 'blue');
 		this.registerLogger = logger.createSubLogger('register', 'yellow');
@@ -496,6 +498,16 @@ export class DriveService {
 			ext ?? info.type.ext,
 		);
 
+		const folder = folderId
+			? await this.driveFoldersRepository.findOneBy({
+				id: folderId,
+				userId: user ? user.id : IsNull(),
+			})
+			: null;
+		if (folderId && folder == null) {
+			throw new IdentifiableError('b9adda75-abe9-4c6d-bf12-b5575833960d', 'No such folder.');
+		}
+
 		if (user && !force) {
 		// Check if there is a file with the same hash
 			const matched = await this.driveFilesRepository.findOneBy({
@@ -559,21 +571,6 @@ export class DriveService {
 		}
 		//#endregion
 
-		const fetchFolder = async () => {
-			if (!folderId) {
-				return null;
-			}
-
-			const driveFolder = await this.driveFoldersRepository.findOneBy({
-				id: folderId,
-				userId: user ? user.id : IsNull(),
-			});
-
-			if (driveFolder == null) throw new Error('folder-not-found');
-
-			return driveFolder;
-		};
-
 		const properties: {
 			width?: number;
 			height?: number;
@@ -589,8 +586,6 @@ export class DriveService {
 		}
 
 		const profile = user ? await this.userProfilesRepository.findOneBy({ userId: user.id }) : null;
-
-		const folder = await fetchFolder();
 
 		let file = new MiDriveFile();
 		file.id = this.idService.gen();
@@ -843,7 +838,23 @@ export class DriveService {
 			this.globalEventService.publishDriveStream(file.userId, 'fileDeleted', file.id);
 		}
 
-		if (deleter && await this.roleService.isModerator(deleter) && (file.userId !== deleter.id)) {
+		const isModeratorDeleter = deleter != null && await this.roleService.isModerator(deleter);
+
+		// ローカルのファイルを消したら、そのファイルを画像にした絵文字も消す (画像が無いまま残さない)。
+		// 絵文字を管理できない人が自分のファイルを消して絵文字を消せないよう、持ち主の無いファイル
+		// (admin/emoji/copy・add-from-url で取り込んだもの) か、絵文字を管理できる人が消したときだけにする
+		if (!isExpired && file.userHost == null && !file.isLink) {
+			const canDeleteEmojis = file.userId == null || (deleter != null && (isModeratorDeleter || (await this.roleService.getUserPolicies(deleter.id)).canManageCustomEmojis));
+			if (canDeleteEmojis) {
+				try {
+					await this.customEmojiService.deleteByOriginalUrl(file.url, deleter);
+				} catch (err) {
+					this.deleteLogger.error(`Failed to delete custom emojis of the file ${file.id}`, err as Error);
+				}
+			}
+		}
+
+		if (deleter && isModeratorDeleter && (file.userId !== deleter.id)) {
 			const user = file.userId ? await this.usersRepository.findOneByOrFail({ id: file.userId }) : null;
 			this.moderationLogService.log(deleter, 'deleteDriveFile', {
 				fileId: file.id,

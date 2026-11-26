@@ -21,6 +21,7 @@ import { WebAuthnService } from '@/core/WebAuthnService.js';
 import Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type { IdentifiableError } from '@/misc/identifiable-error.js';
+import { IntraAuthService } from '@/core/intra/IntraAuthService.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
@@ -47,6 +48,7 @@ export class SigninWithPasskeyApiService {
 		private signinService: SigninService,
 		private webAuthnService: WebAuthnService,
 		private loggerService: LoggerService,
+		private intraAuthService: IntraAuthService,
 	) {
 		this.logger = this.loggerService.getLogger('PasskeyAuth');
 	}
@@ -163,6 +165,14 @@ export class SigninWithPasskeyApiService {
 		}
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+
+		// 42 intra 連携が有効なときは、intra で作ったアカウントとモデレーター以上と例外フラグ付きのユーザー以外はパスキーでログインできない。
+		// 専用の応答は返さず、認証失敗と同じ形 (失敗の記録付き) にする
+		if (await this.intraAuthService.isPasskeyLoginRestricted(user, profile)) {
+			return await fail(user.id, 403, {
+				id: '932c904e-9460-45b7-9ce6-7ed33be7eb2c',
+			});
+		}
 
 		// Authentication was successful, but passwordless login is not enabled
 		if (!profile.usePasswordLessLogin) {

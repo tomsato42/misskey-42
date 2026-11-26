@@ -35,6 +35,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</XFolder>
 
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canCreateNote, 'canCreateNote'])" v-model:policyMeta="policyMetaModel.canCreateNote" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canCreateNote }}</template>
+			<template #valueText>{{ valuesModel.canCreateNote ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canCreateNote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+					<template #caption>{{ i18n.ts._role._options.canCreateNote_caption }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
 		<XFolder v-if="matchQuery([i18n.ts._role._options.canPublicNote, 'canPublicNote'])" v-model:policyMeta="policyMetaModel.canPublicNote" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.canPublicNote }}</template>
 			<template #valueText>{{ valuesModel.canPublicNote ? i18n.ts.yes : i18n.ts.no }}</template>

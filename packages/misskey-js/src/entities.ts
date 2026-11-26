@@ -181,7 +181,7 @@ export type SigninWithPasskeyResponse = {
 export type I2faRegisterKeyResponse = PublicKeyCredentialCreationOptionsJSON;
 
 export type I2faKeyDoneRequest = {
-	password: string;
+	password?: string;
 	token?: string | null;
 	name: string;
 	credential: RegistrationResponseJSON;

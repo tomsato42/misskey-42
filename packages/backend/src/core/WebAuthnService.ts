@@ -19,7 +19,6 @@ import { MiUser } from '@/models/_.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import type {
 	AuthenticationResponseJSON,
-	AuthenticatorTransportFuture,
 	CredentialDeviceType,
 	PublicKeyCredentialCreationOptionsJSON,
 	PublicKeyCredentialRequestOptionsJSON,
@@ -66,17 +65,21 @@ export class WebAuthnService {
 			userID: isoUint8Array.fromUTF8String(userId),
 			userName: userName,
 			userDisplayName: userDisplayName,
-			excludeCredentials: keys.map(key => (<{ id: string; transports?: AuthenticatorTransportFuture[]; }>{
+			// 42times: 既定の 60 秒では、スマホで QR を読み取って登録するうちにブラウザが打ち切ることがあるので、challenge と同じ 10 分 (WebAuthn の仕様が本人確認を求めるときに勧める上限) にする
+			timeout: 1000 * 60 * 10,
+			excludeCredentials: keys.map(key => (<{ id: string; transports?: string[]; }>{
 				id: key.id,
 				transports: key.transports ?? undefined,
 			})),
 			authenticatorSelection: {
 				residentKey: 'required',
-				userVerification: 'preferred',
+				// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+				userVerification: 'required',
 			},
 		});
 
-		await this.redisClient.setex(`webauthn:registrationChallenge:${userId}`, 90, registrationOptions.challenge);
+		// 42times: 90 秒では、名前を入力してスマホで QR を読み取るなどしているうちに切れて「内部エラー」になるので 10 分にする
+		await this.redisClient.setex(`webauthn:registrationChallenge:${userId}`, 60 * 10, registrationOptions.challenge);
 
 		return registrationOptions;
 	}
@@ -91,7 +94,7 @@ export class WebAuthnService {
 		userVerified: boolean;
 		credentialDeviceType: CredentialDeviceType;
 		credentialBackedUp: boolean;
-		transports?: AuthenticatorTransportFuture[];
+		transports?: string[];
 	}> {
 		const challenge = await this.redisClient.get(`webauthn:registrationChallenge:${userId}`);
 
@@ -151,11 +154,12 @@ export class WebAuthnService {
 
 		const authenticationOptions = await generateAuthenticationOptions({
 			rpID: relyingParty.rpId,
-			allowCredentials: keys.map(key => (<{ id: string; transports?: AuthenticatorTransportFuture[]; }>{
+			allowCredentials: keys.map(key => (<{ id: string; transports?: string[]; }>{
 				id: key.id,
 				transports: key.transports ?? undefined,
 			})),
-			userVerification: 'preferred',
+			// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+			userVerification: 'required',
 		});
 
 		await this.redisClient.setex(`webauthn:authenticationChallenge:${userId}`, 90, authenticationOptions.challenge);
@@ -173,7 +177,8 @@ export class WebAuthnService {
 
 		const authenticationOptions = await generateAuthenticationOptions({
 			rpID: relyingParty.rpId,
-			userVerification: 'preferred',
+			// 42times: 検証で本人確認 (指紋・PIN など) を必須にしているので、ここでも必須として求める。'preferred' だと Android などで本人確認を省いた応答が返り、検証で失敗する
+			userVerification: 'required',
 		});
 
 		await this.redisClient.setex(`webauthn:passkeyChallenge:${context}`, 90, authenticationOptions.challenge);
@@ -215,7 +220,7 @@ export class WebAuthnService {
 					id: key.id,
 					publicKey: Buffer.from(key.publicKey, 'base64url'),
 					counter: key.counter,
-					transports: key.transports ? key.transports as AuthenticatorTransportFuture[] : undefined,
+					transports: key.transports ?? undefined,
 				},
 				requireUserVerification: true,
 			});
@@ -295,7 +300,7 @@ export class WebAuthnService {
 					id: key.id,
 					publicKey: Buffer.from(key.publicKey, 'base64url'),
 					counter: key.counter,
-					transports: key.transports ? key.transports as AuthenticatorTransportFuture[] : undefined,
+					transports: key.transports ?? undefined,
 				},
 				requireUserVerification: true,
 			});

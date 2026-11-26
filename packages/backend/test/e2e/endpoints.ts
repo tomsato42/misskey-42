@@ -6,11 +6,11 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { describe, beforeAll, test, expect, vi } from 'vitest';
+import { describe, beforeAll, afterAll, test, expect, vi } from 'vitest';
 // node-fetch only supports it's own Blob yet
 // https://github.com/node-fetch/node-fetch/pull/1664
 import { Blob } from 'node-fetch';
-import { api, castAsError, initTestDb, post, role, signup, simpleGet, uploadFile } from '../utils.js';
+import { api, castAsError, initTestDb, post, relativeFetch, role, signup, simpleGet, uploadFile } from '../utils.js';
 import type * as misskey from 'misskey-js';
 import { MiUser } from '@/models/_.js';
 
@@ -67,6 +67,45 @@ describe('Endpoints', () => {
 			});
 
 			assert.strictEqual(res.status, 400);
+		});
+	});
+
+	describe('signup-pending', () => {
+		beforeAll(async () => {
+			await api('admin/update-meta', {
+				emailRequiredForSignup: true,
+				enableActiveEmailValidation: false,
+			}, alice);
+		});
+
+		afterAll(async () => {
+			await api('admin/update-meta', {
+				emailRequiredForSignup: false,
+				enableActiveEmailValidation: true,
+			}, alice);
+		});
+
+		test('codeが文字列でない本文では他人の仮登録からアカウントが作成されない', async () => {
+			const pending = await api('signup', {
+				username: 'signuppendingvictim',
+				password: 'test',
+				emailAddress: 'signuppendingvictim@example.com',
+			});
+			assert.strictEqual(pending.status, 204);
+
+			const resEmpty = await relativeFetch('api/signup-pending', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			});
+			assert.strictEqual(resEmpty.status, 400);
+
+			const resNull = await relativeFetch('api/signup-pending', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: null }),
+			});
+			assert.strictEqual(resNull.status, 400);
 		});
 	});
 
@@ -1159,6 +1198,40 @@ describe('Endpoints', () => {
 				assert.strictEqual(res.body.length, 1);
 				assert.strictEqual(res.body[0].id, carolPost.id);
 			}, waitForPushToTlOptions);
+		});
+	});
+
+	// テスト設定では config.intra が無いため、42 intra 連携が無効のときの挙動だけを確認する
+	describe('42 intra 連携 (無効時)', () => {
+		test('admin/intra/set-password-login-allowed は INTRA_DISABLED を返す', async () => {
+			const res = await api('admin/intra/set-password-login-allowed', { userId: bob.id, allowed: true }, alice);
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual(castAsError(res.body as any).error.code, 'INTRA_DISABLED');
+		});
+
+		test('admin/intra/set-password-login-allowed はモデレーター以外は使えない', async () => {
+			const res = await api('admin/intra/set-password-login-allowed', { userId: bob.id, allowed: true }, bob);
+			assert.strictEqual(castAsError(res.body as any).error.code, 'ROLE_PERMISSION_DENIED');
+		});
+
+		test('/api/intra/authorize は登録されない', async () => {
+			const res = await simpleGet('/api/intra/authorize');
+			assert.strictEqual(res.status, 404);
+		});
+
+		test('ペア募集の API は PAIR_RECRUITMENT_UNAVAILABLE を返す', async () => {
+			const list = await api('pair-recruitments/list', { tab: 'open' }, alice);
+			assert.strictEqual(list.status, 400);
+			assert.strictEqual(castAsError(list.body as any).error.code, 'PAIR_RECRUITMENT_UNAVAILABLE');
+
+			const create = await api('pair-recruitments/create', { projectSlug: 'cub3d', teamSize: 2, startTiming: 'now' }, alice);
+			assert.strictEqual(create.status, 400);
+			assert.strictEqual(castAsError(create.body as any).error.code, 'PAIR_RECRUITMENT_UNAVAILABLE');
+		});
+
+		test('ペア募集の API は未ログインでは使えない', async () => {
+			const res = await api('pair-recruitments/list', {});
+			assert.strictEqual(res.status, 401);
 		});
 	});
 

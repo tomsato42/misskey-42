@@ -16,11 +16,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@close="onModalClose"
 	@closed="onModalClosed"
 >
+	<!-- 42times: ドロワー (スマホ) では MkModal の高さの上限 (画面の 2/3) を使わず、画面いっぱいまで伸ばす。ノートのメニューをスクロールせずに出すため -->
 	<MkMenu
 		:items="items"
 		:align="align"
 		:width="width"
-		:max-height="maxHeight"
+		:max-height="type === 'drawer' ? undefined : maxHeight"
 		:asDrawer="type === 'drawer'"
 		:returnFocusTo="returnFocusTo"
 		:debugDisablePredictionCone="debugDisablePredictionCone"

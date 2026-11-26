@@ -14,8 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			ref="tlComponent"
 			:key="src + withRenotes + withReplies + onlyFiles + withSensitive"
 			:class="$style.tl"
-			:src="(src.split(':')[0] as (BasicTimelineType | 'list'))"
-			:list="src.split(':')[1]"
+			:src="(src.split(':')[0] as (BasicTimelineType | 'list' | 'role'))"
+			:list="src.startsWith('list:') ? src.split(':')[1] : undefined"
+			:role="src.startsWith('role:') ? src.split(':')[1] : undefined"
 			:withRenotes="withRenotes"
 			:withReplies="withReplies"
 			:withSensitive="withSensitive"
@@ -48,7 +49,7 @@ import { prefer } from '@/preferences.js';
 
 const tlComponent = useTemplateRef('tlComponent');
 
-type TimelinePageSrc = BasicTimelineType | `list:${string}`;
+type TimelinePageSrc = BasicTimelineType | `list:${string}` | `role:${string}`;
 
 const srcWhenNotSignin = ref<'local' | 'global'>(isAvailableBasicTimeline('local') ? 'local' : 'global');
 const src = computed<TimelinePageSrc>({
@@ -195,6 +196,10 @@ function switchTlIfNeeded() {
 	if (isBasicTimeline(src.value) && !isAvailableBasicTimeline(src.value)) {
 		src.value = availableBasicTimelines()[0];
 	}
+	// タブから外したロールのタイムラインを開いたままにしない
+	if (src.value.startsWith('role:') && !prefer.s.pinnedRoles.some(r => 'role:' + r.id === src.value)) {
+		src.value = availableBasicTimelines()[0];
+	}
 }
 
 onMounted(() => {
@@ -274,6 +279,11 @@ const headerTabs = computed(() => [...(prefer.r.pinnedUserLists.value.map(l => (
 	title: i18n.ts._timelines[tl],
 	icon: basicTimelineIconClass(tl),
 	iconOnly: true,
+})), ...prefer.r.pinnedRoles.value.map(r => ({
+	key: 'role:' + r.id,
+	title: r.name,
+	icon: 'ti ti-badges',
+	iconOnly: true,
 })), {
 	icon: 'ti ti-list',
 	title: i18n.ts.lists,
@@ -300,7 +310,7 @@ const headerTabsWhenNotLogin = computed(() => [...availableBasicTimelines().map(
 
 definePage(() => ({
 	title: i18n.ts.timeline,
-	icon: isBasicTimeline(src.value) ? basicTimelineIconClass(src.value) : 'ti ti-home',
+	icon: isBasicTimeline(src.value) ? basicTimelineIconClass(src.value) : src.value.startsWith('role:') ? 'ti ti-badges' : 'ti ti-home',
 }));
 </script>
 

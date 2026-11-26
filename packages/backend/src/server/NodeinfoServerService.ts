@@ -14,6 +14,7 @@ import NotesChart from '@/core/chart/charts/notes.js';
 import UsersChart from '@/core/chart/charts/users.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
+import { isIntraMode } from '@/core/intra/intra-visitor.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 const nodeinfo2_1path = '/nodeinfo/2.1';
@@ -47,6 +48,18 @@ export class NodeinfoServerService {
 
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
+		// 42 intra 連携が有効なとき (学内SNSモード) は、利用者数や投稿数などの統計を外部に出さない。
+		// ルートを登録しないとクライアントの HTML (200) が返るので、明示的に 404 にする
+		if (isIntraMode(this.config)) {
+			for (const path of [nodeinfo2_1path, nodeinfo2_0path]) {
+				fastify.get(path, async (request, reply) => {
+					reply.code(404);
+				});
+			}
+			done();
+			return;
+		}
+
 		const nodeinfo2 = async (version: number) => {
 			const notesChart = await this.notesChart.getChart('hour', 1, null);
 			const localPosts = notesChart.local.total[0];

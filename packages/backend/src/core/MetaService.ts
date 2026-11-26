@@ -12,6 +12,8 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import { FeaturedService } from '@/core/FeaturedService.js';
+import { applyIntraMetaOverrides } from '@/core/intra/intra-visitor.js';
+import type { Config } from '@/config.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 @Injectable()
@@ -20,6 +22,9 @@ export class MetaService implements OnApplicationShutdown {
 	private intervalId: NodeJS.Timeout;
 
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.redisForSub)
 		private redisForSub: Redis.Redis,
 
@@ -51,10 +56,10 @@ export class MetaService implements OnApplicationShutdown {
 			const { type, body } = obj.message as GlobalEvents['internal']['payload'];
 			switch (type) {
 				case 'metaUpdated': {
-					this.cache = { // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
+					this.cache = applyIntraMetaOverrides({ // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
 						...(body.after),
 						rootUser: null, // joinなカラムは通常取ってこないので
-					};
+					}, this.config);
 					break;
 				}
 				default:
@@ -78,7 +83,8 @@ export class MetaService implements OnApplicationShutdown {
 			const meta = metas[0];
 
 			if (meta) {
-				this.cache = meta;
+				// 42 intra 連携が有効なときは、DB に保存されている値にかかわらず固定する設定がある
+				this.cache = applyIntraMetaOverrides(meta, this.config);
 				return meta;
 			} else {
 				// metaが空のときfetchMetaが同時に呼ばれるとここが同時に呼ばれてしまうことがあるのでフェイルセーフなupsertを使う
@@ -92,7 +98,7 @@ export class MetaService implements OnApplicationShutdown {
 					)
 					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]));
 
-				this.cache = saved;
+				this.cache = applyIntraMetaOverrides(saved, this.config);
 				return saved;
 			}
 		});

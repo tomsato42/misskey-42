@@ -62,11 +62,13 @@ function build(): Record<Language, Locale> {
 	// https://github.com/misskey-dev/misskey/pull/14057#issuecomment-2192833785
 	const metaUrl = import.meta.url;
 	const locales = languages.reduce<Locales>((a, lang) => {
-		a[lang] = (loadYaml(clean(fs.readFileSync(new URL(`./locales/${lang}.yml`, metaUrl), 'utf-8'))) ?? {}) as ILocale;
+		const locale = removeEmpty((loadYaml(clean(fs.readFileSync(new URL(`./locales/${lang}.yml`, metaUrl), 'utf-8'))) ?? {}) as ILocale);
+		// 42times: このフォークで足した文の訳 (Crowdin の外で管理する)。Crowdin に訳があればそちらを使う
+		const forkLocaleUrl = new URL(`./locales-42times/${lang}.yml`, metaUrl);
+		const forkLocale = fs.existsSync(forkLocaleUrl) ? removeEmpty((loadYaml(clean(fs.readFileSync(forkLocaleUrl, 'utf-8'))) ?? {}) as ILocale) : {};
+		a[lang] = merge(forkLocale, locale);
 		return a;
 	}, {} as Locales);
-
-	removeEmpty(locales);
 
 	return Object.entries(locales).reduce<Record<Language, Locale>>((a, [k, v]) => {
 		const lang = k.split('-')[0];

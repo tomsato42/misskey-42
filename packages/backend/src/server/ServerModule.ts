@@ -35,6 +35,7 @@ import { MainChannel } from './api/stream/channels/main.js';
 import { AdminChannel } from './api/stream/channels/admin.js';
 import { AntennaChannel } from './api/stream/channels/antenna.js';
 import { ChannelChannel } from './api/stream/channels/channel.js';
+import { ClipChannel } from './api/stream/channels/clip.js';
 import { DriveChannel } from './api/stream/channels/drive.js';
 import { GlobalTimelineChannel } from './api/stream/channels/global-timeline.js';
 import { HashtagChannel } from './api/stream/channels/hashtag.js';
@@ -51,6 +52,9 @@ import { ReversiChannel } from './api/stream/channels/reversi.js';
 import { ReversiGameChannel } from './api/stream/channels/reversi-game.js';
 import { NoteStreamingHidingService } from './api/stream/NoteStreamingHidingService.js';
 import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.js';
+import { IntraAuthApiService } from './api/IntraAuthApiService.js';
+import { MediaSessionApiService } from './api/MediaSessionApiService.js';
+import { CalendarFeedServerService } from './CalendarFeedServerService.js';
 
 @Module({
 	imports: [
@@ -78,6 +82,9 @@ import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.j
 		RateLimiterService,
 		SigninApiService,
 		SigninWithPasskeyApiService,
+		IntraAuthApiService,
+		MediaSessionApiService,
+		CalendarFeedServerService,
 		SigninService,
 		SignupApiService,
 		StreamingApiServerService,
@@ -85,6 +92,7 @@ import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.j
 		AdminChannel,
 		AntennaChannel,
 		ChannelChannel,
+		ClipChannel,
 		DriveChannel,
 		GlobalTimelineChannel,
 		HashtagChannel,

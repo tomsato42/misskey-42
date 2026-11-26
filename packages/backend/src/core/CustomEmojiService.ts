@@ -343,6 +343,20 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		});
 	}
 
+	/**
+	 * 画像の URL (originalUrl) が同じローカルの絵文字を消す。絵文字にしたドライブのファイルを消したときに呼ぶ
+	 */
+	@bindThis
+	public async deleteByOriginalUrl(url: string, moderator?: MiUser) {
+		const emojis = await this.emojisRepository.find({
+			select: { id: true },
+			where: { host: IsNull(), originalUrl: url },
+		});
+		if (emojis.length === 0) return;
+
+		await this.deleteBulk(emojis.map(emoji => emoji.id), moderator);
+	}
+
 	@bindThis
 	private normalizeHost(src: string | undefined, noteUserHost: string | null): string | null {
 		// クエリに使うホスト
@@ -389,7 +403,10 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		const emoji = await this.emojisCache.fetch(`${name} ${host}`, queryOrNull);
 
 		if (emoji == null) return null;
-		return emoji.publicUrl || emoji.originalUrl; // || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
+		const url = emoji.publicUrl || emoji.originalUrl; // || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
+		// 過去に保存された相対URLなどはクライアントで自サーバーのパスとして解釈されてしまうため返さない
+		if (!/^https?:\/\//i.test(url)) return null;
+		return url;
 	}
 
 	/**

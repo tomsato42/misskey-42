@@ -8,19 +8,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #header>App</template>
 	<div :class="$style.root">
 		<div v-if="isSyntaxError">Syntax error :(</div>
-		<MkAsUi v-else-if="root" :component="root" :components="components" size="small"/>
+		<MkAsUi v-else-if="root" :key="uiKey" :component="root" size="small"/>
 	</div>
 </MkContainer>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { Interpreter, Parser } from '@syuilo/aiscript';
 import { useWidgetPropsManager } from './widget.js';
-import type { Ref } from 'vue';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
-import type { AsUiComponent, AsUiRoot } from '@/aiscript/ui.js';
+import type { AsUiRoot } from '@/aiscript/ui.js';
 import * as os from '@/os.js';
 import { aiScriptReadline, createAiScriptEnv } from '@/aiscript/api.js';
 import { $i } from '@/i.js';
@@ -59,20 +58,25 @@ const { widgetProps, configure } = useWidgetPropsManager(name,
 
 const parser = new Parser();
 
+let aiscript: Interpreter | null = null;
 const root = ref<AsUiRoot>();
-const components = ref<Ref<AsUiComponent>[]>([]);
+const uiKey = ref(0);
 const isSyntaxError = ref(false);
 
 async function run() {
+	if (aiscript) aiscript.abort();
+	root.value = undefined;
+	// MkAsUi は最初に受け取った root を描画し続けるため、実行ごとに作り直す
+	uiKey.value++;
 	isSyntaxError.value = false;
 
-	const aiscript = new Interpreter({
+	aiscript = new Interpreter({
 		...createAiScriptEnv({
 			storageKey: 'widget',
 			token: $i?.token,
 		}),
-		...registerAsUiLib(components.value, (_root) => {
-			root.value = _root.value;
+		...registerAsUiLib((_root) => {
+			root.value = _root;
 		}),
 	}, {
 		in: aiScriptReadline,
@@ -120,6 +124,10 @@ watch(() => widgetProps.script, () => {
 
 onMounted(() => {
 	run();
+});
+
+onUnmounted(() => {
+	if (aiscript) aiscript.abort();
 });
 
 defineExpose<WidgetComponentExpose>({
